@@ -136,7 +136,7 @@ def draw_base(
                 ha="center",
                 va="center",
                 bbox=dict(boxstyle="round,pad=0.15", fc="white", ec="none", alpha=0.6),
-                zorder=2,
+                zorder=10,  # ハイライト（zorder 3）より上に置きラベルの隠れを防ぐ
             )
 
     for node in graph.nodes:
@@ -281,6 +281,35 @@ def render_graph(built: BuiltGraph, path: Path, *, title: str = "graph") -> None
 # --- Detection --------------------------------------------------------------
 
 
+def _evidence_line(ev: Any) -> str:
+    """トリガー根拠を 1 行に整形する（種別ごとに観測値・閾値を明示）"""
+    name = type(ev).__name__
+    if name == "SurgeEvidence":
+        return (
+            f"surge {ev.edge_id.value}: "
+            f"{ev.rate_percent_per_min:.1f}%/min > {ev.threshold_percent_per_min:.0f}"
+        )
+    if name == "HighStagnationEvidence":
+        return (
+            f"stagnation {ev.edge_id.value}: s={ev.stagnation:.1f} "
+            f">= p90 {ev.percentile_threshold:.1f} ({ev.duration_min:.0f}min)"
+        )
+    if name == "DangerEvidence":
+        edge_id = getattr(ev, "edge_id", None)
+        node_id = getattr(ev, "node_id", None)
+        target = edge_id.value if edge_id else (node_id.value if node_id else "?")
+        return f"danger {target}"
+    if name == "QueueScoreEvidence":
+        return f"queue score {ev.accumulated_score:.1f} > {ev.score_threshold:.1f}"
+    if name == "QueueDiversityEvidence":
+        return (
+            f"queue diversity {ev.distinct_origin_count} > {ev.diversity_threshold}"
+        )
+    if name == "QueueExpiredEvidence":
+        return f"queue expired (dropped {ev.dropped_count})"
+    return name
+
+
 def render_detection(run: PipelineRun, built: BuiltGraph, path: Path) -> None:
     pos = resolve_positions(built)
     det = run.detection
@@ -308,8 +337,10 @@ def render_detection(run: PipelineRun, built: BuiltGraph, path: Path) -> None:
         lines.append(
             "triggered nodes: " + ", ".join(n.value for n in det.triggered_nodes)
         )
-    for ev in det.evidences[:6]:
-        lines.append(f"· {type(ev).__name__}")
+    if det.evidences:
+        lines.append("evidence:")
+        for ev in det.evidences[:8]:
+            lines.append(f"  · {_evidence_line(ev)}")
     ax.text(
         0.01,
         0.99,
@@ -320,7 +351,15 @@ def render_detection(run: PipelineRun, built: BuiltGraph, path: Path) -> None:
         ha="left",
         family="monospace",
         bbox=dict(boxstyle="round", fc="#fff8f0", ec="#d62728", alpha=0.9),
+        zorder=12,
     )
+    from matplotlib.lines import Line2D
+
+    handles = _kind_legend_handles()
+    handles.append(
+        Line2D([0], [0], color=_TRIGGER_COLOR, lw=4, label="triggered")
+    )
+    ax.legend(handles=handles, loc="lower right", fontsize=7, framealpha=0.9)
     _save(fig, path)
 
 
@@ -433,6 +472,10 @@ def render_forecasting(run: PipelineRun, built: BuiltGraph, path: Path) -> None:
     etas = list(eta_by.values()) or [0.0]
     enorm = Normalize(vmin=min(etas), vmax=max(max(etas), 1e-6))
     ecmap = plt.get_cmap("viridis")
+    # 観測が無くフォールバック eta を使ったエッジ（センサ無し区間）を破線で明示
+    fallback_edges = {e.value for e in fc.fallback_usage.used_default_edges} | {
+        e.value for e in fc.fallback_usage.used_reference_edges
+    }
     for edge in graph.edges:
         if edge.edge_id.value not in eta_by:
             continue
@@ -445,6 +488,18 @@ def render_forecasting(run: PipelineRun, built: BuiltGraph, path: Path) -> None:
             zorder=3,
             solid_capstyle="round",
         )
+        if edge.edge_id.value in fallback_edges:
+            ax.plot(
+                [pa[0], pb[0]],
+                [pa[1], pb[1]],
+                color="#111111",
+                lw=1.6,
+                ls=(0, (2, 2)),
+                zorder=4,
+            )
+    if fallback_edges:
+        ax.plot([], [], color="#111111", ls=(0, (2, 2)), lw=1.6, label="fallback η (no obs)")
+        ax.legend(loc="lower right", fontsize=7, framealpha=0.9)
     fig.colorbar(
         ScalarMappable(norm=enorm, cmap=ecmap), ax=ax, fraction=0.046, label="η"
     )
@@ -603,6 +658,25 @@ def render_optimization(run: PipelineRun, built: BuiltGraph, path: Path) -> None
             _arrow(ax, pa, pb, color=col, width=1.6, alpha=0.9, zorder=4)
         elif d == -1:
             _arrow(ax, pb, pa, color=col, width=1.6, alpha=0.9, zorder=4)
+    # 文脈として「トリガー起点」を破線で重畳（重要度は実フロー経路に付くため別物）
+    trig_edges = {e.value for e in run.detection.triggered_edges}
+    for edge in graph.edges:
+        if edge.edge_id.value in trig_edges:
+            pa, pb = _edge_endpoints(pos, edge)
+            ax.plot(
+                [pa[0], pb[0]],
+                [pa[1], pb[1]],
+                color=_TRIGGER_COLOR,
+                lw=1.6,
+                ls=(0, (2, 2)),
+                zorder=6,
+            )
+    _highlight_nodes(
+        ax, pos, {n.value for n in run.detection.triggered_nodes}, color=_TRIGGER_COLOR
+    )
+    if trig_edges or run.detection.triggered_nodes:
+        ax.plot([], [], color=_TRIGGER_COLOR, ls=(0, (2, 2)), lw=1.6, label="triggered")
+        ax.legend(loc="lower right", fontsize=7, framealpha=0.9)
     fig.colorbar(
         ScalarMappable(norm=norm, cmap=cmap), ax=ax, fraction=0.046, label="importance"
     )
@@ -681,50 +755,71 @@ def render_optimization(run: PipelineRun, built: BuiltGraph, path: Path) -> None
 def render_summary(
     run: PipelineRun, path: Path, *, invariants: list[str] | None = None
 ) -> None:
-    fig, (ax_t, ax_b) = plt.subplots(1, 2, figsize=(15, 6))
+    """実行サマリをテキストで描く（各モジュールの所要時間は数値で列挙）"""
+    fig, ax = plt.subplots(figsize=(9, 7))
+    ax.axis("off")
+    det = run.detection
 
-    steps = list(run.timings_ms.keys())
-    vals = [run.timings_ms[s] for s in steps]
-    ax_b.barh(steps, vals, color="#4c78a8")
-    ax_b.set_xlabel("ms")
-    ax_b.set_title("step timing")
-    ax_b.invert_yaxis()
-
-    ax_t.axis("off")
     lines = [
-        f"scenario : {run.scenario_name}",
-        f"mode     : {run.mode.value}",
-        f"verdict  : {run.detection.verdict_hint.value}",
+        f"scenario       : {run.scenario_name}",
+        f"mode           : {run.mode.value}",
+        f"verdict        : {det.verdict_hint.value}",
         f"downstream ran : {run.downstream_ran}",
     ]
+    if det.triggered_edges:
+        lines.append(
+            "triggered edges: " + ", ".join(e.value for e in det.triggered_edges)
+        )
+    if det.triggered_nodes:
+        lines.append(
+            "triggered nodes: " + ", ".join(n.value for n in det.triggered_nodes)
+        )
+
+    # 各モジュールの所要時間（数値表示）と合計
+    lines.append("")
+    lines.append("elapsed (ms):")
+    total = 0.0
+    for step in ("detection", "forecasting", "detour", "optimization"):
+        if step in run.timings_ms:
+            ms = run.timings_ms[step]
+            total += ms
+            lines.append(f"  {step:<13}: {ms:10.1f}")
+    lines.append(f"  {'total':<13}: {total:10.1f}")
+
     if run.optimization is not None:
         res = run.optimization.optimization_result
+        st = run.optimization.solver_stats
+        cr = run.optimization.constraint_report
         lines += [
             "",
-            f"solver   : {res.solver_status.value}",
-            f"tau*     : {res.objective_values.tau_star:.4g}",
-            f"thruput  : {res.objective_values.throughput:.4g}",
-            f"fallback : {run.optimization.constraint_report.fallback_to_previous}",
+            f"solver         : {res.solver_status.value}",
+            f"  phase1       : {st.phase1_status.value} ({st.phase1_ms} ms)",
+            f"  phase2       : {st.phase2_status.value} ({st.phase2_ms} ms)",
+            f"tau*           : {res.objective_values.tau_star:.4g}",
+            f"throughput     : {res.objective_values.throughput:.4g}  (sum flow over P arcs)",
+            f"fallback       : {cr.fallback_to_previous}",
         ]
     if run.forecast is not None:
-        lines.append(f"OD pairs : {len(run.forecast.od_matrix)}")
+        lines.append(f"OD pairs       : {len(run.forecast.od_matrix)}")
+        lines.append(f"reproduction_e : {run.forecast.reproduction_error:.4g}")
     for note in run.notes:
         lines.append(f"note: {note}")
     if invariants:
         lines.append("")
         lines.append("invariants:")
         lines += [f"  {iv}" for iv in invariants]
-    ax_t.text(
-        0.0,
-        1.0,
+
+    ax.text(
+        0.02,
+        0.98,
         "\n".join(lines),
-        transform=ax_t.transAxes,
-        fontsize=10,
+        transform=ax.transAxes,
+        fontsize=11,
         va="top",
         ha="left",
         family="monospace",
     )
-    ax_t.set_title("summary")
+    ax.set_title(f"summary — {run.scenario_name}", fontsize=13)
     _save(fig, path)
 
 
