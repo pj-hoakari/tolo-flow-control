@@ -377,22 +377,27 @@ def _extract(built: _Built) -> ArcSolution | None:
     return ArcSolution(flow=flow, direction=direction, tau=tau_val)
 
 
-def _solve(model: Any, time_limit: float, seed: int) -> str:
-    model.solve(
+def _solve(model: Any, time_limit: float, seed: int, mip_rel_gap: float = 0.0) -> str:
+    options: dict[str, Any] = dict(
         solver_name="highs",
         time_limit=float(time_limit),
         threads=1,
         random_seed=int(seed),
         output_flag=False,
     )
+    if mip_rel_gap > 0.0:
+        options["mip_rel_gap"] = float(mip_rel_gap)
+    model.solve(**options)
     return str(model.termination_condition)
 
 
-def solve_phase1(built: _Built, time_limit: float, seed: int) -> PhaseResult:
+def solve_phase1(
+    built: _Built, time_limit: float, seed: int, mip_rel_gap: float = 0.0
+) -> PhaseResult:
     if built.infeasible:
         return PhaseResult(SolverStatus.INFEASIBLE, None, 0.0)
     built.model.add_objective(built.tau, sense="min", overwrite=True)
-    condition = _solve(built.model, time_limit, seed)
+    condition = _solve(built.model, time_limit, seed, mip_rel_gap)
     solution = _extract(built)
     status = _map_status(condition, solution is not None)
     if solution is None:
@@ -407,6 +412,7 @@ def solve_phase2(
     epsilon: float,
     time_limit: float,
     seed: int,
+    mip_rel_gap: float = 0.0,
 ) -> PhaseResult:
     # 辞書式緩和: τ <= τ* + ε
     built.model.add_constraints(built.tau <= tau_star + epsilon, name="lex")
@@ -417,7 +423,7 @@ def solve_phase2(
     if objective is None:
         return PhaseResult(SolverStatus.OPTIMAL, _extract(built), 0.0)
     built.model.add_objective(objective, sense="max", overwrite=True)
-    condition = _solve(built.model, time_limit, seed)
+    condition = _solve(built.model, time_limit, seed, mip_rel_gap)
     solution = _extract(built)
     status = _map_status(condition, solution is not None)
     throughput = sum(solution.flow[a.key] for a in throughput_arcs) if solution else 0.0

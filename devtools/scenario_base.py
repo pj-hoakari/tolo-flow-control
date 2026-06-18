@@ -77,12 +77,16 @@ def default_configs() -> PipelineConfigs:
 
 
 def compact_configs(
-    *, delta_min: float = 8.0, milp_time_limit_sec: float = 8.0
+    *,
+    delta_min: float = 8.0,
+    milp_time_limit_sec: float = 8.0,
+    mip_rel_gap: float = 0.02,
 ) -> PipelineConfigs:
     """コモディティ数が多くなりがちなグラフ向けの設定
 
     OD 量カット ``delta_min`` を上げて支配的な需要のみ残し（Phase2 の MILP を軽くする）、
-    MILP 時間上限も短縮して開発用途で実用的な応答にする。``make_scenario`` の既定。
+    MILP 時間上限も短縮、さらに相対ギャップ ``mip_rel_gap`` を許容して分枝限定を早期打ち切る。
+    ``make_scenario`` の既定。
     """
     base = default_configs()
     return replace(
@@ -91,6 +95,7 @@ def compact_configs(
             base.optimization,
             delta_min=delta_min,
             milp_time_limit_sec=milp_time_limit_sec,
+            mip_rel_gap=mip_rel_gap,
         ),
     )
 
