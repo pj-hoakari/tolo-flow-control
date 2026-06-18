@@ -3,7 +3,8 @@
 サブコマンド:
 - ``list``    : シナリオ・グラフプリセットの一覧
 - ``run``     : シナリオ 1 件をパイプライン実行し、各モジュール結果を JSON＋PNG 出力
-- ``run-all`` : 全シナリオを実行し、横断インデックス（index.json）を出力
+- ``run-all`` : 全シナリオを実行し、横断インデックス（index.json）＋履歴スナップショットを出力
+- ``compare`` : 2 つの数値スナップショットを比較（履歴ベースの回帰/改善追跡）
 - ``fuzz``    : ランダムシナリオを多数実行し不変条件を検証、違反ケースの成果物を保存
 - ``graph``   : グラフ（プリセット or ファイル）を構築・描画し、必要なら YAML/JSON へ保存
 
@@ -14,8 +15,10 @@ from __future__ import annotations
 
 import argparse
 from dataclasses import replace
+from datetime import datetime
 from pathlib import Path
 
+from . import compare as compare_mod
 from . import fuzzer, graph_builder, report, scenarios, visualize
 from .pipeline import run_pipeline
 
@@ -91,9 +94,33 @@ def cmd_run_all(args: argparse.Namespace) -> int:
                 f" thru={r.objective_values.throughput:.3g}"
             )
         print(f"  {name:24s} {run.mode.value:6s} {det.verdict_hint.value:12s}{ostr}")
-    idx = report.write_index(out_root, entries)
+    created_at = datetime.now().isoformat(timespec="seconds")
+    label = args.label or datetime.now().strftime("%Y%m%d-%H%M%S")
+    idx = report.write_index(out_root, entries, label=label, created_at=created_at)
+    snap = report.save_history_snapshot(
+        out_root, entries, label=label, created_at=created_at
+    )
     print(f"wrote index: {idx}")
+    print(f"history snapshot [{label}]: {snap}")
+    print(f"比較: uv run python -m devtools compare <base> {label}")
     return 0
+
+
+def cmd_compare(args: argparse.Namespace) -> int:
+    out_dir = Path(args.out)
+    try:
+        base, base_path = compare_mod.resolve_index(args.base, out_dir)
+        against, against_path = compare_mod.resolve_index(args.against, out_dir)
+    except FileNotFoundError as e:
+        print(e)
+        return 2
+    rows = compare_mod.compare(base, against)
+    print(f"base    : {base_path}")
+    print(f"against : {against_path}")
+    print(compare_mod.format_report(rows, args.base, args.against))
+    # 数値結果系に差分（回帰の可能性）があれば非ゼロ終了
+    changed = any(r.get("result_changed") or r.get("presence") != "BOTH" for r in rows)
+    return 1 if changed else 0
 
 
 def cmd_fuzz(args: argparse.Namespace) -> int:
@@ -184,7 +211,18 @@ def build_parser() -> argparse.ArgumentParser:
     )
     p_runall.add_argument("--no-images", action="store_true", help="PNG を出力しない")
     p_runall.add_argument("--force", action="store_true", help="未発火でも下流を実行")
+    p_runall.add_argument(
+        "--label",
+        default=None,
+        help="履歴スナップショットのラベル（既定: タイムスタンプ）",
+    )
     p_runall.set_defaults(func=cmd_run_all)
+
+    p_cmp = sub.add_parser("compare", help="2 つの数値スナップショットを比較（履歴回帰/改善）")
+    p_cmp.add_argument("base", help="基準: ラベル / 'latest' / ファイルパス")
+    p_cmp.add_argument("against", help="比較対象: ラベル / 'latest' / ファイルパス")
+    p_cmp.add_argument("--out", default=_DEFAULT_OUT, help="出力ディレクトリ（履歴の探索元）")
+    p_cmp.set_defaults(func=cmd_compare)
 
     p_fuzz = sub.add_parser("fuzz", help="ランダムシナリオで不変条件を検証")
     p_fuzz.add_argument("--graph", default=None, help="プリセット名/ファイル（既定: 毎回ランダム）")

@@ -34,12 +34,36 @@ uv run python -m devtools run multi-route-surge --out ./_devout
 主なオプション: `--time-limit <秒>`（MILP。未指定ならシナリオ設定値）, `--seed <int>`
 （ソルバーseed上書き）, `--no-images`（PNG出力なし）, `--force`（未発火でも下流を実行）。
 
-### `run-all` — 全シナリオを実行し横断インデックスを出力
+### `run-all` — 全シナリオを実行し横断インデックス＋履歴を出力
 ```sh
-uv run python -m devtools run-all --out ./_devout
+uv run python -m devtools run-all --out ./_devout --label before-change
 ```
-全シナリオを `run` と同様に出力したうえで、`_devout/index.json` に各 run の要約
-（verdict・triggered・solver/phase 時間・tau*・throughput・reproduction_error）をまとめる。
+全シナリオを `run` と同様に出力したうえで、各 run の数値要約を
+- 最新版: `_devout/index.json`
+- **履歴スナップショット**: `_devout/history/<label>/index.json`（`--label` 省略時はタイムスタンプ）
+
+にまとめる。要約は **`index.json` 1 ファイルで解析が完結する**よう派生指標まで畳み込む:
+verdict・triggered・evidence_kinds／forecast（OD・reproduction_error・node_confidence レンジ・
+resolution_modes・fallback_default_edges・staying_nodes）／optimization（solver・phase 時間・
+tau*・throughput・fallback・可達性・route_importance_nonzero・direction_proposals・boundary_controls）。
+
+にまとめる。履歴は数値のみで軽量。これを後述の `compare` で突き合わせると、コード変更前後の
+**数値ベースの回帰/改善追跡**ができる。
+
+### `compare` — 2 つの数値スナップショットを比較
+```sh
+# 変更前にスナップショットを取り、変更後にもう一度取って比較する
+uv run python -m devtools run-all --label before
+# （コード変更）
+uv run python -m devtools run-all --label after
+uv run python -m devtools compare before after
+```
+`base`/`against` は **ラベル / `latest` / ファイルパス** のいずれか。シナリオ単位で
+- 結果系（verdict・solver・tau*・throughput・OD・fallback）= **決定的**なので差分は回帰/改善を意味する
+- 性能系（phase1+phase2 ms と Δ%）= 壁時計のため目安
+
+を数値テーブルで出力する。結果系に差分があれば `CHANGED:<field>` と表示し、終了コード 1 を返す
+（CI での回帰検出に利用可）。
 
 ### `fuzz` — ランダムシナリオで不変条件を検証
 ```sh
@@ -86,7 +110,8 @@ uv run python -m devtools graph ./_devout/venue.yaml --out ./_devout   # 読み�
 | `pipeline.py` | 直列オーケストレーションハーネス（mode 判定・二相コミット） |
 | `visualize.py` | matplotlib による各モジュール結果の PNG 描画 |
 | `serialize.py` | ドメイン/結果 → JSON 変換 |
-| `report.py` | 1 実行分の JSON＋PNG 一括出力 |
+| `report.py` | 1 実行分の JSON＋PNG 一括出力、横断インデックス・履歴スナップショット |
+| `compare.py` | 2 つの数値スナップショットの比較（履歴ベースの回帰/改善追跡） |
 | `fuzzer.py` | ランダムシナリオ生成＋不変条件チェック |
 | `cli.py` / `__main__.py` | CLI エントリポイント |
 
