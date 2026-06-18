@@ -30,8 +30,16 @@ uv run python -m devtools run multi-route-surge --out ./_devout
 - `graph.json` / `detection.json` / `forecasting.json` / `detour.json` / `optimization.json` / `run.json`（検証ログ兼リプレイ素材）
 - `00_summary.png` … `04_optimization.png`（各モジュールの可視化）
 
-主なオプション: `--time-limit <秒>`（MILP）, `--seed <int>`（ソルバーseed上書き）,
-`--no-images`（PNG出力なし）, `--force`（未発火でも下流を実行）。
+`00_summary.png` は各モジュールの所要時間を**数値**で列挙する（Phase1/Phase2 内訳・合計付き）。
+主なオプション: `--time-limit <秒>`（MILP。未指定ならシナリオ設定値）, `--seed <int>`
+（ソルバーseed上書き）, `--no-images`（PNG出力なし）, `--force`（未発火でも下流を実行）。
+
+### `run-all` — 全シナリオを実行し横断インデックスを出力
+```sh
+uv run python -m devtools run-all --out ./_devout
+```
+全シナリオを `run` と同様に出力したうえで、`_devout/index.json` に各 run の要約
+（verdict・triggered・solver/phase 時間・tau*・throughput・reproduction_error）をまとめる。
 
 ### `fuzz` — ランダムシナリオで不変条件を検証
 ```sh
@@ -43,6 +51,7 @@ uv run python -m devtools fuzz --count 50 --seed 1 --out ./_devout
 - Forecasting（reproduction_error 有限・node_confidence∈[0,1]・OD 需要 ≥ 0）
 
 違反/例外のあるケースのみ `_devout/fuzz/fail/` に成果物を保存（`--save-all` で全件）。
+件数・内訳・各ケースの結果は違反有無に関わらず `_devout/fuzz/summary.json` に常時出力。
 `--graph <preset|file>` で対象グラフを固定（既定は毎回ランダムなプリセット）。
 
 ### `graph` — グラフを構築・描画／保存

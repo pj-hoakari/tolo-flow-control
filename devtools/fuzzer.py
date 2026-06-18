@@ -317,4 +317,6 @@ def run_fuzz(
                     case_dir / "error.json",
                 )
 
+    # 違反有無に関わらず、実行統計と全ケースの結果を残す（後から件数・内訳を追える）
+    dump_json({"summary": summary, "cases": outcomes}, out_dir / "summary.json")
     return summary, outcomes

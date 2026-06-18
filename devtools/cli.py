@@ -1,10 +1,11 @@
 """開発用 CLI
 
 サブコマンド:
-- ``list``  : シナリオ・グラフプリセットの一覧
-- ``run``   : シナリオ 1 件をパイプライン実行し、各モジュール結果を JSON＋PNG 出力
-- ``fuzz``  : ランダムシナリオを多数実行し不変条件を検証、違反ケースの成果物を保存
-- ``graph`` : グラフ（プリセット or ファイル）を構築・描画し、必要なら YAML/JSON へ保存
+- ``list``    : シナリオ・グラフプリセットの一覧
+- ``run``     : シナリオ 1 件をパイプライン実行し、各モジュール結果を JSON＋PNG 出力
+- ``run-all`` : 全シナリオを実行し、横断インデックス（index.json）を出力
+- ``fuzz``    : ランダムシナリオを多数実行し不変条件を検証、違反ケースの成果物を保存
+- ``graph``   : グラフ（プリセット or ファイル）を構築・描画し、必要なら YAML/JSON へ保存
 
 実行例: ``uv run python -m devtools run multi-route-surge --out ./_devout``
 """
@@ -71,6 +72,30 @@ def cmd_run(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_run_all(args: argparse.Namespace) -> int:
+    out_root = Path(args.out)
+    entries: list[dict[str, object]] = []
+    print(f"running {len(scenarios.SCENARIOS)} scenarios ...")
+    for name in scenarios.SCENARIOS:
+        scen = scenarios.get_scenario(name)
+        run = run_pipeline(scen, force=args.force, time_limit=args.time_limit)
+        report.dump_run(run, scen.built_graph, out_root / name, images=not args.no_images)
+        entries.append(report.run_summary(run))
+        det = run.detection
+        ostr = ""
+        if run.optimization is not None:
+            r = run.optimization.optimization_result
+            ostr = (
+                f" solver={r.solver_status.value}"
+                f" tau*={r.objective_values.tau_star:.3g}"
+                f" thru={r.objective_values.throughput:.3g}"
+            )
+        print(f"  {name:24s} {run.mode.value:6s} {det.verdict_hint.value:12s}{ostr}")
+    idx = report.write_index(out_root, entries)
+    print(f"wrote index: {idx}")
+    return 0
+
+
 def cmd_fuzz(args: argparse.Namespace) -> int:
     out = Path(args.out) / "fuzz"
     summary, outcomes = fuzzer.run_fuzz(
@@ -103,6 +128,7 @@ def cmd_fuzz(args: argparse.Namespace) -> int:
         print("不変条件違反・例外なし（全ケース pass）")
     if args.save_all:
         print(f"全ケースの成果物を {out}/case/ に保存しました")
+    print(f"summary: {out}/summary.json")
     return 1 if summary.failed else 0
 
 
@@ -147,6 +173,18 @@ def build_parser() -> argparse.ArgumentParser:
     p_run.add_argument("--no-images", action="store_true", help="PNG を出力しない")
     p_run.add_argument("--force", action="store_true", help="未発火でも下流を実行")
     p_run.set_defaults(func=cmd_run)
+
+    p_runall = sub.add_parser("run-all", help="全シナリオを実行し index.json を出力")
+    p_runall.add_argument("--out", default=_DEFAULT_OUT, help="出力ディレクトリ（既定: _devout）")
+    p_runall.add_argument(
+        "--time-limit",
+        type=float,
+        default=None,
+        help="MILP タイムアウト秒（未指定ならシナリオ設定値を使用）",
+    )
+    p_runall.add_argument("--no-images", action="store_true", help="PNG を出力しない")
+    p_runall.add_argument("--force", action="store_true", help="未発火でも下流を実行")
+    p_runall.set_defaults(func=cmd_run_all)
 
     p_fuzz = sub.add_parser("fuzz", help="ランダムシナリオで不変条件を検証")
     p_fuzz.add_argument("--graph", default=None, help="プリセット名/ファイル（既定: 毎回ランダム）")
