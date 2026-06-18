@@ -9,10 +9,54 @@ from pathlib import Path
 
 import pytest
 
-from devtools import graph_builder, scenarios
+from devtools import compare, graph_builder, scenarios
 from devtools.graph_builder import resolve_positions
 from devtools.pipeline import run_pipeline
 from devtools.serialize import to_jsonable
+
+
+def _index(scenario: str, *, tau: float, thru: float, p1: int, p2: int):
+    return {
+        "runs": [
+            {
+                "scenario": scenario,
+                "verdict": "TRIGGERED",
+                "forecast": {"od_pairs": 7},
+                "optimization": {
+                    "solver_status": "OPTIMAL",
+                    "phase1": {"ms": p1},
+                    "phase2": {"ms": p2},
+                    "tau_star": tau,
+                    "throughput": thru,
+                    "fallback_to_previous": False,
+                },
+            }
+        ]
+    }
+
+
+def test_compare_flags_result_change_and_computes_perf_delta() -> None:
+    base = _index("s", tau=0.333, thru=75.0, p1=3000, p2=7000)
+    against = _index("s", tau=0.333, thru=242.0, p1=3000, p2=3000)
+    rows = compare.compare(base, against)
+    assert len(rows) == 1
+    row = rows[0]
+    # 結果系（throughput）の変化を検出、tau* は不変
+    assert "thru" in row["result_changed"]
+    assert "tau*" not in row["result_changed"]
+    # 性能（phase1+phase2）の相対差: 10000 → 6000 = -40%
+    assert row["ms"] == (10000, 6000)
+    assert row["ms_delta_pct"] == pytest.approx(-40.0)
+    # 結果不変なら result_changed は空
+    same = compare.compare(base, base)
+    assert same[0]["result_changed"] == []
+
+
+def test_compare_marks_added_and_removed() -> None:
+    base = _index("a", tau=0.0, thru=0.0, p1=1, p2=1)
+    against = _index("b", tau=0.0, thru=0.0, p1=1, p2=1)
+    presences = {r["scenario"]: r["presence"] for r in compare.compare(base, against)}
+    assert presences == {"a": "REMOVED", "b": "ADDED"}
 
 
 def test_graph_roundtrip_json_and_yaml(tmp_path: Path) -> None:

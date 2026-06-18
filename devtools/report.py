@@ -19,7 +19,12 @@ from .serialize import dump_json
 def run_summary(
     run: PipelineRun, invariants: list[str] | None = None
 ) -> dict[str, Any]:
-    """1 実行の要約 dict（run.json／横断インデックスの双方で使う）"""
+    """1 実行の数値要約 dict（run.json／横断インデックス／compare の共通ソース）
+
+    個別モジュール JSON を開かずとも `index.json` 1 ファイルで解析が完結するよう、
+    分析でよく使う派生指標（信頼度レンジ・OD 解像度モード・フォールバックエッジ・
+    重要度リスト・方向提案分布・境界制御・evidence 種別）まで畳み込んで持たせる。
+    """
     det = run.detection
     summary: dict[str, Any] = {
         "scenario": run.scenario_name,
@@ -28,14 +33,24 @@ def run_summary(
         "downstream_ran": run.downstream_ran,
         "triggered_edges": [e.value for e in det.triggered_edges],
         "triggered_nodes": [n.value for n in det.triggered_nodes],
+        "evidence_kinds": _counts(type(ev).__name__ for ev in det.evidences),
         "timings_ms": {k: round(v, 2) for k, v in run.timings_ms.items()},
         "notes": run.notes,
         "invariants": invariants or [],
     }
     if run.forecast is not None:
+        fc = run.forecast
+        confs = [c.confidence for c in fc.node_confidence]
         summary["forecast"] = {
-            "od_pairs": len(run.forecast.od_matrix),
-            "reproduction_error": run.forecast.reproduction_error,
+            "od_pairs": len(fc.od_matrix),
+            "reproduction_error": fc.reproduction_error,
+            "node_confidence_min": min(confs) if confs else None,
+            "node_confidence_max": max(confs) if confs else None,
+            "resolution_modes": sorted({r.mode.value for r in fc.estimation_resolution}),
+            "fallback_default_edges": [
+                e.value for e in fc.fallback_usage.used_default_edges
+            ],
+            "staying_nodes": [d.node_id.value for d in fc.node_demand if d.staying > 0.0],
         }
     if run.optimization is not None:
         res = run.optimization.optimization_result
@@ -51,8 +66,27 @@ def run_summary(
             "local_reachability": cr.local_reachability_satisfied,
             "boundary_reachability": cr.boundary_reachability_satisfied,
             "legal_fixed_violations": [e.value for e in cr.legal_fixed_violations],
+            "route_importance_nonzero": [
+                [r.edge_id.value, r.direction.value, round(r.importance, 4)]
+                for r in res.route_importance
+                if r.importance > 1e-9
+            ],
+            "direction_proposals": _counts(
+                dp.proposed_direction.value for dp in res.direction_proposal
+            ),
+            "boundary_controls": [
+                [bc.node_id.value, bc.action.value] for bc in res.boundary_control
+            ],
         }
     return summary
+
+
+def _counts(values: Any) -> dict[str, int]:
+    """イテラブルの出現回数を {キー: 件数} に畳む（決定的に key ソート）"""
+    out: dict[str, int] = {}
+    for v in values:
+        out[v] = out.get(v, 0) + 1
+    return {k: out[k] for k in sorted(out)}
 
 
 def dump_run(
@@ -89,9 +123,45 @@ def dump_run(
     return written
 
 
-def write_index(out_dir: Path, entries: list[dict[str, Any]]) -> Path:
-    """複数 run の横断インデックス（index.json）を書き出す"""
+def build_index(
+    entries: list[dict[str, Any]],
+    *,
+    label: str | None = None,
+    created_at: str | None = None,
+) -> dict[str, Any]:
+    return {
+        "label": label,
+        "created_at": created_at,
+        "count": len(entries),
+        "runs": entries,
+    }
+
+
+def write_index(
+    out_dir: Path,
+    entries: list[dict[str, Any]],
+    *,
+    label: str | None = None,
+    created_at: str | None = None,
+) -> Path:
+    """複数 run の横断インデックス（最新版 index.json）を書き出す"""
     out_dir.mkdir(parents=True, exist_ok=True)
     path = out_dir / "index.json"
-    dump_json({"count": len(entries), "runs": entries}, path)
+    dump_json(build_index(entries, label=label, created_at=created_at), path)
+    return path
+
+
+def save_history_snapshot(
+    out_dir: Path,
+    entries: list[dict[str, Any]],
+    *,
+    label: str,
+    created_at: str | None = None,
+) -> Path:
+    """数値スナップショットを履歴として保存（`_devout/history/<label>/index.json`）
+
+    画像や個別モジュール JSON は残さず、比較に使う数値要約のみを保持する。
+    """
+    path = out_dir / "history" / label / "index.json"
+    dump_json(build_index(entries, label=label, created_at=created_at), path)
     return path
