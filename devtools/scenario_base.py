@@ -76,6 +76,25 @@ def default_configs() -> PipelineConfigs:
     )
 
 
+def compact_configs(
+    *, delta_min: float = 8.0, milp_time_limit_sec: float = 8.0
+) -> PipelineConfigs:
+    """コモディティ数が多くなりがちなグラフ向けの設定
+
+    OD 量カット ``delta_min`` を上げて支配的な需要のみ残し（Phase2 の MILP を軽くする）、
+    MILP 時間上限も短縮して開発用途で実用的な応答にする。``make_scenario`` の既定。
+    """
+    base = default_configs()
+    return replace(
+        base,
+        optimization=replace(
+            base.optimization,
+            delta_min=delta_min,
+            milp_time_limit_sec=milp_time_limit_sec,
+        ),
+    )
+
+
 @dataclass(frozen=True)
 class Scenario:
     name: str
@@ -127,7 +146,7 @@ def make_scenario(
         previous_state=previous_state if previous_state is not None else DetectionState(),
         events=events,
         server_time=server_time,
-        configs=configs if configs is not None else default_configs(),
+        configs=configs if configs is not None else compact_configs(),
         previous_opt_result=previous_opt_result,
         expect_trigger=expect_trigger,
     )

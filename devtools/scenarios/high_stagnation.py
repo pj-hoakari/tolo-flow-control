@@ -22,7 +22,11 @@ def build() -> Scenario:
     built = graph_builder.venue()
     hot = EdgeID("e_hallA_j2")
     obs, hist = build_observations_and_history(
-        built.graph, stagnation_edges=frozenset({hot})
+        built.graph,
+        stagnation_edges=frozenset({hot}),
+        occupancy=30.0,
+        occupancy_delta=10.0,
+        eta=0.02,
     )
     # M 分継続を満たすため、前サイクルで両条件成立・計時開始済みの watch を与える
     prev = DetectionState(

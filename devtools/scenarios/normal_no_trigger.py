@@ -16,6 +16,9 @@ def build() -> Scenario:
         base_stag=2.0,
         recent_stag_ma=2.0,
         p90_stag=8.0,
+        occupancy=30.0,
+        occupancy_delta=10.0,
+        eta=0.02,
     )
     return make_scenario(
         "normal-no-trigger",

@@ -2,8 +2,6 @@
 
 from __future__ import annotations
 
-from dataclasses import replace
-
 from flow_control.detection.triggers import Event
 from flow_control.domain import EdgeID, NodeID
 
@@ -12,7 +10,7 @@ from ..scenario_base import (
     PipelineConfigs,
     Scenario,
     build_observations_and_history,
-    default_configs,
+    compact_configs,
     make_scenario,
     with_node_danger,
 )
@@ -26,17 +24,10 @@ EXPO_LOOP_EDGES = frozenset(
 def expo_configs() -> PipelineConfigs:
     """expo（大規模）向け設定
 
-    単一アクセス通路に全ホール需要が集中し、コモディティ数が多いほど Phase2
-    （スループット最大化）の MILP が重くなる。OD 量カット ``delta_min`` を上げて支配的な
-    需要のみ残し、併せて MILP 時間上限を短くして開発用途で実用的な応答にする。
+    単一アクセス通路に全ホール需要が集中しコモディティ数が多いため、OD 量カット
+    ``delta_min`` を venue 系よりさらに上げて Phase2 の MILP を軽くする。
     """
-    base = default_configs()
-    return replace(
-        base,
-        optimization=replace(
-            base.optimization, delta_min=12.0, milp_time_limit_sec=8.0
-        ),
-    )
+    return compact_configs(delta_min=12.0, milp_time_limit_sec=8.0)
 
 
 def make_expo_scenario(

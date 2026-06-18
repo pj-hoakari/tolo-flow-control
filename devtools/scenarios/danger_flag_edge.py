@@ -18,7 +18,9 @@ from ._registry import register
 @register("danger-flag-edge")
 def build() -> Scenario:
     built = with_edge_danger(graph_builder.venue(), "e_j1_hallB", capacity=5.0)
-    obs, hist = build_observations_and_history(built.graph)
+    obs, hist = build_observations_and_history(
+        built.graph, occupancy=30.0, occupancy_delta=10.0, eta=0.02
+    )
     return make_scenario(
         "danger-flag-edge",
         "e_j1_hallB に危険フラグ立ち上げ。エッジ容量上限が MILP に反映される",
