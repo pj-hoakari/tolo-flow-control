@@ -14,6 +14,9 @@ dependencies = [
 dev = [
     "basedpyright>=1.39.7",
     "pytest>=8.0",
+    # devtoolsの依存
+    "matplotlib>=3.9",
+    "pyyaml>=6.0",
 ]
 
 [build-system]
@@ -25,16 +28,16 @@ packages = ["src/flow_control"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
-pythonpath = ["src"]
+pythonpath = ["src", "."]
 
 [tool.basedpyright]
-include = ["src", "tests", "main.py"]
+include = ["src", "tests", "main.py", "devtools"]
 
 extraPaths = ["src"]
 
 [[tool.basedpyright.executionEnvironments]]
 root = "tests"
-extraPaths = ["src"]
+extraPaths = ["src", "."]
 reportUnknownParameterType = false
 reportUnknownVariableType = false
 reportUnknownArgumentType = false
@@ -42,3 +45,23 @@ reportUnknownMemberType = false
 reportMissingParameterType = false
 # テストは内部ヘルパーをホワイトボックス検証で利用する
 reportPrivateUsage = false
+
+[[tool.basedpyright.executionEnvironments]]
+root = "devtools"
+extraPaths = ["src"]
+# matplotlib / networkx / yaml は型スタブを提供せず Any 由来の警告が多発するため緩和する
+reportUnknownParameterType = false
+reportUnknownVariableType = false
+reportUnknownArgumentType = false
+reportUnknownMemberType = false
+reportUnknownLambdaType = false
+reportMissingParameterType = false
+reportMissingTypeStubs = false
+reportMissingModuleSource = false
+reportAny = false
+reportExplicitAny = false
+reportUnusedCallResult = false
+# devtools はパッケージ内ヘルパーを相互利用し、開発用途のため文体は緩める
+reportPrivateUsage = false
+reportImplicitStringConcatenation = false
+reportCallInDefaultInitializer = false
