@@ -1,0 +1,765 @@
+"""各モジュール結果の可視化（matplotlib + networkx レイアウト、静的 PNG）
+
+ベースとなるグラフ骨格（ノード種別・境界・危険フラグ・エッジ方向・スカラー破線）を描き、
+その上に各モジュール（Detection / Forecasting / DetourRouting / Optimization）の結果を
+オーバーレイして PNG として保存する。Agg バックエンドで headless かつ決定的。
+"""
+
+from __future__ import annotations
+
+from pathlib import Path
+from typing import Any
+
+import matplotlib
+
+matplotlib.use("Agg")
+
+import matplotlib.pyplot as plt  # noqa: E402
+from matplotlib.cm import ScalarMappable  # noqa: E402
+from matplotlib.colors import Normalize  # noqa: E402
+
+from flow_control.domain import (  # noqa: E402
+    CurrentDirection,
+    Edge,
+    Graph,
+    NodeKind,
+    ObservationType,
+)
+
+from .graph_builder import BuiltGraph, Position, resolve_positions  # noqa: E402
+from .pipeline import PipelineRun  # noqa: E402
+
+_KIND_COLOR = {
+    NodeKind.GOAL: "#7bc96f",
+    NodeKind.GOAL_TRANSIT_MIXED: "#f2a154",
+    NodeKind.TRANSIT_ONLY: "#9ecbe8",
+}
+_TRIGGER_COLOR = "#d62728"
+_NODE_SIZE = 700.0
+
+
+# --- 低水準ヘルパー ---------------------------------------------------------
+
+
+def _limits(
+    pos: dict[str, Position],
+) -> tuple[tuple[float, float], tuple[float, float]]:
+    xs = [p[0] for p in pos.values()] or [0.0]
+    ys = [p[1] for p in pos.values()] or [0.0]
+    mx = max(0.6, (max(xs) - min(xs)) * 0.18 + 0.4)
+    my = max(0.6, (max(ys) - min(ys)) * 0.18 + 0.4)
+    return (min(xs) - mx, max(xs) + mx), (min(ys) - my, max(ys) + my)
+
+
+def _setup_ax(ax: Any, pos: dict[str, Position], title: str) -> None:
+    (xlo, xhi), (ylo, yhi) = _limits(pos)
+    ax.set_xlim(xlo, xhi)
+    ax.set_ylim(ylo, yhi)
+    ax.set_aspect("equal")
+    ax.axis("off")
+    ax.set_title(title, fontsize=12)
+
+
+def _arrow(
+    ax: Any,
+    pa: Position,
+    pb: Position,
+    *,
+    color: Any,
+    width: float = 2.0,
+    rad: float = 0.0,
+    alpha: float = 1.0,
+    zorder: int = 3,
+) -> None:
+    ax.annotate(
+        "",
+        xy=pb,
+        xytext=pa,
+        zorder=zorder,
+        arrowprops=dict(
+            arrowstyle="-|>",
+            color=color,
+            lw=width,
+            alpha=alpha,
+            shrinkA=16,
+            shrinkB=16,
+            connectionstyle=f"arc3,rad={rad}",
+        ),
+    )
+
+
+def _edge_endpoints(pos: dict[str, Position], edge: Edge) -> tuple[Position, Position]:
+    return pos[edge.endpoint_a.value], pos[edge.endpoint_b.value]
+
+
+def draw_base(
+    ax: Any,
+    graph: Graph,
+    pos: dict[str, Position],
+    *,
+    title: str = "",
+    edge_alpha: float = 1.0,
+    show_edge_labels: bool = True,
+    show_direction: bool = True,
+) -> None:
+    """グラフ骨格を描く（ノード種別・境界・危険フラグ、エッジ方向・スカラー破線）"""
+    _setup_ax(ax, pos, title)
+
+    for edge in graph.edges:
+        pa, pb = _edge_endpoints(pos, edge)
+        enabled = edge.enabled
+        color = "#888888" if enabled else "#dddddd"
+        ls = ":" if edge.observation_type == ObservationType.SCALAR else "-"
+        ax.plot(
+            [pa[0], pb[0]],
+            [pa[1], pb[1]],
+            color=color,
+            lw=2.0,
+            ls=ls,
+            alpha=edge_alpha,
+            zorder=1,
+            solid_capstyle="round",
+        )
+        if show_direction and enabled:
+            cd = edge.current_direction
+            if cd == CurrentDirection.A_TO_B:
+                _arrow(ax, pa, pb, color=color, width=1.4, alpha=0.7, zorder=2)
+            elif cd == CurrentDirection.B_TO_A:
+                _arrow(ax, pb, pa, color=color, width=1.4, alpha=0.7, zorder=2)
+        if show_edge_labels:
+            mid = ((pa[0] + pb[0]) / 2.0, (pa[1] + pb[1]) / 2.0)
+            ax.annotate(
+                edge.edge_id.value,
+                mid,
+                fontsize=7,
+                color="#444444",
+                ha="center",
+                va="center",
+                bbox=dict(boxstyle="round,pad=0.15", fc="white", ec="none", alpha=0.6),
+                zorder=2,
+            )
+
+    for node in graph.nodes:
+        p = pos[node.node_id.value]
+        face = _KIND_COLOR.get(node.kind, "#cccccc") if node.enabled else "#dddddd"
+        if node.danger_flag:
+            edgecolor, lw = _TRIGGER_COLOR, 3.0
+        elif node.is_boundary:
+            edgecolor, lw = "#111111", 2.6
+        else:
+            edgecolor, lw = "#555555", 1.0
+        ax.scatter(
+            [p[0]],
+            [p[1]],
+            s=_NODE_SIZE,
+            c=[face],
+            edgecolors=edgecolor,
+            linewidths=lw,
+            zorder=5,
+        )
+        ax.annotate(
+            node.node_id.value,
+            p,
+            fontsize=8,
+            ha="center",
+            va="center",
+            zorder=6,
+        )
+
+
+def _highlight_edges(
+    ax: Any,
+    graph: Graph,
+    pos: dict[str, Position],
+    edge_ids: set[str],
+    *,
+    color: str,
+    width: float = 5.0,
+    alpha: float = 0.9,
+) -> None:
+    for edge in graph.edges:
+        if edge.edge_id.value not in edge_ids:
+            continue
+        pa, pb = _edge_endpoints(pos, edge)
+        ax.plot(
+            [pa[0], pb[0]],
+            [pa[1], pb[1]],
+            color=color,
+            lw=width,
+            alpha=alpha,
+            zorder=3,
+            solid_capstyle="round",
+        )
+
+
+def _highlight_nodes(
+    ax: Any,
+    pos: dict[str, Position],
+    node_ids: set[str],
+    *,
+    color: str,
+) -> None:
+    for nid in node_ids:
+        if nid not in pos:
+            continue
+        p = pos[nid]
+        ax.scatter(
+            [p[0]],
+            [p[1]],
+            s=_NODE_SIZE + 600.0,
+            facecolors="none",
+            edgecolors=color,
+            linewidths=3.0,
+            zorder=7,
+        )
+
+
+def _save(fig: Any, path: Path) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    fig.savefig(path, dpi=120, bbox_inches="tight")
+    plt.close(fig)
+
+
+def _kind_legend_handles() -> list[Any]:
+    from matplotlib.lines import Line2D
+
+    handles = [
+        Line2D(
+            [0],
+            [0],
+            marker="o",
+            color="w",
+            markerfacecolor=c,
+            markersize=10,
+            markeredgecolor="#555555",
+            label=k.value,
+        )
+        for k, c in _KIND_COLOR.items()
+    ]
+    handles.append(
+        Line2D(
+            [0],
+            [0],
+            marker="o",
+            color="w",
+            markerfacecolor="white",
+            markersize=10,
+            markeredgecolor="#111111",
+            markeredgewidth=2.4,
+            label="boundary",
+        )
+    )
+    handles.append(
+        Line2D(
+            [0],
+            [0],
+            marker="o",
+            color="w",
+            markerfacecolor="white",
+            markersize=10,
+            markeredgecolor=_TRIGGER_COLOR,
+            markeredgewidth=2.4,
+            label="danger_flag",
+        )
+    )
+    return handles
+
+
+# --- グラフのみ -------------------------------------------------------------
+
+
+def render_graph(built: BuiltGraph, path: Path, *, title: str = "graph") -> None:
+    pos = resolve_positions(built)
+    fig, ax = plt.subplots(figsize=(9, 7))
+    draw_base(ax, built.graph, pos, title=title)
+    ax.legend(
+        handles=_kind_legend_handles(), loc="upper right", fontsize=8, framealpha=0.9
+    )
+    _save(fig, path)
+
+
+# --- Detection --------------------------------------------------------------
+
+
+def render_detection(run: PipelineRun, built: BuiltGraph, path: Path) -> None:
+    pos = resolve_positions(built)
+    det = run.detection
+    fig, ax = plt.subplots(figsize=(9, 7))
+    draw_base(
+        ax, built.graph, pos, title=f"Detection — verdict={det.verdict_hint.value}"
+    )
+    _highlight_edges(
+        ax,
+        built.graph,
+        pos,
+        {e.value for e in det.triggered_edges},
+        color=_TRIGGER_COLOR,
+    )
+    _highlight_nodes(
+        ax, pos, {n.value for n in det.triggered_nodes}, color=_TRIGGER_COLOR
+    )
+
+    lines = [f"mode = {run.mode.value}", f"verdict = {det.verdict_hint.value}"]
+    if det.triggered_edges:
+        lines.append(
+            "triggered edges: " + ", ".join(e.value for e in det.triggered_edges)
+        )
+    if det.triggered_nodes:
+        lines.append(
+            "triggered nodes: " + ", ".join(n.value for n in det.triggered_nodes)
+        )
+    for ev in det.evidences[:6]:
+        lines.append(f"· {type(ev).__name__}")
+    ax.text(
+        0.01,
+        0.99,
+        "\n".join(lines),
+        transform=ax.transAxes,
+        fontsize=8,
+        va="top",
+        ha="left",
+        family="monospace",
+        bbox=dict(boxstyle="round", fc="#fff8f0", ec="#d62728", alpha=0.9),
+    )
+    _save(fig, path)
+
+
+# --- Forecasting ------------------------------------------------------------
+
+
+def render_forecasting(run: PipelineRun, built: BuiltGraph, path: Path) -> None:
+    if run.forecast is None:
+        return
+    pos = resolve_positions(built)
+    fc = run.forecast
+    graph = built.graph
+    fig, axes = plt.subplots(2, 2, figsize=(16, 13))
+
+    # (1) 点需要: マーカーサイズ ∝ gross_in+gross_out、色 ∝ 滞在量
+    ax = axes[0][0]
+    draw_base(
+        ax,
+        graph,
+        pos,
+        title="Forecasting — node demand (size∝gross, color∝staying)",
+        show_edge_labels=False,
+        edge_alpha=0.5,
+    )
+    demand_by = {d.node_id.value: d for d in fc.node_demand}
+    stays = [d.staying for d in fc.node_demand] or [0.0]
+    norm = Normalize(vmin=min(stays), vmax=max(max(stays), 1e-6))
+    cmap = plt.get_cmap("YlOrRd")
+    for node in graph.nodes:
+        d = demand_by.get(node.node_id.value)
+        if d is None:
+            continue
+        p = pos[node.node_id.value]
+        size = 300.0 + (d.gross_in + d.gross_out) * 12.0
+        ax.scatter(
+            [p[0]],
+            [p[1]],
+            s=size,
+            c=[cmap(norm(d.staying))],
+            edgecolors="#333333",
+            linewidths=1.2,
+            zorder=8,
+        )
+        ax.annotate(
+            f"in {d.gross_in:.0f}/out {d.gross_out:.0f}\nstay {d.staying:.0f}",
+            (p[0], p[1]),
+            fontsize=6,
+            ha="center",
+            va="center",
+            zorder=9,
+        )
+    fig.colorbar(
+        ScalarMappable(norm=norm, cmap=cmap), ax=ax, fraction=0.046, label="staying"
+    )
+
+    # (2) OD フロー: origin→destination の曲線矢印、太さ ∝ demand
+    ax = axes[0][1]
+    draw_base(
+        ax,
+        graph,
+        pos,
+        title="Forecasting — OD demand (arrow width∝demand)",
+        show_edge_labels=False,
+        edge_alpha=0.4,
+        show_direction=False,
+    )
+    od = fc.od_matrix
+    dmax = max((o.demand for o in od), default=1.0)
+    for o in od:
+        if o.origin.value not in pos or o.destination.value not in pos:
+            continue
+        _arrow(
+            ax,
+            pos[o.origin.value],
+            pos[o.destination.value],
+            color="#1f77b4",
+            width=1.0 + 5.0 * o.demand / dmax,
+            rad=0.2,
+            alpha=0.8,
+            zorder=4,
+        )
+        mid = (
+            (pos[o.origin.value][0] + pos[o.destination.value][0]) / 2.0,
+            (pos[o.origin.value][1] + pos[o.destination.value][1]) / 2.0,
+        )
+        ax.annotate(f"{o.demand:.0f}", mid, fontsize=7, color="#1f77b4", zorder=5)
+    if not od:
+        ax.text(
+            0.5,
+            0.5,
+            "OD matrix empty",
+            transform=ax.transAxes,
+            ha="center",
+            fontsize=11,
+            color="#888",
+        )
+
+    # (3) フロー感度 η: エッジ色
+    ax = axes[1][0]
+    draw_base(
+        ax,
+        graph,
+        pos,
+        title="Forecasting — arc flow sensitivity η",
+        show_edge_labels=False,
+        edge_alpha=0.25,
+        show_direction=False,
+    )
+    eta_by = {a.edge_id.value: a.eta for a in fc.arc_flow_sensitivity}
+    etas = list(eta_by.values()) or [0.0]
+    enorm = Normalize(vmin=min(etas), vmax=max(max(etas), 1e-6))
+    ecmap = plt.get_cmap("viridis")
+    for edge in graph.edges:
+        if edge.edge_id.value not in eta_by:
+            continue
+        pa, pb = _edge_endpoints(pos, edge)
+        ax.plot(
+            [pa[0], pb[0]],
+            [pa[1], pb[1]],
+            color=ecmap(enorm(eta_by[edge.edge_id.value])),
+            lw=5.0,
+            zorder=3,
+            solid_capstyle="round",
+        )
+    fig.colorbar(
+        ScalarMappable(norm=enorm, cmap=ecmap), ax=ax, fraction=0.046, label="η"
+    )
+
+    # (4) ノード信頼度
+    ax = axes[1][1]
+    draw_base(
+        ax,
+        graph,
+        pos,
+        title="Forecasting — node confidence",
+        show_edge_labels=False,
+        edge_alpha=0.3,
+        show_direction=False,
+    )
+    conf_by = {c.node_id.value: c.confidence for c in fc.node_confidence}
+    cnorm = Normalize(vmin=0.0, vmax=1.0)
+    ccmap = plt.get_cmap("RdYlGn")
+    for node in graph.nodes:
+        if node.node_id.value not in conf_by:
+            continue
+        p = pos[node.node_id.value]
+        ax.scatter(
+            [p[0]],
+            [p[1]],
+            s=_NODE_SIZE,
+            c=[ccmap(cnorm(conf_by[node.node_id.value]))],
+            edgecolors="#333",
+            linewidths=1.2,
+            zorder=8,
+        )
+        ax.annotate(
+            f"{conf_by[node.node_id.value]:.2f}",
+            p,
+            fontsize=7,
+            ha="center",
+            va="center",
+            zorder=9,
+        )
+    fig.colorbar(
+        ScalarMappable(norm=cnorm, cmap=ccmap),
+        ax=ax,
+        fraction=0.046,
+        label="confidence",
+    )
+
+    fig.suptitle(
+        f"Forecasting (reproduction_error={fc.reproduction_error:.4g})", fontsize=13
+    )
+    _save(fig, path)
+
+
+# --- DetourRouting ----------------------------------------------------------
+
+
+def render_detour(run: PipelineRun, built: BuiltGraph, path: Path) -> None:
+    if run.detour is None:
+        return
+    pos = resolve_positions(built)
+    graph = built.graph
+    sets = run.detour.detour_sets
+    if not sets:
+        fig, ax = plt.subplots(figsize=(9, 7))
+        draw_base(ax, graph, pos, title="DetourRouting — no detour sets")
+        _save(fig, path)
+        return
+
+    n = len(sets)
+    cols = min(2, n)
+    rows = (n + cols - 1) // cols
+    fig, axes = plt.subplots(rows, cols, figsize=(8 * cols, 6 * rows), squeeze=False)
+    palette = ["#1f77b4", "#2ca02c", "#9467bd", "#8c564b", "#e377c2"]
+    for idx, ds in enumerate(sets):
+        ax = axes[idx // cols][idx % cols]
+        draw_base(
+            ax,
+            graph,
+            pos,
+            title=f"Detour origin={ds.origin_edge.value} (k_eff={ds.k_effective})",
+            edge_alpha=0.3,
+            show_edge_labels=False,
+            show_direction=False,
+        )
+        _highlight_edges(
+            ax, graph, pos, {ds.origin_edge.value}, color=_TRIGGER_COLOR, width=6.0
+        )
+        for pi, p in enumerate(ds.paths):
+            color = palette[pi % len(palette)]
+            label = (
+                "direct"
+                if p.contains_trigger
+                else f"detour{pi} (len {p.total_length:.1f})"
+            )
+            _highlight_edges(
+                ax,
+                graph,
+                pos,
+                {e.value for e in p.edge_ids},
+                color=color,
+                width=3.0 - 0.0 * pi,
+                alpha=0.7,
+            )
+            ax.plot([], [], color=color, lw=3.0, label=label)
+        ax.legend(loc="upper right", fontsize=7, framealpha=0.9)
+    for j in range(n, rows * cols):
+        axes[j // cols][j % cols].axis("off")
+    _save(fig, path)
+
+
+# --- Optimization -----------------------------------------------------------
+
+_IMP_DIR_ARROW = {"A_TO_B": 1, "B_TO_A": -1, "NONE": 0}
+
+
+def render_optimization(run: PipelineRun, built: BuiltGraph, path: Path) -> None:
+    if run.optimization is None:
+        return
+    pos = resolve_positions(built)
+    graph = built.graph
+    opt = run.optimization
+    res = opt.optimization_result
+    stats = opt.solver_stats
+    fig, axes = plt.subplots(1, 2, figsize=(18, 8))
+
+    # (1) ルート重要度: エッジ色・太さ ∝ importance、方向矢印
+    ax = axes[0]
+    draw_base(
+        ax,
+        graph,
+        pos,
+        title="Optimization — route importance + direction",
+        edge_alpha=0.2,
+        show_edge_labels=True,
+        show_direction=False,
+    )
+    imp_by = {(r.edge_id.value): r for r in res.route_importance}
+    norm = Normalize(vmin=0.0, vmax=1.0)
+    cmap = plt.get_cmap("plasma")
+    for edge in graph.edges:
+        r = imp_by.get(edge.edge_id.value)
+        if r is None:
+            continue
+        pa, pb = _edge_endpoints(pos, edge)
+        col = cmap(norm(r.importance))
+        ax.plot(
+            [pa[0], pb[0]],
+            [pa[1], pb[1]],
+            color=col,
+            lw=1.5 + 6.0 * r.importance,
+            zorder=3,
+            solid_capstyle="round",
+            alpha=0.9,
+        )
+        d = _IMP_DIR_ARROW.get(r.direction.value, 0)
+        if d == 1:
+            _arrow(ax, pa, pb, color=col, width=1.6, alpha=0.9, zorder=4)
+        elif d == -1:
+            _arrow(ax, pb, pa, color=col, width=1.6, alpha=0.9, zorder=4)
+    fig.colorbar(
+        ScalarMappable(norm=norm, cmap=cmap), ax=ax, fraction=0.046, label="importance"
+    )
+
+    # (2) 方向属性提案 + 境界制御
+    ax = axes[1]
+    draw_base(
+        ax,
+        graph,
+        pos,
+        title="Optimization — direction proposal + boundary control",
+        edge_alpha=0.25,
+        show_edge_labels=True,
+        show_direction=False,
+    )
+    edge_by = {e.edge_id.value: e for e in graph.edges}
+    for dp in res.direction_proposal:
+        edge = edge_by.get(dp.edge_id.value)
+        if edge is None:
+            continue
+        pa, pb = _edge_endpoints(pos, edge)
+        pd = dp.proposed_direction.value
+        if pd == "A_TO_B":
+            _arrow(ax, pa, pb, color="#2ca02c", width=2.4, zorder=4)
+        elif pd == "B_TO_A":
+            _arrow(ax, pb, pa, color="#2ca02c", width=2.4, zorder=4)
+        else:  # BIDIRECTIONAL
+            _arrow(ax, pa, pb, color="#1f77b4", width=1.8, rad=0.12, zorder=4)
+            _arrow(ax, pb, pa, color="#1f77b4", width=1.8, rad=0.12, zorder=4)
+    _BND_LABEL = {
+        "PAUSE_INGRESS": "PAUSE-IN",
+        "PAUSE_EGRESS": "PAUSE-OUT",
+        "RESUME": "RESUME",
+    }
+    for bc in res.boundary_control:
+        if bc.node_id.value not in pos:
+            continue
+        p = pos[bc.node_id.value]
+        _highlight_nodes(ax, pos, {bc.node_id.value}, color="#d62728")
+        ax.annotate(
+            _BND_LABEL.get(bc.action.value, bc.action.value),
+            (p[0], p[1] + 0.25),
+            fontsize=8,
+            color="#d62728",
+            ha="center",
+            zorder=10,
+        )
+
+    info = [
+        f"solver_status = {res.solver_status.value}",
+        f"phase1 = {stats.phase1_status.value} ({stats.phase1_ms} ms)",
+        f"phase2 = {stats.phase2_status.value} ({stats.phase2_ms} ms)",
+        f"tau* = {res.objective_values.tau_star:.4g}",
+        f"throughput = {res.objective_values.throughput:.4g}",
+        f"fallback_to_previous = {opt.constraint_report.fallback_to_previous}",
+        f"local_reachability = {opt.constraint_report.local_reachability_satisfied}",
+        f"boundary_reachability = {opt.constraint_report.boundary_reachability_satisfied}",
+    ]
+    ax.text(
+        0.01,
+        0.99,
+        "\n".join(info),
+        transform=ax.transAxes,
+        fontsize=8,
+        va="top",
+        ha="left",
+        family="monospace",
+        bbox=dict(boxstyle="round", fc="#f3f0ff", ec="#6a3d9a", alpha=0.9),
+    )
+    _save(fig, path)
+
+
+# --- サマリ -----------------------------------------------------------------
+
+
+def render_summary(
+    run: PipelineRun, path: Path, *, invariants: list[str] | None = None
+) -> None:
+    fig, (ax_t, ax_b) = plt.subplots(1, 2, figsize=(15, 6))
+
+    steps = list(run.timings_ms.keys())
+    vals = [run.timings_ms[s] for s in steps]
+    ax_b.barh(steps, vals, color="#4c78a8")
+    ax_b.set_xlabel("ms")
+    ax_b.set_title("step timing")
+    ax_b.invert_yaxis()
+
+    ax_t.axis("off")
+    lines = [
+        f"scenario : {run.scenario_name}",
+        f"mode     : {run.mode.value}",
+        f"verdict  : {run.detection.verdict_hint.value}",
+        f"downstream ran : {run.downstream_ran}",
+    ]
+    if run.optimization is not None:
+        res = run.optimization.optimization_result
+        lines += [
+            "",
+            f"solver   : {res.solver_status.value}",
+            f"tau*     : {res.objective_values.tau_star:.4g}",
+            f"thruput  : {res.objective_values.throughput:.4g}",
+            f"fallback : {run.optimization.constraint_report.fallback_to_previous}",
+        ]
+    if run.forecast is not None:
+        lines.append(f"OD pairs : {len(run.forecast.od_matrix)}")
+    for note in run.notes:
+        lines.append(f"note: {note}")
+    if invariants:
+        lines.append("")
+        lines.append("invariants:")
+        lines += [f"  {iv}" for iv in invariants]
+    ax_t.text(
+        0.0,
+        1.0,
+        "\n".join(lines),
+        transform=ax_t.transAxes,
+        fontsize=10,
+        va="top",
+        ha="left",
+        family="monospace",
+    )
+    ax_t.set_title("summary")
+    _save(fig, path)
+
+
+# --- まとめて出力 -----------------------------------------------------------
+
+
+def render_all(
+    run: PipelineRun,
+    built: BuiltGraph,
+    out_dir: Path,
+    *,
+    invariants: list[str] | None = None,
+) -> list[Path]:
+    """1 回の実行について各モジュールの図を出力し、生成したパスのリストを返す"""
+    out_dir.mkdir(parents=True, exist_ok=True)
+    written: list[Path] = []
+
+    p = out_dir / "01_detection.png"
+    render_detection(run, built, p)
+    written.append(p)
+
+    if run.forecast is not None:
+        p = out_dir / "02_forecasting.png"
+        render_forecasting(run, built, p)
+        written.append(p)
+    if run.detour is not None:
+        p = out_dir / "03_detour.png"
+        render_detour(run, built, p)
+        written.append(p)
+    if run.optimization is not None:
+        p = out_dir / "04_optimization.png"
+        render_optimization(run, built, p)
+        written.append(p)
+
+    p = out_dir / "00_summary.png"
+    render_summary(run, p, invariants=invariants)
+    written.append(p)
+    return written
