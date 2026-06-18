@@ -391,6 +391,32 @@ def expo() -> BuiltGraph:
     return b.build()
 
 
+def crossing() -> BuiltGraph:
+    """2 ハブ間を結ぶ主通路＋並行バイパス 2 本（迂回提案が映える現実的レイアウト）
+
+    - 入退出点 ``in`` / ``out``、ハブ ``hub_w`` / ``hub_e``（``hub_e`` は目的地＝混在ホール）
+    - ``e_main``: hub_w↔hub_e の主通路。容量ヒント小（混雑しやすい想定）
+    - 北バイパス ``e_n1a``/``e_n1b``（経由 ``n1``）と南バイパス ``e_s1a``/``e_s1b``（経由 ``s1``）
+    主通路 ``e_main`` が急増/制限されると、両端 hub_w–hub_e 間の 2 本のバイパスが迂回路になる。
+    """
+    b = GraphBuilder()
+    b.node("in", kind=NodeKind.GOAL, boundary=True, pos=(0.0, 0.0))
+    b.node("hub_w", kind=NodeKind.TRANSIT_ONLY, pos=(1.0, 0.0))
+    b.node("hub_e", kind=NodeKind.GOAL_TRANSIT_MIXED, pos=(3.0, 0.0))
+    b.node("out", kind=NodeKind.GOAL, boundary=True, pos=(4.0, 0.0))
+    b.node("n1", kind=NodeKind.TRANSIT_ONLY, pos=(2.0, 1.0))
+    b.node("s1", kind=NodeKind.TRANSIT_ONLY, pos=(2.0, -1.0))
+
+    b.edge("e_in", "in", "hub_w")
+    b.edge("e_main", "hub_w", "hub_e", capacity_hint=10.0)
+    b.edge("e_n1a", "hub_w", "n1")
+    b.edge("e_n1b", "n1", "hub_e")
+    b.edge("e_s1a", "hub_w", "s1")
+    b.edge("e_s1b", "s1", "hub_e")
+    b.edge("e_out", "hub_e", "out")
+    return b.build()
+
+
 PRESETS: dict[str, Any] = {
     "linear": linear,
     "y-junction": y_junction,
@@ -398,6 +424,7 @@ PRESETS: dict[str, Any] = {
     "ring": ring,
     "venue": venue,
     "expo": expo,
+    "crossing": crossing,
 }
 
 

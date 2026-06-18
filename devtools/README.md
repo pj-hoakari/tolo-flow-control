@@ -87,7 +87,8 @@ uv run python -m devtools graph ./_devout/venue.yaml --out ./_devout   # 読み�
 ## プリセット
 
 - グラフ: `linear` / `y-junction` / `grid` / `ring` / `venue` /
-  `expo`（出入口1・ホール4・一方通行の周回コリドー）
+  `expo`（出入口1・ホール4・一方通行の周回コリドー）/
+  `crossing`（2 ハブ＋主通路＋並行バイパス 2 本。迂回・方向提案が映える）
 - シナリオ:
   - 基本: `single-route-surge` / `multi-route-surge` / `high-stagnation` /
     `danger-flag-edge` / `danger-flag-node` / `normal-no-trigger` /
@@ -95,6 +96,13 @@ uv run python -m devtools graph ./_devout/venue.yaml --out ./_devout   # 読み�
   - 大規模（expo グラフ。一方通行＋観測のないルート/ポイントを含む）:
     `expo-single-hall-surge` / `expo-multi-hall-surge` /
     `expo-oneway-unobserved` / `expo-danger-hall`
+  - 運用効果が分かりやすい（expo グラフ）:
+    `expo-gate-overcrowded`（入口過密→**gate で入退場停止**: boundary_control）/
+    `expo-approach-capacity`（hallA 直行を低容量制限→**一方通行ループへ迂回**: route_importance がループへ）/
+    `expo-incident-resume`（前回 gate 停止→危険解除で**再開提案 RESUME**）
+  - 迂回・方向提案が映える（crossing グラフ）:
+    `crossing-detour`（主通路 e_main 急増・低容量→**並行バイパス 2 本へ迂回**: detour_set k_eff=2、route_importance がバイパスへ）/
+    `crossing-oneway`（バイパスを一方通行循環に→**direction_proposal が有向/双方向を提案**: 北 A_TO_B・南 B_TO_A・主通路 BIDIRECTIONAL）
 
 > `expo-*` はホール 4 つ・一方通行ループ・センサ無し区間を含む現実的ケース。コモディティ数が
 > 多く MILP が重いため `delta_min` を上げ MILP 時間上限を 8 秒に設定している（数〜20 秒程度）。
