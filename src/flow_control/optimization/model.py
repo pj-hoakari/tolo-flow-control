@@ -193,7 +193,10 @@ def build_model(
             z = model.add_variables(binary=True, name=f"z{ai}_{k.index}")
             fv = f[(arc.key, k.index)]
             # フローは利用フラグが立つアークにのみ流せる
-            model.add_constraints(fv - big_m * z <= 0)
+            # 非循環下では単一コモディティの 1 アーク流量は需要 d_k を超えないため、
+            # Big-M を d_k にタイト化する（global big_m より緩和が強く分枝が減る・同値変換）
+            m_arc = k.demand if k.demand > 1e-9 else big_m
+            model.add_constraints(fv - m_arc * z <= 0)
             # 有効な向き（MILP は x、フォールバックは固定方向）にのみ利用可能
             if is_milp:
                 model.add_constraints(z - x[arc.key] <= 0)
