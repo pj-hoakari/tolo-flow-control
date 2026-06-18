@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+
 from flow_control.detection.triggers import Event
 from flow_control.domain import EdgeID, NodeID
 
@@ -12,8 +14,12 @@ from ..scenario_base import (
     build_observations_and_history,
     compact_configs,
     make_scenario,
+    with_edge_danger,
     with_node_danger,
 )
+
+if TYPE_CHECKING:
+    from flow_control.optimization import OptimizationResult
 
 # 一方通行ループの4エッジ（既定でセンサ無し＝観測のないルート）
 EXPO_LOOP_EDGES = frozenset(
@@ -38,12 +44,16 @@ def make_expo_scenario(
     extra_unobserved_edges: frozenset[EdgeID] = frozenset(),
     unobserved_nodes: frozenset[NodeID] = frozenset(),
     node_danger: tuple[str, float] | None = None,
+    edge_danger: tuple[str, float] | None = None,
     events: tuple[Event, ...] = (),
+    previous_opt_result: "OptimizationResult | None" = None,
 ) -> Scenario:
     """expo グラフ上のシナリオを共通設定（滞留あり・eta 小・delta_min 引上げ）で組む"""
     built = graph_builder.expo()
     if node_danger is not None:
         built = with_node_danger(built, node_danger[0], node_danger[1])
+    if edge_danger is not None:
+        built = with_edge_danger(built, edge_danger[0], edge_danger[1])
     obs, hist = build_observations_and_history(
         built.graph,
         surge_edges=surge_edges,
@@ -55,5 +65,12 @@ def make_expo_scenario(
         eta=0.02,
     )
     return make_scenario(
-        name, description, built, obs, hist, events=events, configs=expo_configs()
+        name,
+        description,
+        built,
+        obs,
+        hist,
+        events=events,
+        configs=expo_configs(),
+        previous_opt_result=previous_opt_result,
     )
