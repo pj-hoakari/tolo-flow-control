@@ -40,3 +40,5 @@ reportUnknownVariableType = false
 reportUnknownArgumentType = false
 reportUnknownMemberType = false
 reportMissingParameterType = false
+# テストは内部ヘルパーをホワイトボックス検証で利用する
+reportPrivateUsage = false
