@@ -81,7 +81,7 @@ def optimize(
         arc_model, inputs, commodities, drain.drainable, is_open=is_open
     )
     t0 = time.perf_counter()
-    p1 = solve_phase1(built, time_limit, seed)
+    p1 = solve_phase1(built, time_limit, seed, config.mip_rel_gap)
     phase1_ms = int((time.perf_counter() - t0) * 1000)
 
     if p1.status == SolverStatus.INFEASIBLE:
@@ -117,7 +117,13 @@ def optimize(
     if run_phase2:
         t1 = time.perf_counter()
         p2 = solve_phase2(
-            built, p1.objective, throughput_arcs, config.epsilon, time_limit, seed
+            built,
+            p1.objective,
+            throughput_arcs,
+            config.epsilon,
+            time_limit,
+            seed,
+            config.mip_rel_gap,
         )
         phase2_ms = int((time.perf_counter() - t1) * 1000)
         if p2.solution is not None and p2.status in (

@@ -23,3 +23,6 @@ class ResolvedConfig:
     throughput_target_edges: tuple[EdgeID, ...] = ()
     # 基準停滞量 s̄_e が履歴に無い場合の補完値
     fallback_baseline_stagnation: float = 1.0
+    # MILP 相対ギャップ許容（0 で HiGHS 既定＝ほぼ厳密解）
+    # >0 を与えると最適性をわずかに譲る代わりに分枝限定を早期打ち切りして高速化する
+    mip_rel_gap: float = 0.0
