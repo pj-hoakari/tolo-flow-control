@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 
 from ..domain.enums import FlowDirection, NodeKind, ObservationType
-from ..domain.graph import Edge, Graph, Node, NodeID
+from ..domain.graph import Edge, EdgeID, Graph, Node, NodeID
 from ..domain.observations import ConfidenceFlag, NodeOccupancy, Observations
 from .config import ResolvedConfig
 
@@ -22,11 +22,27 @@ class NodeDemand:
     staying: float  # stay_v（滞在＝終端需要）
 
 
+@dataclass(frozen=True)
+class DemandResult:
+    """Step A の需要と、保存則で復元したアークの診断情報。"""
+
+    node_demand: tuple[NodeDemand, ...]
+    imputed_arcs: tuple[EdgeID, ...] = ()
+
+
 def compute_node_demand(
     graph: Graph,
     observations: Observations,
     config: ResolvedConfig,
 ) -> tuple[NodeDemand, ...]:
+    return compute_node_demand_result(graph, observations, config).node_demand
+
+
+def compute_node_demand_result(
+    graph: Graph,
+    observations: Observations,
+    config: ResolvedConfig,
+) -> DemandResult:
     """点需要の独立推定
 
     有効ノードごとに，ベクトル型アークの観測流量から粗流出 P_v・粗流入 A_v を
@@ -68,7 +84,7 @@ def compute_node_demand(
     occupancy_by_node = _valid_occupancy_by_node(observations)
 
     # ── 未観測アークの保存補完（in-place で P_v, A_v を更新） ──
-    _ = _impute_unobserved_arcs(
+    imputed_arcs = _impute_unobserved_arcs(
         active_nodes, outflow, inflow, observed_edges, occupancy_by_node, graph
     )
 
@@ -94,7 +110,21 @@ def compute_node_demand(
             )
         )
 
-    return tuple(demands)
+    return DemandResult(
+        node_demand=tuple(demands),
+        imputed_arcs=tuple(
+            EdgeID(edge_id) for edge_id in graph_edge_order(graph, imputed_arcs)
+        ),
+    )
+
+
+def graph_edge_order(graph: Graph, edge_ids: set[str]) -> tuple[str, ...]:
+    """グラフ定義順で、保存補完アークを決定的に並べる。"""
+    return tuple(
+        edge.edge_id.value
+        for edge in graph.enabled_edges()
+        if edge.edge_id.value in edge_ids
+    )
 
 
 def _valid_occupancy_by_node(
@@ -132,7 +162,14 @@ def _staying_demand(
 
     if delta_occ is not None and delta_occ > 0.0:
         return delta_occ  # (b) 蓄積フェーズ
-    if tau is not None and dwell is not None and dwell > tau and level is not None:
+    if (
+        occupancy is not None
+        and occupancy.same_sensor_arrival
+        and tau is not None
+        and dwell is not None
+        and dwell > tau
+        and level is not None
+    ):
         # (c) リトルの法則：占有レベルのうち通過ベースラインを超える滞留分を換算
         return max(0.0, (level - gross_in * tau) / (dwell - tau))
     if delta_occ is not None:

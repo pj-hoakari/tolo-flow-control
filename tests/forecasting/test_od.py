@@ -23,6 +23,7 @@ from flow_control.domain import (
     NodeOccupancy,
     Observations,
     ObservationType,
+    TurningObservation,
 )
 from flow_control.forecasting.config import ResolvedConfig
 from flow_control.forecasting.demand import compute_node_demand
@@ -195,6 +196,45 @@ def test_ipf_doubly_constrained_satisfies_both_marginals() -> None:
     # 合流＋分岐の m は不定（追加観測の優先対象）
     assert _resolution(result, "m").mode == ODResolutionMode.DOUBLY_CONSTRAINED
     assert _resolution(result, "m").reason == ODResolutionReason.MERGE_SPLIT_AMBIGUOUS
+
+
+def test_complete_external_turning_observation_enables_exact_propagation() -> None:
+    """合流＋分岐でも入口別転換率が完全なら、IPF でなく前方伝播を用いる。"""
+    graph = Graph(
+        nodes=(
+            _node("s1", NodeKind.TRANSIT_ONLY, boundary=True),
+            _node("s2", NodeKind.TRANSIT_ONLY, boundary=True),
+            _node("m", NodeKind.TRANSIT_ONLY),
+            _node("t1", NodeKind.GOAL),
+            _node("t2", NodeKind.GOAL),
+        ),
+        edges=(
+            _edge("e1", "s1", "m"),
+            _edge("e2", "s2", "m"),
+            _edge("e3", "m", "t1"),
+            _edge("e4", "m", "t2"),
+        ),
+    )
+    observations = Observations(
+        observed_at=_OBSERVED_AT,
+        arc_flows=(
+            _flow("e1", 6.0),
+            _flow("e2", 4.0),
+            _flow("e3", 6.0),
+            _flow("e4", 4.0),
+        ),
+        node_turning=(
+            TurningObservation(NodeID("m"), EdgeID("e1"), EdgeID("e3"), 1.0),
+            TurningObservation(NodeID("m"), EdgeID("e2"), EdgeID("e4"), 1.0),
+        ),
+    )
+
+    result = _run(graph, observations, _config(), is_open_mode=True)
+
+    assert _require(result.od_matrix, "s1", "t1").demand == pytest.approx(6.0)
+    assert _require(result.od_matrix, "s2", "t2").demand == pytest.approx(4.0)
+    assert _find(result.od_matrix, "s1", "t2") is None
+    assert _resolution(result, "m").mode == ODResolutionMode.TURNING_EXACT
 
 
 def test_sparse_observation_reason() -> None:
