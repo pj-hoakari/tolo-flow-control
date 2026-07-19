@@ -23,7 +23,7 @@ from flow_control.domain import (
 from flow_control.forecasting import ForecastResult, ODDemand
 from flow_control.forecasting.sensitivity import ArcFlowSensitivity
 from flow_control.forecasting.validation import NodeConfidence
-from flow_control.optimization import ResolvedConfig
+from flow_control.optimization import OptimizationMode, ResolvedConfig
 
 
 @pytest.fixture
@@ -33,7 +33,8 @@ def observed_at() -> datetime:
 
 @pytest.fixture
 def config() -> ResolvedConfig:
-    return ResolvedConfig()
+    # 数理ワークド例は STRICT の基準系として検証する。
+    return ResolvedConfig(optimization_mode=OptimizationMode.STRICT)
 
 
 # 数理補助ドキュメント §27 の 3 ノード・3 エッジ Open モード手計算例

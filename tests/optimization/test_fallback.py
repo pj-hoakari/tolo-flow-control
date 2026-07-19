@@ -26,6 +26,7 @@ from flow_control.optimization import (
     ImportanceDirection,
     ObjectiveValues,
     OptimizationResult,
+    OptimizationMode,
     ProposedDirection,
     ResolvedConfig,
     RouteImportance,
@@ -91,7 +92,7 @@ def test_infeasible_then_lp_relaxation_holds_previous_direction():
         DetourResult(),
         _history(),
         previous_result=previous,
-        config=ResolvedConfig(),
+        config=ResolvedConfig(optimization_mode=OptimizationMode.STRICT),
         seed=1,
         time_limit=30.0,
     )
@@ -113,7 +114,7 @@ def test_infeasible_lp_also_infeasible_copies_previous():
         DetourResult(),
         _history(),
         previous_result=previous,
-        config=ResolvedConfig(),
+        config=ResolvedConfig(optimization_mode=OptimizationMode.STRICT),
         seed=1,
         time_limit=30.0,
     )
@@ -133,7 +134,7 @@ def test_infeasible_no_previous_returns_empty_proposals():
         DetourResult(),
         _history(),
         previous_result=None,
-        config=ResolvedConfig(),
+        config=ResolvedConfig(optimization_mode=OptimizationMode.STRICT),
         seed=1,
         time_limit=30.0,
     )

@@ -1,9 +1,11 @@
 """MILP 解から重要度スコア・方向属性提案を導く後処理"""
 
+from ..domain.enums import CurrentDirection, DirectionConstraint
 from .arcs import ArcModel
 from .model import ArcSolution
 from .results import (
     DirectionProposal,
+    DirectionChangeType,
     ImportanceDirection,
     ProposedDirection,
     RouteImportance,
@@ -69,6 +71,33 @@ def compute_direction_proposals(
             # 両向き無効は完全閉鎖。提案対象から外す
             continue
         result.append(
-            DirectionProposal(edge_id=edge.edge_id, proposed_direction=proposed)
+            DirectionProposal(
+                edge_id=edge.edge_id,
+                proposed_direction=proposed,
+                change_type=_change_type(edge.current_direction, proposed, edge.direction_constraint),
+            )
         )
     return tuple(result)
+
+
+def _change_type(
+    current: CurrentDirection,
+    proposed: ProposedDirection,
+    constraint: DirectionConstraint,
+) -> DirectionChangeType:
+    current_proposed = {
+        CurrentDirection.A_TO_B: ProposedDirection.A_TO_B,
+        CurrentDirection.B_TO_A: ProposedDirection.B_TO_A,
+        CurrentDirection.BIDIRECTIONAL: ProposedDirection.BIDIRECTIONAL,
+    }[current]
+    if current_proposed == proposed:
+        return DirectionChangeType.KEEP
+    if proposed == ProposedDirection.BIDIRECTIONAL:
+        return (
+            DirectionChangeType.RELEASE_ONEWAY
+            if constraint == DirectionConstraint.BIDIRECTIONAL_PRIOR
+            else DirectionChangeType.KEEP
+        )
+    if current == CurrentDirection.BIDIRECTIONAL:
+        return DirectionChangeType.CONVERT_ONEWAY
+    return DirectionChangeType.FLIP_ONEWAY
