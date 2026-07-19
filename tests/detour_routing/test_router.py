@@ -172,6 +172,31 @@ def test_unknown_triggered_edge_is_skipped():
     assert result.detour_set_of(EdgeID("missing")) is None
 
 
+def test_disabled_triggered_edge_is_skipped():
+    graph = Graph(
+        nodes=(_node("n1"), _node("n2")),
+        edges=(
+            Edge(
+                EdgeID("disabled"),
+                NodeID("n1"),
+                NodeID("n2"),
+                DirectionConstraint.BIDIRECTIONAL_PRIOR,
+                CurrentDirection.BIDIRECTIONAL,
+                enabled=False,
+                observation_type=ObservationType.VECTOR,
+            ),
+        ),
+    )
+    assert route_detour(graph, (EdgeID("disabled"),), None, ResolvedConfig()).detour_sets == ()
+
+
+def test_duplicate_trigger_is_deduplicated_in_result_map():
+    result = route_detour(
+        _TRIANGLE, (EdgeID("e12"), EdgeID("e12")), None, ResolvedConfig()
+    )
+    assert tuple(detour.origin_edge for detour in result.detour_sets) == (EdgeID("e12"),)
+
+
 def test_forecast_result_and_mode_do_not_affect_v0_result():
     # v0 では forecast_result / mode は結果に影響しない
     baseline = route_detour(_TRIANGLE, (EdgeID("e12"),), None, ResolvedConfig())

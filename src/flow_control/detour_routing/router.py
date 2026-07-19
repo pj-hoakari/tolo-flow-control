@@ -60,9 +60,13 @@ def route_detour(
     _ = mode
 
     detour_sets: list[DetourSet] = []
+    seen: set[EdgeID] = set()
     for origin in triggered_edges:
+        if origin in seen:
+            continue
+        seen.add(origin)
         edge = graph.edge_of(origin)
-        if edge is None:
+        if edge is None or not edge.enabled:
             continue  # 不明なエッジはスキップ（Detection は有効エッジのみ発火）
         detour_sets.append(_route_one(graph, edge, config))
     return DetourResult(detour_sets=tuple(detour_sets))

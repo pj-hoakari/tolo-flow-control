@@ -93,15 +93,14 @@ def test_non_positive_k_returns_empty():
     assert k_shortest_paths(adjacency, NodeID("s"), NodeID("t"), -1) == []
 
 
-def test_parallel_edges_collapse_to_min_edge():
-    # n1-n2 間の並行エッジ e1/e2 は，最小 (weight, edge_id) の 1 本へ集約される
-    # （NetworkX shortest_simple_paths はノード列ベース。同重みは edge_id 辞書順で e1）
+def test_parallel_edges_remain_independent_paths():
+    # 独立した並行ルートは、同じ端点でも別々の候補パスとして列挙する。
     graph = Graph(
         nodes=(_node("n1"), _node("n2")),
         edges=(_edge("e2", "n1", "n2"), _edge("e1", "n1", "n2")),
     )
     paths = k_shortest_paths(build_adjacency(graph), NodeID("n1"), NodeID("n2"), 3)
-    assert _keys(paths) == [("e1",)]
+    assert _keys(paths) == [("e1",), ("e2",)]
 
 
 def test_deterministic_across_runs():
