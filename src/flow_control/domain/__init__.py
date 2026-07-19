@@ -15,8 +15,10 @@ from .observations import (
     ConfidenceFlag,
     NodeOccupancy,
     Observations,
+    StagnationDerivation,
+    TurningObservation,
 )
-from .references import Reference, TagReference
+from .references import Reference, TagReference, ThresholdDefaults, ThresholdSet
 
 __all__ = [
     "ArcFlow",
@@ -40,5 +42,9 @@ __all__ = [
     "Observations",
     "ObservationType",
     "Reference",
+    "StagnationDerivation",
     "TagReference",
+    "ThresholdDefaults",
+    "ThresholdSet",
+    "TurningObservation",
 ]

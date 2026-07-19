@@ -1,6 +1,7 @@
 from dataclasses import dataclass, field
 from datetime import datetime
 
+from .enums import FlowDirection
 from .graph import EdgeID
 
 
@@ -10,6 +11,8 @@ class ArcHistoryStat:
     p90_stagnation: float | None = None
     baseline_stagnation: float | None = None
     flow_sensitivity_eta: float | None = None
+    # 履歴の利用可能スパン（時間）。縮退モード要否判定に使用（None = 未提供）
+    available_span_hours: float | None = None
 
 
 @dataclass(frozen=True)
@@ -21,6 +24,10 @@ class ArcWindowSeries:
     stagnation_samples: tuple[tuple[datetime, float], ...] = field(
         default_factory=tuple
     )
+    # 方向別ライン通過系列（排出実績 μ̂_e の算出用。ラインなしは None）
+    directional_flow_samples: (
+        tuple[tuple[FlowDirection, tuple[tuple[datetime, float], ...]], ...] | None
+    ) = None
 
 
 @dataclass(frozen=True)
