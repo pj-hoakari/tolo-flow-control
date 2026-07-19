@@ -123,7 +123,9 @@ def test_report_writes_images_in_module_directories(tmp_path: Path) -> None:
     written = report.dump_run(run, scen.built_graph, tmp_path, images=True)
 
     assert tmp_path / "01_detection" / "trigger.png" in written
+    assert tmp_path / "01_detection" / "trigger_legend.png" in written
     assert tmp_path / "00_summary" / "summary.png" in written
     assert (tmp_path / "01_detection" / "trigger.png").is_file()
+    assert (tmp_path / "01_detection" / "trigger_legend.png").is_file()
     assert (tmp_path / "00_summary" / "summary.png").is_file()
     assert not (tmp_path / "01_detection.png").exists()

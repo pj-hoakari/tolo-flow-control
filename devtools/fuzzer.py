@@ -173,7 +173,7 @@ def check_invariants(
             )
         # 可達性は「解が得られた正常系（非フォールバック）」でのみ要求する。
         # TIMEOUT/INFEASIBLE（フォールバック）はインカンベント不在で False になり得るため除外
-        if not cr.fallback_to_previous and status in ("OPTIMAL", "FEASIBLE"):
+        if not cr.fallback_to_previous and status in ("OPTIMAL", "FEASIBLE", "LIGHTWEIGHT"):
             if not cr.local_reachability_satisfied:
                 violations.append("local_reachability not satisfied (non-fallback)")
             if run.mode == Mode.OPEN and not cr.boundary_reachability_satisfied:

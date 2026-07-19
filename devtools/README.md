@@ -29,9 +29,10 @@ uv run python -m devtools run multi-route-surge --out ./_devout
 `_devout/<scenario>/` に以下を出力:
 - `graph.json` / `detection.json` / `forecasting.json` / `detour.json` / `optimization.json` / `run.json`（検証ログ兼リプレイ素材）
 - 実行順プレフィックス付きモジュール別ディレクトリ配下の個別 PNG（例: `01_detection/trigger.png`）
-  - `02_forecasting/node_demand.png` / `od_demand.png` / `arc_flow_sensitivity.png` / `node_confidence.png`
-  - `03_detour/<起点エッジ>.png`
-  - `04_optimization/route_importance.png` / `direction_proposal.png`
+  - 各グラフ本体に対し、同じ名前の `*_legend.png` を必ず出力する。旧来グラフ内にあった凡例・カラーバーを切り出した白背景 PNG で、色・線種ラベルとカラーバーだけを載せる。連続値（重要度・η・信頼度・滞在需要）は従来どおりグラデーションバーで表示し、グラフ本体からは除外する。
+  - `02_forecasting/node_demand.png` / `od_demand.png` / `arc_flow_sensitivity.png` / `node_confidence.png`（各 `*_legend.png` 付き）
+  - `03_detour/<起点エッジ>.png`（`*_legend.png` 付き）
+  - `04_optimization/route_importance.png` / `direction_proposal.png`（各 `*_legend.png` 付き）
   - `00_summary/summary.png`
 
 `00_summary/summary.png` は各モジュールの所要時間を**数値**で列挙する（Phase1/Phase2 内訳・合計付き）。
@@ -48,8 +49,9 @@ uv run python -m devtools run-all --out ./_devout --label before-change
 
 にまとめる。要約は **`index.json` 1 ファイルで解析が完結する**よう派生指標まで畳み込む:
 verdict・triggered・evidence_kinds／forecast（OD・reproduction_error・node_confidence レンジ・
-resolution_modes・fallback_default_edges・staying_nodes）／optimization（solver・phase 時間・
-tau*・throughput・fallback・可達性・route_importance_nonzero・direction_proposals・boundary_controls）。
+resolution_modes・resolution_reasons・imputed_arcs・fallback_default_edges・staying_nodes）／detour（起点別
+k_effective・経路本数・対象エッジ和集合）／optimization（solver・phase 時間・軽量モード統計・
+tau*・throughput・fallback・可達性・route_importance_nonzero・方向変更種別・restriction proposals・boundary controls）。
 
 にまとめる。履歴は数値のみで軽量。これを後述の `compare` で突き合わせると、コード変更前後の
 **数値ベースの回帰/改善追跡**ができる。
