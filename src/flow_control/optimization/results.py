@@ -10,6 +10,7 @@ class SolverStatus(str, Enum):
     FEASIBLE = "FEASIBLE"
     INFEASIBLE = "INFEASIBLE"
     TIMEOUT = "TIMEOUT"
+    LIGHTWEIGHT = "LIGHTWEIGHT"
 
 
 class Phase2Status(str, Enum):
@@ -18,6 +19,7 @@ class Phase2Status(str, Enum):
     INFEASIBLE = "INFEASIBLE"
     TIMEOUT = "TIMEOUT"
     SKIPPED = "SKIPPED"
+    LIGHTWEIGHT = "LIGHTWEIGHT"
 
 
 class ImportanceDirection(str, Enum):
@@ -30,6 +32,26 @@ class ProposedDirection(str, Enum):
     A_TO_B = "A_TO_B"
     B_TO_A = "B_TO_A"
     BIDIRECTIONAL = "BIDIRECTIONAL"
+
+
+class DirectionChangeType(str, Enum):
+    CONVERT_ONEWAY = "CONVERT_ONEWAY"
+    RELEASE_ONEWAY = "RELEASE_ONEWAY"
+    FLIP_ONEWAY = "FLIP_ONEWAY"
+    KEEP = "KEEP"
+
+
+class RestrictionAction(str, Enum):
+    CLOSE = "CLOSE"
+    LIMIT = "LIMIT"
+    RESUME = "RESUME"
+
+
+class RestrictionReason(str, Enum):
+    UNDRAINABLE_STAGNATION = "UNDRAINABLE_STAGNATION"
+    RESIDUAL_TAU = "RESIDUAL_TAU"
+    PUNCTURE = "PUNCTURE"
+    NODE_DANGER_UPSTREAM = "NODE_DANGER_UPSTREAM"
 
 
 class BoundaryAction(str, Enum):
@@ -51,6 +73,17 @@ class DirectionProposal:
     edge_id: EdgeID
     proposed_direction: ProposedDirection
     confidence: float = 1.0  # v0 では固定値
+    change_type: DirectionChangeType = DirectionChangeType.KEEP
+
+
+@dataclass(frozen=True)
+class RestrictionProposal:
+    edge_id: EdgeID
+    action: RestrictionAction
+    limit_value: float | None
+    reason: RestrictionReason
+    confidence: float = 1.0
+    scope_note: str = "operator review required"
 
 
 @dataclass(frozen=True)
@@ -70,6 +103,7 @@ class ObjectiveValues:
 class OptimizationResult:
     route_importance: tuple[RouteImportance, ...] = ()
     direction_proposal: tuple[DirectionProposal, ...] = ()
+    restriction_proposal: tuple[RestrictionProposal, ...] = ()
     boundary_control: tuple[BoundaryControl, ...] = ()
     objective_values: ObjectiveValues = field(default_factory=ObjectiveValues)
     solver_status: SolverStatus = SolverStatus.OPTIMAL
@@ -86,6 +120,10 @@ class SolverStats:
     phase2_ms: int
     tau_star: float
     throughput: float
+    assign_lp_ms: int = 0
+    greedy_iterations: int = 0
+    zones_processed: int = 0
+    tau_residual: float = 0.0
 
 
 @dataclass(frozen=True)

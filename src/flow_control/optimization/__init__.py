@@ -1,9 +1,10 @@
-from .config import ResolvedConfig
+from .config import OptimizationMode, ResolvedConfig
 from .optimizer import optimize
 from .results import (
     BoundaryAction,
     BoundaryControl,
     ConstraintReport,
+    DirectionChangeType,
     DirectionProposal,
     ImportanceDirection,
     ObjectiveValues,
@@ -12,6 +13,9 @@ from .results import (
     Phase2Status,
     ProposedDirection,
     RouteImportance,
+    RestrictionAction,
+    RestrictionProposal,
+    RestrictionReason,
     SolverStats,
     SolverStatus,
 )
@@ -20,15 +24,20 @@ __all__ = [
     "BoundaryAction",
     "BoundaryControl",
     "ConstraintReport",
+    "DirectionChangeType",
     "DirectionProposal",
     "ImportanceDirection",
     "ObjectiveValues",
     "OptimizationResult",
+    "OptimizationMode",
     "OptimizeResult",
     "Phase2Status",
     "ProposedDirection",
     "ResolvedConfig",
     "RouteImportance",
+    "RestrictionAction",
+    "RestrictionProposal",
+    "RestrictionReason",
     "SolverStats",
     "SolverStatus",
     "optimize",

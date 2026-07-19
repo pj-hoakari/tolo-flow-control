@@ -9,6 +9,8 @@ from flow_control.optimization import (
     Phase2Status,
     ProposedDirection,
     SolverStatus,
+    OptimizationMode,
+    ResolvedConfig,
     optimize,
 )
 
@@ -203,3 +205,33 @@ def test_closed_mode_has_no_boundary_control(
     assert result.optimization_result.boundary_control == ()
     # Closed モードでも τ 最適化は成立する
     assert result.optimization_result.solver_status == SolverStatus.OPTIMAL
+
+
+def test_lightweight_is_default_and_reports_baseline_stats(
+    worked_example_graph,
+    worked_example_observations,
+    worked_example_forecast,
+    worked_example_detour,
+    worked_example_history,
+):
+    """設計 v0 の既定は current 方向を使う軽量配分である。"""
+    result = optimize(
+        worked_example_graph,
+        worked_example_observations,
+        worked_example_forecast,
+        worked_example_detour,
+        worked_example_history,
+        previous_result=None,
+        config=ResolvedConfig(),
+        seed=1,
+        time_limit=30.0,
+        triggered_edges=(),
+        triggered_nodes=(),
+    )
+
+    assert result.optimization_result.solver_status == SolverStatus.LIGHTWEIGHT
+    assert result.solver_stats.phase1_status == SolverStatus.LIGHTWEIGHT
+    assert result.solver_stats.assign_lp_ms >= 0
+    assert result.solver_stats.greedy_iterations == 0
+    assert result.solver_stats.zones_processed == 0
+    assert ResolvedConfig().optimization_mode == OptimizationMode.LIGHTWEIGHT

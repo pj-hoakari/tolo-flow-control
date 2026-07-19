@@ -1,10 +1,26 @@
 from dataclasses import dataclass
+from enum import Enum
 
 from ..domain.graph import EdgeID
 
 
+class OptimizationMode(str, Enum):
+    """Optimization Step の求解機構。"""
+
+    LIGHTWEIGHT = "LIGHTWEIGHT"
+    STRICT = "STRICT"
+
+
 @dataclass(frozen=True)
 class ResolvedConfig:
+    # 既定は局所配分を基礎にした軽量モード。STRICT は基準系・小規模用。
+    optimization_mode: OptimizationMode = OptimizationMode.LIGHTWEIGHT
+    local_radius_hops: int = 2
+    max_trigger_zones: int = 4
+    greedy_improve_margin: float = 0.05
+    lightweight_opt_budget_sec: float = 120.0
+    restriction_proposal_enabled: bool = False
+    tau_danger_threshold: float | None = None
     # ソルバー乱数シード（決定性担保）
     solver_seed: int = 0
     # MILP 単体のタイムアウト上限（秒）
