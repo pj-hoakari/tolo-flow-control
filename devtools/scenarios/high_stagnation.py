@@ -35,7 +35,7 @@ def build() -> Scenario:
                 edge_id=hot,
                 percentile_breached=True,
                 delta_breached=True,
-                started_at=DEFAULT_TIME - timedelta(minutes=6),
+                stagnation_watch_since=DEFAULT_TIME - timedelta(minutes=6),
             ),
         )
     )

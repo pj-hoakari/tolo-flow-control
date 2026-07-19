@@ -69,7 +69,7 @@ def random_scenario(
                 edge_id=eid,
                 percentile_breached=True,
                 delta_breached=True,
-                started_at=server_time - timedelta(minutes=6),
+                stagnation_watch_since=server_time - timedelta(minutes=6),
             )
             for eid in stag
         )
