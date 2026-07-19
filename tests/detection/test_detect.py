@@ -328,7 +328,7 @@ def test_high_stagnation_fires_through_detect(
                 edge_id=edge_id,
                 percentile_breached=True,
                 delta_breached=True,
-                started_at=base_time - timedelta(minutes=6),
+                stagnation_watch_since=base_time - timedelta(minutes=6),
             ),
         )
     )
