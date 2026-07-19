@@ -9,6 +9,7 @@
 - リセットでクールタイム解除後は、保持キューが鮮度ガードを満たせば統合発火する
 """
 
+from dataclasses import replace
 from datetime import datetime, timedelta
 
 from flow_control.detection.config import ResolvedConfig
@@ -34,33 +35,18 @@ def _config(
 ) -> ResolvedConfig:
     return ResolvedConfig(
         surge_rate_threshold_percent_per_min=surge_threshold,
+        high_stagnation_duration_min=5.0,
+        beta=1.0,
         cooldown_duration_min=cooldown_min,
     )
 
 
-def _surge_inputs(
-    edge_id: EdgeID, base_time: datetime, make_linear_series
+def _quiet_inputs(
+    edge_id: EdgeID, base_time: datetime, make_flat_line_history
 ) -> tuple[HistoryDigest, Observations]:
-    window, scalar_flow = make_linear_series(
-        edge_id,
-        observed_at=base_time,
-        sample_count=11,
-        start_value=0.0,
-        slope_per_min=10.0,
-    )
-    history = HistoryDigest(window_series=(window,))
-    observations = Observations(observed_at=base_time, arc_scalar_flows=(scalar_flow,))
-    return history, observations
-
-
-def _flat_inputs(
-    edge_id: EdgeID, base_time: datetime, make_flat_series
-) -> tuple[HistoryDigest, Observations]:
-    window, scalar_flow = make_flat_series(
-        edge_id, observed_at=base_time, sample_count=11, value=100.0
-    )
-    history = HistoryDigest(window_series=(window,))
-    observations = Observations(observed_at=base_time, arc_scalar_flows=(scalar_flow,))
+    """平坦ライン・停滞観測なし → 通常トリガーが発火しない静穏入力"""
+    history = make_flat_line_history(edge_id, base_time)
+    observations = Observations(observed_at=base_time)
     return history, observations
 
 
@@ -150,10 +136,10 @@ def test_detect_scheduled_only_clears_cooldown_without_firing(
     base_time: datetime,
     basic_graph: Graph,
     edge_id: EdgeID,
-    make_flat_series,
+    make_flat_line_history,
 ):
     # スケジュールイベントのみ（トリガーなし）→ 発火扱いせずクールタイムを解除
-    history, observations = _flat_inputs(edge_id, base_time, make_flat_series)
+    history, observations = _quiet_inputs(edge_id, base_time, make_flat_line_history)
     previous = DetectionState(cooldown_until=base_time + timedelta(minutes=30))
 
     result = detect(
@@ -175,11 +161,11 @@ def test_detect_scheduled_reset_consolidates_fresh_queue(
     base_time: datetime,
     basic_graph: Graph,
     edge_id: EdgeID,
-    make_flat_series,
+    make_flat_line_history,
 ):
     # スケジュールでクールタイムを解除した後、保持された新鮮なキュー
-    # （直近発火 5 分前 <= 鮮度ガード 30 分）は新規トリガーが無くても統合発火する（§4.8）
-    history, observations = _flat_inputs(edge_id, base_time, make_flat_series)
+    # （直近発火 5 分前 <= 鮮度ガード 30 分）は新規トリガーが無くても統合発火する
+    history, observations = _quiet_inputs(edge_id, base_time, make_flat_line_history)
     queued = _queued("e1", base_time - timedelta(minutes=5))
     previous = DetectionState(
         cooldown_until=base_time + timedelta(minutes=30),
@@ -207,11 +193,11 @@ def test_detect_scheduled_reset_drops_stale_queue_as_expired(
     base_time: datetime,
     basic_graph: Graph,
     edge_id: EdgeID,
-    make_flat_series,
+    make_flat_line_history,
 ):
     # クールタイム解除後、保持キューが鮮度切れ（直近発火 40 分前 > 30 分）かつ
-    # 警戒条件も満たさない → QUEUE_EXPIRED で破棄し未検出（§4.8）
-    history, observations = _flat_inputs(edge_id, base_time, make_flat_series)
+    # 警戒条件も満たさない → QUEUE_EXPIRED で破棄し未検出
+    history, observations = _quiet_inputs(edge_id, base_time, make_flat_line_history)
     queued = _queued("e1", base_time - timedelta(minutes=40))
     previous = DetectionState(
         cooldown_until=base_time + timedelta(minutes=30),
@@ -237,12 +223,12 @@ def test_detect_scheduled_reset_lets_concurrent_surge_fire_immediately(
     base_time: datetime,
     basic_graph: Graph,
     edge_id: EdgeID,
-    make_linear_series,
+    make_combined_firing,
 ):
     # クールタイム中でも、スケジュールイベントでリセットされた直後に重複した
     # 通常トリガーは即時発火し、クールタイムを計時し直す
-    history, observations = _surge_inputs(edge_id, base_time, make_linear_series)
-    previous = DetectionState(cooldown_until=base_time + timedelta(minutes=30))
+    history, observations, fire_state = make_combined_firing(edge_id, base_time)
+    previous = replace(fire_state, cooldown_until=base_time + timedelta(minutes=30))
 
     result = detect(
         graph=basic_graph,
@@ -263,12 +249,13 @@ def test_detect_scheduled_reset_integrates_preserved_queue_on_fire(
     base_time: datetime,
     basic_graph: Graph,
     edge_id: EdgeID,
-    make_linear_series,
+    make_combined_firing,
 ):
     # リセットで保持されたキュー（e2）は、今回の通常トリガー（e1）発火時に統合される
-    history, observations = _surge_inputs(edge_id, base_time, make_linear_series)
+    history, observations, fire_state = make_combined_firing(edge_id, base_time)
     queued = _queued("e2", base_time - timedelta(minutes=5))
-    previous = DetectionState(
+    previous = replace(
+        fire_state,
         cooldown_until=base_time + timedelta(minutes=30),
         trigger_queue=(queued,),
     )

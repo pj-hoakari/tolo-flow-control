@@ -9,6 +9,7 @@
 - 規則4: 手動トリガーはカウント対象外
 """
 
+from dataclasses import replace
 from datetime import datetime, timedelta
 
 from flow_control.detection.config import ResolvedConfig
@@ -34,7 +35,6 @@ from flow_control.domain import (
     NodeKind,
     ObservationType,
 )
-from flow_control.domain.history import HistoryDigest
 from flow_control.domain.observations import Observations
 
 
@@ -233,29 +233,25 @@ def test_both_arcs_fire_increment_independently(base_time: datetime):
 # ---------------------------------------------------------------------------
 
 
-def test_detect_surge_increments_retrigger_count(
+def test_detect_combined_trigger_increments_retrigger_count(
     base_time: datetime,
     basic_graph: Graph,
     edge_id: EdgeID,
-    make_linear_series,
+    make_combined_firing,
 ):
-    window, scalar_flow = make_linear_series(
-        edge_id,
-        observed_at=base_time,
-        sample_count=11,
-        start_value=0.0,
-        slope_per_min=10.0,
-    )
-    history = HistoryDigest(window_series=(window,))
-    observations = Observations(observed_at=base_time, arc_scalar_flows=(scalar_flow,))
+    history, observations, previous = make_combined_firing(edge_id, base_time)
 
     result = detect(
         graph=basic_graph,
         observations=observations,
         history_digest=history,
-        previous_state=DetectionState(),
+        previous_state=previous,
         events=(),
-        config=ResolvedConfig(surge_rate_threshold_percent_per_min=10.0),
+        config=ResolvedConfig(
+            surge_rate_threshold_percent_per_min=10.0,
+            high_stagnation_duration_min=5.0,
+            beta=1.0,
+        ),
         server_time=base_time,
     )
 
@@ -268,20 +264,13 @@ def test_detect_queued_trigger_does_not_count(
     base_time: datetime,
     basic_graph: Graph,
     edge_id: EdgeID,
-    make_linear_series,
+    make_combined_firing,
 ):
     # クールタイム中にメトリク条件が成立してもキュー行きで実発火しない
     # → 再発火カウントは加算されない（§4.9: queued は変更なし）
-    window, scalar_flow = make_linear_series(
-        edge_id,
-        observed_at=base_time,
-        sample_count=11,
-        start_value=0.0,
-        slope_per_min=10.0,
-    )
-    history = HistoryDigest(window_series=(window,))
-    observations = Observations(observed_at=base_time, arc_scalar_flows=(scalar_flow,))
-    previous = DetectionState(
+    history, observations, fire_state = make_combined_firing(edge_id, base_time)
+    previous = replace(
+        fire_state,
         cooldown_until=base_time + timedelta(minutes=30),
         arc_retrigger_counts=(RetriggerEntry(edge_id=edge_id, count=2),),
     )
@@ -294,6 +283,8 @@ def test_detect_queued_trigger_does_not_count(
         events=(),
         config=ResolvedConfig(
             surge_rate_threshold_percent_per_min=10.0,
+            high_stagnation_duration_min=5.0,
+            beta=1.0,
             queue_score_threshold=5.0,
             queue_diversity_threshold=3,
         ),
@@ -312,14 +303,11 @@ def test_detect_danger_flag_does_not_count(
     base_time: datetime,
     basic_graph: Graph,
     edge_id: EdgeID,
-    make_flat_series,
+    make_flat_line_history,
 ):
     # 危険フラグ立ち上げで発火しても再発火カウントは積まれない（規則4）
-    window, scalar_flow = make_flat_series(
-        edge_id, observed_at=base_time, sample_count=11, value=100.0
-    )
-    history = HistoryDigest(window_series=(window,))
-    observations = Observations(observed_at=base_time, arc_scalar_flows=(scalar_flow,))
+    history = make_flat_line_history(edge_id, base_time)
+    observations = Observations(observed_at=base_time)
 
     result = detect(
         graph=basic_graph,

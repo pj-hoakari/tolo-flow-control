@@ -2,15 +2,16 @@
 
 detect() 結線テスト
 
-通常トリガー（急増・高停滞）、手動トリガー（危険フラグ）、クールタイム判定を結線した検知エントリポイントの結合挙動を検証
+通常トリガー（組合せ発火: established 停滞 AND 需要警戒）、手動トリガー（危険フラグ）、
+クールタイム判定を結線した検知エントリポイントの結合挙動を検証する。
 """
 
+from dataclasses import replace
 from datetime import datetime, timedelta
 
 from flow_control.detection.config import ResolvedConfig
 from flow_control.detection.detector import DetectionResult, detect
 from flow_control.detection.state import (
-    ArcWatchState,
     DetectionState,
     QueuedTriggerKind,
     RetriggerEntry,
@@ -30,25 +31,20 @@ def _config(
 ) -> ResolvedConfig:
     return ResolvedConfig(
         surge_rate_threshold_percent_per_min=surge_threshold,
+        high_stagnation_duration_min=5.0,
+        beta=1.0,
         cooldown_duration_min=cooldown_min,
         queue_score_threshold=score_threshold,
         queue_diversity_threshold=diversity_threshold,
     )
 
 
-def _surge_inputs(
-    edge_id: EdgeID, base_time: datetime, make_linear_series
+def _quiet_inputs(
+    edge_id: EdgeID, base_time: datetime, make_flat_line_history
 ) -> tuple[HistoryDigest, Observations]:
-    """slope=10/min, mean=50 → 20 %/min"""
-    window, scalar_flow = make_linear_series(
-        edge_id,
-        observed_at=base_time,
-        sample_count=11,
-        start_value=0.0,
-        slope_per_min=10.0,
-    )
-    history = HistoryDigest(window_series=(window,))
-    observations = Observations(observed_at=base_time, arc_scalar_flows=(scalar_flow,))
+    """平坦ライン・停滞観測なし → 通常トリガーが発火しない静穏入力"""
+    history = make_flat_line_history(edge_id, base_time)
+    observations = Observations(observed_at=base_time)
     return history, observations
 
 
@@ -65,13 +61,9 @@ def test_no_trigger_when_quiet(
     base_time: datetime,
     basic_graph: Graph,
     edge_id: EdgeID,
-    make_flat_series,
+    make_flat_line_history,
 ):
-    window, scalar_flow = make_flat_series(
-        edge_id, observed_at=base_time, sample_count=11, value=100.0
-    )
-    history = HistoryDigest(window_series=(window,))
-    observations = Observations(observed_at=base_time, arc_scalar_flows=(scalar_flow,))
+    history, observations = _quiet_inputs(edge_id, base_time, make_flat_line_history)
 
     result = detect(
         graph=basic_graph,
@@ -91,19 +83,19 @@ def test_no_trigger_when_quiet(
     assert result.effective_snapshot is observations
 
 
-def test_surge_fires_and_starts_cooldown(
+def test_combined_trigger_fires_and_starts_cooldown(
     base_time: datetime,
     basic_graph: Graph,
     edge_id: EdgeID,
-    make_linear_series,
+    make_combined_firing,
 ):
-    history, observations = _surge_inputs(edge_id, base_time, make_linear_series)
+    history, observations, previous = make_combined_firing(edge_id, base_time)
 
     result = detect(
         graph=basic_graph,
         observations=observations,
         history_digest=history,
-        previous_state=DetectionState(),
+        previous_state=previous,
         events=(),
         config=_config(cooldown_min=60.0),
         server_time=base_time,
@@ -119,12 +111,13 @@ def test_abort_state_excludes_fire_side_effects_on_trigger(
     base_time: datetime,
     basic_graph: Graph,
     edge_id: EdgeID,
-    make_linear_series,
+    make_combined_firing,
 ):
     # TRIGGERED 時、new_state は発火副作用を反映するが abort_state は除外する
-    history, observations = _surge_inputs(edge_id, base_time, make_linear_series)
-    previous = DetectionState(
-        arc_retrigger_counts=(RetriggerEntry(edge_id=edge_id, count=2),)
+    history, observations, fire_state = make_combined_firing(edge_id, base_time)
+    previous = replace(
+        fire_state,
+        arc_retrigger_counts=(RetriggerEntry(edge_id=edge_id, count=2),),
     )
 
     result = detect(
@@ -152,15 +145,10 @@ def test_danger_flag_fires_for_node(
     base_time: datetime,
     basic_graph: Graph,
     edge_id: EdgeID,
-    make_flat_series,
+    make_flat_line_history,
 ):
-    # 通常トリガーは発火しない平坦な系列
-    # 危険フラグのみで発火
-    window, scalar_flow = make_flat_series(
-        edge_id, observed_at=base_time, sample_count=11, value=100.0
-    )
-    history = HistoryDigest(window_series=(window,))
-    observations = Observations(observed_at=base_time, arc_scalar_flows=(scalar_flow,))
+    # 通常トリガーは発火しない静穏な入力。危険フラグのみで発火
+    history, observations = _quiet_inputs(edge_id, base_time, make_flat_line_history)
 
     result = detect(
         graph=basic_graph,
@@ -183,15 +171,15 @@ def test_danger_flag_fires_for_node(
 # ---------------------------------------------------------------------------
 
 
-def test_surge_in_cooldown_is_queued(
+def test_trigger_in_cooldown_is_queued(
     base_time: datetime,
     basic_graph: Graph,
     edge_id: EdgeID,
-    make_linear_series,
+    make_combined_firing,
 ):
-    history, observations = _surge_inputs(edge_id, base_time, make_linear_series)
+    history, observations, fire_state = make_combined_firing(edge_id, base_time)
     cooldown_until = base_time + timedelta(minutes=30)
-    previous = DetectionState(cooldown_until=cooldown_until)
+    previous = replace(fire_state, cooldown_until=cooldown_until)
 
     result = detect(
         graph=basic_graph,
@@ -210,30 +198,23 @@ def test_surge_in_cooldown_is_queued(
     assert len(result.new_state.trigger_queue) == 1
     entry = result.new_state.trigger_queue[0]
     assert entry.origin_edge_id == edge_id
-    assert entry.kind == QueuedTriggerKind.SURGE
+    # 組合せ発火の kind は HIGH_STAGNATION
+    assert entry.kind == QueuedTriggerKind.HIGH_STAGNATION
 
 
 def test_queued_trigger_carries_observation_snapshot_ref(
     base_time: datetime,
     basic_graph: Graph,
     edge_id: EdgeID,
-    make_linear_series,
+    make_combined_firing,
 ):
     # observations.snapshot_ref がキューエントリの snapshot_ref へ伝播
-    window, scalar_flow = make_linear_series(
-        edge_id,
-        observed_at=base_time,
-        sample_count=11,
-        start_value=0.0,
-        slope_per_min=10.0,
+    history, observations, fire_state = make_combined_firing(
+        edge_id, base_time, snapshot_ref="snap-42"
     )
-    history = HistoryDigest(window_series=(window,))
-    observations = Observations(
-        observed_at=base_time,
-        snapshot_ref="snap-42",
-        arc_scalar_flows=(scalar_flow,),
+    previous = replace(
+        fire_state, cooldown_until=base_time + timedelta(minutes=30)
     )
-    previous = DetectionState(cooldown_until=base_time + timedelta(minutes=30))
 
     result = detect(
         graph=basic_graph,
@@ -255,13 +236,9 @@ def test_danger_in_cooldown_fires_immediately(
     base_time: datetime,
     basic_graph: Graph,
     edge_id: EdgeID,
-    make_flat_series,
+    make_flat_line_history,
 ):
-    window, scalar_flow = make_flat_series(
-        edge_id, observed_at=base_time, sample_count=11, value=100.0
-    )
-    history = HistoryDigest(window_series=(window,))
-    observations = Observations(observed_at=base_time, arc_scalar_flows=(scalar_flow,))
+    history, observations = _quiet_inputs(edge_id, base_time, make_flat_line_history)
     cooldown_until = base_time + timedelta(minutes=30)
     previous = DetectionState(cooldown_until=cooldown_until)
 
@@ -285,13 +262,9 @@ def test_skipped_cooldown_when_quiet_in_cooldown(
     base_time: datetime,
     basic_graph: Graph,
     edge_id: EdgeID,
-    make_flat_series,
+    make_flat_line_history,
 ):
-    window, scalar_flow = make_flat_series(
-        edge_id, observed_at=base_time, sample_count=11, value=100.0
-    )
-    history = HistoryDigest(window_series=(window,))
-    observations = Observations(observed_at=base_time, arc_scalar_flows=(scalar_flow,))
+    history, observations = _quiet_inputs(edge_id, base_time, make_flat_line_history)
     cooldown_until = base_time + timedelta(minutes=30)
     previous = DetectionState(cooldown_until=cooldown_until)
 
@@ -314,25 +287,10 @@ def test_high_stagnation_fires_through_detect(
     base_time: datetime,
     basic_graph: Graph,
     edge_id: EdgeID,
-    make_stagnation_observation,
-    make_history_with_arc_stats,
+    make_combined_firing,
 ):
-    # 両条件を M 分継続している警戒状態から高停滞で発火する
-    history = make_history_with_arc_stats((edge_id, 5.0, 5.0))
-    observations = make_stagnation_observation(
-        edge_id, observed_at=base_time, stagnation=10.0
-    )
-    previous = DetectionState(
-        arc_watch_states=(
-            ArcWatchState(
-                edge_id=edge_id,
-                percentile_breached=True,
-                delta_breached=True,
-                stagnation_watch_since=base_time - timedelta(minutes=6),
-            ),
-        )
-    )
-    config = _config(surge_threshold=1_000.0)  # 急増は発火させない
+    # established 停滞 ＋ ライン急増 の組合せ発火が detect を通して発火する
+    history, observations, previous = make_combined_firing(edge_id, base_time)
 
     result = detect(
         graph=basic_graph,
@@ -340,7 +298,7 @@ def test_high_stagnation_fires_through_detect(
         history_digest=history,
         previous_state=previous,
         events=(),
-        config=config,
+        config=_config(),
         server_time=base_time,
     )
 

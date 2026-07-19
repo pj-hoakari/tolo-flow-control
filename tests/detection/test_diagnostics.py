@@ -7,6 +7,7 @@
 - consecutive_skip_count は Detection では一切変更しない（リセット／加算は finalize 責務）
 """
 
+from dataclasses import replace
 from datetime import datetime, timedelta
 from typing import TypeVar
 
@@ -21,7 +22,6 @@ from flow_control.detection.diagnostics import (
     TriggerEvidence,
 )
 from flow_control.detection.state import (
-    ArcWatchState,
     DetectionState,
     QueuedTrigger,
     QueuedTriggerKind,
@@ -47,35 +47,20 @@ def _config(
 ) -> ResolvedConfig:
     return ResolvedConfig(
         surge_rate_threshold_percent_per_min=surge_threshold,
+        high_stagnation_duration_min=5.0,
+        beta=1.0,
         cooldown_duration_min=cooldown_min,
         queue_score_threshold=score_threshold,
         queue_diversity_threshold=diversity_threshold,
     )
 
 
-def _surge_inputs(
-    edge_id: EdgeID, base_time: datetime, make_linear_series
+def _quiet_inputs(
+    edge_id: EdgeID, base_time: datetime, make_flat_line_history
 ) -> tuple[HistoryDigest, Observations]:
-    window, scalar_flow = make_linear_series(
-        edge_id,
-        observed_at=base_time,
-        sample_count=11,
-        start_value=0.0,
-        slope_per_min=10.0,
-    )
-    history = HistoryDigest(window_series=(window,))
-    observations = Observations(observed_at=base_time, arc_scalar_flows=(scalar_flow,))
-    return history, observations
-
-
-def _flat_inputs(
-    edge_id: EdgeID, base_time: datetime, make_flat_series
-) -> tuple[HistoryDigest, Observations]:
-    window, scalar_flow = make_flat_series(
-        edge_id, observed_at=base_time, sample_count=11, value=100.0
-    )
-    history = HistoryDigest(window_series=(window,))
-    observations = Observations(observed_at=base_time, arc_scalar_flows=(scalar_flow,))
+    """平坦ライン・停滞観測なし → 通常トリガーが発火しない静穏入力"""
+    history = make_flat_line_history(edge_id, base_time)
+    observations = Observations(observed_at=base_time)
     return history, observations
 
 
@@ -107,15 +92,16 @@ def test_surge_evidence(
     base_time: datetime,
     basic_graph: Graph,
     edge_id: EdgeID,
-    make_linear_series,
+    make_combined_firing,
 ):
-    history, observations = _surge_inputs(edge_id, base_time, make_linear_series)
+    # 組合せ発火（停滞 established ＋ ライン急増）で急増根拠が付与される
+    history, observations, previous = make_combined_firing(edge_id, base_time)
 
     result = detect(
         graph=basic_graph,
         observations=observations,
         history_digest=history,
-        previous_state=DetectionState(),
+        previous_state=previous,
         events=(),
         config=_config(surge_threshold=10.0),
         server_time=base_time,
@@ -133,24 +119,10 @@ def test_high_stagnation_evidence(
     base_time: datetime,
     basic_graph: Graph,
     edge_id: EdgeID,
-    make_stagnation_observation,
-    make_history_with_arc_stats,
+    make_combined_firing,
 ):
-    history = make_history_with_arc_stats((edge_id, 5.0, 5.0))
-    observations = make_stagnation_observation(
-        edge_id, observed_at=base_time, stagnation=10.0
-    )
-    previous = DetectionState(
-        arc_watch_states=(
-            ArcWatchState(
-                edge_id=edge_id,
-                percentile_breached=True,
-                delta_breached=True,
-                stagnation_watch_since=base_time - timedelta(minutes=6),
-            ),
-        )
-    )
-    config = _config(surge_threshold=1_000.0)
+    # 組合せ発火時に停滞根拠（p90 あり）が付与される
+    history, observations, previous = make_combined_firing(edge_id, base_time)
 
     result = detect(
         graph=basic_graph,
@@ -158,14 +130,14 @@ def test_high_stagnation_evidence(
         history_digest=history,
         previous_state=previous,
         events=(),
-        config=config,
+        config=_config(surge_threshold=10.0),
         server_time=base_time,
     )
 
     stag = _evidences_of(result.evidences, HighStagnationEvidence)
     assert len(stag) == 1
     assert stag[0].edge_id == edge_id
-    assert stag[0].stagnation == 10.0
+    assert stag[0].stagnation == 15.0
     assert stag[0].percentile_threshold == 5.0
     assert stag[0].duration_min == 5.0
 
@@ -174,9 +146,9 @@ def test_danger_evidence_for_node(
     base_time: datetime,
     basic_graph: Graph,
     edge_id: EdgeID,
-    make_flat_series,
+    make_flat_line_history,
 ):
-    history, observations = _flat_inputs(edge_id, base_time, make_flat_series)
+    history, observations = _quiet_inputs(edge_id, base_time, make_flat_line_history)
 
     result = detect(
         graph=basic_graph,
@@ -204,9 +176,9 @@ def test_no_evidence_when_no_trigger(
     base_time: datetime,
     basic_graph: Graph,
     edge_id: EdgeID,
-    make_flat_series,
+    make_flat_line_history,
 ):
-    history, observations = _flat_inputs(edge_id, base_time, make_flat_series)
+    history, observations = _quiet_inputs(edge_id, base_time, make_flat_line_history)
 
     result = detect(
         graph=basic_graph,
@@ -289,12 +261,12 @@ def test_consecutive_skip_count_untouched_on_trigger(
     base_time: datetime,
     basic_graph: Graph,
     edge_id: EdgeID,
-    make_linear_series,
+    make_combined_firing,
 ):
     # Detection は consecutive_skip_count に触れない
-    # （発火時の 0 リセットは §4.9 の finalize の責務）
-    history, observations = _surge_inputs(edge_id, base_time, make_linear_series)
-    previous = DetectionState(consecutive_skip_count=5)
+    # （発火時の 0 リセットは finalize の責務）
+    history, observations, fire_state = make_combined_firing(edge_id, base_time)
+    previous = replace(fire_state, consecutive_skip_count=5)
 
     result = detect(
         graph=basic_graph,
@@ -314,9 +286,9 @@ def test_consecutive_skip_count_preserved_when_no_trigger(
     base_time: datetime,
     basic_graph: Graph,
     edge_id: EdgeID,
-    make_flat_series,
+    make_flat_line_history,
 ):
-    history, observations = _flat_inputs(edge_id, base_time, make_flat_series)
+    history, observations = _quiet_inputs(edge_id, base_time, make_flat_line_history)
     previous = DetectionState(consecutive_skip_count=5)
 
     result = detect(
@@ -338,10 +310,11 @@ def test_consecutive_skip_count_preserved_when_queued(
     base_time: datetime,
     basic_graph: Graph,
     edge_id: EdgeID,
-    make_linear_series,
+    make_combined_firing,
 ):
-    history, observations = _surge_inputs(edge_id, base_time, make_linear_series)
-    previous = DetectionState(
+    history, observations, fire_state = make_combined_firing(edge_id, base_time)
+    previous = replace(
+        fire_state,
         cooldown_until=base_time + timedelta(minutes=30),
         consecutive_skip_count=5,
     )
