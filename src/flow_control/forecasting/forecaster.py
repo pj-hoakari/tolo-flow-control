@@ -6,7 +6,7 @@ from ..domain.history import HistoryDigest
 from ..domain.observations import Observations
 from ..domain.references import Reference
 from .config import ResolvedConfig
-from .demand import NodeDemand, compute_node_demand
+from .demand import NodeDemand, compute_node_demand_result
 from .od import NodeResolution, ODDemand, estimate_od
 from .sensitivity import (
     ArcFlowSensitivity,
@@ -48,11 +48,17 @@ def forecast(
         is_open_mode = len(graph.boundary_nodes()) > 0
 
     # Step A: 点需要の独立推定
-    node_demand = compute_node_demand(graph, observations, config)
+    demand_result = compute_node_demand_result(graph, observations, config)
+    node_demand = demand_result.node_demand
 
     # Step B: OD 推定
     od_result = estimate_od(
-        graph, observations, node_demand, config, is_open_mode=is_open_mode
+        graph,
+        observations,
+        node_demand,
+        config,
+        is_open_mode=is_open_mode,
+        imputed_arcs=demand_result.imputed_arcs,
     )
 
     # Step C: 整合・検証

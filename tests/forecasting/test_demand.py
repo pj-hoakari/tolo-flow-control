@@ -21,7 +21,11 @@ from flow_control.domain import (
     ObservationType,
 )
 from flow_control.forecasting.config import ResolvedConfig
-from flow_control.forecasting.demand import NodeDemand, compute_node_demand
+from flow_control.forecasting.demand import (
+    NodeDemand,
+    compute_node_demand,
+    compute_node_demand_result,
+)
 
 
 @pytest.fixture
@@ -336,7 +340,12 @@ def test_mixed_steady_uses_littles_law(observed_at: datetime) -> None:
         observed_at=observed_at,
         arc_flows=(_flow("e1", FlowDirection.A_TO_B, 10.0),),
         node_occupancies=(
-            NodeOccupancy(node_id=NodeID("v"), occupancy=60.0, occupancy_delta=0.0),
+            NodeOccupancy(
+                node_id=NodeID("v"),
+                occupancy=60.0,
+                occupancy_delta=0.0,
+                same_sensor_arrival=True,
+            ),
         ),
     )
     config = _config(transit_time_prior_sec=2.0, dwell_time_prior_sec=10.0)
@@ -345,6 +354,33 @@ def test_mixed_steady_uses_littles_law(observed_at: datetime) -> None:
     assert v.staying == pytest.approx(5.0)
     assert v.transit == pytest.approx(5.0)
     assert v.absorption == pytest.approx(5.0)
+
+
+def test_mixed_steady_skips_littles_law_without_shared_sensor(
+    observed_at: datetime,
+) -> None:
+    """リトル型復元は到着率と占有が同一センサー由来のときだけ適用する。"""
+    graph = Graph(
+        nodes=(_node("a"), _node("v", kind=NodeKind.GOAL_TRANSIT_MIXED)),
+        edges=(_edge("e1", "a", "v"),),
+    )
+    observations = Observations(
+        observed_at=observed_at,
+        arc_flows=(_flow("e1", FlowDirection.A_TO_B, 10.0),),
+        node_occupancies=(
+            NodeOccupancy(node_id=NodeID("v"), occupancy=60.0, occupancy_delta=0.0),
+        ),
+    )
+
+    v = _demand_of(
+        compute_node_demand(
+            graph,
+            observations,
+            _config(transit_time_prior_sec=2.0, dwell_time_prior_sec=10.0),
+        ),
+        "v",
+    )
+    assert v.staying == 0.0
 
 
 def test_mixed_without_signal_degrades_to_zero(observed_at: datetime) -> None:
@@ -412,6 +448,9 @@ def test_conservation_imputes_single_unobserved_outflow(observed_at: datetime) -
     assert m.gross_out == 10.0  # 未観測流出を復元
     assert m.transit == 10.0
     assert c.gross_in == 10.0  # 復元した流量が c へ伝播
+
+    result = compute_node_demand_result(graph, observations, _config())
+    assert result.imputed_arcs == (EdgeID("e2"),)
 
 
 def test_conservation_accounts_for_occupancy_delta(observed_at: datetime) -> None:

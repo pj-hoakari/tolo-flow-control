@@ -1,6 +1,8 @@
 from .demand import (
+    DemandResult,
     NodeDemand,
     compute_node_demand,
+    compute_node_demand_result,
 )
 from .forecaster import (
     ForecastResult,
@@ -29,6 +31,7 @@ from .validation import (
 
 __all__ = [
     "ArcFlowSensitivity",
+    "DemandResult",
     "FallbackReport",
     "ForecastResult",
     "NodeConfidence",
@@ -42,6 +45,7 @@ __all__ = [
     "SensitivityResult",
     "ValidationResult",
     "compute_node_demand",
+    "compute_node_demand_result",
     "estimate_od",
     "forecast",
     "resolve_arc_flow_sensitivity",
