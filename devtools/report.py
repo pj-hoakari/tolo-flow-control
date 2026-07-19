@@ -47,10 +47,35 @@ def run_summary(
             "node_confidence_min": min(confs) if confs else None,
             "node_confidence_max": max(confs) if confs else None,
             "resolution_modes": sorted({r.mode.value for r in fc.estimation_resolution}),
+            "resolution_reasons": _counts(
+                resolution.reason.value for resolution in fc.estimation_resolution
+            ),
+            "imputed_arcs": sorted(
+                {
+                    edge_id.value
+                    for resolution in fc.estimation_resolution
+                    for edge_id in resolution.imputed_arcs
+                }
+            ),
             "fallback_default_edges": [
                 e.value for e in fc.fallback_usage.used_default_edges
             ],
             "staying_nodes": [d.node_id.value for d in fc.node_demand if d.staying > 0.0],
+        }
+    if run.detour is not None:
+        summary["detour"] = {
+            "trigger_sets": len(run.detour.detour_sets),
+            "k_effective": {
+                detour.origin_edge.value: detour.k_effective
+                for detour in run.detour.detour_sets
+            },
+            "path_counts": {
+                detour.origin_edge.value: len(detour.paths)
+                for detour in run.detour.detour_sets
+            },
+            "trigger_edge_union": sorted(
+                edge_id.value for edge_id in run.detour.trigger_edge_set()
+            ),
         }
     if run.optimization is not None:
         res = run.optimization.optimization_result
@@ -60,6 +85,12 @@ def run_summary(
             "solver_status": res.solver_status.value,
             "phase1": {"status": st.phase1_status.value, "ms": st.phase1_ms},
             "phase2": {"status": st.phase2_status.value, "ms": st.phase2_ms},
+            "lightweight": {
+                "assign_lp_ms": st.assign_lp_ms,
+                "greedy_iterations": st.greedy_iterations,
+                "zones_processed": st.zones_processed,
+                "tau_residual": st.tau_residual,
+            },
             "tau_star": res.objective_values.tau_star,
             "throughput": res.objective_values.throughput,
             "fallback_to_previous": cr.fallback_to_previous,
@@ -74,6 +105,19 @@ def run_summary(
             "direction_proposals": _counts(
                 dp.proposed_direction.value for dp in res.direction_proposal
             ),
+            "direction_change_types": _counts(
+                dp.change_type.value for dp in res.direction_proposal
+            ),
+            "restriction_proposals": [
+                {
+                    "edge_id": proposal.edge_id.value,
+                    "action": proposal.action.value,
+                    "limit_value": proposal.limit_value,
+                    "reason": proposal.reason.value,
+                    "confidence": proposal.confidence,
+                }
+                for proposal in res.restriction_proposal
+            ],
             "boundary_controls": [
                 [bc.node_id.value, bc.action.value] for bc in res.boundary_control
             ],

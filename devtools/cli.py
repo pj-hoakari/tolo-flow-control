@@ -67,6 +67,19 @@ def cmd_run(args: argparse.Namespace) -> int:
             f"throughput={r.objective_values.throughput:.4g} "
             f"fallback={run.optimization.constraint_report.fallback_to_previous}"
         )
+        stats = run.optimization.solver_stats
+        if r.solver_status.value == "LIGHTWEIGHT":
+            print(
+                "  lightweight:"
+                f" zones={stats.zones_processed}"
+                f" greedy_iterations={stats.greedy_iterations}"
+                f" assign_lp_ms={stats.assign_lp_ms}"
+            )
+        if r.restriction_proposal:
+            print("  restrictions:", ", ".join(
+                f"{proposal.edge_id.value}:{proposal.action.value}"
+                for proposal in r.restriction_proposal
+            ))
     if run.forecast is not None:
         print(f"  OD pairs={len(run.forecast.od_matrix)} "
               f"reproduction_error={run.forecast.reproduction_error:.4g}")
@@ -93,6 +106,8 @@ def cmd_run_all(args: argparse.Namespace) -> int:
                 f" tau*={r.objective_values.tau_star:.3g}"
                 f" thru={r.objective_values.throughput:.3g}"
             )
+            if r.solver_status.value == "LIGHTWEIGHT":
+                ostr += f" zones={run.optimization.solver_stats.zones_processed}"
         print(f"  {name:24s} {run.mode.value:6s} {det.verdict_hint.value:12s}{ostr}")
     created_at = datetime.now().isoformat(timespec="seconds")
     label = args.label or datetime.now().strftime("%Y%m%d-%H%M%S")

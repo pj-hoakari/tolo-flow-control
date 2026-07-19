@@ -48,8 +48,9 @@ uv run python -m devtools run-all --out ./_devout --label before-change
 
 にまとめる。要約は **`index.json` 1 ファイルで解析が完結する**よう派生指標まで畳み込む:
 verdict・triggered・evidence_kinds／forecast（OD・reproduction_error・node_confidence レンジ・
-resolution_modes・fallback_default_edges・staying_nodes）／optimization（solver・phase 時間・
-tau*・throughput・fallback・可達性・route_importance_nonzero・direction_proposals・boundary_controls）。
+resolution_modes・resolution_reasons・imputed_arcs・fallback_default_edges・staying_nodes）／detour（起点別
+k_effective・経路本数・対象エッジ和集合）／optimization（solver・phase 時間・軽量モード統計・
+tau*・throughput・fallback・可達性・route_importance_nonzero・方向変更種別・restriction proposals・boundary controls）。
 
 にまとめる。履歴は数値のみで軽量。これを後述の `compare` で突き合わせると、コード変更前後の
 **数値ベースの回帰/改善追跡**ができる。

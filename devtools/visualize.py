@@ -779,6 +779,8 @@ def render_optimization_direction_proposal(
         else:
             _arrow(ax, pa, pb, color="#1f77b4", width=1.8, rad=0.12, zorder=4)
             _arrow(ax, pb, pa, color="#1f77b4", width=1.8, rad=0.12, zorder=4)
+        midpoint = ((pa[0] + pb[0]) / 2, (pa[1] + pb[1]) / 2)
+        ax.annotate(proposal.change_type.value, midpoint, fontsize=6, color="#2ca02c")
     labels = {"PAUSE_INGRESS": "PAUSE-IN", "PAUSE_EGRESS": "PAUSE-OUT", "RESUME": "RESUME"}
     for control in res.boundary_control:
         if control.node_id.value not in pos:
@@ -786,7 +788,9 @@ def render_optimization_direction_proposal(
         point = pos[control.node_id.value]
         _highlight_nodes(ax, pos, {control.node_id.value}, color=_TRIGGER_COLOR)
         ax.annotate(labels.get(control.action.value, control.action.value), (point[0], point[1] + 0.25), fontsize=8, color=_TRIGGER_COLOR, ha="center", zorder=10)
-    info = [f"solver_status = {res.solver_status.value}", f"phase1 = {stats.phase1_status.value} ({stats.phase1_ms} ms)", f"phase2 = {stats.phase2_status.value} ({stats.phase2_ms} ms)", f"tau* = {res.objective_values.tau_star:.4g}", f"throughput = {res.objective_values.throughput:.4g}", f"fallback_to_previous = {opt.constraint_report.fallback_to_previous}", f"local_reachability = {opt.constraint_report.local_reachability_satisfied}", f"boundary_reachability = {opt.constraint_report.boundary_reachability_satisfied}"]
+    info = [f"solver_status = {res.solver_status.value}", f"phase1 = {stats.phase1_status.value} ({stats.phase1_ms} ms)", f"phase2 = {stats.phase2_status.value} ({stats.phase2_ms} ms)", f"tau* = {res.objective_values.tau_star:.4g}", f"throughput = {res.objective_values.throughput:.4g}", f"restrictions = {len(res.restriction_proposal)}", f"fallback_to_previous = {opt.constraint_report.fallback_to_previous}", f"local_reachability = {opt.constraint_report.local_reachability_satisfied}", f"boundary_reachability = {opt.constraint_report.boundary_reachability_satisfied}"]
+    if res.solver_status.value == "LIGHTWEIGHT":
+        info.append(f"zones = {stats.zones_processed}, greedy = {stats.greedy_iterations}")
     ax.text(0.01, 0.99, "\n".join(info), transform=ax.transAxes, fontsize=8, va="top", ha="left", family="monospace", bbox=dict(boxstyle="round", fc="#f3f0ff", ec="#6a3d9a", alpha=0.9))
     _save(fig, path)
 
@@ -883,6 +887,18 @@ def render_optimization(run: PipelineRun, built: BuiltGraph, path: Path) -> None
         else:  # BIDIRECTIONAL
             _arrow(ax, pa, pb, color="#1f77b4", width=1.8, rad=0.12, zorder=4)
             _arrow(ax, pb, pa, color="#1f77b4", width=1.8, rad=0.12, zorder=4)
+        ax.annotate(
+            dp.change_type.value,
+            ((pa[0] + pb[0]) / 2, (pa[1] + pb[1]) / 2),
+            fontsize=6,
+            color="#2ca02c",
+        )
+    for restriction in res.restriction_proposal:
+        edge = edge_by.get(restriction.edge_id.value)
+        if edge is None:
+            continue
+        pa, pb = _edge_endpoints(pos, edge)
+        ax.plot([pa[0], pb[0]], [pa[1], pb[1]], color="#d62728", lw=5.0, alpha=0.5, zorder=5)
     _BND_LABEL = {
         "PAUSE_INGRESS": "PAUSE-IN",
         "PAUSE_EGRESS": "PAUSE-OUT",
@@ -908,10 +924,13 @@ def render_optimization(run: PipelineRun, built: BuiltGraph, path: Path) -> None
         f"phase2 = {stats.phase2_status.value} ({stats.phase2_ms} ms)",
         f"tau* = {res.objective_values.tau_star:.4g}",
         f"throughput = {res.objective_values.throughput:.4g}",
+        f"restrictions = {len(res.restriction_proposal)}",
         f"fallback_to_previous = {opt.constraint_report.fallback_to_previous}",
         f"local_reachability = {opt.constraint_report.local_reachability_satisfied}",
         f"boundary_reachability = {opt.constraint_report.boundary_reachability_satisfied}",
     ]
+    if res.solver_status.value == "LIGHTWEIGHT":
+        info.append(f"zones = {stats.zones_processed}, greedy = {stats.greedy_iterations}")
     ax.text(
         0.01,
         0.99,
@@ -976,6 +995,12 @@ def render_summary(
             f"throughput     : {res.objective_values.throughput:.4g}  (sum flow over P arcs)",
             f"fallback       : {cr.fallback_to_previous}",
         ]
+        if res.solver_status.value == "LIGHTWEIGHT":
+            lines.append(
+                f"  lightweight : zones={st.zones_processed}, greedy={st.greedy_iterations}, assign={st.assign_lp_ms} ms"
+            )
+        if res.restriction_proposal:
+            lines.append(f"restrictions  : {len(res.restriction_proposal)}")
     if run.forecast is not None:
         lines.append(f"OD pairs       : {len(run.forecast.od_matrix)}")
         lines.append(f"reproduction_e : {run.forecast.reproduction_error:.4g}")

@@ -124,7 +124,13 @@ def run_pipeline(
     timings["detour"] = (time.perf_counter() - t0) * 1000.0
 
     # --- Optimization ---
-    limit = time_limit if time_limit is not None else cfg.optimization.milp_time_limit_sec
+    limit = time_limit
+    if limit is None:
+        limit = (
+            cfg.optimization.lightweight_opt_budget_sec
+            if cfg.optimization.optimization_mode.value == "LIGHTWEIGHT"
+            else cfg.optimization.milp_time_limit_sec
+        )
     t0 = time.perf_counter()
     opt = optimize(
         graph=graph,
@@ -137,6 +143,8 @@ def run_pipeline(
         seed=cfg.optimization.solver_seed,
         time_limit=limit,
         mode=mode,
+        triggered_edges=triggered_edges,
+        triggered_nodes=detection.triggered_nodes,
     )
     timings["optimization"] = (time.perf_counter() - t0) * 1000.0
 
