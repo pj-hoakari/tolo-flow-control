@@ -146,7 +146,7 @@ def test_records_watch_when_both_satisfied_but_duration_short(
     make_history_with_arc_stats,
 ):
     # stagnation=10, p90=5, baseline=5, beta=1.0
-    # 先行警戒状態: 両フラグ true、started_at = now - 1 分（M=5 分未満）
+    # 先行警戒状態: 両フラグ true、stagnation_watch_since = now - 1 分（M=5 分未満）
     # → 発火せず、警戒状態を保持する
     history = make_history_with_arc_stats((edge_id, 5.0, 5.0))
     observations = make_stagnation_observation(
@@ -158,7 +158,7 @@ def test_records_watch_when_both_satisfied_but_duration_short(
                 edge_id=edge_id,
                 percentile_breached=True,
                 delta_breached=True,
-                started_at=base_time - timedelta(minutes=1),
+                stagnation_watch_since=base_time - timedelta(minutes=1),
             ),
         )
     )
@@ -187,7 +187,7 @@ def test_fires_when_both_satisfied_for_m_minutes(
     make_stagnation_observation,
     make_history_with_arc_stats,
 ):
-    # 先行警戒状態: 両フラグ true、started_at = now - 6 分（M=5 分以上経過）
+    # 先行警戒状態: 両フラグ true、stagnation_watch_since = now - 6 分（M=5 分以上経過）
     # 直近観測も両条件を満たすため、発火する
     history = make_history_with_arc_stats((edge_id, 5.0, 5.0))
     observations = make_stagnation_observation(
@@ -199,7 +199,7 @@ def test_fires_when_both_satisfied_for_m_minutes(
                 edge_id=edge_id,
                 percentile_breached=True,
                 delta_breached=True,
-                started_at=base_time - timedelta(minutes=6),
+                stagnation_watch_since=base_time - timedelta(minutes=6),
             ),
         )
     )
@@ -225,7 +225,7 @@ def test_records_watch_start_when_both_first_become_satisfied(
     make_history_with_arc_stats,
 ):
     # 先行警戒状態なし、今回両条件を初めて満たす
-    # → 発火せず（継続時間=0）、started_at=now で警戒状態を新規記録
+    # → 発火せず（継続時間=0）、stagnation_watch_since=now で警戒状態を新規記録
     history = make_history_with_arc_stats((edge_id, 5.0, 5.0))
     observations = make_stagnation_observation(
         edge_id, observed_at=base_time, stagnation=10.0
@@ -245,7 +245,7 @@ def test_records_watch_start_when_both_first_become_satisfied(
     assert watch is not None
     assert watch.percentile_breached is True
     assert watch.delta_breached is True
-    assert watch.started_at == base_time
+    assert watch.stagnation_watch_since == base_time
 
 
 def test_clears_watch_when_conditions_no_longer_met(
@@ -268,7 +268,7 @@ def test_clears_watch_when_conditions_no_longer_met(
                 edge_id=edge_id,
                 percentile_breached=True,
                 delta_breached=True,
-                started_at=base_time - timedelta(minutes=2),
+                stagnation_watch_since=base_time - timedelta(minutes=2),
             ),
         )
     )
@@ -424,7 +424,7 @@ def test_y_graph_fires_only_on_stagnating_edge_after_m_minutes(
                 edge_id=target,
                 percentile_breached=True,
                 delta_breached=True,
-                started_at=base_time - timedelta(minutes=6),
+                stagnation_watch_since=base_time - timedelta(minutes=6),
             ),
         )
     )
@@ -463,13 +463,13 @@ def test_y_graph_fires_on_multiple_stagnating_edges(
                 edge_id=e1,
                 percentile_breached=True,
                 delta_breached=True,
-                started_at=base_time - timedelta(minutes=6),
+                stagnation_watch_since=base_time - timedelta(minutes=6),
             ),
             ArcWatchState(
                 edge_id=e3,
                 percentile_breached=True,
                 delta_breached=True,
-                started_at=base_time - timedelta(minutes=6),
+                stagnation_watch_since=base_time - timedelta(minutes=6),
             ),
         )
     )

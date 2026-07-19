@@ -46,6 +46,9 @@ class EventKind(str, Enum):
     ENABLE = "ENABLE"
     SCHEDULED_INFLOW = "SCHEDULED_INFLOW"
     SCHEDULED_ATTR_CHANGE = "SCHEDULED_ATTR_CHANGE"
+    # 観測点構成の変更（追加・故障・交換）。受信対象はウォームアップを再開始し、
+    # 当該リクエストでは履歴統計を使わず参照値フォールバックへ切替える
+    SENSOR_SET_CHANGED = "SENSOR_SET_CHANGED"
 
 
 @dataclass(frozen=True)
@@ -58,6 +61,8 @@ class Event:
     kind: EventKind
     target_id: str
     occurred_at: datetime
+    # イベント付帯情報（例: SCHEDULED_INFLOW.expected_count）。None = 付帯情報なし
+    params: tuple[tuple[str, object], ...] | None = None
 
 
 @dataclass(frozen=True)
@@ -280,10 +285,10 @@ def _evaluate_high_stagnation_trigger(
             previous_watch is not None
             and previous_watch.percentile_breached
             and previous_watch.delta_breached
-            and previous_watch.started_at is not None
+            and previous_watch.stagnation_watch_since is not None
         ):
             elapsed_minutes = (
-                server_time - previous_watch.started_at
+                server_time - previous_watch.stagnation_watch_since
             ).total_seconds() / 60.0
             if elapsed_minutes >= high_stagnation_duration_min:
                 return True, None
@@ -291,13 +296,13 @@ def _evaluate_high_stagnation_trigger(
                 edge_id=edge_id,
                 percentile_breached=True,
                 delta_breached=True,
-                started_at=previous_watch.started_at,
+                stagnation_watch_since=previous_watch.stagnation_watch_since,
             )
         return False, ArcWatchState(
             edge_id=edge_id,
             percentile_breached=True,
             delta_breached=True,
-            started_at=server_time,
+            stagnation_watch_since=server_time,
         )
 
     # 片方のみ成立。前サイクルと同じ成立構成なら計時開始時刻を引き継ぐ
@@ -305,19 +310,19 @@ def _evaluate_high_stagnation_trigger(
         previous_watch is not None
         and previous_watch.percentile_breached == percentile_breached
         and previous_watch.delta_breached == delta_breached
-        and previous_watch.started_at is not None
+        and previous_watch.stagnation_watch_since is not None
     ):
         return False, ArcWatchState(
             edge_id=edge_id,
             percentile_breached=percentile_breached,
             delta_breached=delta_breached,
-            started_at=previous_watch.started_at,
+            stagnation_watch_since=previous_watch.stagnation_watch_since,
         )
     return False, ArcWatchState(
         edge_id=edge_id,
         percentile_breached=percentile_breached,
         delta_breached=delta_breached,
-        started_at=server_time,
+        stagnation_watch_since=server_time,
     )
 
 
