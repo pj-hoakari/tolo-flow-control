@@ -7,6 +7,7 @@
 - ノード対象や未登録アークには影響しない
 """
 
+from dataclasses import replace
 from datetime import datetime, timedelta
 
 from flow_control.detection.config import ResolvedConfig
@@ -19,7 +20,6 @@ from flow_control.detection.triggers import (
     apply_danger_flag_down,
 )
 from flow_control.domain import EdgeID, Graph
-from flow_control.domain.history import HistoryDigest
 from flow_control.domain.observations import Observations
 
 
@@ -120,14 +120,11 @@ def test_detect_danger_down_zeroes_count_without_firing(
     base_time: datetime,
     basic_graph: Graph,
     edge_id: EdgeID,
-    make_flat_series,
+    make_flat_line_history,
 ):
     # 立ち下げのみ（通常トリガーなし）→ 発火せず、e1 のカウントをリセット
-    window, scalar_flow = make_flat_series(
-        edge_id, observed_at=base_time, sample_count=11, value=100.0
-    )
-    history = HistoryDigest(window_series=(window,))
-    observations = Observations(observed_at=base_time, arc_scalar_flows=(scalar_flow,))
+    history = make_flat_line_history(edge_id, base_time)
+    observations = Observations(observed_at=base_time)
     previous = DetectionState(
         arc_retrigger_counts=(RetriggerEntry(edge_id=edge_id, count=3),),
     )
@@ -153,14 +150,11 @@ def test_detect_danger_down_does_not_reset_cooldown(
     base_time: datetime,
     basic_graph: Graph,
     edge_id: EdgeID,
-    make_flat_series,
+    make_flat_line_history,
 ):
     # クールタイム中に立ち下げを受けてもクールタイムは維持される
-    window, scalar_flow = make_flat_series(
-        edge_id, observed_at=base_time, sample_count=11, value=100.0
-    )
-    history = HistoryDigest(window_series=(window,))
-    observations = Observations(observed_at=base_time, arc_scalar_flows=(scalar_flow,))
+    history = make_flat_line_history(edge_id, base_time)
+    observations = Observations(observed_at=base_time)
     cooldown_until = base_time + timedelta(minutes=30)
     previous = DetectionState(
         cooldown_until=cooldown_until,
@@ -188,19 +182,12 @@ def test_detect_concurrent_surge_recounts_after_flag_down(
     base_time: datetime,
     basic_graph: Graph,
     edge_id: EdgeID,
-    make_linear_series,
+    make_combined_firing,
 ):
-    # 立ち下げで既存カウントを消した上で、同一サイクルの急増は新規に count=1 から数える
-    window, scalar_flow = make_linear_series(
-        edge_id,
-        observed_at=base_time,
-        sample_count=11,
-        start_value=0.0,
-        slope_per_min=10.0,
-    )
-    history = HistoryDigest(window_series=(window,))
-    observations = Observations(observed_at=base_time, arc_scalar_flows=(scalar_flow,))
-    previous = DetectionState(
+    # 立ち下げで既存カウントを消した上で、同一サイクルの組合せ発火は新規に count=1 から数える
+    history, observations, fire_state = make_combined_firing(edge_id, base_time)
+    previous = replace(
+        fire_state,
         arc_retrigger_counts=(RetriggerEntry(edge_id=edge_id, count=3),),
     )
 
@@ -210,7 +197,11 @@ def test_detect_concurrent_surge_recounts_after_flag_down(
         history_digest=history,
         previous_state=previous,
         events=(_down("edge:e1", base_time),),
-        config=ResolvedConfig(surge_rate_threshold_percent_per_min=10.0),
+        config=ResolvedConfig(
+            surge_rate_threshold_percent_per_min=10.0,
+            high_stagnation_duration_min=5.0,
+            beta=1.0,
+        ),
         server_time=base_time,
     )
 

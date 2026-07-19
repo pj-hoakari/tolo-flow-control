@@ -34,19 +34,14 @@ def _config(
     )
 
 
-def _surge_inputs(
-    edge_id: EdgeID, base_time: datetime, make_linear_series
-) -> tuple[HistoryDigest, Observations]:
-    window, scalar_flow = make_linear_series(
-        edge_id,
-        observed_at=base_time,
-        sample_count=11,
-        start_value=0.0,
-        slope_per_min=10.0,
-    )
-    history = HistoryDigest(window_series=(window,))
-    observations = Observations(observed_at=base_time, arc_scalar_flows=(scalar_flow,))
-    return history, observations
+def _firing_inputs(
+    edge_id: EdgeID, base_time: datetime, make_combined_firing
+) -> tuple[HistoryDigest, Observations, DetectionState]:
+    """組合せ発火（established 停滞 + ライン急増）が成立する入力一式を返す
+
+    ウォームアップ抑止を検証するため、抑止が無ければ発火する入力を用意する。
+    """
+    return make_combined_firing(edge_id, base_time)
 
 
 def _event(kind: EventKind, target_id: str, at: datetime) -> Event:
@@ -188,17 +183,20 @@ def test_detect_skips_when_all_targets_in_warmup(
     base_time: datetime,
     basic_graph: Graph,
     edge_id: EdgeID,
-    make_linear_series,
+    make_combined_firing,
 ):
-    # 急増が成立する入力でも、全対象ウォームアップ中なら判定をスキップする
-    history, observations = _surge_inputs(edge_id, base_time, make_linear_series)
+    # 組合せ発火が成立する入力でも、全対象ウォームアップ中なら判定をスキップする
+    history, observations, fire_state = _firing_inputs(
+        edge_id, base_time, make_combined_firing
+    )
     until = base_time + timedelta(minutes=60)
     previous = DetectionState(
+        arc_watch_states=fire_state.arc_watch_states,
         warmup_states=(
             WarmupState(target_key="edge:e1", until=until),
             WarmupState(target_key="node:n1", until=until),
             WarmupState(target_key="node:n2", until=until),
-        )
+        ),
     )
 
     result = detect(
@@ -220,15 +218,18 @@ def test_detect_suppresses_normal_trigger_for_warmup_edge(
     base_time: datetime,
     basic_graph: Graph,
     edge_id: EdgeID,
-    make_linear_series,
+    make_combined_firing,
 ):
     # edge:e1 のみウォームアップ中。node は警戒外なので全対象ウォームアップではない
-    # → SKIPPED_WARMUP にはならず、ただし e1 の急増は抑止されるため NO_TRIGGER
-    history, observations = _surge_inputs(edge_id, base_time, make_linear_series)
+    # → SKIPPED_WARMUP にはならず、ただし e1 の組合せ発火は抑止されるため NO_TRIGGER
+    history, observations, fire_state = _firing_inputs(
+        edge_id, base_time, make_combined_firing
+    )
     previous = DetectionState(
+        arc_watch_states=fire_state.arc_watch_states,
         warmup_states=(
             WarmupState(target_key="edge:e1", until=base_time + timedelta(minutes=60)),
-        )
+        ),
     )
 
     result = detect(
@@ -278,17 +279,19 @@ def test_newly_enabled_edge_is_warmed_up_same_request(
     base_time: datetime,
     basic_graph: Graph,
     edge_id: EdgeID,
-    make_linear_series,
+    make_combined_firing,
 ):
-    # 同一リクエストで ENABLE された edge:e1 は即ウォームアップ対象となり急増が抑止される。
+    # 同一リクエストで ENABLE された edge:e1 は即ウォームアップ対象となり発火が抑止される。
     # node は警戒外なので全対象ウォームアップにはならず NO_TRIGGER
-    history, observations = _surge_inputs(edge_id, base_time, make_linear_series)
+    history, observations, fire_state = _firing_inputs(
+        edge_id, base_time, make_combined_firing
+    )
 
     result = detect(
         graph=basic_graph,
         observations=observations,
         history_digest=history,
-        previous_state=DetectionState(),
+        previous_state=DetectionState(arc_watch_states=fire_state.arc_watch_states),
         events=(_event(EventKind.ENABLE, "edge:e1", base_time),),
         config=_config(),
         server_time=base_time,

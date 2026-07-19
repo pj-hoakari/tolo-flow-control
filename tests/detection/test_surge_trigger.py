@@ -1,28 +1,38 @@
-"""Tests for the surge trigger
+"""Tests for the surge component of the combined (AND) trigger
 
-急増トリガーテスト
-``slope / mean(flow) * 100 > surge_rate_threshold_percent_per_min``
-   - slope: ``HistoryDigest.window_series[edge].flow_samples`` と
-     ``Observations.arc_scalar_flows[edge]`` をマージした系列の最小二乗回帰傾き [flow/分]
-   - mean(flow): 同マージ系列の流量平均
+急増（需要警戒 (b).1）テスト
 
-設計書 §3.4 / §3.5 / §4.3 に基づき，急増判定は履歴ウィンドウの系列に加えて
-直近観測値 ``ArcScalarFlow`` も同じ系列にマージして評価する
+組合せ発火モデルでは、急増は「需要警戒」の一系統に過ぎず、単独では発火しない。
+発火には ``established 停滞（(a)）AND demand_warning（(b)）`` の両立が必要である。
 
-fixture ``make_linear_series`` / ``make_flat_series`` は window + scalar_flow が
-全体で 1 本の線形系列となるよう ``(ArcWindowSeries, ArcScalarFlow)`` の組を返す
+急増率はライン流量の系列（``ArcWindowSeries.flow_samples`` ＋ 現在点 ``arc_flows``）から
+最小二乗回帰の傾きを自己平均で正規化した %/分で評価する。スカラー流量（``arc_scalar_flows``）
+は急増には用いない（パンク専用）。
+
+本ファイルでは主に「急増が発火成立/不成立へ与える影響」を検証する:
+  - 急増のみ（停滞なし） → 非発火
+  - 急増 ＋ established 停滞 → 発火（kind=HIGH_STAGNATION, SurgeEvidence 付与）
+  - established 停滞 ＋ 急増なし → 非発火（AND 否定）・警戒保持
+  - スカラー流量は急増に使わない
+  - サンプル不足・閾値未満・平均≈0 では急増不成立
 """
 
-from datetime import datetime
+from datetime import datetime, timedelta
 
 import pytest
 
 from flow_control.detection.config import ResolvedConfig
-from flow_control.detection.state import DetectionState
+from flow_control.detection.diagnostics import SurgeEvidence
+from flow_control.detection.state import DetectionState, QueuedTriggerKind
 from flow_control.detection.triggers import detect_metric_triggers
-from flow_control.domain import EdgeID, Graph
-from flow_control.domain.history import ArcWindowSeries, HistoryDigest
-from flow_control.domain.observations import Observations
+from flow_control.domain import EdgeID, FlowDirection, Graph
+from flow_control.domain.observations import (
+    ArcFlow,
+    ArcScalarFlow,
+    ArcStagnation,
+    Observations,
+)
+from flow_control.domain.history import HistoryDigest
 
 
 def _run(
@@ -30,6 +40,7 @@ def _run(
     graph: Graph,
     history: HistoryDigest,
     observations: Observations,
+    previous_state: DetectionState,
     server_time: datetime,
     config: ResolvedConfig,
 ):
@@ -37,36 +48,260 @@ def _run(
         graph=graph,
         observations=observations,
         history_digest=history,
-        previous_state=DetectionState(),
+        previous_state=previous_state,
         server_time=server_time,
         config=config,
     )
 
 
-def test_surge_fires_when_slope_exceeds_threshold(
+# ---------------------------------------------------------------------------
+# 急増単独では発火しない（需要警戒は組合せの片翼）
+# ---------------------------------------------------------------------------
+
+
+def test_surge_alone_does_not_fire(
     base_time: datetime,
     basic_graph: Graph,
     edge_id: EdgeID,
     surge_config: ResolvedConfig,
-    make_linear_series,
+    make_history,
+    make_line_samples,
 ):
-    # 全体で 0 → 100 を 10 分かけて線形増加 (履歴 10 件 + 直近観測値 1 件)
-    # slope=10/min, mean=50
-    # → rate = 20 %/min > 10
-    window, scalar_flow = make_linear_series(
-        edge_id,
-        observed_at=base_time,
-        sample_count=11,
-        start_value=0.0,
-        slope_per_min=10.0,
+    # ライン急増（rate≈22 %/分 > 10）は成立するが、停滞警戒が無いため発火しない
+    line = make_line_samples(
+        base_time, sample_count=11, start_value=0.0, slope_per_min=10.0
     )
-    history = HistoryDigest(window_series=(window,))
-    observations = Observations(observed_at=base_time, arc_scalar_flows=(scalar_flow,))
+    history = make_history((edge_id, None, None, None), flow={edge_id: line})
+    observations = Observations(observed_at=base_time)
 
     result = _run(
         graph=basic_graph,
         history=history,
         observations=observations,
+        previous_state=DetectionState(),
+        server_time=base_time,
+        config=surge_config,
+    )
+
+    assert result.triggered_edges == ()
+    assert result.fired_triggers == ()
+
+
+def test_surge_with_established_stagnation_fires(
+    base_time: datetime,
+    basic_graph: Graph,
+    edge_id: EdgeID,
+    surge_config: ResolvedConfig,
+    make_combined_firing,
+):
+    # established 停滞 ＋ ライン急増 → 組合せ発火する
+    history, observations, previous = make_combined_firing(edge_id, base_time)
+
+    result = _run(
+        graph=basic_graph,
+        history=history,
+        observations=observations,
+        previous_state=previous,
+        server_time=base_time,
+        config=surge_config,
+    )
+
+    assert result.triggered_edges == (edge_id,)
+    assert len(result.fired_triggers) == 1
+    # 組合せ発火の kind は SURGE ではなく HIGH_STAGNATION
+    assert result.fired_triggers[0].kind == QueuedTriggerKind.HIGH_STAGNATION
+    # 急増が成立しラインが存在するため SurgeEvidence が付与される
+    surge_evidences = [e for e in result.evidences if isinstance(e, SurgeEvidence)]
+    assert len(surge_evidences) == 1
+    assert surge_evidences[0].rate_percent_per_min > 10.0
+
+
+def test_established_stagnation_without_surge_does_not_fire(
+    base_time: datetime,
+    basic_graph: Graph,
+    edge_id: EdgeID,
+    surge_config: ResolvedConfig,
+    make_history,
+    make_line_samples,
+    make_stagnation_observation,
+    make_established_watch,
+):
+    # established 停滞 はあるが、ラインは平坦で急増せず、需要超過も無効（theta_demand None）
+    # → demand_warning 偽で発火しない（AND 否定）。ラインが存在するため縮退もしない
+    flat_line = make_line_samples(
+        base_time, sample_count=11, start_value=100.0, slope_per_min=0.0
+    )
+    history = make_history((edge_id, 5.0, 5.0, 5.0), flow={edge_id: flat_line})
+    observations = make_stagnation_observation(
+        edge_id, observed_at=base_time, stagnation=15.0
+    )
+    previous = DetectionState(
+        arc_watch_states=(make_established_watch(edge_id, base_time),)
+    )
+
+    result = _run(
+        graph=basic_graph,
+        history=history,
+        observations=observations,
+        previous_state=previous,
+        server_time=base_time,
+        config=surge_config,
+    )
+
+    assert result.triggered_edges == ()
+    # 停滞警戒は保持される
+    watch = result.new_state.watch_state_of(edge_id)
+    assert watch is not None
+    assert watch.percentile_breached is True
+    assert watch.delta_breached is True
+
+
+def test_scalar_flow_is_not_used_for_surge(
+    base_time: datetime,
+    basic_graph: Graph,
+    edge_id: EdgeID,
+    surge_config: ResolvedConfig,
+    make_history,
+    make_line_samples,
+    make_stagnation_observation,
+    make_established_watch,
+):
+    # ラインは平坦だがスカラー流量を高値で与える。スカラーは急増に使わないため
+    # 急増は成立せず、established 停滞があっても発火しない
+    flat_line = make_line_samples(
+        base_time, sample_count=11, start_value=100.0, slope_per_min=0.0
+    )
+    history = make_history((edge_id, 5.0, 5.0, 5.0), flow={edge_id: flat_line})
+    stagnation_obs = make_stagnation_observation(
+        edge_id, observed_at=base_time, stagnation=15.0
+    )
+    observations = Observations(
+        observed_at=base_time,
+        arc_stagnations=stagnation_obs.arc_stagnations,
+        arc_scalar_flows=(ArcScalarFlow(edge_id=edge_id, observed_count=9_999.0),),
+    )
+    previous = DetectionState(
+        arc_watch_states=(make_established_watch(edge_id, base_time),)
+    )
+
+    result = _run(
+        graph=basic_graph,
+        history=history,
+        observations=observations,
+        previous_state=previous,
+        server_time=base_time,
+        config=surge_config,
+    )
+
+    assert result.triggered_edges == ()
+
+
+def test_surge_below_threshold_with_stagnation_does_not_fire(
+    base_time: datetime,
+    basic_graph: Graph,
+    edge_id: EdgeID,
+    surge_config: ResolvedConfig,
+    make_history,
+    make_line_samples,
+    make_stagnation_observation,
+    make_established_watch,
+):
+    # 100 → 105 を 10 分で増加。slope=0.5/min, mean≈102.5 → rate≈0.49 %/min < 10
+    # established 停滞があっても急増不成立で発火しない
+    line = make_line_samples(
+        base_time, sample_count=11, start_value=100.0, slope_per_min=0.5
+    )
+    history = make_history((edge_id, 5.0, 5.0, 5.0), flow={edge_id: line})
+    observations = make_stagnation_observation(
+        edge_id, observed_at=base_time, stagnation=15.0
+    )
+    previous = DetectionState(
+        arc_watch_states=(make_established_watch(edge_id, base_time),)
+    )
+
+    result = _run(
+        graph=basic_graph,
+        history=history,
+        observations=observations,
+        previous_state=previous,
+        server_time=base_time,
+        config=surge_config,
+    )
+
+    assert result.triggered_edges == ()
+
+
+def test_surge_insufficient_samples_with_stagnation_does_not_fire(
+    base_time: datetime,
+    basic_graph: Graph,
+    edge_id: EdgeID,
+    surge_config: ResolvedConfig,
+    make_history,
+    make_line_samples,
+    make_stagnation_observation,
+    make_established_watch,
+):
+    # ライン系列 1 点のみでは傾きを算出できず急増不成立
+    # established 停滞があっても発火しない
+    line = make_line_samples(
+        base_time, sample_count=1, start_value=100.0, slope_per_min=0.0
+    )
+    history = make_history((edge_id, 5.0, 5.0, 5.0), flow={edge_id: line})
+    observations = make_stagnation_observation(
+        edge_id, observed_at=base_time, stagnation=15.0
+    )
+    previous = DetectionState(
+        arc_watch_states=(make_established_watch(edge_id, base_time),)
+    )
+
+    result = _run(
+        graph=basic_graph,
+        history=history,
+        observations=observations,
+        previous_state=previous,
+        server_time=base_time,
+        config=surge_config,
+    )
+
+    assert result.triggered_edges == ()
+
+
+def test_surge_uses_current_arc_flow_point(
+    base_time: datetime,
+    basic_graph: Graph,
+    edge_id: EdgeID,
+    surge_config: ResolvedConfig,
+    make_history,
+    make_line_samples,
+    make_established_watch,
+):
+    # 現在点は arc_flows（両方向合算）でも供給できる。履歴 + 現在点で急増を評価する
+    # 履歴は 0 → 90（10 点, base_time-10..base_time-1 分）
+    history_line = make_line_samples(
+        base_time - timedelta(minutes=1),
+        sample_count=10,
+        start_value=0.0,
+        slope_per_min=10.0,
+    )
+    history = make_history((edge_id, 5.0, 5.0, 5.0), flow={edge_id: history_line})
+    # 現在点 100 を arc_flows（A_TO_B 60 + B_TO_A 40 = 100）で供給
+    observations = Observations(
+        observed_at=base_time,
+        arc_stagnations=(ArcStagnation(edge_id=edge_id, stagnation=15.0),),
+        arc_flows=(
+            ArcFlow(edge_id=edge_id, direction=FlowDirection.A_TO_B, flow_rate=60.0),
+            ArcFlow(edge_id=edge_id, direction=FlowDirection.B_TO_A, flow_rate=40.0),
+        ),
+    )
+    previous = DetectionState(
+        arc_watch_states=(make_established_watch(edge_id, base_time),)
+    )
+
+    result = _run(
+        graph=basic_graph,
+        history=history,
+        observations=observations,
+        previous_state=previous,
         server_time=base_time,
         config=surge_config,
     )
@@ -74,199 +309,46 @@ def test_surge_fires_when_slope_exceeds_threshold(
     assert result.triggered_edges == (edge_id,)
 
 
-def test_surge_does_not_fire_when_flow_is_steady(
-    base_time: datetime,
-    basic_graph: Graph,
-    edge_id: EdgeID,
-    surge_config: ResolvedConfig,
-    make_flat_series,
-):
-    # 全サンプル 100 で平坦 (履歴 10 件 + 直近観測値 1 件)
-    # slope=0
-    # → rate=0 %/min
-    window, scalar_flow = make_flat_series(
-        edge_id,
-        observed_at=base_time,
-        sample_count=11,
-        value=100.0,
-    )
-    history = HistoryDigest(window_series=(window,))
-    observations = Observations(observed_at=base_time, arc_scalar_flows=(scalar_flow,))
-
-    result = _run(
-        graph=basic_graph,
-        history=history,
-        observations=observations,
-        server_time=base_time,
-        config=surge_config,
-    )
-
-    assert result.triggered_edges == ()
-
-
-def test_surge_does_not_fire_when_slope_below_threshold(
-    base_time: datetime,
-    basic_graph: Graph,
-    edge_id: EdgeID,
-    surge_config: ResolvedConfig,
-    make_linear_series,
-):
-    # 全体で 100 → 105 を 10 分で増加 (履歴 10 件 + 直近観測値 1 件)
-    # slope=0.5/min, mean=102.5
-    # → rate ≈ 0.49 %/min < 10
-    window, scalar_flow = make_linear_series(
-        edge_id,
-        observed_at=base_time,
-        sample_count=11,
-        start_value=100.0,
-        slope_per_min=0.5,
-    )
-    history = HistoryDigest(window_series=(window,))
-    observations = Observations(observed_at=base_time, arc_scalar_flows=(scalar_flow,))
-
-    result = _run(
-        graph=basic_graph,
-        history=history,
-        observations=observations,
-        server_time=base_time,
-        config=surge_config,
-    )
-
-    assert result.triggered_edges == ()
-
-
-def test_surge_does_not_fire_with_insufficient_samples(
-    base_time: datetime,
-    basic_graph: Graph,
-    edge_id: EdgeID,
-    surge_config: ResolvedConfig,
-    make_scalar_observation,
-):
-    # 履歴ウィンドウは空，直近観測値のみ 1 件
-    # 直近観測値を加えてもサンプル数 1 のみで傾きを算出できない
-    # → トリガーなし
-    window = ArcWindowSeries(edge_id=edge_id, flow_samples=())
-    history = HistoryDigest(window_series=(window,))
-    observations = make_scalar_observation(
-        edge_id, observed_at=base_time, observed_count=100.0
-    )
-
-    result = _run(
-        graph=basic_graph,
-        history=history,
-        observations=observations,
-        server_time=base_time,
-        config=surge_config,
-    )
-
-    assert result.triggered_edges == ()
-
-
-def test_surge_does_not_fire_when_mean_flow_is_near_zero(
-    base_time: datetime,
-    basic_graph: Graph,
-    edge_id: EdgeID,
-    surge_config: ResolvedConfig,
-    make_flat_series,
-):
-    # 全サンプル 0 で平均流量がほぼ 0 (履歴 10 件 + 直近観測値 1 件)
-    # -> トリガーなし
-    window, scalar_flow = make_flat_series(
-        edge_id,
-        observed_at=base_time,
-        sample_count=11,
-        value=0.0,
-    )
-    history = HistoryDigest(window_series=(window,))
-    observations = Observations(observed_at=base_time, arc_scalar_flows=(scalar_flow,))
-
-    result = _run(
-        graph=basic_graph,
-        history=history,
-        observations=observations,
-        server_time=base_time,
-        config=surge_config,
-    )
-
-    assert result.triggered_edges == ()
-
-
-def test_surge_does_not_fire_when_edge_has_no_window_data(
-    base_time: datetime,
-    basic_graph: Graph,
-    surge_config: ResolvedConfig,
-):
-    # 履歴ウィンドウも直近観測値も存在しない
-    # -> トリガーなし
-    history = HistoryDigest()
-    observations = Observations(observed_at=base_time)
-
-    result = _run(
-        graph=basic_graph,
-        history=history,
-        observations=observations,
-        server_time=base_time,
-        config=surge_config,
-    )
-
-    assert result.triggered_edges == ()
-
-
-def test_surge_preserves_previous_state_queue(
-    base_time: datetime,
-    basic_graph: Graph,
-    edge_id: EdgeID,
-    surge_config: ResolvedConfig,
-    make_flat_series,
-):
-    # トリガーなしの場合，previous_stateを維持
-    # 履歴と直近観測値の両方を投入してもトリガー発火条件を満たさない
-    window, scalar_flow = make_flat_series(
-        edge_id,
-        observed_at=base_time,
-        sample_count=11,
-        value=100.0,
-    )
-    history = HistoryDigest(window_series=(window,))
-    observations = Observations(observed_at=base_time, arc_scalar_flows=(scalar_flow,))
-    previous = DetectionState()
-
-    result = detect_metric_triggers(
-        graph=basic_graph,
-        observations=observations,
-        history_digest=history,
-        previous_state=previous,
-        server_time=base_time,
-        config=surge_config,
-    )
-
-    assert result.new_state.trigger_queue == previous.trigger_queue
-
-
 # ---------------------------------------------------------------------------
-# Y 型グラフ (3 エッジ) 上での複数エッジ状態組み合わせテスト
+# Y 型グラフ (3 エッジ) 上での複数エッジ組み合わせ
 # ---------------------------------------------------------------------------
 
 
-def _surging_pair(make_linear_series, edge_id: EdgeID, observed_at: datetime):
-    """急増 (slope=10/min, mean=50, rate=20 %/分) となる (window, scalar_flow) を返す"""
-    return make_linear_series(
-        edge_id,
-        observed_at=observed_at,
-        sample_count=11,
-        start_value=0.0,
-        slope_per_min=10.0,
-    )
+def _combined_setup(
+    edge_ids: tuple[EdgeID, ...],
+    firing_indices: set[int],
+    base_time: datetime,
+    make_history,
+    make_line_samples,
+    make_established_watch,
+):
+    """指定インデックスのエッジは組合せ発火成立、他は静穏（平坦・停滞なし）となる入力を返す
 
-
-def _calm_pair(make_flat_series, edge_id: EdgeID, observed_at: datetime):
-    """平坦 (slope=0) で発火しない (window, scalar_flow) を返す"""
-    return make_flat_series(
-        edge_id,
-        observed_at=observed_at,
-        sample_count=11,
-        value=100.0,
+    ``(history, observations, previous_state)`` を返す。
+    """
+    specs: list[tuple[EdgeID, float | None, float | None, float | None]] = []
+    flow: dict[EdgeID, tuple[tuple[datetime, float], ...]] = {}
+    stagnations: list[ArcStagnation] = []
+    watch_states = []
+    for i, eid in enumerate(edge_ids):
+        if i in firing_indices:
+            specs.append((eid, 5.0, 5.0, 5.0))
+            flow[eid] = make_line_samples(
+                base_time, sample_count=11, start_value=0.0, slope_per_min=10.0
+            )
+            stagnations.append(ArcStagnation(edge_id=eid, stagnation=15.0))
+            watch_states.append(make_established_watch(eid, base_time))
+        else:
+            specs.append((eid, None, None, None))
+            flow[eid] = make_line_samples(
+                base_time, sample_count=11, start_value=100.0, slope_per_min=0.0
+            )
+    history = make_history(*specs, flow=flow)
+    observations = Observations(
+        observed_at=base_time, arc_stagnations=tuple(stagnations)
     )
+    previous = DetectionState(arc_watch_states=tuple(watch_states))
+    return history, observations, previous
 
 
 def test_y_graph_no_trigger_when_all_edges_calm(
@@ -274,20 +356,20 @@ def test_y_graph_no_trigger_when_all_edges_calm(
     y_graph: Graph,
     y_graph_edge_ids: tuple[EdgeID, EdgeID, EdgeID],
     surge_config: ResolvedConfig,
-    make_flat_series,
+    make_history,
+    make_line_samples,
+    make_established_watch,
 ):
-    # 3 エッジすべてが平坦
-    # → トリガーなし
-    pairs = [_calm_pair(make_flat_series, eid, base_time) for eid in y_graph_edge_ids]
-    history = HistoryDigest(window_series=tuple(w for w, _ in pairs))
-    observations = Observations(
-        observed_at=base_time, arc_scalar_flows=tuple(s for _, s in pairs)
+    history, observations, previous = _combined_setup(
+        y_graph_edge_ids, set(), base_time, make_history, make_line_samples,
+        make_established_watch,
     )
 
     result = _run(
         graph=y_graph,
         history=history,
         observations=observations,
+        previous_state=previous,
         server_time=base_time,
         config=surge_config,
     )
@@ -295,61 +377,54 @@ def test_y_graph_no_trigger_when_all_edges_calm(
     assert result.triggered_edges == ()
 
 
-@pytest.mark.parametrize("surging_index", [0, 1, 2])
-def test_y_graph_fires_only_on_surging_edge(
+@pytest.mark.parametrize("firing_index", [0, 1, 2])
+def test_y_graph_fires_only_on_combined_edge(
     base_time: datetime,
     y_graph: Graph,
     y_graph_edge_ids: tuple[EdgeID, EdgeID, EdgeID],
     surge_config: ResolvedConfig,
-    make_linear_series,
-    make_flat_series,
-    surging_index: int,
+    make_history,
+    make_line_samples,
+    make_established_watch,
+    firing_index: int,
 ):
-    # 3 エッジのうち 1 本のみ急増 (残り 2 本は平坦)
-    # → 該当エッジ 1 件が triggered_edges に入る
-    pairs = []
-    for i, eid in enumerate(y_graph_edge_ids):
-        if i == surging_index:
-            pairs.append(_surging_pair(make_linear_series, eid, base_time))
-        else:
-            pairs.append(_calm_pair(make_flat_series, eid, base_time))
-    history = HistoryDigest(window_series=tuple(w for w, _ in pairs))
-    observations = Observations(
-        observed_at=base_time, arc_scalar_flows=tuple(s for _, s in pairs)
+    history, observations, previous = _combined_setup(
+        y_graph_edge_ids, {firing_index}, base_time, make_history, make_line_samples,
+        make_established_watch,
     )
 
     result = _run(
         graph=y_graph,
         history=history,
         observations=observations,
+        previous_state=previous,
         server_time=base_time,
         config=surge_config,
     )
 
-    assert result.triggered_edges == (y_graph_edge_ids[surging_index],)
+    assert result.triggered_edges == (y_graph_edge_ids[firing_index],)
 
 
-def test_y_graph_returns_all_surging_edges_when_multiple_qualify(
+def test_y_graph_returns_all_combined_edges_when_multiple_qualify(
     base_time: datetime,
     y_graph: Graph,
     y_graph_edge_ids: tuple[EdgeID, EdgeID, EdgeID],
     surge_config: ResolvedConfig,
-    make_linear_series,
-    make_flat_series,
+    make_history,
+    make_line_samples,
+    make_established_watch,
 ):
-    # e1 / e3 が急増、e2 のみ平坦
-    # → ``triggered_edges`` には e1, e3 の両方が含まれる
-    e1, e2, e3 = y_graph_edge_ids
-    w1, s1 = _surging_pair(make_linear_series, e1, base_time)
-    w2, s2 = _calm_pair(make_flat_series, e2, base_time)
-    w3, s3 = _surging_pair(make_linear_series, e3, base_time)
-    history = HistoryDigest(window_series=(w1, w2, w3))
-    observations = Observations(observed_at=base_time, arc_scalar_flows=(s1, s2, s3))
+    e1, _e2, e3 = y_graph_edge_ids
+    history, observations, previous = _combined_setup(
+        y_graph_edge_ids, {0, 2}, base_time, make_history, make_line_samples,
+        make_established_watch,
+    )
 
     result = _run(
         graph=y_graph,
         history=history,
         observations=observations,
+        previous_state=previous,
         server_time=base_time,
         config=surge_config,
     )
