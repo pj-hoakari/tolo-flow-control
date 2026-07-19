@@ -9,7 +9,7 @@ from pathlib import Path
 
 import pytest
 
-from devtools import compare, graph_builder, scenarios
+from devtools import compare, graph_builder, report, scenarios
 from devtools.graph_builder import resolve_positions
 from devtools.pipeline import run_pipeline
 from devtools.serialize import to_jsonable
@@ -115,3 +115,15 @@ def test_pipeline_force_runs_downstream_without_trigger() -> None:
     run = run_pipeline(scen, force=True, time_limit=10.0)
     assert run.downstream_ran
     assert run.optimization is not None
+
+
+def test_report_writes_images_in_module_directories(tmp_path: Path) -> None:
+    scen = scenarios.get_scenario("normal-no-trigger")
+    run = run_pipeline(scen)
+    written = report.dump_run(run, scen.built_graph, tmp_path, images=True)
+
+    assert tmp_path / "01_detection" / "trigger.png" in written
+    assert tmp_path / "00_summary" / "summary.png" in written
+    assert (tmp_path / "01_detection" / "trigger.png").is_file()
+    assert (tmp_path / "00_summary" / "summary.png").is_file()
+    assert not (tmp_path / "01_detection.png").exists()

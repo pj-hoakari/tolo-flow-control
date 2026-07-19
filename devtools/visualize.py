@@ -552,6 +552,95 @@ def render_forecasting(run: PipelineRun, built: BuiltGraph, path: Path) -> None:
     _save(fig, path)
 
 
+def _forecast_ax(run: PipelineRun, built: BuiltGraph) -> tuple[Any, Any, Any, Any]:
+    """Forecasting の個別図用に共通の描画コンテキストを作る。"""
+    fig, ax = plt.subplots(figsize=(9, 7))
+    return fig, ax, resolve_positions(built), run.forecast
+
+
+def render_forecasting_node_demand(run: PipelineRun, built: BuiltGraph, path: Path) -> None:
+    fig, ax, pos, fc = _forecast_ax(run, built)
+    if fc is None:
+        plt.close(fig)
+        return
+    graph = built.graph
+    draw_base(ax, graph, pos, title="Forecasting — node demand (size∝gross, color∝staying)", show_edge_labels=False, edge_alpha=0.5)
+    demand_by = {d.node_id.value: d for d in fc.node_demand}
+    stays = [d.staying for d in fc.node_demand] or [0.0]
+    norm, cmap = Normalize(vmin=min(stays), vmax=max(max(stays), 1e-6)), plt.get_cmap("YlOrRd")
+    for node in graph.nodes:
+        d = demand_by.get(node.node_id.value)
+        if d is None:
+            continue
+        p = pos[node.node_id.value]
+        ax.scatter([p[0]], [p[1]], s=300.0 + (d.gross_in + d.gross_out) * 12.0, c=[cmap(norm(d.staying))], edgecolors="#333333", linewidths=1.2, zorder=8)
+        ax.annotate(f"in {d.gross_in:.0f}/out {d.gross_out:.0f}\nstay {d.staying:.0f}", p, fontsize=6, ha="center", va="center", zorder=9)
+    fig.colorbar(ScalarMappable(norm=norm, cmap=cmap), ax=ax, fraction=0.046, label="staying")
+    _save(fig, path)
+
+
+def render_forecasting_od_demand(run: PipelineRun, built: BuiltGraph, path: Path) -> None:
+    fig, ax, pos, fc = _forecast_ax(run, built)
+    if fc is None:
+        plt.close(fig)
+        return
+    graph, od = built.graph, fc.od_matrix
+    draw_base(ax, graph, pos, title="Forecasting — OD demand (arrow width∝demand)", show_edge_labels=False, edge_alpha=0.4, show_direction=False)
+    dmax = max((o.demand for o in od), default=1.0)
+    for o in od:
+        if o.origin.value not in pos or o.destination.value not in pos:
+            continue
+        _arrow(ax, pos[o.origin.value], pos[o.destination.value], color="#1f77b4", width=1.0 + 5.0 * o.demand / dmax, rad=0.2, alpha=0.8, zorder=4)
+        mid = ((pos[o.origin.value][0] + pos[o.destination.value][0]) / 2.0, (pos[o.origin.value][1] + pos[o.destination.value][1]) / 2.0)
+        ax.annotate(f"{o.demand:.0f}", mid, fontsize=7, color="#1f77b4", zorder=5)
+    if not od:
+        ax.text(0.5, 0.5, "OD matrix empty", transform=ax.transAxes, ha="center", fontsize=11, color="#888")
+    _save(fig, path)
+
+
+def render_forecasting_arc_flow_sensitivity(run: PipelineRun, built: BuiltGraph, path: Path) -> None:
+    fig, ax, pos, fc = _forecast_ax(run, built)
+    if fc is None:
+        plt.close(fig)
+        return
+    graph = built.graph
+    draw_base(ax, graph, pos, title="Forecasting — arc flow sensitivity η", show_edge_labels=False, edge_alpha=0.25, show_direction=False)
+    eta_by = {a.edge_id.value: a.eta for a in fc.arc_flow_sensitivity}
+    etas, ecmap = list(eta_by.values()) or [0.0], plt.get_cmap("viridis")
+    enorm = Normalize(vmin=min(etas), vmax=max(max(etas), 1e-6))
+    fallback_edges = {e.value for e in fc.fallback_usage.used_default_edges} | {e.value for e in fc.fallback_usage.used_reference_edges}
+    for edge in graph.edges:
+        if edge.edge_id.value not in eta_by:
+            continue
+        pa, pb = _edge_endpoints(pos, edge)
+        ax.plot([pa[0], pb[0]], [pa[1], pb[1]], color=ecmap(enorm(eta_by[edge.edge_id.value])), lw=5.0, zorder=3, solid_capstyle="round")
+        if edge.edge_id.value in fallback_edges:
+            ax.plot([pa[0], pb[0]], [pa[1], pb[1]], color="#111111", lw=1.6, ls=(0, (2, 2)), zorder=4)
+    if fallback_edges:
+        ax.plot([], [], color="#111111", ls=(0, (2, 2)), lw=1.6, label="fallback η (no obs)")
+        ax.legend(loc="lower right", fontsize=7, framealpha=0.9)
+    fig.colorbar(ScalarMappable(norm=enorm, cmap=ecmap), ax=ax, fraction=0.046, label="η")
+    _save(fig, path)
+
+
+def render_forecasting_node_confidence(run: PipelineRun, built: BuiltGraph, path: Path) -> None:
+    fig, ax, pos, fc = _forecast_ax(run, built)
+    if fc is None:
+        plt.close(fig)
+        return
+    graph = built.graph
+    draw_base(ax, graph, pos, title="Forecasting — node confidence", show_edge_labels=False, edge_alpha=0.3, show_direction=False)
+    conf_by, ccmap, cnorm = {c.node_id.value: c.confidence for c in fc.node_confidence}, plt.get_cmap("RdYlGn"), Normalize(vmin=0.0, vmax=1.0)
+    for node in graph.nodes:
+        if node.node_id.value not in conf_by:
+            continue
+        p = pos[node.node_id.value]
+        ax.scatter([p[0]], [p[1]], s=_NODE_SIZE, c=[ccmap(cnorm(conf_by[node.node_id.value]))], edgecolors="#333", linewidths=1.2, zorder=8)
+        ax.annotate(f"{conf_by[node.node_id.value]:.2f}", p, fontsize=7, ha="center", va="center", zorder=9)
+    fig.colorbar(ScalarMappable(norm=cnorm, cmap=ccmap), ax=ax, fraction=0.046, label="confidence")
+    _save(fig, path)
+
+
 # --- DetourRouting ----------------------------------------------------------
 
 
@@ -609,9 +698,97 @@ def render_detour(run: PipelineRun, built: BuiltGraph, path: Path) -> None:
     _save(fig, path)
 
 
+def render_detour_set(built: BuiltGraph, detour_set: Any, path: Path) -> None:
+    """1 つの起点エッジの迂回候補だけを 1 枚に描く。"""
+    pos, graph = resolve_positions(built), built.graph
+    fig, ax = plt.subplots(figsize=(9, 7))
+    draw_base(ax, graph, pos, title=f"Detour origin={detour_set.origin_edge.value} (k_eff={detour_set.k_effective})", edge_alpha=0.3, show_edge_labels=False, show_direction=False)
+    _highlight_edges(ax, graph, pos, {detour_set.origin_edge.value}, color=_TRIGGER_COLOR, width=6.0)
+    palette = ["#1f77b4", "#2ca02c", "#9467bd", "#8c564b", "#e377c2"]
+    for index, route in enumerate(detour_set.paths):
+        color = palette[index % len(palette)]
+        label = "direct" if route.contains_trigger else f"detour{index} (len {route.total_length:.1f})"
+        _highlight_edges(ax, graph, pos, {edge.value for edge in route.edge_ids}, color=color, width=3.0, alpha=0.7)
+        ax.plot([], [], color=color, lw=3.0, label=label)
+    ax.legend(loc="upper right", fontsize=7, framealpha=0.9)
+    _save(fig, path)
+
+
 # --- Optimization -----------------------------------------------------------
 
 _IMP_DIR_ARROW = {"A_TO_B": 1, "B_TO_A": -1, "NONE": 0}
+
+
+def render_optimization_route_importance(
+    run: PipelineRun, built: BuiltGraph, path: Path
+) -> None:
+    """重要度と実フロー方向を 1 枚に描く。"""
+    if run.optimization is None:
+        return
+    pos, graph = resolve_positions(built), built.graph
+    res = run.optimization.optimization_result
+    fig, ax = plt.subplots(figsize=(10, 8))
+    draw_base(ax, graph, pos, title="Optimization — route importance + direction", edge_alpha=0.2, show_edge_labels=True, show_direction=False)
+    imp_by, cmap, norm = {r.edge_id.value: r for r in res.route_importance}, plt.get_cmap("plasma"), Normalize(vmin=0.0, vmax=1.0)
+    for edge in graph.edges:
+        route = imp_by.get(edge.edge_id.value)
+        if route is None:
+            continue
+        pa, pb = _edge_endpoints(pos, edge)
+        color = cmap(norm(route.importance))
+        ax.plot([pa[0], pb[0]], [pa[1], pb[1]], color=color, lw=1.5 + 6.0 * route.importance, zorder=3, solid_capstyle="round", alpha=0.9)
+        direction = _IMP_DIR_ARROW.get(route.direction.value, 0)
+        if direction == 1:
+            _arrow(ax, pa, pb, color=color, width=1.6, alpha=0.9, zorder=4)
+        elif direction == -1:
+            _arrow(ax, pb, pa, color=color, width=1.6, alpha=0.9, zorder=4)
+    triggered_edges = {edge.value for edge in run.detection.triggered_edges}
+    for edge in graph.edges:
+        if edge.edge_id.value in triggered_edges:
+            pa, pb = _edge_endpoints(pos, edge)
+            ax.plot([pa[0], pb[0]], [pa[1], pb[1]], color=_TRIGGER_COLOR, lw=1.6, ls=(0, (2, 2)), zorder=6)
+    _highlight_nodes(ax, pos, {node.value for node in run.detection.triggered_nodes}, color=_TRIGGER_COLOR)
+    if triggered_edges or run.detection.triggered_nodes:
+        ax.plot([], [], color=_TRIGGER_COLOR, ls=(0, (2, 2)), lw=1.6, label="triggered")
+        ax.legend(loc="lower right", fontsize=7, framealpha=0.9)
+    fig.colorbar(ScalarMappable(norm=norm, cmap=cmap), ax=ax, fraction=0.046, label="importance")
+    _save(fig, path)
+
+
+def render_optimization_direction_proposal(
+    run: PipelineRun, built: BuiltGraph, path: Path
+) -> None:
+    """方向属性・境界制御の提案とソルバー結果を 1 枚に描く。"""
+    if run.optimization is None:
+        return
+    pos, graph, opt = resolve_positions(built), built.graph, run.optimization
+    res, stats = opt.optimization_result, opt.solver_stats
+    fig, ax = plt.subplots(figsize=(10, 8))
+    draw_base(ax, graph, pos, title="Optimization — direction proposal + boundary control", edge_alpha=0.25, show_edge_labels=True, show_direction=False)
+    edge_by = {edge.edge_id.value: edge for edge in graph.edges}
+    for proposal in res.direction_proposal:
+        edge = edge_by.get(proposal.edge_id.value)
+        if edge is None:
+            continue
+        pa, pb = _edge_endpoints(pos, edge)
+        direction = proposal.proposed_direction.value
+        if direction == "A_TO_B":
+            _arrow(ax, pa, pb, color="#2ca02c", width=2.4, zorder=4)
+        elif direction == "B_TO_A":
+            _arrow(ax, pb, pa, color="#2ca02c", width=2.4, zorder=4)
+        else:
+            _arrow(ax, pa, pb, color="#1f77b4", width=1.8, rad=0.12, zorder=4)
+            _arrow(ax, pb, pa, color="#1f77b4", width=1.8, rad=0.12, zorder=4)
+    labels = {"PAUSE_INGRESS": "PAUSE-IN", "PAUSE_EGRESS": "PAUSE-OUT", "RESUME": "RESUME"}
+    for control in res.boundary_control:
+        if control.node_id.value not in pos:
+            continue
+        point = pos[control.node_id.value]
+        _highlight_nodes(ax, pos, {control.node_id.value}, color=_TRIGGER_COLOR)
+        ax.annotate(labels.get(control.action.value, control.action.value), (point[0], point[1] + 0.25), fontsize=8, color=_TRIGGER_COLOR, ha="center", zorder=10)
+    info = [f"solver_status = {res.solver_status.value}", f"phase1 = {stats.phase1_status.value} ({stats.phase1_ms} ms)", f"phase2 = {stats.phase2_status.value} ({stats.phase2_ms} ms)", f"tau* = {res.objective_values.tau_star:.4g}", f"throughput = {res.objective_values.throughput:.4g}", f"fallback_to_previous = {opt.constraint_report.fallback_to_previous}", f"local_reachability = {opt.constraint_report.local_reachability_satisfied}", f"boundary_reachability = {opt.constraint_report.boundary_reachability_satisfied}"]
+    ax.text(0.01, 0.99, "\n".join(info), transform=ax.transAxes, fontsize=8, va="top", ha="left", family="monospace", bbox=dict(boxstyle="round", fc="#f3f0ff", ec="#6a3d9a", alpha=0.9))
+    _save(fig, path)
 
 
 def render_optimization(run: PipelineRun, built: BuiltGraph, path: Path) -> None:
@@ -833,28 +1010,53 @@ def render_all(
     *,
     invariants: list[str] | None = None,
 ) -> list[Path]:
-    """1 回の実行について各モジュールの図を出力し、生成したパスのリストを返す"""
+    """1 回の実行について、モジュール別ディレクトリに個別の図を出力する。
+
+    複数の観点を持つモジュールは、比較・共有しやすいようサブプロットを合成せず、
+    それぞれ独立した PNG として保存する。
+    """
     out_dir.mkdir(parents=True, exist_ok=True)
     written: list[Path] = []
 
-    p = out_dir / "01_detection.png"
+    p = out_dir / "01_detection" / "trigger.png"
     render_detection(run, built, p)
     written.append(p)
 
     if run.forecast is not None:
-        p = out_dir / "02_forecasting.png"
-        render_forecasting(run, built, p)
+        forecast_dir = out_dir / "02_forecasting"
+        p = forecast_dir / "node_demand.png"
+        render_forecasting_node_demand(run, built, p)
+        written.append(p)
+        p = forecast_dir / "od_demand.png"
+        render_forecasting_od_demand(run, built, p)
+        written.append(p)
+        p = forecast_dir / "arc_flow_sensitivity.png"
+        render_forecasting_arc_flow_sensitivity(run, built, p)
+        written.append(p)
+        p = forecast_dir / "node_confidence.png"
+        render_forecasting_node_confidence(run, built, p)
         written.append(p)
     if run.detour is not None:
-        p = out_dir / "03_detour.png"
-        render_detour(run, built, p)
-        written.append(p)
+        detour_dir = out_dir / "03_detour"
+        if run.detour.detour_sets:
+            for idx, detour_set in enumerate(run.detour.detour_sets, start=1):
+                p = detour_dir / f"{idx:02d}_{detour_set.origin_edge.value}.png"
+                render_detour_set(built, detour_set, p)
+                written.append(p)
+        else:
+            p = detour_dir / "no_detour_sets.png"
+            render_detour(run, built, p)
+            written.append(p)
     if run.optimization is not None:
-        p = out_dir / "04_optimization.png"
-        render_optimization(run, built, p)
+        optimization_dir = out_dir / "04_optimization"
+        p = optimization_dir / "route_importance.png"
+        render_optimization_route_importance(run, built, p)
+        written.append(p)
+        p = optimization_dir / "direction_proposal.png"
+        render_optimization_direction_proposal(run, built, p)
         written.append(p)
 
-    p = out_dir / "00_summary.png"
+    p = out_dir / "00_summary" / "summary.png"
     render_summary(run, p, invariants=invariants)
     written.append(p)
     return written
