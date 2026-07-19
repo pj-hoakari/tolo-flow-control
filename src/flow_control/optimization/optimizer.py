@@ -229,15 +229,9 @@ def _optimize_lightweight(
     assign_lp_ms = int((time.perf_counter() - t0) * 1000)
     zones = _zone_count(graph, triggered_edges, triggered_nodes, config.max_trigger_zones)
 
-    if assignment.status == SolverStatus.INFEASIBLE or assignment.solution is None:
-        return _fallback(
-            arc_model, inputs, commodities, drainable, graph, previous_result, config,
-            seed, time_limit, solved_at, is_open, throughput_arcs, assign_lp_ms,
-        )
-
     solution = assignment.solution
     greedy_iterations = 0
-    best_tau = assignment.objective
+    best_tau = assignment.objective if solution is not None else float("inf")
     # 方向候補はトリガー起点に限定し、edge_id 順で評価する。各候補は current
     # 以外の片方向化／解除を固定方向 LP で再配分し、Open の境界到達性と
     # ローカル可達性を満たすものだけを採用する。
@@ -246,7 +240,8 @@ def _optimize_lightweight(
         key=lambda edge_id: edge_id.value,
     )
     for edge_id in candidate_ids:
-        for candidate_x in _direction_candidates(arc_model, edge_id, solution.direction):
+        current_direction = solution.direction if solution is not None else fixed_x
+        for candidate_x in _direction_candidates(arc_model, edge_id, current_direction):
             greedy_iterations += 1
             candidate_built = build_model(
                 arc_model,
@@ -263,9 +258,19 @@ def _optimize_lightweight(
                 continue
             if is_open and not _boundary_reachability_ok(arc_model, candidate.solution):
                 continue
-            if candidate.objective <= best_tau - config.greedy_improve_margin:
+            if solution is None or candidate.objective <= best_tau - config.greedy_improve_margin:
                 solution = candidate.solution
                 best_tau = candidate.objective
+
+    # current 方向が不可解、または全候補を試しても安全な解が得られない場合は、
+    # 不安全な結果を返さず設計 v0 §7.6 の保持フォールバックへ移行する。
+    if solution is None or not _local_reachability_ok(arc_model, solution) or (
+        is_open and not _boundary_reachability_ok(arc_model, solution)
+    ):
+        return _fallback(
+            arc_model, inputs, commodities, drainable, graph, previous_result, config,
+            seed, time_limit, solved_at, is_open, throughput_arcs, assign_lp_ms,
+        )
 
     importance = compute_route_importance(arc_model, solution, config.epsilon_0)
     direction = compute_direction_proposals(arc_model, solution)
