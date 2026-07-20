@@ -1,13 +1,20 @@
-"""単一ルート急増シナリオ"""
+"""単一ルート急増シナリオ（組合せ発火のベースライン）
+
+入口ルート e_in_j1 で急増（需要警戒）と高停滞（M 分継続）が同時成立し、
+組合せ発火する最小構成。入口は単一エッジのため迂回路は存在せず（k_effective=0）、
+期待する提案は j1 での hallA / hallB への配分（需要比 25:10 を容量とのバランスで
+反映した重み）となる。
+"""
 
 from __future__ import annotations
 
-from flow_control.domain import EdgeID
+from flow_control.domain import EdgeID, NodeID
 
 from .. import graph_builder
 from ..scenario_base import (
+    ODSpec,
     Scenario,
-    build_observations_and_history,
+    build_consistent_observations_and_history,
     established_watch_state,
     make_scenario,
 )
@@ -18,15 +25,14 @@ from ._registry import register
 def build() -> Scenario:
     built = graph_builder.venue()
     hot = frozenset({EdgeID("e_in_j1")})
-    # 組合せ発火: 急増（需要警戒）に加え停滞警戒＋計時済み watch を同一エッジへ与える
-    obs, hist = build_observations_and_history(
+    # hallA 行きが急増、hallB 行きは平常。急増成分が入口エッジを通り需要警戒を満たす
+    obs, hist = build_consistent_observations_and_history(
         built.graph,
-        surge_edges=hot,
+        (
+            ODSpec(NodeID("in"), NodeID("hallA"), 25.0, surge=True),
+            ODSpec(NodeID("in"), NodeID("hallB"), 10.0),
+        ),
         stagnation_edges=hot,
-        # 混在ホールに滞留を与え、OD・信頼度が意味を持つようにする
-        occupancy=30.0,
-        occupancy_delta=10.0,
-        # 単一アクセス通路がホール需要を運べるよう排出上限 eta*f<=s_obs を緩める
         eta=0.02,
     )
     return make_scenario(

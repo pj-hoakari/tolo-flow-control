@@ -95,33 +95,37 @@ uv run python -m devtools graph ./_devout/venue.yaml --out ./_devout   # 読み�
 - グラフ: `linear` / `y-junction` / `grid` / `ring` / `venue` /
   `expo`（出入口1・ホール4・一方通行の周回コリドー）/
   `crossing`（2 ハブ＋主通路＋並行バイパス 2 本。迂回・方向提案が映える）
-- シナリオ:
-  - 基本: `single-route-surge` / `multi-route-surge` / `high-stagnation` /
-    `danger-flag-edge` / `danger-flag-node` / `normal-no-trigger` /
-    `open-mode` / `closed-mode` / `infeasible-fallback`
-  - 大規模（expo グラフ。一方通行＋観測のないルート/ポイントを含む）:
-    `expo-single-hall-surge` / `expo-multi-hall-surge` /
-    `expo-oneway-unobserved` / `expo-danger-hall`
-  - 運用効果が分かりやすい（expo グラフ）:
-    `expo-gate-overcrowded`（入口過密→**gate で入退場停止**: boundary_control）/
-    `expo-approach-capacity`（hallA 直行を低容量制限→**一方通行ループへ迂回**: route_importance がループへ）/
-    `expo-incident-resume`（前回 gate 停止→危険解除で**再開提案 RESUME**）
-  - 検出機能のカバレッジ:
-    `puncture-scalar-corridor`（スカラー観測の直結コリドーが容量ヒント超過→
-    **パンクトリガー**発火。スカラー区間が OD 推定の盲点であることも同時に示す）/
-    `cooldown-skip`（クールタイム中・トリガーなし→**SKIPPED_COOLDOWN**）/
-    `cooldown-queued`（クールタイム中の発火→**QUEUED**）/
-    `queue-burst-fire`（キュー累積スコア超過→**統合発火**）/
-    `warmup-skip`（全対象ウォームアップ中→**SKIPPED_WARMUP**）/
-    `restriction-undrainable`（袋小路コリドーが高停滞・迂回路なし→**機能2 の通行制限提案**
-    LIMIT。`restriction_proposal_enabled` と `tau_danger_threshold` を設定して有効化）
-  - 検出・性能評価用:
-    `combined-surge-stagnation`（急増＋高停滞が同一エッジで重なり**組合せ発火**する
-    下流実行ベースライン。急増単独・停滞単独では現行 Detection は発火しない）/
-    `stress-design-limit`（設計想定上限規模 10 ノード/50 エッジ・3 エッジ同時発火の性能計測。
-  - 迂回・方向提案が映える（crossing グラフ）:
-    `crossing-detour`（主通路 e_main 急増・低容量→**並行バイパス 2 本へ迂回**: detour_set k_eff=2、route_importance がバイパスへ）/
-    `crossing-oneway`（バイパスを一方通行循環に→**direction_proposal が有向/双方向を提案**: 北 A_TO_B・南 B_TO_A・主通路 BIDIRECTIONAL）
+- シナリオ（各シナリオの想定ケースと**期待する誘導提案**の一覧は
+  `docs/devtools_scenario_catalog.md` を参照。緊急時・法的対処はスコープ外で、
+  通常運営時の誘導のみを扱う）:
+  - **A. 機能・モジュール検証**
+    - Detection 判定・配分の基本: `single-route-surge`（組合せ発火ベースライン）/
+      `multi-route-surge` / `high-stagnation`（lineless 縮退発火）/ `normal-no-trigger` /
+      `danger-flag-edge` / `danger-flag-node`
+    - Forecasting モード: `open-mode` / `closed-mode`
+    - 状態遷移: `cooldown-skip`（**SKIPPED_COOLDOWN**）/ `cooldown-queued`（**QUEUED**）/
+      `queue-burst-fire`（キュー累積の**統合発火**）/ `warmup-skip`（**SKIPPED_WARMUP**）
+    - パンク: `puncture-scalar-corridor`（スカラー容量超過→**パンクトリガー**。
+      スカラー区間が OD 推定の盲点であることも同時に示す）
+    - 迂回・方向提案: `crossing-detour`（**並行バイパス 2 本へ迂回**）/
+      `crossing-oneway`（**direction_proposal が有向/双方向を提示**）/
+      `reversible-corridor-flip`（退場需要増で入場向き可変通路を**双方向へ解除 RELEASE_ONEWAY**）
+    - 特殊経路・機能2・性能: `infeasible-fallback`（Phase1 INFEASIBLE→フォールバック）/
+      `restriction-undrainable`（**機能2 の通行制限提案** LIMIT。
+      `restriction_proposal_enabled` と `tau_danger_threshold` を設定して有効化）/
+      `stress-design-limit`（上限規模 10 ノード/50 エッジの性能計測）
+  - **B. 現実的・複雑ケース**
+    - expo（一方通行＋観測のないルート/ポイントを含む大規模会場）:
+      `expo-single-hall-surge` / `expo-multi-hall-surge` / `expo-oneway-unobserved` /
+      `expo-danger-hall` /
+      `expo-approach-capacity`（直行制限→**一方通行ループへ迂回**）/
+      `expo-gate-overcrowded`（入口過密→**gate で入退場停止**: boundary_control）/
+      `expo-incident-resume`（過密解消後の**再開提案 RESUME**）
+    - その他: `festival-gate-split`（入場急増を**二系統へ分散**）/
+      `station-platform-closure`（階段低容量化→**代替階段へ誘導**）/
+      `station-transfer-peak`（乗換ピーク→**センサ未設置の地下通路へ迂回**）/
+      `stadium-egress-concourse`（退場ピークで可変コンコースを**双方向へ解除**）/
+      `museum-special-exhibit-limit`（特別展待ち列→**上流へ整理入場の LIMIT**）
 
 > `expo-*` はホール 4 つ・一方通行ループ・センサ無し区間を含む現実的ケース。
 > STRICT で基準系を回す場合に備え MILP 時間上限を 8 秒に短縮している。
