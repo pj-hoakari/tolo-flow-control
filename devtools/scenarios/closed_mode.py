@@ -1,12 +1,15 @@
-"""Closed モード（入退出点なし）シナリオ"""
+"""Closed モード（入退出点なし）シナリオ
+
+入退出点を持たない環状の ``closed-ring`` プリセットを使う。対向する 2 つの広場
+（混在ノード）を持ち、放出側（ΔOcc<0）が生成源、蓄積側（ΔOcc>0）が吸収となる
+（Closed の需要導出を通す）。
+"""
 
 from __future__ import annotations
 
-import math
+from flow_control.domain import EdgeID, NodeID
 
-from flow_control.domain import EdgeID, NodeID, NodeKind
-
-from ..graph_builder import GraphBuilder
+from .. import graph_builder
 from ..scenario_base import (
     ODSpec,
     Scenario,
@@ -19,22 +22,7 @@ from ._registry import register
 
 @register("closed-mode")
 def build() -> Scenario:
-    # 入退出点を持たない環状グラフ（Closed モード）。
-    # 対向する 2 つの広場（混在ノード）を持ち、放出側（ΔOcc<0）が生成源、
-    # 蓄積側（ΔOcc>0）が吸収となる（Closed の需要導出を通す）
-    b = GraphBuilder()
-    n = 6
-    for i in range(n):
-        angle = 2.0 * math.pi * i / n
-        b.node(
-            f"n{i}",
-            kind=NodeKind.GOAL_TRANSIT_MIXED if i in (0, 3) else NodeKind.TRANSIT_ONLY,
-            boundary=False,
-            pos=(math.cos(angle), math.sin(angle)),
-        )
-    for i in range(n):
-        b.edge(f"e{i}", f"n{i}", f"n{(i + 1) % n}")
-    built = b.build()
+    built = graph_builder.closed_ring()
     hot = frozenset({EdgeID("e0")})
     obs, hist = build_consistent_observations_and_history(
         built.graph,
