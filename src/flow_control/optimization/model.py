@@ -479,6 +479,192 @@ def build_assignment_lp(
     return built
 
 
+@dataclass
+class _BuiltZone:
+    """ゾーン限定 LP の構築結果（build_zone_lp / solve_zone_lp 専用）"""
+
+    model: Any
+    f: Any  # linopy Variable（arc）。有効ゾーンアークなしは None
+    arc_keys: tuple[str, ...]
+    infeasible: bool = False
+
+
+def build_zone_lp(
+    arc_model: ArcModel,
+    inputs: MilpInputs,
+    *,
+    zone_edges: frozenset[EdgeID],
+    zone_nodes: frozenset[NodeID],
+    fixed_x: dict[str, int],
+    net_supply: dict[NodeID, float],
+) -> _BuiltZone:
+    """ゾーン限定の配分 LP（単一品種・純供給ベース）を構築する
+
+    方向候補の τ 比較用にゾーン誘導部分グラフだけを解く。ゾーン外の方向・フローは
+    current・ベースライン値に固定し、その影響はゾーン横断アークの固定フローを畳み込んだ
+    純供給 ``net_supply``（所与の流入出条件）として与えられる。設計が許すコモディティ
+    縮約（単一品種）を用いるため変数はアーク次元のみ。制約族（危険容量・容量ヒント・
+    パンク・排出上限）はゾーン内エッジに限定して全体 LP と同一に張る。
+    """
+    model = linopy.Model()
+    enabled = tuple(
+        a
+        for a in arc_model.arcs
+        if a.edge_id in zone_edges and fixed_x.get(a.key, 0) == 1
+    )
+    built = _BuiltZone(
+        model=model, f=None, arc_keys=tuple(a.key for a in enabled)
+    )
+    demanded = {v for v, b in net_supply.items() if abs(b) > 1e-9}
+    if not demanded:
+        # 純供給ゼロ: ゼロフローが自明解（min-cost で正コストのため）。求解不要
+        return built
+    if not enabled:
+        built.infeasible = True
+        return built
+    incident: set[NodeID] = set()
+    for arc in enabled:
+        incident.add(arc.tail)
+        incident.add(arc.head)
+    if demanded - incident:
+        # 純供給が残るノードに有効アークが無い → 構造的に不可（求解不要）
+        built.infeasible = True
+        return built
+
+    arc_idx = pd.Index(built.arc_keys, name="arc")
+    arc_pos = {key: j for j, key in enumerate(built.arc_keys)}
+    f = model.add_variables(lower=0.0, coords=[arc_idx], name="fz")
+    built.f = f
+
+    nodes = tuple(sorted(zone_nodes, key=lambda n: n.value))
+    node_pos = {v: i for i, v in enumerate(nodes)}
+    node_idx = pd.Index([v.value for v in nodes], name="node")
+    inc = np.zeros((len(nodes), len(enabled)))
+    for j, arc in enumerate(enabled):
+        inc[node_pos[arc.tail], j] += 1.0
+        inc[node_pos[arc.head], j] -= 1.0
+    rhs = np.asarray([net_supply.get(v, 0.0) for v in nodes])
+    inc_da = xr.DataArray(inc, coords=[node_idx, arc_idx])
+    rhs_da = xr.DataArray(rhs, coords=[node_idx])
+    model.add_constraints((inc_da * f).sum("arc") == rhs_da)
+
+    zone_edge_list = sorted(zone_edges, key=lambda e: e.value)
+
+    danger_keys: list[str] = []
+    danger_caps: list[float] = []
+    for eid in zone_edge_list:
+        cap = inputs.edge_danger_capacity.get(eid)
+        if cap is None:
+            continue
+        for arc in arc_model.arcs_of_edge.get(eid, ()):
+            if arc.key in arc_pos:
+                danger_keys.append(arc.key)
+                danger_caps.append(cap)
+    if danger_keys:
+        cap_da = xr.DataArray(
+            np.asarray(danger_caps), coords=[pd.Index(danger_keys, name="arc")]
+        )
+        model.add_constraints(f.sel(arc=danger_keys) <= cap_da)
+
+    def edge_total(edge_ids: list[EdgeID], scale: dict[EdgeID, float] | None = None):
+        eidx = pd.Index([e.value for e in edge_ids], name="edge")
+        mem = np.zeros((len(edge_ids), len(enabled)))
+        for i, eid in enumerate(edge_ids):
+            coeff = scale.get(eid, 1.0) if scale is not None else 1.0
+            for arc in arc_model.arcs_of_edge.get(eid, ()):
+                j = arc_pos.get(arc.key)
+                if j is not None:
+                    mem[i, j] = coeff
+        return (xr.DataArray(mem, coords=[eidx, arc_idx]) * f).sum("arc")
+
+    hint_edges = [
+        eid
+        for eid in zone_edge_list
+        if eid in inputs.capacity_hint
+        and any(a.key in arc_pos for a in arc_model.arcs_of_edge.get(eid, ()))
+    ]
+    if hint_edges:
+        hint_da = xr.DataArray(
+            np.asarray([inputs.capacity_hint[e] for e in hint_edges]),
+            coords=[pd.Index([e.value for e in hint_edges], name="edge")],
+        )
+        model.add_constraints(edge_total(hint_edges) <= hint_da)
+        scalar_capped = [e for e in hint_edges if e in inputs.scalar_edges]
+        if scalar_capped:
+            punct_da = xr.DataArray(
+                np.asarray(
+                    [
+                        max(0.0, inputs.capacity_hint[e] - inputs.sigma.get(e, 0.0))
+                        for e in scalar_capped
+                    ]
+                ),
+                coords=[pd.Index([e.value for e in scalar_capped], name="edge")],
+            )
+            model.add_constraints(edge_total(scalar_capped) <= punct_da)
+
+    capped_nodes = [
+        (v, cap)
+        for v, cap in inputs.node_danger_capacity.items()
+        if v in zone_nodes and any(a.key in arc_pos for a in arc_model.arcs_in(v))
+    ]
+    if capped_nodes:
+        nidx = pd.Index([v.value for v, _ in capped_nodes], name="capped_node")
+        mem = np.zeros((len(capped_nodes), len(enabled)))
+        for i, (v, _) in enumerate(capped_nodes):
+            for arc in arc_model.arcs_in(v):
+                j = arc_pos.get(arc.key)
+                if j is not None:
+                    mem[i, j] = 1.0
+        cap_da = xr.DataArray(
+            np.asarray([c for _, c in capped_nodes]), coords=[nidx]
+        )
+        model.add_constraints(
+            (xr.DataArray(mem, coords=[nidx, arc_idx]) * f).sum("arc") <= cap_da
+        )
+
+    drain_edges = [
+        eid
+        for eid in zone_edge_list
+        if eid in inputs.s_obs
+        and inputs.eta.get(eid, 0.0) > 0.0
+        and any(a.key in arc_pos for a in arc_model.arcs_of_edge.get(eid, ()))
+    ]
+    if drain_edges:
+        s_obs_da = xr.DataArray(
+            np.asarray([inputs.s_obs[e] for e in drain_edges]),
+            coords=[pd.Index([e.value for e in drain_edges], name="edge")],
+        )
+        model.add_constraints(edge_total(drain_edges, scale=inputs.eta) <= s_obs_da)
+
+    model.add_objective(f.sum(), sense="min")
+    return built
+
+
+def solve_zone_lp(
+    built: _BuiltZone, time_limit: float, seed: int
+) -> tuple[SolverStatus, dict[str, float] | None]:
+    """ゾーン限定 LP を求解し、ゾーンアークのフロー（arc.key → f_a）を返す"""
+    if built.infeasible:
+        return SolverStatus.INFEASIBLE, None
+    if built.f is None:
+        return SolverStatus.OPTIMAL, {}
+    condition = _solve(built.model, time_limit, seed, io_api="direct")
+    try:
+        sol = built.f.solution
+        values = {
+            str(key): float(val)
+            for key, val in zip(
+                sol.coords["arc"].values.tolist(), sol.values.tolist()
+            )
+        }
+    except Exception:
+        values = None
+    if values is not None and any(math.isnan(v) for v in values.values()):
+        values = None
+    status = _map_status(condition, values is not None)
+    return status, values
+
+
 def evaluate_residual_tau(
     arc_model: ArcModel,
     inputs: MilpInputs,
