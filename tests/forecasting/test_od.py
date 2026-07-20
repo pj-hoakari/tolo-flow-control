@@ -346,11 +346,11 @@ def test_closed_mode_equalizes_marginals() -> None:
     assert _require(result.od_matrix, "s1", "t1").demand == pytest.approx(4.05)
 
 
-def test_delta_min_cut_and_renormalize() -> None:
-    """微小 OD をカットし，残った要素で行周辺を再正規化して総量を回復する
+def test_delta_min_cut_without_reattribution() -> None:
+    """微小 OD をカットし，失われた需要を残存ペアへ付け替えない
 
-    s -> m -> t1(9.9), t2(0.1)。delta_min=0.5 で t2 をカット →
-    t1 に再正規化され δ(s,t1)=10.0
+    s -> m -> t1(9.9), t2(0.1)。delta_min=0.5 で t2 をカットしても
+    δ(s,t1)=9.9 のまま（カット分の 0.1 は再現残差として扱う）
     """
     graph = Graph(
         nodes=(
@@ -373,7 +373,42 @@ def test_delta_min_cut_and_renormalize() -> None:
     result = _run(graph, observations, _config(delta_min=0.5), is_open_mode=True)
 
     assert _find(result.od_matrix, "s", "t2") is None
-    assert _require(result.od_matrix, "s", "t1").demand == pytest.approx(10.0)
+    assert _require(result.od_matrix, "s", "t1").demand == pytest.approx(9.9)
+
+
+def test_excluded_pair_demand_is_not_reattributed() -> None:
+    """除外ペア（ext→ext）の需要を残存目的地へ付け替えない
+
+    境界 s から t1(内部, 吸収 10)・ex(境界, 吸収 20) へ流れるが、s→ex は
+    ext→ext で対象外。除外された 20 を δ(s,t1) へ付け替えず 10 のままとする
+    （付け替えると内部目的地の需要が水増しされ提案が歪む）
+    """
+    graph = Graph(
+        nodes=(
+            _node("s", NodeKind.TRANSIT_ONLY, boundary=True),
+            _node("m", NodeKind.TRANSIT_ONLY),
+            _node("t1", NodeKind.GOAL_TRANSIT_MIXED),
+            _node("ex", NodeKind.GOAL, boundary=True),
+        ),
+        edges=(
+            _edge("e1", "s", "m"),
+            _edge("e2", "m", "t1"),
+            _edge("e3", "m", "ex"),
+        ),
+    )
+    observations = Observations(
+        observed_at=_OBSERVED_AT,
+        arc_flows=(_flow("e1", 30.0), _flow("e2", 10.0), _flow("e3", 20.0)),
+        # 合流も分岐もない m を通るが、t1 の占有で滞在を明示し IPF 経路に落とす
+        node_occupancies=(_occ("t1", occupancy=20.0, delta=10.0),),
+    )
+
+    result = _run(graph, observations, _config(), is_open_mode=True)
+
+    assert _find(result.od_matrix, "s", "ex") is None
+    od_t1 = _find(result.od_matrix, "s", "t1")
+    if od_t1 is not None:
+        assert od_t1.demand == pytest.approx(10.0, rel=0.05)
 
 
 def test_open_mode_releasing_mixed_node_is_origin() -> None:

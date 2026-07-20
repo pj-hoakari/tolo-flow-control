@@ -6,9 +6,9 @@
 （`e_food` / `e_stage`）への分散配分（需要比を反映した重み）と、
 ゲート動線が容量超過であることを踏まえた入場側の抑制。
 
-既知の制約: 需要がゲート容量を超えるため現行エンジンでは Phase1 が INFEASIBLE となり、
+留意: 需要がゲート容量を超えるため Phase1 は INFEASIBLE となり、
 容量スラック付きフォールバック LP の分散配分のみが返る（方向提案は空、
-fallback_to_previous=true）。エンジン制約ドキュメントの E4 を参照。
+fallback_to_previous=true）。過需要時の応答の扱いは未整理の課題。
 """
 
 from __future__ import annotations

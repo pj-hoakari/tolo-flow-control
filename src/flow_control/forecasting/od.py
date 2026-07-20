@@ -195,7 +195,7 @@ def estimate_od(
             node_demands, production, flows, config, observations=observations
         )
         raw = _exclude_invalid_pairs(raw, boundary_ids, is_open_mode)
-        od = _cut_and_renormalize(raw, config.delta_min, _row_sums(raw))
+        od = _cut_small_od(raw, config.delta_min)
     else:
         if not is_open_mode:
             _equalize_per_component(production, absorption, graph)
@@ -207,7 +207,7 @@ def estimate_od(
             config,
             is_open_mode=is_open_mode,
         )
-        od = _cut_and_renormalize(raw, config.delta_min, production)
+        od = _cut_small_od(raw, config.delta_min)
 
     od_matrix = _to_od_matrix(od, node_demands)
     return ODResult(od_matrix=od_matrix, resolutions=resolutions)
@@ -562,13 +562,16 @@ def _ipf(
         if max_delta < config.ipf_tolerance:
             break
 
-    # 生成制約を最終的に満たす（Open モードでは境界が列の不均衡を吸収）
+    # 最終調整は縮小方向のみ（行和が生成量を超える行を prod_s へ縮小する）。
+    # 除外ペア（ext→ext・到達不能）で吸収先が失われた生成分を残存目的地へ
+    # 付け替えると無関係な需要が水増しされるため、生成量までの拡大は行わず、
+    # 未充足分は Step C の再現残差として評価する
     row_sum = defaultdict(float)
     for (s, _t), value in matrix.items():
         row_sum[s] += value
     for key in matrix:
         s = key[0]
-        if row_sum[s] > 0.0:
+        if row_sum[s] > production[s]:
             matrix[key] = matrix[key] * production[s] / row_sum[s]
 
     return matrix
@@ -661,34 +664,16 @@ def _exclude_invalid_pairs(
     return result
 
 
-def _row_sums(
-    od: dict[tuple[NodeID, NodeID], float],
-) -> dict[NodeID, float]:
-    row_sum: dict[NodeID, float] = defaultdict(float)
-    for (s, _t), value in od.items():
-        row_sum[s] += value
-    return dict(row_sum)
-
-
-def _cut_and_renormalize(
+def _cut_small_od(
     od: dict[tuple[NodeID, NodeID], float],
     delta_min: float,
-    row_target: dict[NodeID, float],
 ) -> dict[tuple[NodeID, NodeID], float]:
-    """δ_{s,t} > δ_min のみ採用し，残った要素で行周辺を再正規化"""
-    kept = {key: value for key, value in od.items() if value > delta_min}
-    row_sum: dict[NodeID, float] = defaultdict(float)
-    for (s, _t), value in kept.items():
-        row_sum[s] += value
-    result: dict[tuple[NodeID, NodeID], float] = {}
-    for key, value in kept.items():
-        s = key[0]
-        target = row_target.get(s, 0.0)
-        if row_sum[s] > 0.0 and target > 0.0:
-            result[key] = value * target / row_sum[s]
-        else:
-            result[key] = value
-    return result
+    """δ_{s,t} > δ_min のみ採用する
+
+    カットで失われた需要は残存ペアへ付け替えない（付け替えは無関係な目的地の
+    需要を水増しし提案を歪める）。行周辺の未充足は Step C の再現残差として扱う
+    """
+    return {key: value for key, value in od.items() if value > delta_min}
 
 
 def _to_od_matrix(
