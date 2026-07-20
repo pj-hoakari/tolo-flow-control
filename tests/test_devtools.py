@@ -52,6 +52,25 @@ def test_compare_flags_result_change_and_computes_perf_delta() -> None:
     assert same[0]["result_changed"] == []
 
 
+def test_compare_flags_demand_all_cut_change() -> None:
+    base = _index("s", tau=1.0, thru=10.0, p1=1, p2=1)
+    against = _index("s", tau=1.0, thru=10.0, p1=1, p2=1)
+    base["runs"][0]["optimization"]["demand_all_cut"] = False
+    against["runs"][0]["optimization"]["demand_all_cut"] = True
+    rows = compare.compare(base, against)
+    assert "demand_all_cut" in rows[0]["result_changed"]
+
+
+def test_compare_ignores_demand_all_cut_when_missing_on_one_side() -> None:
+    # 旧スナップショット（キーなし）との比較でノイズを出さない
+    base = _index("s", tau=1.0, thru=10.0, p1=1, p2=1)
+    against = _index("s", tau=1.0, thru=10.0, p1=1, p2=1)
+    against["runs"][0]["optimization"]["demand_all_cut"] = False
+    against["runs"][0]["optimization"]["commodities_used"] = 3
+    rows = compare.compare(base, against)
+    assert rows[0]["result_changed"] == []
+
+
 def test_compare_marks_added_and_removed() -> None:
     base = _index("a", tau=0.0, thru=0.0, p1=1, p2=1)
     against = _index("b", tau=0.0, thru=0.0, p1=1, p2=1)

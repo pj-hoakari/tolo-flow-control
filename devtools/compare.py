@@ -13,6 +13,9 @@ from typing import Any
 # 決定的な結果系の一致判定に使う許容（浮動小数の微小差を無視）
 _RESULT_TOL = 1e-6
 
+# 後から追加された結果系キー（旧スナップショット比較で片側欠損なら比較しない）
+_OPTIONAL_RESULT_KEYS = frozenset({"demand_all_cut", "commodities"})
+
 
 def available_labels(out_dir: Path) -> list[str]:
     hist = out_dir / "history"
@@ -83,8 +86,17 @@ def compare(base: dict[str, Any], against: dict[str, Any]) -> list[dict[str, Any
             "thru": (ob.get("throughput"), oa.get("throughput")),
             "od_pairs": (fb.get("od_pairs"), fa.get("od_pairs")),
             "fallback": (ob.get("fallback_to_previous"), oa.get("fallback_to_previous")),
+            # 「発火したのに需要全カットで空提案」の発生・解消を回帰として検出する
+            "demand_all_cut": (ob.get("demand_all_cut"), oa.get("demand_all_cut")),
+            "commodities": (ob.get("commodities_used"), oa.get("commodities_used")),
         }
-        changed = [k for k, (vb, va) in result_fields.items() if _changed(vb, va)]
+        changed = [
+            k
+            for k, (vb, va) in result_fields.items()
+            if _changed(vb, va)
+            # 新設キーは旧スナップショットに存在しない（None）。片側欠損は比較対象外
+            and not (k in _OPTIONAL_RESULT_KEYS and (vb is None or va is None))
+        ]
         msb, msa = _phase_ms(rb), _phase_ms(ra)
         rows.append(
             {

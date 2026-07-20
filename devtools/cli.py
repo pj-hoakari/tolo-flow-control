@@ -78,6 +78,11 @@ def cmd_run(args: argparse.Namespace) -> int:
                 f" greedy_ms={stats.greedy_ms}"
                 + (" [TRUNCATED]" if stats.greedy_truncated else "")
             )
+        if stats.demand_all_cut:
+            print(
+                "  WARNING: DEMAND_ALL_CUT"
+                f" (od_pairs_input={stats.od_pairs_input} が delta_min で全カット。提案は実質空)"
+            )
         if r.restriction_proposal:
             print("  restrictions:", ", ".join(
                 f"{proposal.edge_id.value}:{proposal.action.value}"
@@ -120,6 +125,8 @@ def cmd_run_all(args: argparse.Namespace) -> int:
             )
             if r.solver_status.value == "LIGHTWEIGHT":
                 ostr += f" zones={run.optimization.solver_stats.zones_processed}"
+            if run.optimization.solver_stats.demand_all_cut:
+                ostr += " [DEMAND_ALL_CUT]"
         print(f"  {name:24s} {run.mode.value:6s} {det.verdict_hint.value:12s}{ostr}")
     created_at = datetime.now().isoformat(timespec="seconds")
     label = args.label or datetime.now().strftime("%Y%m%d-%H%M%S")
