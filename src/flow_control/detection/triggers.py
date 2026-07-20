@@ -625,7 +625,7 @@ def evaluate_cooldown(
     config: ResolvedConfig,
     watched_edges: frozenset[EdgeID] = _NO_WATCHED_EDGES,
 ) -> CooldownDecision:
-    # watched_edges: 現時点で警戒条件 (b).1 または (b).2 を満たすエッジ集合（鮮度ガード用）
+    # watched_edges: 現時点で停滞警戒（パーセンタイル超過または相対増分超過）を満たすエッジ集合（鮮度ガード用）
     danger_triggers = tuple(
         t for t in fired_triggers if t.kind == QueuedTriggerKind.DANGER
     )
@@ -759,7 +759,7 @@ def _queue_fresh(
     latest_fired = max(entry.last_fired_at for entry in queue)
     if server_time - latest_fired <= timedelta(minutes=x_min):
         return True
-    # キュー対象アークのいずれかが現時点で警戒条件 (b).1 / (b).2 を満たすか
+    # キュー対象アークのいずれかが現時点で停滞警戒（パーセンタイル超過または相対増分超過）を満たすか
     return any(
         entry.origin_edge_id in watched_edges
         for entry in queue

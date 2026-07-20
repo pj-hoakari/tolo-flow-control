@@ -457,7 +457,7 @@ def _optimize_lightweight(
     best_tau = solution.tau if solution is not None else float("inf")
 
     # current 方向が不可解、または全候補を試しても安全な解が得られない場合は、
-    # 不安全な結果を返さず設計 v0 §7.6 の保持フォールバックへ移行する。
+    # 不安全な結果を返さず保持フォールバック（方向固定 LP → 前回結果コピー）へ移行する。
     if solution is None or not _local_reachability_ok(arc_model, solution) or (
         is_open and not _boundary_reachability_ok(arc_model, solution)
     ):
