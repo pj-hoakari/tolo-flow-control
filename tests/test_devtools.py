@@ -263,6 +263,53 @@ def test_puncture_scenario_fires_puncture_evidence() -> None:
     assert any(isinstance(e, PunctureEvidence) for e in detection.evidences)
 
 
+@pytest.mark.parametrize(
+    "name,expected_verdict",
+    [
+        ("cooldown-skip", "SKIPPED_COOLDOWN"),
+        ("cooldown-queued", "QUEUED"),
+        ("queue-burst-fire", "TRIGGERED"),
+        ("warmup-skip", "SKIPPED_WARMUP"),
+    ],
+)
+def test_state_transition_scenarios_reach_expected_verdict(
+    name: str, expected_verdict: str
+) -> None:
+    """状態遷移（クールタイム・キュー・ウォームアップ）の各分岐をカバーする。"""
+    from flow_control.detection import detect
+
+    scen = scenarios.get_scenario(name)
+    detection = detect(
+        graph=scen.graph,
+        observations=scen.observations,
+        history_digest=scen.history_digest,
+        previous_state=scen.previous_state,
+        events=scen.events,
+        config=scen.configs.detection,
+        server_time=scen.server_time,
+        references=scen.references,
+    )
+    assert detection.verdict_hint.value == expected_verdict
+
+
+def test_queue_burst_fire_reports_queue_score_evidence() -> None:
+    from flow_control.detection import detect
+    from flow_control.detection.diagnostics import QueueScoreEvidence
+
+    scen = scenarios.get_scenario("queue-burst-fire")
+    detection = detect(
+        graph=scen.graph,
+        observations=scen.observations,
+        history_digest=scen.history_digest,
+        previous_state=scen.previous_state,
+        events=scen.events,
+        config=scen.configs.detection,
+        server_time=scen.server_time,
+        references=scen.references,
+    )
+    assert any(isinstance(e, QueueScoreEvidence) for e in detection.evidences)
+
+
 def test_serialize_is_json_dumpable() -> None:
     scen = scenarios.get_scenario("multi-route-surge")
     payload = to_jsonable(scen.observations)
