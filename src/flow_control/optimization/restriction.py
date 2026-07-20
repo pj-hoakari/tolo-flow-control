@@ -17,7 +17,12 @@ from ..domain.graph import EdgeID, NodeID
 from .arcs import ArcModel
 from .drainable import reachable_forward
 from .model import MilpInputs
-from .results import RestrictionAction, RestrictionProposal, RestrictionReason
+from .results import (
+    OptimizationResult,
+    RestrictionAction,
+    RestrictionProposal,
+    RestrictionReason,
+)
 
 # 迂回路が構造的に不足とみなす k_effective の上限（k<=1 = 実質迂回路なし）
 _MIN_SUFFICIENT_K = 2
@@ -25,6 +30,8 @@ _MIN_SUFFICIENT_K = 2
 _MIN_USED_RATIO = 0.5
 # フローを「正」とみなす下限
 _EPSILON_FLOW = 1e-9
+# 既定値用の空集合（パラメータ既定式での関数呼び出しを避ける）
+_NO_EDGES: frozenset[EdgeID] = frozenset()
 
 
 @dataclass(frozen=True)
@@ -327,7 +334,7 @@ def build_restriction_proposals(
     direction: Mapping[str, int],
     importance: Mapping[EdgeID, float],
     outflow_averages: Mapping[EdgeID, float],
-    node_danger_upstream: frozenset[EdgeID] = frozenset(),
+    node_danger_upstream: frozenset[EdgeID] = _NO_EDGES,
     is_open: bool,
     max_proposals: int = 1,
 ) -> tuple[RestrictionProposal, ...]:
@@ -384,7 +391,7 @@ def build_restriction_proposals(
 
 
 def build_resume_proposals(
-    previous_result: object | None,
+    previous_result: OptimizationResult | None,
     *,
     still_restricted: frozenset[EdgeID],
 ) -> tuple[RestrictionProposal, ...]:
@@ -396,7 +403,7 @@ def build_resume_proposals(
         return ()
     resumed: list[RestrictionProposal] = []
     seen: set[str] = set()
-    for prior in getattr(previous_result, "restriction_proposal", ()):
+    for prior in previous_result.restriction_proposal:
         if prior.action == RestrictionAction.RESUME:
             continue
         if prior.edge_id in still_restricted or prior.edge_id.value in seen:

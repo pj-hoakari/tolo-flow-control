@@ -21,7 +21,7 @@ from pathlib import Path
 
 from flow_control.detection.state import ArcWatchState, DetectionState
 from flow_control.detection.triggers import Event, EventKind
-from flow_control.domain import Graph, Mode, NodeID, NodeKind
+from flow_control.domain import EdgeID, Graph, Mode, NodeID, NodeKind
 
 from . import graph_builder, report
 from .graph_builder import BuiltGraph
@@ -40,7 +40,7 @@ from .serialize import dump_json
 
 
 def _random_od_flows(
-    rng: random.Random, graph: Graph, *, surge_edges: frozenset
+    rng: random.Random, graph: Graph, *, surge_edges: frozenset[EdgeID]
 ) -> tuple[ODSpec, ...]:
     """到達可能な起終点からランダムに OD を組む（生成不能なら空）
 

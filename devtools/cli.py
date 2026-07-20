@@ -21,6 +21,7 @@ from pathlib import Path
 from . import compare as compare_mod
 from . import fuzzer, graph_builder, report, scenarios, visualize
 from .pipeline import run_pipeline
+from .scenario_base import Scenario
 
 _DEFAULT_OUT = "_devout"
 
@@ -99,7 +100,7 @@ def cmd_run(args: argparse.Namespace) -> int:
 def cmd_run_all(args: argparse.Namespace) -> int:
     out_root = Path(args.out)
     entries: list[dict[str, object]] = []
-    targets: list = []
+    targets: list[tuple[str, Scenario]] = []
     skipped: list[str] = []
     for name in scenarios.SCENARIOS:
         scen = scenarios.get_scenario(name)

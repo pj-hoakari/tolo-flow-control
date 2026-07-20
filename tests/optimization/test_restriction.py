@@ -25,11 +25,16 @@ _ARC_KEYS = {
 }
 
 
-def _inputs(**overrides) -> MilpInputs:
-    base = dict(
-        s_obs={_E_HOT: 30.0, _E_D1: 10.0, _E_D2: 10.0},
-        s_bar={_E_HOT: 10.0, _E_D1: 10.0, _E_D2: 10.0},
-        eta={_E_HOT: 0.5, _E_D1: 0.5, _E_D2: 0.5},
+def _inputs(
+    *,
+    s_obs: dict[EdgeID, float] | None = None,
+    s_bar: dict[EdgeID, float] | None = None,
+    eta: dict[EdgeID, float] | None = None,
+) -> MilpInputs:
+    return MilpInputs(
+        s_obs=s_obs if s_obs is not None else {_E_HOT: 30.0, _E_D1: 10.0, _E_D2: 10.0},
+        s_bar=s_bar if s_bar is not None else {_E_HOT: 10.0, _E_D1: 10.0, _E_D2: 10.0},
+        eta=eta if eta is not None else {_E_HOT: 0.5, _E_D1: 0.5, _E_D2: 0.5},
         c_e={},
         capacity_hint={_E_SCALAR: 50.0},
         sigma={_E_SCALAR: 10.0},
@@ -40,8 +45,6 @@ def _inputs(**overrides) -> MilpInputs:
         epsilon=1e-3,
         epsilon_0=1e-6,
     )
-    base.update(overrides)
-    return MilpInputs(**base)
 
 
 def test_residual_fires_on_tau_exceeded():

@@ -22,6 +22,8 @@ from .arcs import ArcModel
 
 # ゾーン整列のタイブレーク末尾値（エッジを一切持たないゾーンを最後に回す）
 _TIE_LAST = "￿"
+# 重大度未指定時の空マップ
+_NO_SEVERITY: Mapping[EdgeID, float] = {}
 
 
 @dataclass(frozen=True)
@@ -61,7 +63,9 @@ def build_trigger_zones(
     - 並び・併合順は ID 昇順で決定的
     """
     adjacency = _build_adjacency(arc_model)
-    severity = edge_severity if edge_severity is not None else {}
+    severity: Mapping[EdgeID, float] = (
+        edge_severity if edge_severity is not None else _NO_SEVERITY
+    )
 
     cores: list[_MutableZone] = []
     active_edge_ids = {edge.edge_id for edge in arc_model.active_edges}
