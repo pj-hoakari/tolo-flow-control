@@ -92,9 +92,25 @@ uv run python -m devtools graph ./_devout/venue.yaml --out ./_devout   # 読み�
 
 ## プリセット
 
-- グラフ: `linear` / `y-junction` / `grid` / `ring` / `venue` /
-  `expo`（出入口1・ホール4・一方通行の周回コリドー）/
-  `crossing`（2 ハブ＋主通路＋並行バイパス 2 本。迂回・方向提案が映える）
+- グラフ:
+  - 汎用位相: `linear` / `y-junction` / `grid` / `ring` / `venue` /
+    `expo`（出入口1・ホール4・一方通行の周回コリドー）/
+    `crossing`（2 ハブ＋主通路＋並行バイパス 2 本。迂回・方向提案が映える）
+  - シナリオ固有位相（すべて `graph` コマンドで単独描画・保存可）:
+    `crossing-oneway`（crossing のバイパスを一方通行循環に）/
+    `plaza-line`（直線＋中央混在広場。Open モード最小）/
+    `closed-ring`（入退出点なしの環状。Closed モード最小）/
+    `oneway-leaf`（法規制固定の内向き葉＝構成異常）/
+    `deadend-lobby`（袋小路ホール。機能2 最小）/
+    `festival`（入場一本道→二系統分岐）/
+    `station-stairs`（改札→並行 2 階段→ホーム）/
+    `transfer-station`（2 改札・2 ホーム・並行 2 連絡通路）/
+    `stadium`（ボウル・可変コンコース・スカラー支線）/
+    `flex-corridor`（可変通路＋常設細通路の 2 ノード最小）/
+    `museum`（特別展袋小路＋常設展）/
+    `design-limit`（上限規模 10 ノード/50 エッジの密グラフ）
+  - ファジングのランダムローテーションは汎用位相のみ（expo とシナリオ固有位相は除外。
+    `fuzz --graph <preset>` の明示指定は可）
 - シナリオ（各シナリオの想定ケースと**期待する誘導提案**の一覧は
   `docs/devtools_scenario_catalog.md` を参照。緊急時・法的対処はスコープ外で、
   通常運営時の誘導のみを扱う）:

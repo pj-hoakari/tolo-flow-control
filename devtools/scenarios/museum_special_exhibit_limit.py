@@ -1,10 +1,10 @@
 """美術館の特別展入場待ちに対する流入制限（機能2）の現実ケース
 
-特別展示室は袋小路のスパー（迂回路なし）にあり、開場直後の人気で入場待ち列が
-アクセス通路 `e_foyer_special` に伸びて高停滞になる。方向変更や迂回では解消できず
-（k_effective=0）、残留停滞の評価が閾値を超えるため、期待する提案は上流フィーダ
-`e_entrance_foyer` への流入制限（LIMIT・整理入場のレート値付き）となる。
-常設展側 `e_foyer_main` の平常流は妨げない。
+グラフは ``museum`` プリセット。特別展示室は袋小路のスパー（迂回路なし）にあり、
+開場直後の人気で入場待ち列がアクセス通路 `e_foyer_special` に伸びて高停滞になる。
+方向変更や迂回では解消できず（k_effective=0）、残留停滞の評価が閾値を超えるため、
+期待する提案は上流フィーダ `e_entrance_foyer` への流入制限（LIMIT・整理入場の
+レート値付き）となる。常設展側 `e_foyer_main` の平常流は妨げない。
 
 機能2（通行制限提案）は既定で無効のため、`restriction_proposal_enabled=True` と
 `tau_danger_threshold` を設定して有効化する。restriction-undrainable が最小構成の
@@ -15,9 +15,9 @@ from __future__ import annotations
 
 from dataclasses import replace
 
-from flow_control.domain import EdgeID, NodeID, NodeKind
+from flow_control.domain import EdgeID, NodeID
 
-from ..graph_builder import GraphBuilder
+from .. import graph_builder
 from ..scenario_base import (
     ODSpec,
     Scenario,
@@ -29,24 +29,9 @@ from ..scenario_base import (
 from ._registry import register
 
 
-def _build_graph() -> GraphBuilder:
-    b = GraphBuilder()
-    b.node("entrance", kind=NodeKind.GOAL, boundary=True, pos=(0.0, 0.0))
-    b.node("foyer", kind=NodeKind.TRANSIT_ONLY, pos=(1.5, 0.0))
-    # 特別展示室: 袋小路（迂回路が存在しないアクセス）
-    b.node("special_hall", kind=NodeKind.GOAL_TRANSIT_MIXED, pos=(3.0, 1.0))
-    b.node("main_hall", kind=NodeKind.GOAL_TRANSIT_MIXED, pos=(3.0, -1.0))
-    b.node("cafe", kind=NodeKind.GOAL_TRANSIT_MIXED, pos=(4.5, -1.0))
-    b.edge("e_entrance_foyer", "entrance", "foyer", capacity_hint=120.0)
-    b.edge("e_foyer_special", "foyer", "special_hall")
-    b.edge("e_foyer_main", "foyer", "main_hall")
-    b.edge("e_main_cafe", "main_hall", "cafe")
-    return b
-
-
 @register("museum-special-exhibit-limit")
 def build() -> Scenario:
-    built = _build_graph().build()
+    built = graph_builder.museum()
     hot = frozenset({EdgeID("e_foyer_special")})
     base = compact_configs()
     configs = replace(

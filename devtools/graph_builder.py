@@ -10,6 +10,7 @@ from __future__ import annotations
 import json
 import math
 from dataclasses import dataclass, field
+from itertools import combinations
 from pathlib import Path
 from typing import Any
 
@@ -417,6 +418,322 @@ def crossing() -> BuiltGraph:
     return b.build()
 
 
+def crossing_oneway() -> BuiltGraph:
+    """crossing と同位相でバイパス 2 本を一方通行循環にした変種
+
+    北バイパス（``e_n1a``/``e_n1b``）は hub_w→hub_e（A_TO_B）、南バイパス
+    （``e_s1a``/``e_s1b``）は hub_e→hub_w（B_TO_A）の LEGAL_FIXED。主通路とアクセスは
+    双方向。方向属性提案（有向/双方向の提示）の確認用。
+    """
+    b = GraphBuilder()
+    b.node("in", kind=NodeKind.GOAL, boundary=True, pos=(0.0, 0.0))
+    b.node("hub_w", kind=NodeKind.TRANSIT_ONLY, pos=(1.0, 0.0))
+    b.node("hub_e", kind=NodeKind.GOAL_TRANSIT_MIXED, pos=(3.0, 0.0))
+    b.node("out", kind=NodeKind.GOAL, boundary=True, pos=(4.0, 0.0))
+    b.node("n1", kind=NodeKind.TRANSIT_ONLY, pos=(2.0, 1.0))
+    b.node("s1", kind=NodeKind.TRANSIT_ONLY, pos=(2.0, -1.0))
+
+    b.edge("e_in", "in", "hub_w")
+    b.edge("e_main", "hub_w", "hub_e", capacity_hint=10.0)
+    b.edge(
+        "e_n1a", "hub_w", "n1",
+        direction_constraint=DirectionConstraint.LEGAL_FIXED_A_TO_B,
+        current_direction=CurrentDirection.A_TO_B,
+    )
+    b.edge(
+        "e_n1b", "n1", "hub_e",
+        direction_constraint=DirectionConstraint.LEGAL_FIXED_A_TO_B,
+        current_direction=CurrentDirection.A_TO_B,
+    )
+    b.edge(
+        "e_s1a", "hub_w", "s1",
+        direction_constraint=DirectionConstraint.LEGAL_FIXED_B_TO_A,
+        current_direction=CurrentDirection.B_TO_A,
+    )
+    b.edge(
+        "e_s1b", "s1", "hub_e",
+        direction_constraint=DirectionConstraint.LEGAL_FIXED_B_TO_A,
+        current_direction=CurrentDirection.B_TO_A,
+    )
+    b.edge("e_out", "hub_e", "out")
+    return b.build()
+
+
+def plaza_line() -> BuiltGraph:
+    """両端が入退出点の直線＋中央に混在広場（Open モードの最小位相）
+
+    素の直線（内部目的地なし）では Open モードの OD が構造的に 0 になるため、
+    中央に混在ノード ``plaza`` を置く。
+    """
+    b = GraphBuilder()
+    names_kinds = (
+        ("n0", NodeKind.GOAL, True),
+        ("n1", NodeKind.TRANSIT_ONLY, False),
+        ("plaza", NodeKind.GOAL_TRANSIT_MIXED, False),
+        ("n3", NodeKind.TRANSIT_ONLY, False),
+        ("n4", NodeKind.GOAL, True),
+    )
+    for i, (name, kind, boundary) in enumerate(names_kinds):
+        b.node(name, kind=kind, boundary=boundary, pos=(float(i), 0.0))
+    order = [name for name, _, _ in names_kinds]
+    for i in range(len(order) - 1):
+        b.edge(f"e{i}", order[i], order[i + 1])
+    return b.build()
+
+
+def closed_ring(n: int = 6) -> BuiltGraph:
+    """入退出点なしの環状（Closed モードの最小位相）
+
+    対向する 2 つの広場（混在ノード）を持ち、放出側（ΔOcc<0）が生成源、
+    蓄積側（ΔOcc>0）が吸収となる Closed の需要導出を通せる。
+    """
+    b = GraphBuilder()
+    mixed = {0, n // 2}
+    for i in range(n):
+        angle = 2.0 * math.pi * i / n
+        b.node(
+            f"n{i}",
+            kind=NodeKind.GOAL_TRANSIT_MIXED if i in mixed else NodeKind.TRANSIT_ONLY,
+            boundary=False,
+            pos=(math.cos(angle), math.sin(angle)),
+        )
+    for i in range(n):
+        b.edge(f"e{i}", f"n{i}", f"n{(i + 1) % n}")
+    return b.build()
+
+
+def oneway_leaf() -> BuiltGraph:
+    """葉ノードの唯一のエッジが法規制固定で内向きの構成異常位相
+
+    出方向可達性が破れ Phase1 INFEASIBLE→フォールバックを再現する。
+    """
+    b = GraphBuilder()
+    b.node("in", kind=NodeKind.GOAL, boundary=True, pos=(0.0, 0.0))
+    b.node("mid", kind=NodeKind.TRANSIT_ONLY, pos=(1.0, 0.0))
+    b.node("dead", kind=NodeKind.GOAL, boundary=True, pos=(2.0, 0.0))
+    b.edge("e1", "in", "mid")
+    b.edge(
+        "e2",
+        "mid",
+        "dead",
+        direction_constraint=DirectionConstraint.LEGAL_FIXED_A_TO_B,
+        current_direction=CurrentDirection.A_TO_B,
+    )
+    return b.build()
+
+
+def deadend_lobby() -> BuiltGraph:
+    """ゲート→ロビーの先に袋小路ホールと側室ホールが分かれる位相
+
+    袋小路側は迂回路が存在しない（機能2 の通行制限提案の最小位相）。
+    """
+    b = GraphBuilder()
+    b.node("gate", kind=NodeKind.GOAL, boundary=True, pos=(0.0, 0.0))
+    b.node("lobby", kind=NodeKind.TRANSIT_ONLY, pos=(1.5, 0.0))
+    b.node("deadend_hall", kind=NodeKind.GOAL_TRANSIT_MIXED, pos=(3.0, 0.8))
+    b.node("side_hall", kind=NodeKind.GOAL_TRANSIT_MIXED, pos=(3.0, -0.8))
+    b.edge("e_gate_lobby", "gate", "lobby", capacity_hint=120.0)
+    b.edge("e_lobby_dead", "lobby", "deadend_hall")
+    b.edge("e_lobby_side", "lobby", "side_hall")
+    return b.build()
+
+
+def festival() -> BuiltGraph:
+    """フェス会場: 入場ゲートの一本道から二系統（フード・ステージ）へ分かれる導線
+
+    ``e_gate_plaza`` は容量ヒント小（過需要になり得る狭い動線）。二系統は
+    相互接続され、それぞれ出口へ抜けられる。
+    """
+    b = GraphBuilder()
+    b.node("gate", kind=NodeKind.GOAL, boundary=True, pos=(0.0, 0.0))
+    b.node("plaza", kind=NodeKind.TRANSIT_ONLY, pos=(1.5, 0.0))
+    b.node("food", kind=NodeKind.GOAL_TRANSIT_MIXED, pos=(3.0, 1.0))
+    b.node("main_stage", kind=NodeKind.GOAL_TRANSIT_MIXED, pos=(3.0, -1.0))
+    b.node("exit", kind=NodeKind.GOAL, boundary=True, pos=(4.5, 0.0))
+    b.edge("e_gate_plaza", "gate", "plaza", capacity_hint=18.0)
+    b.edge("e_food", "plaza", "food")
+    b.edge("e_stage", "plaza", "main_stage")
+    b.edge("e_food_stage", "food", "main_stage")
+    b.edge("e_food_exit", "food", "exit")
+    b.edge("e_stage_exit", "main_stage", "exit")
+    return b.build()
+
+
+def station_stairs() -> BuiltGraph:
+    """駅コンコース: 改札からホームへ 2 本の階段が並行する位相
+
+    片方の階段を低容量化（危険フラグ）すると代替階段への誘導が確認できる。
+    """
+    b = GraphBuilder()
+    b.node("ticket_gate", kind=NodeKind.GOAL, boundary=True, pos=(0.0, 0.0))
+    b.node("concourse", kind=NodeKind.TRANSIT_ONLY, pos=(1.5, 0.0))
+    b.node("stairs_a", kind=NodeKind.TRANSIT_ONLY, pos=(2.5, 1.0))
+    b.node("stairs_b", kind=NodeKind.TRANSIT_ONLY, pos=(2.5, -1.0))
+    b.node("platform", kind=NodeKind.GOAL_TRANSIT_MIXED, pos=(4.0, 0.0))
+    b.edge("e_gate_concourse", "ticket_gate", "concourse")
+    b.edge("e_stairs_a", "concourse", "stairs_a")
+    b.edge("e_stairs_a_platform", "stairs_a", "platform")
+    b.edge("e_stairs_b", "concourse", "stairs_b")
+    b.edge("e_stairs_b_platform", "stairs_b", "platform")
+    return b.build()
+
+
+def transfer_station() -> BuiltGraph:
+    """乗換駅: 2 つの改札・2 つのホームをコンコース間の並行 2 通路が結ぶ位相
+
+    主連絡通路 ``e_passage`` は容量ヒント小。並行する ``e_underpass``（地下通路）を
+    センサ未設置（unobserved）として使うと疎観測下の迂回が確認できる。
+    """
+    b = GraphBuilder()
+    b.node("gate_w", kind=NodeKind.GOAL, boundary=True, pos=(0.0, 0.0))
+    b.node("conc_w", kind=NodeKind.TRANSIT_ONLY, pos=(1.5, 0.0))
+    b.node("conc_e", kind=NodeKind.TRANSIT_ONLY, pos=(3.5, 0.0))
+    b.node("gate_e", kind=NodeKind.GOAL, boundary=True, pos=(5.0, 0.0))
+    b.node("plat1", kind=NodeKind.GOAL_TRANSIT_MIXED, pos=(1.5, 1.6))
+    b.node("plat2", kind=NodeKind.GOAL_TRANSIT_MIXED, pos=(3.5, 1.6))
+
+    b.edge("e_gate_w", "gate_w", "conc_w", capacity_hint=100.0)
+    b.edge("e_gate_e", "gate_e", "conc_e", capacity_hint=100.0)
+    b.edge("e_passage", "conc_w", "conc_e", capacity_hint=18.0)
+    b.edge("e_underpass", "conc_w", "conc_e", capacity_hint=40.0)
+    b.edge("e_cw_p1", "conc_w", "plat1")
+    b.edge("e_ce_p2", "conc_e", "plat2")
+    return b.build()
+
+
+def stadium() -> BuiltGraph:
+    """スタジアム: ボウルから東主出口・北南ゲートへ抜ける退場導線の位相
+
+    ボウルは観客が滞留する混在ノード。東側は幅広の可変コンコース
+    ``e_concourse``（BIDIRECTIONAL_PRIOR、現在は入場向き east_exit→bowl）と
+    細い常設退場階段 ``e_egress_stair`` が並行する。北・南ゲートへの支線は
+    スカラー観測（疎観測の現実性）。
+    """
+    b = GraphBuilder()
+    b.node("north_gate", kind=NodeKind.GOAL, boundary=True, pos=(0.0, 2.0))
+    b.node("south_gate", kind=NodeKind.GOAL, boundary=True, pos=(0.0, -2.0))
+    b.node("west_plaza", kind=NodeKind.TRANSIT_ONLY, pos=(1.4, 0.0))
+    b.node("north_foyer", kind=NodeKind.TRANSIT_ONLY, pos=(2.8, 1.8))
+    b.node("bowl", kind=NodeKind.GOAL_TRANSIT_MIXED, pos=(3.0, 0.0))
+    b.node("south_foyer", kind=NodeKind.TRANSIT_ONLY, pos=(2.8, -1.8))
+    b.node("east_exit", kind=NodeKind.GOAL, boundary=True, pos=(6.0, 0.0))
+
+    b.edge("e_north_gate", "north_gate", "west_plaza", observation_type=ObservationType.SCALAR)
+    b.edge("e_south_gate", "south_gate", "west_plaza", observation_type=ObservationType.SCALAR)
+    b.edge("e_west_north", "west_plaza", "north_foyer", observation_type=ObservationType.SCALAR)
+    b.edge("e_west_south", "west_plaza", "south_foyer", observation_type=ObservationType.SCALAR)
+    b.edge("e_north_bowl", "north_foyer", "bowl", observation_type=ObservationType.SCALAR)
+    b.edge("e_south_bowl", "south_foyer", "bowl", observation_type=ObservationType.SCALAR)
+    b.edge("e_foyer_cross", "north_foyer", "south_foyer", observation_type=ObservationType.SCALAR)
+    b.edge(
+        "e_concourse",
+        "bowl",
+        "east_exit",
+        capacity_hint=60.0,
+        direction_constraint=DirectionConstraint.BIDIRECTIONAL_PRIOR,
+        current_direction=CurrentDirection.B_TO_A,
+    )
+    b.edge(
+        "e_egress_stair",
+        "bowl",
+        "east_exit",
+        capacity_hint=8.0,
+        direction_constraint=DirectionConstraint.LEGAL_FIXED_A_TO_B,
+        current_direction=CurrentDirection.A_TO_B,
+    )
+    return b.build()
+
+
+def flex_corridor() -> BuiltGraph:
+    """可変通路の最小位相: 場内ホールと退場先ロビーを 2 本の通路が結ぶ
+
+    ``e_flex`` は BIDIRECTIONAL_PRIOR（現在は入場向き lobby→hall）、``e_service`` は
+    hall→lobby の法規制固定・容量小。需要反転時の向き解除（RELEASE_ONEWAY）の確認用。
+    """
+    b = GraphBuilder()
+    b.node("hall", kind=NodeKind.GOAL_TRANSIT_MIXED, pos=(0.0, 0.0))
+    b.node("lobby", kind=NodeKind.GOAL, boundary=True, pos=(3.0, 0.0))
+    b.edge(
+        "e_flex",
+        "lobby",
+        "hall",
+        capacity_hint=30.0,
+        direction_constraint=DirectionConstraint.BIDIRECTIONAL_PRIOR,
+        current_direction=CurrentDirection.A_TO_B,
+    )
+    b.edge(
+        "e_service",
+        "hall",
+        "lobby",
+        capacity_hint=10.0,
+        direction_constraint=DirectionConstraint.LEGAL_FIXED_A_TO_B,
+        current_direction=CurrentDirection.A_TO_B,
+    )
+    return b.build()
+
+
+def museum() -> BuiltGraph:
+    """美術館: エントランス→ホワイエから特別展（袋小路）と常設展へ分かれる位相
+
+    特別展示室へのアクセスは迂回路が存在しない（機能2 の現実ケース用）。
+    """
+    b = GraphBuilder()
+    b.node("entrance", kind=NodeKind.GOAL, boundary=True, pos=(0.0, 0.0))
+    b.node("foyer", kind=NodeKind.TRANSIT_ONLY, pos=(1.5, 0.0))
+    b.node("special_hall", kind=NodeKind.GOAL_TRANSIT_MIXED, pos=(3.0, 1.0))
+    b.node("main_hall", kind=NodeKind.GOAL_TRANSIT_MIXED, pos=(3.0, -1.0))
+    b.node("cafe", kind=NodeKind.GOAL_TRANSIT_MIXED, pos=(4.5, -1.0))
+    b.edge("e_entrance_foyer", "entrance", "foyer", capacity_hint=120.0)
+    b.edge("e_foyer_special", "foyer", "special_hall")
+    b.edge("e_foyer_main", "foyer", "main_hall")
+    b.edge("e_main_cafe", "main_hall", "cafe")
+    return b.build()
+
+
+_DESIGN_LIMIT_NODE_SPECS: tuple[tuple[str, NodeKind, bool], ...] = (
+    ("gate", NodeKind.GOAL, True),
+    ("j_ne", NodeKind.TRANSIT_ONLY, False),
+    ("hallA", NodeKind.GOAL_TRANSIT_MIXED, False),
+    ("j_e", NodeKind.TRANSIT_ONLY, False),
+    ("hallB", NodeKind.GOAL_TRANSIT_MIXED, False),
+    ("exit", NodeKind.GOAL, True),
+    ("hallC", NodeKind.GOAL_TRANSIT_MIXED, False),
+    ("j_s", NodeKind.TRANSIT_ONLY, False),
+    ("hallD", NodeKind.GOAL_TRANSIT_MIXED, False),
+    ("j_w", NodeKind.TRANSIT_ONLY, False),
+)
+
+
+def design_limit() -> BuiltGraph:
+    """設計想定上限規模の密グラフ（10 ノード完全グラフ 45 本＋並行 5 本＝50 エッジ）
+
+    性能ストレス計測用。隣接ホール-ジャンクション間に並行通路を足して
+    エッジ数を要件上限の 50 に揃える。
+    """
+    b = GraphBuilder()
+    n = len(_DESIGN_LIMIT_NODE_SPECS)
+    for i, (name, kind, boundary) in enumerate(_DESIGN_LIMIT_NODE_SPECS):
+        angle = 2.0 * math.pi * i / n
+        b.node(
+            name,
+            kind=kind,
+            boundary=boundary,
+            pos=(3.0 * math.cos(angle), 3.0 * math.sin(angle)),
+        )
+    names = [name for (name, _, _) in _DESIGN_LIMIT_NODE_SPECS]
+    for a, c in combinations(names, 2):
+        b.edge(f"e_{a}_{c}", a, c)
+    for a, c in (
+        ("j_ne", "hallA"),
+        ("hallA", "j_e"),
+        ("j_e", "hallB"),
+        ("hallC", "j_s"),
+        ("j_s", "hallD"),
+    ):
+        b.edge(f"e_{a}_{c}_2", a, c)
+    return b.build()
+
+
 PRESETS: dict[str, Any] = {
     "linear": linear,
     "y-junction": y_junction,
@@ -425,7 +742,31 @@ PRESETS: dict[str, Any] = {
     "venue": venue,
     "expo": expo,
     "crossing": crossing,
+    "crossing-oneway": crossing_oneway,
+    "plaza-line": plaza_line,
+    "closed-ring": closed_ring,
+    "oneway-leaf": oneway_leaf,
+    "deadend-lobby": deadend_lobby,
+    "festival": festival,
+    "station-stairs": station_stairs,
+    "transfer-station": transfer_station,
+    "stadium": stadium,
+    "flex-corridor": flex_corridor,
+    "museum": museum,
+    "design-limit": design_limit,
 }
+
+# ファジングのランダムローテーション対象となる汎用位相。シナリオ固有プリセット
+# （構成異常の oneway-leaf・上限規模の design-limit 等）と重い expo は除外する。
+# `fuzz --graph <preset>` で明示指定すればどのプリセットも対象にできる
+FUZZ_ROTATION_PRESETS: tuple[str, ...] = (
+    "crossing",
+    "grid",
+    "linear",
+    "ring",
+    "venue",
+    "y-junction",
+)
 
 
 def get_preset(name: str) -> BuiltGraph:

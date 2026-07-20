@@ -292,10 +292,9 @@ def run_fuzz(
     ``graph_arg`` がプリセット名/ファイルなら固定、None なら毎回ランダムなプリセットを使う。
     """
     master = random.Random(seed)
-    # ランダムローテーションからは重いグラフ（expo）を除外し、所要時間を抑える。
-    # 明示的に --graph expo を指定すれば対象にできる
-    _heavy = {"expo"}
-    presets = [p for p in sorted(graph_builder.PRESETS) if p not in _heavy]
+    # ランダムローテーションは汎用位相のみ（シナリオ固有プリセットと重い expo を除外。
+    # 明示的に --graph <preset> を指定すればどのプリセットも対象にできる）
+    presets = list(graph_builder.FUZZ_ROTATION_PRESETS)
     fixed_base: BuiltGraph | None = None
     fixed_label = ""
     if graph_arg is not None:
