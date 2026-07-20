@@ -325,11 +325,12 @@ def _optimize_lightweight(
         solved_at=solved_at,
         seed=seed,
     )
+    build_ms = int(build_sec * 1000)
     stats = SolverStats(
         solver_name="highs",
         phase1_status=SolverStatus.LIGHTWEIGHT,
         phase2_status=Phase2Status.LIGHTWEIGHT,
-        phase1_ms=int((build_sec + assign_sec) * 1000),
+        phase1_ms=build_ms + assign_lp_ms,
         phase2_ms=0,
         tau_star=best_tau,
         throughput=throughput,
@@ -337,7 +338,7 @@ def _optimize_lightweight(
         greedy_iterations=greedy_iterations,
         zones_processed=zones,
         tau_residual=best_tau,
-        build_ms=int(build_sec * 1000),
+        build_ms=build_ms,
         greedy_ms=int(greedy_sec * 1000),
         greedy_truncated=greedy_truncated,
     )
