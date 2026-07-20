@@ -77,7 +77,9 @@ def test_big_m_factor_does_not_change_solution(
     worked_example_history,
 ):
     # 非循環制約により、Big-M を大きくしても解は循環で膨張しない
-    from flow_control.optimization import ResolvedConfig
+    # （Big-M は厳密モード MILP の z 制約でのみ使われる。基本モードの配分 LP は
+    #   バイナリゼロで Big-M 自体を持たない）
+    from flow_control.optimization import OptimizationMode, ResolvedConfig
 
     result = optimize(
         worked_example_graph,
@@ -86,7 +88,9 @@ def test_big_m_factor_does_not_change_solution(
         worked_example_detour,
         worked_example_history,
         previous_result=None,
-        config=ResolvedConfig(big_m_factor=100.0),
+        config=ResolvedConfig(
+            optimization_mode=OptimizationMode.STRICT, big_m_factor=100.0
+        ),
         seed=1,
         time_limit=30.0,
     )
@@ -96,6 +100,36 @@ def test_big_m_factor_does_not_change_solution(
     assert result.optimization_result.objective_values.throughput == pytest.approx(
         24.0, abs=1e-6
     )
+
+
+def test_lightweight_residual_tau_is_conservative(
+    worked_example_graph,
+    worked_example_observations,
+    worked_example_forecast,
+    worked_example_detour,
+    worked_example_history,
+):
+    """基本モードの近似残留 τ は厳密最小値（2.4）以上＝循環による人工解が出ない。
+
+    配分 LP はバイナリゼロの min-cost 透過配分なので、τ を直接最小化する厳密
+    モードより残留 τ は大きくなりうるが、下回る（フローを循環で水増しして
+    停滞を見かけ上排出する）ことはない。
+    """
+    from flow_control.optimization import ResolvedConfig
+
+    result = optimize(
+        worked_example_graph,
+        worked_example_observations,
+        worked_example_forecast,
+        worked_example_detour,
+        worked_example_history,
+        previous_result=None,
+        config=ResolvedConfig(),
+        seed=1,
+        time_limit=30.0,
+    )
+    assert result.optimization_result.solver_status == SolverStatus.LIGHTWEIGHT
+    assert result.optimization_result.objective_values.tau_star >= 2.4 - 1e-3
 
 
 def test_phase2_skipped_when_no_throughput_targets(

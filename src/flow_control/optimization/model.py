@@ -1,4 +1,10 @@
-"""MILP モデルの構築・求解と固定方向 LP フォールバック（linopy + HiGHS）"""
+"""最適化モデルの構築・求解（linopy + HiGHS）
+
+- 厳密モード: 方向バイナリ・非循環バイナリを含む MILP（build_model / solve_phase1/2）
+- 基本モード・フォールバック: 方向固定のバイナリゼロ配分 LP
+  （build_assignment_lp / solve_assignment）。ホップ数重みの min-cost 配分で
+  有向閉路を最適解から排除し、近似残留 τ は解のフローから事後評価する
+"""
 
 # linopy / HiGHS は型スタブを提供せず、変数・式・ソルバー操作がすべて Any 型となる
 # 本ファイルはソルバーとの境界であり、Any 由来の型警告のみを局所的に抑制する
@@ -285,6 +291,151 @@ def build_model(
     return built
 
 
+def build_assignment_lp(
+    arc_model: ArcModel,
+    inputs: MilpInputs,
+    commodities: tuple[Commodity, ...],
+    *,
+    fixed_x: dict[str, int],
+) -> _Built:
+    """基本モードの配分 LP（バイナリゼロ・方向 fixed_x 固定）を構築する
+
+    有効な向きのアークにのみフロー変数を持ち、方向変数・非循環フラグ・τ 変数を
+    一切作らない純 LP。目的はホップ数（アーク本数）重みの総フロー最小化で、
+    正コストにより有向閉路を含む解が最適から排除される（構造的非循環）。
+    τ は本 LP では扱わず、解のフローから ``evaluate_residual_tau`` で事後評価する。
+    """
+    model = linopy.Model()
+
+    # コモディティ別フロー f[arc, k]（fixed_x で有効な向きのみ）
+    f: dict[tuple[str, int], Any] = {}
+    for ai, arc in enumerate(arc_model.arcs):
+        if fixed_x.get(arc.key, 0) == 0:
+            continue
+        for k in commodities:
+            f[(arc.key, k.index)] = model.add_variables(
+                lower=0, name=f"f{ai}_{k.index}"
+            )
+
+    built = _Built(
+        model=model,
+        x={},
+        f=f,
+        tau=None,
+        arc_model=arc_model,
+        commodities=commodities,
+        fixed_x=fixed_x,
+    )
+
+    # フロー保存（無効な向きのアークは変数自体が無い）
+    for k in commodities:
+        for v in arc_model.active_nodes:
+            out_expr = _vsum(
+                [
+                    f[(a.key, k.index)]
+                    for a in arc_model.arcs_out(v)
+                    if (a.key, k.index) in f
+                ]
+            )
+            in_expr = _vsum(
+                [
+                    f[(a.key, k.index)]
+                    for a in arc_model.arcs_in(v)
+                    if (a.key, k.index) in f
+                ]
+            )
+            if v == k.origin:
+                rhs = k.demand
+            elif v == k.destination:
+                rhs = -k.demand
+            else:
+                rhs = 0.0
+            lhs = _balance(out_expr, in_expr)
+            if lhs is None:
+                if rhs != 0.0:
+                    built.infeasible = True
+                continue
+            model.add_constraints(lhs == rhs)
+
+    # 容量上限（危険フラグ由来のアーク容量）
+    for edge in arc_model.active_edges:
+        cap = inputs.edge_danger_capacity.get(edge.edge_id)
+        if cap is None:
+            continue
+        for arc in arc_model.arcs_of_edge.get(edge.edge_id, ()):
+            expr = _vsum(_arc_flow_terms(built, arc))
+            if expr is not None:
+                model.add_constraints(expr <= cap)
+
+    # 容量ヒント上限・スカラー型パンク制約（エッジ総フロー）
+    for edge in arc_model.active_edges:
+        hint = inputs.capacity_hint.get(edge.edge_id)
+        if hint is None:
+            continue
+        edge_expr = _vsum(_edge_flow_terms(built, edge.edge_id))
+        if edge_expr is None:
+            continue
+        model.add_constraints(edge_expr <= hint)
+        if edge.edge_id in inputs.scalar_edges:
+            sigma = inputs.sigma.get(edge.edge_id, 0.0)
+            model.add_constraints(edge_expr <= max(0.0, hint - sigma))
+
+    # ノード通過量上限（ノード危険フラグ）
+    for v, cap in inputs.node_danger_capacity.items():
+        terms: list[Any] = []
+        for arc in arc_model.arcs_in(v):
+            terms.extend(_arc_flow_terms(built, arc))
+        expr = _vsum(terms)
+        if expr is not None:
+            model.add_constraints(expr <= cap)
+
+    # 排出上限（線形近似の妥当域ガード）: η_e*f_e <= s_obs
+    for edge in arc_model.active_edges:
+        eid = edge.edge_id
+        if eid not in inputs.s_obs:
+            continue
+        eta = inputs.eta.get(eid, 0.0)
+        if eta <= 0.0:
+            continue
+        edge_expr = _vsum(_edge_flow_terms(built, eid))
+        if edge_expr is not None:
+            model.add_constraints(eta * edge_expr <= inputs.s_obs[eid])
+
+    # 最短路シードの透過配分: ホップ数重みの総フロー最小化
+    total = _vsum(list(f.values()))
+    if total is not None:
+        model.add_objective(total, sense="min")
+
+    return built
+
+
+def evaluate_residual_tau(
+    arc_model: ArcModel,
+    inputs: MilpInputs,
+    drainable: frozenset[EdgeID],
+    flow: dict[str, float],
+) -> float:
+    """配分解の近似残留 τ を事後評価する
+
+    τ = max_e c_e(s_obs_e − η_e f_e)/(s̄_e + ε0)（排出可能かつ停滞観測のあるエッジ）。
+    排出上限 η_e f_e ≤ s_obs_e を満たす解では各項は負にならない。対象がなければ 0。
+    """
+    tau = 0.0
+    for edge in arc_model.active_edges:
+        eid = edge.edge_id
+        if eid not in drainable or eid not in inputs.s_obs:
+            continue
+        f_e = sum(
+            flow.get(arc.key, 0.0) for arc in arc_model.arcs_of_edge.get(eid, ())
+        )
+        residual = inputs.s_obs[eid] - inputs.eta.get(eid, 0.0) * f_e
+        value = inputs.c_e.get(eid, 1.0) * residual / (
+            inputs.s_bar.get(eid, 0.0) + inputs.epsilon_0
+        )
+        tau = max(tau, value)
+    return tau
+
+
 def _add_direction_and_reachability(built: _Built, *, is_open: bool) -> None:
     model = built.model
     arc_model = built.arc_model
@@ -392,6 +543,52 @@ def _solve(model: Any, time_limit: float, seed: int, mip_rel_gap: float = 0.0) -
         options["mip_rel_gap"] = float(mip_rel_gap)
     model.solve(**options)
     return str(model.termination_condition)
+
+
+def solve_assignment(built: _Built, time_limit: float, seed: int) -> PhaseResult:
+    """配分 LP を求解する（build_assignment_lp 専用）
+
+    τ は解に含めない（呼出し側が evaluate_residual_tau で事後評価する。
+    ArcSolution.tau は 0.0 のプレースホルダ）。
+    """
+    if built.infeasible:
+        return PhaseResult(SolverStatus.INFEASIBLE, None, 0.0)
+    if not built.f:
+        # コモディティなし: ゼロフローが自明解
+        return PhaseResult(SolverStatus.OPTIMAL, _zero_flow_solution(built), 0.0)
+    condition = _solve(built.model, time_limit, seed)
+    solution = _extract_assignment(built)
+    status = _map_status(condition, solution is not None)
+    if solution is None:
+        return PhaseResult(status, None, 0.0)
+    return PhaseResult(status, solution, 0.0)
+
+
+def _fixed_direction_map(built: _Built) -> dict[str, int]:
+    fixed = built.fixed_x if built.fixed_x is not None else {}
+    return {arc.key: fixed.get(arc.key, 0) for arc in built.arc_model.arcs}
+
+
+def _zero_flow_solution(built: _Built) -> ArcSolution:
+    flow = {arc.key: 0.0 for arc in built.arc_model.arcs}
+    return ArcSolution(flow=flow, direction=_fixed_direction_map(built), tau=0.0)
+
+
+def _extract_assignment(built: _Built) -> ArcSolution | None:
+    flow: dict[str, float] = {}
+    try:
+        for arc in built.arc_model.arcs:
+            total = 0.0
+            for k in built.commodities:
+                var = built.f.get((arc.key, k.index))
+                if var is not None:
+                    total += _value(var)
+            flow[arc.key] = total
+    except Exception:
+        return None
+    if any(math.isnan(v) for v in flow.values()):
+        return None
+    return ArcSolution(flow=flow, direction=_fixed_direction_map(built), tau=0.0)
 
 
 def solve_phase1(
