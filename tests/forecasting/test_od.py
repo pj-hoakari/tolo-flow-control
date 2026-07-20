@@ -376,6 +376,54 @@ def test_delta_min_cut_and_renormalize() -> None:
     assert _require(result.od_matrix, "s", "t1").demand == pytest.approx(10.0)
 
 
+def test_open_mode_releasing_mixed_node_is_origin() -> None:
+    """Open モードで放出中（ΔOcc<0）の混在ノードが生成源になる（退場需要の導出）
+
+    H(MIXED, ΔOcc=-10) -e1-> j -e2-> ex(境界 GOAL)。H から 10 が流出しており、
+    int→ext の OD δ(H, ex)=10 が導出される
+    """
+    graph = Graph(
+        nodes=(
+            _node("H", NodeKind.GOAL_TRANSIT_MIXED),
+            _node("j", NodeKind.TRANSIT_ONLY),
+            _node("ex", NodeKind.GOAL, boundary=True),
+        ),
+        edges=(_edge("e1", "H", "j"), _edge("e2", "j", "ex")),
+    )
+    observations = Observations(
+        observed_at=_OBSERVED_AT,
+        arc_flows=(_flow("e1", 10.0), _flow("e2", 10.0)),
+        node_occupancies=(_occ("H", occupancy=30.0, delta=-10.0),),
+    )
+
+    result = _run(graph, observations, _config(), is_open_mode=True)
+
+    assert _require(result.od_matrix, "H", "ex").demand == pytest.approx(10.0)
+    # 逆向き（ex→H）の幻需要は生じない
+    assert _find(result.od_matrix, "ex", "H") is None
+
+
+def test_open_mode_accumulating_mixed_node_is_not_origin() -> None:
+    """Open モードで蓄積中（ΔOcc>=0）の混在ノードは生成源にならない（従来挙動の維持）"""
+    graph = Graph(
+        nodes=(
+            _node("s", NodeKind.TRANSIT_ONLY, boundary=True),
+            _node("H", NodeKind.GOAL_TRANSIT_MIXED),
+        ),
+        edges=(_edge("e1", "s", "H"),),
+    )
+    observations = Observations(
+        observed_at=_OBSERVED_AT,
+        arc_flows=(_flow("e1", 10.0),),
+        node_occupancies=(_occ("H", occupancy=20.0, delta=10.0),),
+    )
+
+    result = _run(graph, observations, _config(), is_open_mode=True)
+
+    assert _require(result.od_matrix, "s", "H").demand == pytest.approx(10.0)
+    assert all(od.origin != NodeID("H") for od in result.od_matrix)
+
+
 def test_empty_when_no_observations() -> None:
     """観測が無ければ生成源・吸収先が空で OD も空（解像度は NODE_ONLY）"""
     graph = Graph(

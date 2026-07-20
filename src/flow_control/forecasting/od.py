@@ -97,6 +97,15 @@ def _od_marginals(
                 production[demand.node_id] = demand.production
             if node.kind == NodeKind.GOAL and demand.production > 0.0:
                 production[demand.node_id] = demand.production
+            # 放出中（ΔOcc<0）の混在ノードも origin として担う。
+            # 滞留した人が退出し始める局面（退場ピーク・場内間の移動）の生成源で、
+            # Closed モードの排出ノード規則の部分適用に当たる
+            if (
+                node.kind == NodeKind.GOAL_TRANSIT_MIXED
+                and occupancy_delta.get(demand.node_id, 0.0) < 0.0
+                and demand.production > 0.0
+            ):
+                production[demand.node_id] = demand.production
             boundary_exit = max(0.0, demand.gross_in - demand.gross_out)
             amount = max(demand.absorption, boundary_exit if node.is_boundary else 0.0)
             if amount > 0.0:
