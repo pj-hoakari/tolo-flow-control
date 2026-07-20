@@ -2,8 +2,9 @@
 
 crossing と同位相だが、2 本のバイパスを LEGAL_FIXED の一方通行にする:
 北バイパスは hub_w→hub_e（A_TO_B）、南バイパスは hub_e→hub_w（B_TO_A）の一方通行循環。
-主通路 `e_main` とアクセスは双方向。Optimization の direction_proposal は、一方通行バイパスを
-A_TO_B / B_TO_A の有向、主通路・アクセスを BIDIRECTIONAL と提案し、有向/双方向の差が一目で分かる。
+主通路 `e_main` とアクセスは双方向。期待する提案は、direction_proposal が一方通行バイパスを
+A_TO_B / B_TO_A の有向、主通路・アクセスを BIDIRECTIONAL と提示し（有向/双方向の差が
+一目で分かる）、迂回配分は現在方向で hub_e へ向かえる北バイパスにのみ乗ること。
 
 （最適化は双方向 PRIOR エッジを自発的に一方通行化はしない＝方向提案が有向になるのは
 LEGAL_FIXED の反映。本シナリオはその効果を明示する。）
@@ -15,13 +16,15 @@ from flow_control.domain import (
     CurrentDirection,
     DirectionConstraint,
     EdgeID,
+    NodeID,
     NodeKind,
 )
 
 from ..graph_builder import GraphBuilder
 from ..scenario_base import (
+    ODSpec,
     Scenario,
-    build_observations_and_history,
+    build_consistent_observations_and_history,
     established_watch_state,
     make_scenario,
 )
@@ -69,12 +72,11 @@ def _build_graph() -> GraphBuilder:
 def build() -> Scenario:
     built = _build_graph().build()
     hot = frozenset({EdgeID("e_main")})
-    obs, hist = build_observations_and_history(
+    # hub_e 行き 30 の急増が主通路（容量 10）に乗る
+    obs, hist = build_consistent_observations_and_history(
         built.graph,
-        surge_edges=hot,
+        (ODSpec(NodeID("in"), NodeID("hub_e"), 30.0, surge=True),),
         stagnation_edges=hot,
-        occupancy=30.0,
-        occupancy_delta=12.0,
         eta=0.02,
     )
     return make_scenario(
