@@ -196,8 +196,20 @@ def _impute_unobserved_arcs(
     補完値を両端ノードの P_v / A_v に反映する。確定したアークは観測済みに繰り入れ，
     観測フロンティアから内側へ反復適用する。2 本以上未観測のノードは劣決定として残す
 
+    錨にできるのは滞留が収支の残差を吸収しないノードのみ：TRANSIT_ONLY と、
+    ΔOcc が観測されている GOAL_TRANSIT_MIXED。純 GOAL は到着が全て終端で
+    任意の流入超過を滞留が吸収するため恒等式が未観測アークを定めず、錨にすると
+    実在しない流出を捏造して偽の再生成（逆向き OD）を生む。境界ノードは外部との
+    出入りが観測されないため恒等式が閉じず、同じく錨にしない
+
     補完したエッジ ID の集合を返す
     """
+    # 補完は観測フロンティアからの逆算である。ベクトル流量の観測が 1 つも無ければ
+    # フロンティアが存在せず、ΔOcc 単独からのフロー捏造になるため何もしない
+    # （占有のみの NODE_ONLY 縮退は距離 prior の純再配分に委ねる）
+    if not observed_edges:
+        return set()
+
     active_ids = {node.node_id for node in active_nodes}
     incident: dict[NodeID, list[Edge]] = {nid: [] for nid in active_ids}
     for edge in graph.enabled_edges():
@@ -211,10 +223,21 @@ def _impute_unobserved_arcs(
     resolved = set(observed_edges)
     imputed: set[str] = set()
 
+    def can_anchor(node: Node) -> bool:
+        if node.is_boundary:
+            return False
+        if node.kind == NodeKind.TRANSIT_ONLY:
+            return True
+        if node.kind == NodeKind.GOAL_TRANSIT_MIXED:
+            return node.node_id in occupancy_by_node
+        return False
+
     progressed = True
     while progressed:
         progressed = False
         for node in active_nodes:
+            if not can_anchor(node):
+                continue
             unobserved = [
                 edge
                 for edge in incident[node.node_id]
