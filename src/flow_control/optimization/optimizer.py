@@ -22,7 +22,10 @@ from .model import (
     ArcSolution,
     Commodity,
     MilpInputs,
+    build_assignment_lp,
     build_model,
+    evaluate_residual_tau,
+    solve_assignment,
     solve_phase1,
     solve_phase2,
 )
@@ -214,24 +217,28 @@ def _optimize_lightweight(
 ) -> OptimizeResult:
     """基本モードの全体ベースライン配分。
 
-    方向を current に固定して配分するため、探索空間は連続フローだけとなる。
-    方向変更の貪欲探索は、トリガーゾーンをこの結果で評価する後続段として
-    拡張可能な形で統計へ明示する。安全性は固定方向と到達性検査で保つ。
+    方向を current に固定した配分 LP（バイナリゼロの min-cost 透過配分）を解き、
+    近似残留 τ は解のフローから事後評価する。方向変更の貪欲探索は候補ごとに
+    同じ LP を再解し、τ 改善がマージン超のものだけを採用する。
+    安全性は固定方向と到達性検査で保つ。
     """
     fixed_x: dict[str, int] = {}
     for edge in arc_model.active_edges:
         fixed_x.update(fixed_directions(edge))
-    built = build_model(
-        arc_model, inputs, commodities, drainable, is_open=is_open, fixed_x=fixed_x
-    )
+    built = build_assignment_lp(arc_model, inputs, commodities, fixed_x=fixed_x)
     t0 = time.perf_counter()
-    assignment = solve_phase1(built, time_limit, seed)
+    assignment = solve_assignment(built, time_limit, seed)
     assign_lp_ms = int((time.perf_counter() - t0) * 1000)
     zones = _zone_count(graph, triggered_edges, triggered_nodes, config.max_trigger_zones)
 
     solution = assignment.solution
     greedy_iterations = 0
-    best_tau = assignment.objective if solution is not None else float("inf")
+    if solution is not None:
+        solution = replace(
+            solution,
+            tau=evaluate_residual_tau(arc_model, inputs, drainable, solution.flow),
+        )
+    best_tau = solution.tau if solution is not None else float("inf")
     # 方向候補はトリガー起点に限定し、edge_id 順で評価する。各候補は current
     # 以外の片方向化／解除を固定方向 LP で再配分し、Open の境界到達性と
     # ローカル可達性を満たすものだけを採用する。
@@ -243,24 +250,22 @@ def _optimize_lightweight(
         current_direction = solution.direction if solution is not None else fixed_x
         for candidate_x in _direction_candidates(arc_model, edge_id, current_direction):
             greedy_iterations += 1
-            candidate_built = build_model(
-                arc_model,
-                inputs,
-                commodities,
-                drainable,
-                is_open=is_open,
-                fixed_x=candidate_x,
+            candidate_built = build_assignment_lp(
+                arc_model, inputs, commodities, fixed_x=candidate_x
             )
-            candidate = solve_phase1(candidate_built, time_limit, seed)
+            candidate = solve_assignment(candidate_built, time_limit, seed)
             if candidate.solution is None or candidate.status == SolverStatus.INFEASIBLE:
                 continue
             if not _local_reachability_ok(arc_model, candidate.solution):
                 continue
             if is_open and not _boundary_reachability_ok(arc_model, candidate.solution):
                 continue
-            if solution is None or candidate.objective <= best_tau - config.greedy_improve_margin:
-                solution = candidate.solution
-                best_tau = candidate.objective
+            candidate_tau = evaluate_residual_tau(
+                arc_model, inputs, drainable, candidate.solution.flow
+            )
+            if solution is None or candidate_tau <= best_tau - config.greedy_improve_margin:
+                solution = replace(candidate.solution, tau=candidate_tau)
+                best_tau = candidate_tau
 
     # current 方向が不可解、または全候補を試しても安全な解が得られない場合は、
     # 不安全な結果を返さず設計 v0 §7.6 の保持フォールバックへ移行する。
@@ -530,15 +535,13 @@ def _fallback(
     throughput_arcs: tuple[Arc, ...],
     phase1_ms: int,
 ) -> OptimizeResult:
-    # 第 1 段: 方向を current_direction に固定した LP（可達性制約は除外）
+    # 第 1 段: 方向を current_direction に固定した配分 LP（可達性制約は除外）
     fixed_x: dict[str, int] = {}
     for edge in arc_model.active_edges:
         fixed_x.update(fixed_directions(edge))
-    built_lp = build_model(
-        arc_model, inputs, commodities, drainable, is_open=is_open, fixed_x=fixed_x
-    )
+    built_lp = build_assignment_lp(arc_model, inputs, commodities, fixed_x=fixed_x)
     t0 = time.perf_counter()
-    lp = solve_phase1(built_lp, time_limit, seed)
+    lp = solve_assignment(built_lp, time_limit, seed)
     lp_ms = int((time.perf_counter() - t0) * 1000)
 
     boundary = compute_boundary_control(graph, is_open, previous_result)
@@ -547,6 +550,7 @@ def _fallback(
         SolverStatus.OPTIMAL,
         SolverStatus.FEASIBLE,
     ):
+        tau_val = evaluate_residual_tau(arc_model, inputs, drainable, lp.solution.flow)
         importance = compute_route_importance(arc_model, lp.solution, config.epsilon_0)
         # 方向属性提案は出さず、前回提案を維持
         direction = previous_result.direction_proposal if previous_result else ()
@@ -555,7 +559,7 @@ def _fallback(
             route_importance=importance,
             direction_proposal=direction,
             boundary_control=boundary,
-            objective_values=ObjectiveValues(tau_star=lp.objective, throughput=throughput),
+            objective_values=ObjectiveValues(tau_star=tau_val, throughput=throughput),
             solver_status=SolverStatus.INFEASIBLE,
             solved_at=solved_at,
             seed=seed,
@@ -566,7 +570,7 @@ def _fallback(
             phase2_status=Phase2Status.SKIPPED,
             phase1_ms=phase1_ms + lp_ms,
             phase2_ms=0,
-            tau_star=lp.objective,
+            tau_star=tau_val,
             throughput=throughput,
         )
         report = ConstraintReport(

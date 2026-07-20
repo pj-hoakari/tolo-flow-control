@@ -110,9 +110,7 @@ uv run python -m devtools graph ./_devout/venue.yaml --out ./_devout   # 読み�
     `combined-surge-stagnation`（急増＋高停滞が同一エッジで重なり**組合せ発火**する
     下流実行ベースライン。急増単独・停滞単独では現行 Detection は発火しない）/
     `stress-design-limit`（設計想定上限規模 10 ノード/50 エッジ・3 エッジ同時発火の性能計測。
-    ⚠️ 既知問題: 現状は HiGHS MIP 内部のヒープ破壊で**プロセスごと異常終了**するため
-    `skip_in_run_all` で run-all からは自動除外される。計測は単独 `run` で行う。詳細は
-    `docs/performance_evaluation_20260720.md`）
+    所要 1 分超と重いため `skip_in_run_all` で run-all からは除外され、単独 `run` で計測する。
   - 迂回・方向提案が映える（crossing グラフ）:
     `crossing-detour`（主通路 e_main 急増・低容量→**並行バイパス 2 本へ迂回**: detour_set k_eff=2、route_importance がバイパスへ）/
     `crossing-oneway`（バイパスを一方通行循環に→**direction_proposal が有向/双方向を提案**: 北 A_TO_B・南 B_TO_A・主通路 BIDIRECTIONAL）
