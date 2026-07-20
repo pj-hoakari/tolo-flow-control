@@ -74,6 +74,9 @@ def cmd_run(args: argparse.Namespace) -> int:
                 f" zones={stats.zones_processed}"
                 f" greedy_iterations={stats.greedy_iterations}"
                 f" assign_lp_ms={stats.assign_lp_ms}"
+                f" build_ms={stats.build_ms}"
+                f" greedy_ms={stats.greedy_ms}"
+                + (" [TRUNCATED]" if stats.greedy_truncated else "")
             )
         if r.restriction_proposal:
             print("  restrictions:", ", ".join(

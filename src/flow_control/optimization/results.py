@@ -116,14 +116,22 @@ class SolverStats:
     solver_name: str
     phase1_status: SolverStatus
     phase2_status: Phase2Status
+    # 軽量モードでは「モデル構築＋配分 LP 求解の合計」を再解釈して格納する互換フィールド
     phase1_ms: int
     phase2_ms: int
     tau_star: float
     throughput: float
+    # 配分 LP 求解時間の合計（ベースライン＋貪欲候補＋フォールバック）
     assign_lp_ms: int = 0
     greedy_iterations: int = 0
     zones_processed: int = 0
     tau_residual: float = 0.0
+    # モデル構築時間の合計（軽量モード。求解と並ぶ支配的コストのため独立計上）
+    build_ms: int = 0
+    # 貪欲探索の所要合計（候補の構築＋求解＋検査）
+    greedy_ms: int = 0
+    # 予算枯渇により貪欲探索を打ち切ったか
+    greedy_truncated: bool = False
 
 
 @dataclass(frozen=True)

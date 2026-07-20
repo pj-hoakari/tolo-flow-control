@@ -1103,7 +1103,9 @@ def render_summary(
         ]
         if res.solver_status.value == "LIGHTWEIGHT":
             lines.append(
-                f"  lightweight : zones={st.zones_processed}, greedy={st.greedy_iterations}, assign={st.assign_lp_ms} ms"
+                f"  lightweight : zones={st.zones_processed}, greedy={st.greedy_iterations},"
+                f" assign={st.assign_lp_ms} ms, build={st.build_ms} ms, greedy={st.greedy_ms} ms"
+                + (" [TRUNCATED]" if st.greedy_truncated else "")
             )
         if res.restriction_proposal:
             lines.append(f"restrictions  : {len(res.restriction_proposal)}")

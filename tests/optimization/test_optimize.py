@@ -268,4 +268,41 @@ def test_lightweight_is_default_and_reports_baseline_stats(
     assert result.solver_stats.assign_lp_ms >= 0
     assert result.solver_stats.greedy_iterations == 0
     assert result.solver_stats.zones_processed == 0
+    # phase1_ms は互換フィールドとして「構築＋配分 LP 求解の合計」を格納する
+    assert result.solver_stats.phase1_ms == (
+        result.solver_stats.build_ms + result.solver_stats.assign_lp_ms
+    )
+    assert not result.solver_stats.greedy_truncated
     assert ResolvedConfig().optimization_mode == OptimizationMode.LIGHTWEIGHT
+
+
+def test_lightweight_budget_exhaustion_truncates_greedy(
+    worked_example_graph,
+    worked_example_observations,
+    worked_example_forecast,
+    worked_example_detour,
+    worked_example_history,
+):
+    """予算が尽きたら貪欲探索を打ち切り、ベースライン解は床値で必ず返す。"""
+    from flow_control.domain import EdgeID
+
+    result = optimize(
+        worked_example_graph,
+        worked_example_observations,
+        worked_example_forecast,
+        worked_example_detour,
+        worked_example_history,
+        previous_result=None,
+        config=ResolvedConfig(),
+        seed=1,
+        # ベースラインの構築＋求解だけで確実に使い切る極小予算
+        time_limit=1e-6,
+        triggered_edges=(EdgeID("e12"),),
+        triggered_nodes=(),
+    )
+
+    assert result.optimization_result.solver_status == SolverStatus.LIGHTWEIGHT
+    assert result.solver_stats.greedy_truncated
+    assert result.solver_stats.greedy_iterations == 0
+    # ベースライン配分は成立している（空の結果にならない）
+    assert result.optimization_result.route_importance
