@@ -92,6 +92,7 @@ def run_summary(
                 "greedy_iterations": st.greedy_iterations,
                 "greedy_truncated": st.greedy_truncated,
                 "zones_processed": st.zones_processed,
+                "localization_capped": st.localization_capped,
                 "tau_residual": st.tau_residual,
             },
             "tau_star": res.objective_values.tau_star,
