@@ -65,7 +65,7 @@ def cmd_run(args: argparse.Namespace) -> int:
         r = run.optimization.optimization_result
         print(
             f"  solver={r.solver_status.value} tau*={r.objective_values.tau_star:.4g} "
-            f"throughput={r.objective_values.throughput:.4g} "
+            f"throughput={_fmt_thru(r.objective_values.throughput)} "
             f"fallback={run.optimization.constraint_report.fallback_to_previous}"
         )
         stats = run.optimization.solver_stats
@@ -122,7 +122,7 @@ def cmd_run_all(args: argparse.Namespace) -> int:
             ostr = (
                 f" solver={r.solver_status.value}"
                 f" tau*={r.objective_values.tau_star:.3g}"
-                f" thru={r.objective_values.throughput:.3g}"
+                f" thru={_fmt_thru(r.objective_values.throughput)}"
             )
             if r.solver_status.value == "LIGHTWEIGHT":
                 ostr += f" zones={run.optimization.solver_stats.zones_processed}"
@@ -287,6 +287,11 @@ def build_parser() -> argparse.ArgumentParser:
     p_graph.set_defaults(func=cmd_graph)
 
     return parser
+
+
+def _fmt_thru(value: float | None) -> str:
+    """スループット表示（None は対象なし）"""
+    return "n/a" if value is None else f"{value:.3g}"
 
 
 def main(argv: list[str] | None = None) -> int:
