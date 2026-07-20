@@ -14,6 +14,7 @@ from .. import graph_builder
 from ..scenario_base import (
     Scenario,
     build_observations_and_history,
+    established_watch_state,
     make_scenario,
 )
 from ._registry import register
@@ -22,17 +23,20 @@ from ._registry import register
 @register("crossing-detour")
 def build() -> Scenario:
     built = graph_builder.crossing()
+    hot = frozenset({EdgeID("e_main")})
     obs, hist = build_observations_and_history(
         built.graph,
-        surge_edges=frozenset({EdgeID("e_main")}),
+        surge_edges=hot,
+        stagnation_edges=hot,
         occupancy=30.0,
         occupancy_delta=12.0,
         eta=0.02,
     )
     return make_scenario(
         "crossing-detour",
-        "主通路 e_main が急増・低容量。両端間の北/南バイパス 2 本へ迂回（route_importance がバイパスへ）",
+        "主通路 e_main が急増＋停滞・低容量。両端間の北/南バイパス 2 本へ迂回（route_importance がバイパスへ）",
         built,
         obs,
         hist,
+        previous_state=established_watch_state(hot),
     )

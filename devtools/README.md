@@ -106,6 +106,13 @@ uv run python -m devtools graph ./_devout/venue.yaml --out ./_devout   # 読み�
     `expo-gate-overcrowded`（入口過密→**gate で入退場停止**: boundary_control）/
     `expo-approach-capacity`（hallA 直行を低容量制限→**一方通行ループへ迂回**: route_importance がループへ）/
     `expo-incident-resume`（前回 gate 停止→危険解除で**再開提案 RESUME**）
+  - 検出・性能評価用:
+    `combined-surge-stagnation`（急増＋高停滞が同一エッジで重なり**組合せ発火**する
+    下流実行ベースライン。急増単独・停滞単独では現行 Detection は発火しない）/
+    `stress-design-limit`（設計想定上限規模 10 ノード/50 エッジ・3 エッジ同時発火の性能計測。
+    ⚠️ 既知問題: 現状は HiGHS MIP 内部のヒープ破壊で**プロセスごと異常終了**するため
+    `skip_in_run_all` で run-all からは自動除外される。計測は単独 `run` で行う。詳細は
+    `docs/performance_evaluation_20260720.md`）
   - 迂回・方向提案が映える（crossing グラフ）:
     `crossing-detour`（主通路 e_main 急増・低容量→**並行バイパス 2 本へ迂回**: detour_set k_eff=2、route_importance がバイパスへ）/
     `crossing-oneway`（バイパスを一方通行循環に→**direction_proposal が有向/双方向を提案**: 北 A_TO_B・南 B_TO_A・主通路 BIDIRECTIONAL）
@@ -147,18 +154,33 @@ uv run python -m devtools graph ./_devout/venue.yaml --out ./_devout   # 読み�
 # devtools/scenarios/my_case.py
 from flow_control.domain import EdgeID
 from .. import graph_builder
-from ..scenario_base import Scenario, build_observations_and_history, make_scenario
+from ..scenario_base import (
+    Scenario,
+    build_observations_and_history,
+    established_watch_state,
+    make_scenario,
+)
 from ._registry import register
 
 
 @register("my-case")  # ← この名前で list/run から参照される
 def build() -> Scenario:
     built = graph_builder.venue()
+    hot = frozenset({EdgeID("e_in_j1")})
+    # 組合せ発火: 急増（需要警戒）と停滞警戒＋計時済み watch を同一エッジへ与える。
+    # 急増単独・停滞単独では現行 Detection は発火しない
     obs, hist = build_observations_and_history(
-        built.graph, surge_edges=frozenset({EdgeID("e_in_j1")})
+        built.graph, surge_edges=hot, stagnation_edges=hot
     )
-    return make_scenario("my-case", "説明文", built, obs, hist)
+    return make_scenario(
+        "my-case", "説明文", built, obs, hist,
+        previous_state=established_watch_state(hot),
+    )
 ```
+
+メトリクス発火させるシナリオは上記のように**組合せ条件**を満たす必要がある（危険フラグ
+イベント経由なら不要）。発火しないことが意図のシナリオは `expect_trigger=False` を渡す。
+`Scenario.expect_trigger` と実際の verdict の一致はテストで検証される（検証空洞化の防止）。
 
 カスタムグラフが要るなら `graph_builder.GraphBuilder` で組むか、`graph_builder` にプリセットを
 追加する。危険フラグは `scenario_base.with_edge_danger` / `with_node_danger`、観測のない

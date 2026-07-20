@@ -90,6 +90,30 @@ def test_scenarios_build(name: str) -> None:
     assert scen.name == name
 
 
+@pytest.mark.parametrize("name", sorted(scenarios.SCENARIOS))
+def test_scenarios_trigger_as_expected(name: str) -> None:
+    # 検出仕様の変更でシナリオが発火しなくなる「検証空洞化」を CI で検知する。
+    # Detection のみ実行するため軽量（ソルバーは起動しない）
+    from flow_control.detection import VerdictHint, detect
+
+    scen = scenarios.get_scenario(name)
+    detection = detect(
+        graph=scen.graph,
+        observations=scen.observations,
+        history_digest=scen.history_digest,
+        previous_state=scen.previous_state,
+        events=scen.events,
+        config=scen.configs.detection,
+        server_time=scen.server_time,
+        references=scen.references,
+    )
+    triggered = detection.verdict_hint == VerdictHint.TRIGGERED
+    assert triggered == scen.expect_trigger, (
+        f"{name}: expect_trigger={scen.expect_trigger} but verdict="
+        f"{detection.verdict_hint.value}"
+    )
+
+
 def test_serialize_is_json_dumpable() -> None:
     scen = scenarios.get_scenario("multi-route-surge")
     payload = to_jsonable(scen.observations)

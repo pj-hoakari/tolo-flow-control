@@ -1,4 +1,9 @@
-"""単一ルート急増シナリオ"""
+"""急増と高停滞が同一エッジで重なる組合せ発火シナリオ
+
+現行の Detection は「停滞警戒が M 分継続」かつ「需要警戒（急増または需要超過）」の
+両方が成立して初めてメトリクス発火する。急増のみ・停滞のみの既存シナリオは
+発火しないため、組合せ条件を満たす下流実行のベースラインとして本シナリオを置く。
+"""
 
 from __future__ import annotations
 
@@ -14,11 +19,10 @@ from ..scenario_base import (
 from ._registry import register
 
 
-@register("single-route-surge")
+@register("combined-surge-stagnation")
 def build() -> Scenario:
     built = graph_builder.venue()
     hot = frozenset({EdgeID("e_in_j1")})
-    # 組合せ発火: 急増（需要警戒）に加え停滞警戒＋計時済み watch を同一エッジへ与える
     obs, hist = build_observations_and_history(
         built.graph,
         surge_edges=hot,
@@ -30,8 +34,8 @@ def build() -> Scenario:
         eta=0.02,
     )
     return make_scenario(
-        "single-route-surge",
-        "入口ルート e_in_j1 が急増＋停滞し組合せ発火。単一エッジのトリガーを確認する",
+        "combined-surge-stagnation",
+        "e_in_j1 で急増と高停滞が同時成立し組合せ発火。下流 4 モジュールを通す",
         built,
         obs,
         hist,
