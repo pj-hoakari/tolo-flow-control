@@ -132,6 +132,8 @@ class SolverStats:
     greedy_ms: int = 0
     # 予算枯渇により貪欲探索を打ち切ったか
     greedy_truncated: bool = False
+    # ゾーン数が max_trigger_zones を超え重大度上位のみ処理したか（LOCALIZATION_CAPPED 相当）
+    localization_capped: bool = False
 
 
 @dataclass(frozen=True)

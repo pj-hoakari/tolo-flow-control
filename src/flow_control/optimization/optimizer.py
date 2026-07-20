@@ -18,16 +18,19 @@ from ..domain.observations import ConfidenceFlag, Observations
 from .arcs import Arc, ArcModel, build_arc_model, fixed_directions
 from .config import OptimizationMode, ResolvedConfig
 from .drainable import compute_drainable, reachable_forward
+from .localization import build_trigger_zones
 from .model import (
     ArcSolution,
     Commodity,
     MilpInputs,
     build_assignment_lp,
     build_model,
+    build_zone_lp,
     evaluate_residual_tau,
     solve_assignment,
     solve_phase1,
     solve_phase2,
+    solve_zone_lp,
 )
 from .postprocess import compute_direction_proposals, compute_route_importance
 from .boundary import compute_boundary_control
@@ -219,12 +222,17 @@ def _optimize_lightweight(
     triggered_edges: tuple[EdgeID, ...],
     triggered_nodes: tuple[NodeID, ...],
 ) -> OptimizeResult:
-    """基本モードの全体ベースライン配分。
+    """基本モードの局所化つき配分。
 
-    方向を current に固定した配分 LP（バイナリゼロの min-cost 透過配分）を解き、
-    近似残留 τ は解のフローから事後評価する。方向変更の貪欲探索は候補ごとに
-    同じ LP を再解し、τ 改善がマージン超のものだけを採用する。
-    安全性は固定方向と到達性検査で保つ。
+    (i) 方向を current に固定した全体配分 LP（バイナリゼロの min-cost 透過配分）を
+    1 回解き、全有効エッジの重要度と近似残留 τ の基準を得る。
+    (ii) トリガー近傍のゾーンごとに、方向候補をゾーン限定 LP で再評価する。
+    ゾーン外の方向・フローは current・ベースライン値に固定し、ゾーン横断アークの
+    固定フローを純供給へ畳み込んで所与の流入出条件とする。ゾーン τ の改善が
+    マージン超の候補だけを採用する。重要度は (i) の全体配分から、方向提案・
+    残留 τ は採用後の合成解から出す。
+    ベースラインが不可解の場合はゾーン純供給を構成できないため、全体 LP で
+    候補を評価する縮退経路で解の救済を試みる（例: 逆向き固定レーンの解除）。
 
     時間予算 ``time_limit`` はモデル構築込みの deadline として持ち回り、
     各求解には残時間のみを渡す。残時間が尽きたら貪欲探索を打ち切る
@@ -243,61 +251,160 @@ def _optimize_lightweight(
     )
     assign_sec = time.perf_counter() - t0
     assign_lp_ms = int(assign_sec * 1000)
-    zones = _zone_count(graph, triggered_edges, triggered_nodes, config.max_trigger_zones)
 
-    solution = assignment.solution
+    baseline = assignment.solution
+    if baseline is not None:
+        baseline = replace(
+            baseline,
+            tau=evaluate_residual_tau(arc_model, inputs, drainable, baseline.flow),
+        )
+
+    # ゾーン抽出。重大度はゾーン τ と同じ正規化停滞ストレスで代表する
+    severity = {
+        eid: inputs.c_e.get(eid, 1.0)
+        * s_obs
+        / (inputs.s_bar.get(eid, 0.0) + inputs.epsilon_0)
+        for eid, s_obs in inputs.s_obs.items()
+    }
+    localization = build_trigger_zones(
+        arc_model,
+        triggered_edges,
+        triggered_nodes,
+        local_radius_hops=config.local_radius_hops,
+        max_trigger_zones=config.max_trigger_zones,
+        edge_severity=severity,
+    )
+
+    solution = baseline
     greedy_iterations = 0
     greedy_truncated = False
-    greedy_sec = 0.0
-    if solution is not None:
-        solution = replace(
-            solution,
-            tau=evaluate_residual_tau(arc_model, inputs, drainable, solution.flow),
-        )
-    best_tau = solution.tau if solution is not None else float("inf")
-    # 方向候補はトリガー起点に限定し、edge_id 順で評価する。各候補は current
-    # 以外の片方向化／解除を固定方向 LP で再配分し、Open の境界到達性と
-    # ローカル可達性を満たすものだけを採用する。
-    candidate_ids = sorted(
-        {edge_id for edge_id in triggered_edges if edge_id in arc_model.arcs_of_edge},
-        key=lambda edge_id: edge_id.value,
-    )
+    zones_processed = 0
     greedy_started = time.perf_counter()
-    for edge_id in candidate_ids:
-        if greedy_truncated:
-            break
-        current_direction = solution.direction if solution is not None else fixed_x
-        for candidate_x in _direction_candidates(arc_model, edge_id, current_direction):
-            remaining = deadline - time.perf_counter()
-            if remaining <= 0.0:
-                greedy_truncated = True
+
+    if baseline is None:
+        # 縮退経路: 全体 LP で候補を評価（トリガーエッジ・ID 昇順）
+        candidate_ids = sorted(
+            {e for e in triggered_edges if e in arc_model.arcs_of_edge},
+            key=lambda e: e.value,
+        )
+        for edge_id in candidate_ids:
+            if greedy_truncated:
                 break
-            greedy_iterations += 1
-            t0 = time.perf_counter()
-            candidate_built = build_assignment_lp(
-                arc_model, inputs, commodities, fixed_x=candidate_x
+            current_direction = (
+                solution.direction if solution is not None else fixed_x
             )
-            build_sec += time.perf_counter() - t0
-            t0 = time.perf_counter()
-            candidate = solve_assignment(
-                candidate_built, max(_MIN_SOLVE_SEC, deadline - time.perf_counter()), seed
+            for candidate_x in _direction_candidates(
+                arc_model, edge_id, current_direction
+            ):
+                remaining = deadline - time.perf_counter()
+                if remaining <= 0.0:
+                    greedy_truncated = True
+                    break
+                greedy_iterations += 1
+                t0 = time.perf_counter()
+                candidate_built = build_assignment_lp(
+                    arc_model, inputs, commodities, fixed_x=candidate_x
+                )
+                build_sec += time.perf_counter() - t0
+                t0 = time.perf_counter()
+                candidate = solve_assignment(
+                    candidate_built,
+                    max(_MIN_SOLVE_SEC, deadline - time.perf_counter()),
+                    seed,
+                )
+                assign_sec += time.perf_counter() - t0
+                assign_lp_ms = int(assign_sec * 1000)
+                if (
+                    candidate.solution is None
+                    or candidate.status == SolverStatus.INFEASIBLE
+                ):
+                    continue
+                if not _local_reachability_ok(arc_model, candidate.solution):
+                    continue
+                if is_open and not _boundary_reachability_ok(
+                    arc_model, candidate.solution
+                ):
+                    continue
+                candidate_tau = evaluate_residual_tau(
+                    arc_model, inputs, drainable, candidate.solution.flow
+                )
+                if solution is None or candidate_tau <= solution.tau - config.greedy_improve_margin:
+                    solution = replace(candidate.solution, tau=candidate_tau)
+    else:
+        # ゾーン別貪欲: 各ゾーンをゾーン限定 LP で独立に評価する
+        adopted_x = dict(fixed_x)
+        composed_flow = dict(baseline.flow)
+        for zone in localization.zones:
+            if greedy_truncated:
+                break
+            zones_processed += 1
+            zone_edge_set = frozenset(zone.edges)
+            zone_node_set = frozenset(zone.nodes)
+            zone_drainable = drainable & zone_edge_set
+            net_supply = _zone_net_supply(
+                arc_model, commodities, zone_edge_set, zone_node_set, composed_flow
             )
-            candidate_sec = time.perf_counter() - t0
-            assign_sec += candidate_sec
-            assign_lp_ms = int(assign_sec * 1000)
-            if candidate.solution is None or candidate.status == SolverStatus.INFEASIBLE:
-                continue
-            if not _local_reachability_ok(arc_model, candidate.solution):
-                continue
-            if is_open and not _boundary_reachability_ok(arc_model, candidate.solution):
-                continue
-            candidate_tau = evaluate_residual_tau(
-                arc_model, inputs, drainable, candidate.solution.flow
+            zone_tau = evaluate_residual_tau(
+                arc_model, inputs, zone_drainable, composed_flow
             )
-            if solution is None or candidate_tau <= best_tau - config.greedy_improve_margin:
-                solution = replace(candidate.solution, tau=candidate_tau)
-                best_tau = candidate_tau
+            candidates = sorted(
+                (e for e in zone.seed_edges if e in arc_model.arcs_of_edge),
+                key=lambda e: (-severity.get(e, 0.0), e.value),
+            )
+            for edge_id in candidates:
+                if greedy_truncated:
+                    break
+                for candidate_x in _direction_candidates(
+                    arc_model, edge_id, adopted_x
+                ):
+                    remaining = deadline - time.perf_counter()
+                    if remaining <= 0.0:
+                        greedy_truncated = True
+                        break
+                    greedy_iterations += 1
+                    t0 = time.perf_counter()
+                    built_zone = build_zone_lp(
+                        arc_model,
+                        inputs,
+                        zone_edges=zone_edge_set,
+                        zone_nodes=zone_node_set,
+                        fixed_x=candidate_x,
+                        net_supply=net_supply,
+                    )
+                    build_sec += time.perf_counter() - t0
+                    t0 = time.perf_counter()
+                    status, zone_flows = solve_zone_lp(
+                        built_zone,
+                        max(_MIN_SOLVE_SEC, deadline - time.perf_counter()),
+                        seed,
+                    )
+                    assign_sec += time.perf_counter() - t0
+                    assign_lp_ms = int(assign_sec * 1000)
+                    if zone_flows is None or status == SolverStatus.INFEASIBLE:
+                        continue
+                    probe = ArcSolution(flow={}, direction=candidate_x, tau=0.0)
+                    if not _local_reachability_ok(arc_model, probe):
+                        continue
+                    if is_open and not _boundary_reachability_ok(arc_model, probe):
+                        continue
+                    cand_flow = dict(composed_flow)
+                    for eid in zone_edge_set:
+                        for arc in arc_model.arcs_of_edge.get(eid, ()):
+                            cand_flow[arc.key] = zone_flows.get(arc.key, 0.0)
+                    cand_tau = evaluate_residual_tau(
+                        arc_model, inputs, zone_drainable, cand_flow
+                    )
+                    if cand_tau <= zone_tau - config.greedy_improve_margin:
+                        adopted_x = candidate_x
+                        composed_flow = cand_flow
+                        zone_tau = cand_tau
+        solution = ArcSolution(
+            flow=composed_flow,
+            direction=adopted_x,
+            tau=evaluate_residual_tau(arc_model, inputs, drainable, composed_flow),
+        )
     greedy_sec = time.perf_counter() - greedy_started
+    best_tau = solution.tau if solution is not None else float("inf")
 
     # current 方向が不可解、または全候補を試しても安全な解が得られない場合は、
     # 不安全な結果を返さず設計 v0 §7.6 の保持フォールバックへ移行する。
@@ -310,7 +417,9 @@ def _optimize_lightweight(
             is_open, throughput_arcs, int((build_sec + assign_sec) * 1000),
         )
 
-    importance = compute_route_importance(arc_model, solution, config.epsilon_0)
+    # 重要度は全体ベースライン配分（(i)）から出す。ベースライン不可解の救済時のみ救済解を使う
+    importance_source = baseline if baseline is not None else solution
+    importance = compute_route_importance(arc_model, importance_source, config.epsilon_0)
     direction = compute_direction_proposals(arc_model, solution)
     boundary = compute_boundary_control(graph, is_open, previous_result)
     throughput = sum(solution.flow.get(arc.key, 0.0) for arc in throughput_arcs)
@@ -336,11 +445,12 @@ def _optimize_lightweight(
         throughput=throughput,
         assign_lp_ms=assign_lp_ms,
         greedy_iterations=greedy_iterations,
-        zones_processed=zones,
+        zones_processed=zones_processed,
         tau_residual=best_tau,
         build_ms=build_ms,
         greedy_ms=int(greedy_sec * 1000),
         greedy_truncated=greedy_truncated,
+        localization_capped=localization.capped,
     )
     report = ConstraintReport(
         local_reachability_satisfied=_local_reachability_ok(arc_model, solution),
@@ -378,36 +488,34 @@ def _direction_candidates(
     return tuple(candidates)
 
 
-def _zone_count(
-    graph: Graph,
-    triggered_edges: tuple[EdgeID, ...],
-    triggered_nodes: tuple[NodeID, ...],
-    maximum: int,
-) -> int:
-    """トリガー起点の連結ゾーン数（上限適用後）を決定的に数える。"""
-    seeds = set(triggered_nodes)
-    for edge_id in triggered_edges:
-        edge = graph.edge_of(edge_id)
-        if edge is not None and edge.enabled:
-            seeds.update((edge.endpoint_a, edge.endpoint_b))
-    if not seeds:
-        return 0
-    adjacency: dict[NodeID, set[NodeID]] = {}
-    for edge in graph.enabled_edges():
-        adjacency.setdefault(edge.endpoint_a, set()).add(edge.endpoint_b)
-        adjacency.setdefault(edge.endpoint_b, set()).add(edge.endpoint_a)
-    components: set[frozenset[NodeID]] = set()
-    for seed_node in seeds:
-        seen = {seed_node}
-        todo = [seed_node]
-        while todo:
-            current = todo.pop()
-            for neighbour in adjacency.get(current, ()):
-                if neighbour not in seen:
-                    seen.add(neighbour)
-                    todo.append(neighbour)
-        components.add(frozenset(seen & seeds))
-    return min(len(components), maximum)
+def _zone_net_supply(
+    arc_model: ArcModel,
+    commodities: tuple[Commodity, ...],
+    zone_edges: frozenset[EdgeID],
+    zone_nodes: frozenset[NodeID],
+    flow: dict[str, float],
+) -> dict[NodeID, float]:
+    """ゾーン限定 LP の純供給 b_v を組む
+
+    b_v = （ゾーン内ノードの OD 需要の純供給）
+          − Σ 横断流出アークの固定フロー ＋ Σ 横断流入アークの固定フロー。
+    横断アーク（ゾーン誘導エッジに属さない接続アーク）はゾーン外扱いで
+    ベースライン値に固定され、所与の流入出条件として畳み込まれる。
+    """
+    supply: dict[NodeID, float] = {v: 0.0 for v in zone_nodes}
+    for k in commodities:
+        if k.origin in supply:
+            supply[k.origin] += k.demand
+        if k.destination in supply:
+            supply[k.destination] -= k.demand
+    for v in zone_nodes:
+        for arc in arc_model.arcs_out(v):
+            if arc.edge_id not in zone_edges:
+                supply[v] -= flow.get(arc.key, 0.0)
+        for arc in arc_model.arcs_in(v):
+            if arc.edge_id not in zone_edges:
+                supply[v] += flow.get(arc.key, 0.0)
+    return supply
 
 
 def _build_commodities(

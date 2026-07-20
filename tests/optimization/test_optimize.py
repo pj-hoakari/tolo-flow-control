@@ -276,6 +276,98 @@ def test_lightweight_is_default_and_reports_baseline_stats(
     assert ResolvedConfig().optimization_mode == OptimizationMode.LIGHTWEIGHT
 
 
+def test_lightweight_zone_greedy_processes_trigger_zone(
+    worked_example_graph,
+    worked_example_observations,
+    worked_example_forecast,
+    worked_example_detour,
+    worked_example_history,
+):
+    """トリガーがあればゾーンが構成され、候補はゾーン限定 LP で評価される。"""
+    from flow_control.domain import EdgeID
+
+    result = optimize(
+        worked_example_graph,
+        worked_example_observations,
+        worked_example_forecast,
+        worked_example_detour,
+        worked_example_history,
+        previous_result=None,
+        config=ResolvedConfig(),
+        seed=1,
+        time_limit=30.0,
+        triggered_edges=(EdgeID("e12"),),
+        triggered_nodes=(),
+    )
+
+    assert result.optimization_result.solver_status == SolverStatus.LIGHTWEIGHT
+    assert result.solver_stats.zones_processed == 1
+    assert result.solver_stats.greedy_iterations > 0
+    assert not result.solver_stats.localization_capped
+    # 候補が採用されない場合はベースライン（近似残留 τ）に一致する
+    assert result.optimization_result.objective_values.tau_star >= 0.0
+    assert result.constraint_report.local_reachability_satisfied
+
+
+def test_zone_net_supply_folds_crossing_flows():
+    """横断アークの固定フローが純供給へ正しい符号で畳み込まれる。"""
+    from flow_control.domain import (
+        CurrentDirection,
+        DirectionConstraint,
+        Edge,
+        EdgeID,
+        Graph,
+        Node,
+        NodeID,
+        NodeKind,
+        ObservationType,
+    )
+    from flow_control.optimization.arcs import build_arc_model
+    from flow_control.optimization.model import Commodity
+    from flow_control.optimization.optimizer import _zone_net_supply
+
+    def node(name, boundary=False):
+        return Node(
+            node_id=NodeID(name),
+            kind=NodeKind.GOAL if boundary else NodeKind.TRANSIT_ONLY,
+            is_boundary=boundary,
+            enabled=True,
+        )
+
+    def edge(name, a, b):
+        return Edge(
+            edge_id=EdgeID(name),
+            endpoint_a=NodeID(a),
+            endpoint_b=NodeID(b),
+            direction_constraint=DirectionConstraint.BIDIRECTIONAL_PRIOR,
+            current_direction=CurrentDirection.BIDIRECTIONAL,
+            enabled=True,
+            observation_type=ObservationType.VECTOR,
+        )
+
+    # a - b - c の鎖。ゾーンは {b, c}（エッジ e_bc のみ）。e_ab は横断アーク
+    graph = Graph(
+        nodes=(node("a", boundary=True), node("b"), node("c", boundary=True)),
+        edges=(edge("e_ab", "a", "b"), edge("e_bc", "b", "c")),
+    )
+    arc_model = build_arc_model(graph)
+    commodities = (
+        Commodity(index=0, origin=NodeID("b"), destination=NodeID("c"), demand=4.0),
+    )
+    # ベースライン: a→b に 3.0 流入（横断）
+    flow = {"e_ab|A_TO_B": 3.0}
+    supply = _zone_net_supply(
+        arc_model,
+        commodities,
+        frozenset({EdgeID("e_bc")}),
+        frozenset({NodeID("b"), NodeID("c")}),
+        flow,
+    )
+    # b: OD 起点 +4.0、横断流入 +3.0 → 7.0。c: OD 終点 −4.0
+    assert supply[NodeID("b")] == 7.0
+    assert supply[NodeID("c")] == -4.0
+
+
 def test_lightweight_budget_exhaustion_truncates_greedy(
     worked_example_graph,
     worked_example_observations,
