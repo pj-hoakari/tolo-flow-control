@@ -22,6 +22,7 @@ from ..graph_builder import GraphBuilder
 from ..scenario_base import (
     Scenario,
     build_observations_and_history,
+    established_watch_state,
     make_scenario,
 )
 from ._registry import register
@@ -67,9 +68,11 @@ def _build_graph() -> GraphBuilder:
 @register("crossing-oneway")
 def build() -> Scenario:
     built = _build_graph().build()
+    hot = frozenset({EdgeID("e_main")})
     obs, hist = build_observations_and_history(
         built.graph,
-        surge_edges=frozenset({EdgeID("e_main")}),
+        surge_edges=hot,
+        stagnation_edges=hot,
         occupancy=30.0,
         occupancy_delta=12.0,
         eta=0.02,
@@ -80,4 +83,5 @@ def build() -> Scenario:
         built,
         obs,
         hist,
+        previous_state=established_watch_state(hot),
     )

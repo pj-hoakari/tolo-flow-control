@@ -8,12 +8,13 @@
 
 from __future__ import annotations
 
+from collections.abc import Iterable
 from dataclasses import dataclass, replace
 from datetime import datetime, timedelta, timezone
 from typing import TYPE_CHECKING
 
 from flow_control.detection.config import ResolvedConfig as DetectionConfig
-from flow_control.detection.state import DetectionState
+from flow_control.detection.state import ArcWatchState, DetectionState
 from flow_control.detection.triggers import Event
 from flow_control.detour_routing.config import ResolvedConfig as DetourConfig
 from flow_control.domain import (
@@ -47,6 +48,34 @@ DEFAULT_TIME = datetime(2026, 6, 18, 12, 0, 0, tzinfo=timezone.utc)
 
 # 既定の参照値（K>=5 で信頼）
 DEFAULT_REFERENCE = Reference(by_attribute_tag=(), source_k_anonymity=5)
+
+
+def established_watch_state(
+    edges: Iterable[EdgeID],
+    *,
+    server_time: datetime = DEFAULT_TIME,
+    established_minutes: float = 6.0,
+) -> DetectionState:
+    """組合せ発火の「停滞警戒 M 分継続」を満たした前サイクル状態を組む
+
+    現行 Detection は停滞警戒（p90 かつ相対増分）が M 分継続し、かつ需要警戒
+    （急増または需要超過）が同時成立して初めてメトリクス発火する。単発リクエストの
+    devtools では継続時間を再現できないため、前サイクルで両条件成立・計時開始済みの
+    watch を previous_state として与える。``build_observations_and_history`` の
+    ``stagnation_edges``（当該サイクルでも両条件を満たす観測）と併用すること。
+    """
+    return DetectionState(
+        arc_watch_states=tuple(
+            ArcWatchState(
+                edge_id=edge_id,
+                percentile_breached=True,
+                delta_breached=True,
+                stagnation_watch_since=server_time
+                - timedelta(minutes=established_minutes),
+            )
+            for edge_id in sorted(edges, key=lambda e: e.value)
+        )
+    )
 
 
 @dataclass(frozen=True)
@@ -116,6 +145,8 @@ class Scenario:
     # 検証用ヒント（ファジングの不変条件チェックで参照）
     expect_trigger: bool = True
     notes: str = ""
+    # run-all から除外する（プロセスごと落ちる既知問題があるシナリオ用。単独 run は可）
+    skip_in_run_all: bool = False
 
     @property
     def graph(self) -> Graph:
@@ -136,6 +167,7 @@ def make_scenario(
     server_time: datetime = DEFAULT_TIME,
     previous_opt_result: "OptimizationResult | None" = None,
     expect_trigger: bool = True,
+    skip_in_run_all: bool = False,
 ) -> Scenario:
     """既定値（参照値・時刻・設定）を補いつつ ``Scenario`` を組み立てる簡便コンストラクタ
 
@@ -154,6 +186,7 @@ def make_scenario(
         configs=configs if configs is not None else compact_configs(),
         previous_opt_result=previous_opt_result,
         expect_trigger=expect_trigger,
+        skip_in_run_all=skip_in_run_all,
     )
 
 
@@ -189,6 +222,7 @@ def build_observations_and_history(
     *,
     surge_edges: frozenset[EdgeID] = frozenset(),
     stagnation_edges: frozenset[EdgeID] = frozenset(),
+    lineless_edges: frozenset[EdgeID] = frozenset(),
     unobserved_edges: frozenset[EdgeID] = frozenset(),
     unobserved_nodes: frozenset[NodeID] = frozenset(),
     base_flow: float = 20.0,
@@ -210,6 +244,8 @@ def build_observations_and_history(
     - 急増エッジ: 直近の短い区間で急峻に立ち上がる流量系列（回帰の変化率が閾値超）
     - 高停滞エッジ: 観測停滞量を p90 以上かつ移動平均との差が beta 以上に設定
     - ベクトル型エッジには方向別流量（需要推定の主入力）を付与
+    - ``lineless_edges``: ライン通過観測を持たない（arc_flows・流量履歴なし）が停滞は
+      観測されるエッジ。ライン無しでは停滞警戒単独の縮退発火となる検出経路を再現する
     - ``unobserved_edges``: 観測・履歴を一切付与しないルート（センサ無し区間。
       フロー感度はフォールバック eta に委ね、保存則で需要を補完させる）
     - ``unobserved_nodes``: 占有観測を付与しないポイント（混在ホールでもセンサ欠測扱い）
@@ -238,15 +274,19 @@ def build_observations_and_history(
                 slope_per_min=0.0,
                 sample_count=flat_samples,
             )
-        arc_scalar_flows.append(ArcScalarFlow(edge_id=eid, observed_count=scalar))
-        if edge.observation_type == ObservationType.VECTOR:
-            arc_flows.append(
-                ArcFlow(
-                    edge_id=eid,
-                    direction=FlowDirection.A_TO_B,
-                    flow_rate=scalar,
+        if eid in lineless_edges:
+            # ライン通過観測なし: 流量系の観測・履歴を付与しない（停滞のみ観測）
+            samples = ()
+        else:
+            arc_scalar_flows.append(ArcScalarFlow(edge_id=eid, observed_count=scalar))
+            if edge.observation_type == ObservationType.VECTOR:
+                arc_flows.append(
+                    ArcFlow(
+                        edge_id=eid,
+                        direction=FlowDirection.A_TO_B,
+                        flow_rate=scalar,
+                    )
                 )
-            )
 
         stag = hot_stag if eid in stagnation_edges else base_stag
         arc_stagnations.append(ArcStagnation(edge_id=eid, stagnation=stag))

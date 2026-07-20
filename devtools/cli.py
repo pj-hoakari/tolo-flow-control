@@ -91,9 +91,18 @@ def cmd_run(args: argparse.Namespace) -> int:
 def cmd_run_all(args: argparse.Namespace) -> int:
     out_root = Path(args.out)
     entries: list[dict[str, object]] = []
-    print(f"running {len(scenarios.SCENARIOS)} scenarios ...")
+    targets: list = []
+    skipped: list[str] = []
     for name in scenarios.SCENARIOS:
         scen = scenarios.get_scenario(name)
+        if scen.skip_in_run_all:
+            skipped.append(name)
+        else:
+            targets.append((name, scen))
+    print(f"running {len(targets)} scenarios ...")
+    for skip_name in skipped:
+        print(f"  {skip_name:24s} SKIPPED (skip_in_run_all; 単独 run で実行可)")
+    for name, scen in targets:
         run = run_pipeline(scen, force=args.force, time_limit=args.time_limit)
         report.dump_run(run, scen.built_graph, out_root / name, images=not args.no_images)
         entries.append(report.run_summary(run))

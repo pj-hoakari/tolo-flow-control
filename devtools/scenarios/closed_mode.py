@@ -7,7 +7,12 @@ import math
 from flow_control.domain import EdgeID, NodeKind
 
 from ..graph_builder import GraphBuilder
-from ..scenario_base import Scenario, build_observations_and_history, make_scenario
+from ..scenario_base import (
+    Scenario,
+    build_observations_and_history,
+    established_watch_state,
+    make_scenario,
+)
 from ._registry import register
 
 
@@ -27,13 +32,15 @@ def build() -> Scenario:
     for i in range(n):
         b.edge(f"e{i}", f"n{i}", f"n{(i + 1) % n}")
     built = b.build()
+    hot = frozenset({EdgeID("e0")})
     obs, hist = build_observations_and_history(
-        built.graph, surge_edges=frozenset({EdgeID("e0")})
+        built.graph, surge_edges=hot, stagnation_edges=hot
     )
     return make_scenario(
         "closed-mode",
-        "入退出点なしの環状グラフ（Closed モード）。e0 が急増",
+        "入退出点なしの環状グラフ（Closed モード）。e0 が急増＋停滞し組合せ発火",
         built,
         obs,
         hist,
+        previous_state=established_watch_state(hot),
     )
