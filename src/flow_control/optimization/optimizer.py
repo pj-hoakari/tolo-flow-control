@@ -710,12 +710,16 @@ def _fallback(
     throughput_arcs: tuple[Arc, ...],
     phase1_ms: int,
 ) -> OptimizeResult:
-    # 第 1 段: 方向を current_direction に固定した配分 LP（可達性制約は除外）
+    # 第 1 段: 方向を current_direction に固定した配分 LP（可達性制約は除外）。
+    # 容量超過はスラック化し、需要が容量を構造的に超える過密局面でも
+    # 「最も違反の少ない配分」から重要度を返す（保存則は非緩和）
     fixed_x: dict[str, int] = {}
     for edge in arc_model.active_edges:
         fixed_x.update(fixed_directions(edge))
     t0 = time.perf_counter()
-    built_lp = build_assignment_lp(arc_model, inputs, commodities, fixed_x=fixed_x)
+    built_lp = build_assignment_lp(
+        arc_model, inputs, commodities, fixed_x=fixed_x, allow_capacity_slack=True
+    )
     build_ms = int((time.perf_counter() - t0) * 1000)
     t0 = time.perf_counter()
     lp = solve_assignment(built_lp, time_limit, seed)
