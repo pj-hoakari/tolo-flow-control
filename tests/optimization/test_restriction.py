@@ -6,7 +6,10 @@ from flow_control.domain import EdgeID
 from flow_control.optimization.model import MilpInputs
 from flow_control.optimization.restriction import (
     assess_residual,
+    close_preserves_connectivity,
+    compute_limit_value,
     evaluate_detour_gate,
+    select_feeder_candidates,
 )
 
 _E_HOT = EdgeID("e_hot")
@@ -201,3 +204,169 @@ def test_gate_skips_stagnation_term_without_observation():
     )
     assert not got.detour_endangered
     assert not got.insufficient
+
+
+# --- limit_value / 候補選定 / CLOSE 可否 -------------------------------------
+
+
+def _chain_arc_model(*, oneway_middle: bool = False, boundaries: bool = True):
+    """b0 - n1 - n2 - b3 の鎖（両端が入退出点）"""
+    from flow_control.domain import (
+        CurrentDirection,
+        DirectionConstraint,
+        Edge,
+        Graph,
+        Node,
+        NodeKind,
+    )
+    from flow_control.domain import NodeID as NID
+    from flow_control.domain import ObservationType
+    from flow_control.optimization.arcs import build_arc_model
+
+    names = ["b0", "n1", "n2", "b3"]
+    nodes = tuple(
+        Node(
+            node_id=NID(n),
+            kind=NodeKind.GOAL if (boundaries and n in ("b0", "b3")) else NodeKind.TRANSIT_ONLY,
+            is_boundary=boundaries and n in ("b0", "b3"),
+            enabled=True,
+        )
+        for n in names
+    )
+    edges = []
+    for i in range(len(names) - 1):
+        middle = i == 1
+        edges.append(
+            Edge(
+                edge_id=EdgeID(f"e{i}"),
+                endpoint_a=NID(names[i]),
+                endpoint_b=NID(names[i + 1]),
+                direction_constraint=(
+                    DirectionConstraint.LEGAL_FIXED_A_TO_B
+                    if (middle and oneway_middle)
+                    else DirectionConstraint.BIDIRECTIONAL_PRIOR
+                ),
+                current_direction=(
+                    CurrentDirection.A_TO_B
+                    if (middle and oneway_middle)
+                    else CurrentDirection.BIDIRECTIONAL
+                ),
+                enabled=True,
+                observation_type=ObservationType.VECTOR,
+            )
+        )
+    return build_arc_model(Graph(nodes=nodes, edges=tuple(edges)))
+
+
+def _all_directions(arc_model) -> dict[str, int]:
+    return {arc.key: 1 for arc in arc_model.arcs}
+
+
+def test_limit_value_prefers_measured_outflow():
+    got = compute_limit_value(_inputs(), _E_HOT, outflow_average=12.5)
+    assert got.value == pytest.approx(12.5)
+    assert got.confidence == 1.0
+    assert not got.derived_from_drain_bound
+
+
+def test_limit_value_falls_back_to_drain_bound_with_low_confidence():
+    # ラインなし: s_obs/η = 30/0.5 = 60、低信頼
+    got = compute_limit_value(_inputs(), _E_HOT, outflow_average=None)
+    assert got.value == pytest.approx(60.0)
+    assert got.confidence < 1.0
+    assert got.derived_from_drain_bound
+
+
+def test_limit_value_none_when_no_basis():
+    got = compute_limit_value(
+        _inputs(s_obs={}, eta={}), _E_HOT, outflow_average=None
+    )
+    assert got.value is None
+
+
+def test_feeder_candidates_ranked_by_contribution_then_importance():
+    arc_model = _chain_arc_model()
+    # e1 が危険。上流は n1（e0 の head）
+    flow = {"e0|A_TO_B": 20.0, "e1|A_TO_B": 20.0, "e2|A_TO_B": 20.0}
+    got = select_feeder_candidates(
+        arc_model,
+        danger_edges=frozenset({EdgeID("e1")}),
+        flow=flow,
+        importance={EdgeID("e0"): 0.2},
+        zone_edges=frozenset({EdgeID("e0"), EdgeID("e1"), EdgeID("e2")}),
+    )
+    # 上流フィーダは e0（危険エッジ自身と下流 e2 は除外）
+    assert got == (EdgeID("e0"),)
+
+
+def test_close_rejected_when_it_breaks_boundary_reachability():
+    arc_model = _chain_arc_model()
+    # 鎖の中央 e1 を閉じると b0 側と b3 側が分断される
+    assert not close_preserves_connectivity(
+        arc_model,
+        closed_edge=EdgeID("e1"),
+        direction=_all_directions(arc_model),
+        is_open=True,
+    )
+
+
+def test_close_rejected_in_closed_mode_when_component_splits():
+    arc_model = _chain_arc_model(boundaries=False)
+    assert not close_preserves_connectivity(
+        arc_model,
+        closed_edge=EdgeID("e1"),
+        direction=_all_directions(arc_model),
+        is_open=False,
+    )
+
+
+def test_close_allowed_when_parallel_route_remains():
+    """並行ルートがあり、閉鎖してもどのノードも孤立しないなら CLOSE 可。"""
+    from flow_control.domain import (
+        CurrentDirection,
+        DirectionConstraint,
+        Edge,
+        Graph,
+        Node,
+        NodeKind,
+        ObservationType,
+    )
+    from flow_control.domain import NodeID as NID
+    from flow_control.optimization.arcs import build_arc_model
+
+    # b0 と b2 を結ぶ 2 本の並行エッジ（多重辺）
+    nodes = (
+        Node(NID("b0"), NodeKind.GOAL, is_boundary=True, enabled=True),
+        Node(NID("b2"), NodeKind.GOAL, is_boundary=True, enabled=True),
+    )
+
+    def edge(eid, a, b):
+        return Edge(
+            edge_id=EdgeID(eid),
+            endpoint_a=NID(a),
+            endpoint_b=NID(b),
+            direction_constraint=DirectionConstraint.BIDIRECTIONAL_PRIOR,
+            current_direction=CurrentDirection.BIDIRECTIONAL,
+            enabled=True,
+            observation_type=ObservationType.VECTOR,
+        )
+
+    graph = Graph(nodes=nodes, edges=(edge("e0", "b0", "b2"), edge("e1", "b0", "b2")))
+    arc_model = build_arc_model(graph)
+    # e0 を閉じても e1 が残るため連結性は保たれる
+    assert close_preserves_connectivity(
+        arc_model,
+        closed_edge=EdgeID("e0"),
+        direction=_all_directions(arc_model),
+        is_open=True,
+    )
+    # 両方は閉じられない（e1 も閉じる想定なら不可）
+    assert not close_preserves_connectivity(
+        arc_model,
+        closed_edge=EdgeID("e0"),
+        direction={
+            key: (0 if key.startswith("e1|") else value)
+            for key, value in _all_directions(arc_model).items()
+        },
+        is_open=True,
+    )
