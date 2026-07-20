@@ -114,6 +114,116 @@ def test_scenarios_trigger_as_expected(name: str) -> None:
     )
 
 
+def test_consistent_observations_conserve_flow() -> None:
+    """保存則整合生成器: 通過ノードで流入=流出、混在ホールで流入超過=ΔOcc。"""
+    from collections import defaultdict
+
+    from flow_control.domain import EdgeID, FlowDirection, NodeID, NodeKind
+    from devtools.scenario_base import ODSpec, build_consistent_observations_and_history
+
+    built = graph_builder.venue()
+    graph = built.graph
+    od = (
+        ODSpec(NodeID("in"), NodeID("hallA"), 30.0, surge=True),
+        ODSpec(NodeID("in"), NodeID("hallB"), 10.0),
+        ODSpec(NodeID("in"), NodeID("out"), 20.0),
+    )
+    obs, hist = build_consistent_observations_and_history(graph, od)
+
+    inflow: dict[NodeID, float] = defaultdict(float)
+    outflow: dict[NodeID, float] = defaultdict(float)
+    for af in obs.arc_flows:
+        edge = graph.edge_of(af.edge_id)
+        if af.direction == FlowDirection.A_TO_B:
+            src, dst = edge.endpoint_a, edge.endpoint_b
+        else:
+            src, dst = edge.endpoint_b, edge.endpoint_a
+        outflow[src] += af.flow_rate
+        inflow[dst] += af.flow_rate
+
+    occ = {o.node_id: o for o in obs.node_occupancies}
+    for node in graph.enabled_nodes():
+        nid = node.node_id
+        net_in = inflow[nid] - outflow[nid]
+        if node.kind == NodeKind.TRANSIT_ONLY:
+            # 通過ノード: 保存則が厳密に成立
+            assert abs(net_in) < 1e-9, f"{nid.value}: net={net_in}"
+        elif node.kind == NodeKind.GOAL_TRANSIT_MIXED:
+            # 混在ホール: 流入超過がそのまま滞在（ΔOcc）
+            assert occ[nid].occupancy_delta == pytest.approx(max(0.0, net_in))
+
+    # surge 成分の経路上エッジのみ履歴系列が立ち上がる
+    series = {w.edge_id: w.flow_samples for w in hist.window_series}
+    surge_series = series[EdgeID("e_j1_hallA")]
+    flat_series = series[EdgeID("e_j1_hallB")]
+    assert surge_series[-1][1] > surge_series[0][1]
+    assert flat_series[0][1] == pytest.approx(flat_series[-1][1])
+
+    # 決定性
+    obs2, hist2 = build_consistent_observations_and_history(graph, od)
+    assert obs == obs2 and hist == hist2
+
+
+def test_consistent_observations_yield_low_reproduction_error() -> None:
+    """保存則整合な観測では Forecasting の OD 再現誤差が構造的に小さい。"""
+    from flow_control.domain import Mode, NodeID
+    from flow_control.forecasting import forecast
+    from devtools.scenario_base import (
+        DEFAULT_REFERENCE,
+        ODSpec,
+        build_consistent_observations_and_history,
+        default_configs,
+    )
+
+    built = graph_builder.venue()
+    graph = built.graph
+    # ホールを終点としてのみ使う OD 構成（ホール通過は帰属曖昧で誤差が残るため）
+    obs, hist = build_consistent_observations_and_history(
+        graph,
+        (
+            ODSpec(NodeID("in"), NodeID("hallA"), 30.0, surge=True),
+            ODSpec(NodeID("in"), NodeID("hallB"), 10.0),
+        ),
+    )
+    fc = forecast(
+        graph=graph,
+        observations=obs,
+        history_digest=hist,
+        references=DEFAULT_REFERENCE,
+        triggered_edges=(),
+        config=default_configs().forecasting,
+        mode=Mode.OPEN,
+    )
+    # 従来生成器では 0.36〜1.05 だった再現誤差が 1 桁以上下がる
+    assert fc.reproduction_error < 0.05
+    # 真の OD（in→hallA 30 / in→hallB 10）が需要として残る
+    demands = {
+        (od.origin.value, od.destination.value): od.demand for od in fc.od_matrix
+    }
+    assert demands.get(("in", "hallA"), 0.0) == pytest.approx(30.0, rel=0.25)
+    assert demands.get(("in", "hallB"), 0.0) == pytest.approx(10.0, rel=0.35)
+
+
+def test_consistent_observations_respect_oneway() -> None:
+    """current 方向が一方通行のエッジには逆向きフローを載せない。"""
+    from flow_control.domain import FlowDirection, NodeID
+    from devtools.scenario_base import ODSpec, build_consistent_observations_and_history
+
+    built = graph_builder.expo()  # 一方通行ループを含む
+    graph = built.graph
+    obs, _ = build_consistent_observations_and_history(
+        graph, (ODSpec(NodeID("gate"), NodeID("hallD"), 12.0),)
+    )
+    oneway = {
+        e.edge_id: e.current_direction.value
+        for e in graph.enabled_edges()
+        if e.current_direction.value != "BIDIRECTIONAL"
+    }
+    for af in obs.arc_flows:
+        if af.edge_id in oneway:
+            assert af.direction == FlowDirection(oneway[af.edge_id])
+
+
 def test_serialize_is_json_dumpable() -> None:
     scen = scenarios.get_scenario("multi-route-surge")
     payload = to_jsonable(scen.observations)
