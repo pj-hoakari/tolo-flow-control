@@ -42,6 +42,12 @@ _FEASIBLE_CONDITIONS = frozenset({"suboptimal", "imprecise"})
 # 容量を守れる解があるかぎりスラックが立たないようにする
 _SLACK_PENALTY = 1e6
 
+# 混雑逓増コストの分割数（アーク総フローを等幅で何段に分けるか）
+_COST_SEGMENTS = 3
+
+# 既定値用の空集合（パラメータ既定式での関数呼び出しを避ける）
+_NO_EDGES: frozenset[EdgeID] = frozenset()
+
 
 @dataclass(frozen=True)
 class Commodity:
@@ -318,6 +324,9 @@ def build_assignment_lp(
     *,
     fixed_x: dict[str, int],
     allow_capacity_slack: bool = False,
+    congestion_increment: float = 0.0,
+    tau_cap: float | None = None,
+    drainable: frozenset[EdgeID] = _NO_EDGES,
 ) -> _BuiltAssignment:
     """基本モードの配分 LP（バイナリゼロ・方向 fixed_x 固定）を構築する
 
@@ -330,6 +339,11 @@ def build_assignment_lp(
     ノード通過量・排出上限）に非負スラックを付け、目的へ大きな罰則で加算する
     （フォールバック用）。需要が容量を構造的に超える過密局面でも「最も違反の
     少ない配分」を返せる。フロー保存則は非緩和のまま。
+
+    ``congestion_increment>0`` では輸送コストをアーク総フローの区分線形凸関数に
+    する（混雑逓増）。等コストの並列ルートへ配分を分散させるための機構で、
+    詳細は目的関数の構築箇所を参照。``tau_cap`` を与えると近似残留 τ を
+    その値以下に保つ制約を張る（分散が停滞抑制を悪化させないための上限）。
 
     変数・制約は linopy の配列 API で一括生成する（スカラー逐次追加は xarray の
     オーバーヘッドが支配的で構築が律速になるため）。並びはアーク定義順・
@@ -509,9 +523,65 @@ def build_assignment_lp(
             lhs = lhs - sl
         model.add_constraints(lhs <= s_obs_da)
 
+    # τ 維持制約: c_e(s_obs_e − η_e f_e)/(s̄_e + ε0) <= tau_cap の線形同値変形。
+    # 分散段でフローを散らしても停滞抑制が悪化しないための上限として使う
+    if tau_cap is not None:
+        bound_edges: list[EdgeID] = []
+        bounds: list[float] = []
+        for edge in arc_model.active_edges:
+            eid = edge.edge_id
+            eta_e = inputs.eta.get(eid, 0.0)
+            c_e = inputs.c_e.get(eid, 1.0)
+            if eid not in drainable or eid not in inputs.s_obs:
+                continue
+            if eta_e <= 0.0 or c_e <= 0.0:
+                continue
+            if not any(a.key in arc_pos for a in arc_model.arcs_of_edge.get(eid, ())):
+                continue
+            rhs = inputs.s_obs[eid] - tau_cap * (
+                inputs.s_bar.get(eid, 0.0) + inputs.epsilon_0
+            ) / c_e
+            if rhs <= 0.0:
+                continue  # 制約が自明に成立
+            bound_edges.append(eid)
+            bounds.append(rhs)
+        if bound_edges:
+            bidx = pd.Index([e.value for e in bound_edges], name="edge")
+            mem = np.zeros((len(bound_edges), len(enabled)))
+            for i, eid in enumerate(bound_edges):
+                for arc in arc_model.arcs_of_edge.get(eid, ()):
+                    j = arc_pos.get(arc.key)
+                    if j is not None:
+                        mem[i, j] = inputs.eta.get(eid, 0.0)
+            model.add_constraints(
+                (xr.DataArray(mem, coords=[bidx, arc_idx]) * edge_flow).sum("arc")
+                >= xr.DataArray(np.asarray(bounds), coords=[bidx])
+            )
+
     # 最短路シードの透過配分: ホップ数重みの総フロー最小化。
-    # スラックには大罰則を課し、違反は「他に手がない場合の最小限」に留める
+    # 混雑逓増が有効なら、アーク総フローを等幅セグメントへ分割し後段ほど単価を
+    # 上げる（凸な区分線形コスト）。等コストの並列ルートがあるとき 1 本へ集中
+    # させるより分けた方が総コストが下がるため、配分が並列路へ分散する。
+    # 重みはすべて正のままなので構造的非循環は保たれる。
     objective = f.sum()
+    if congestion_increment > 0.0 and _COST_SEGMENTS > 1:
+        total_demand = sum(k.demand for k in commodities)
+        if total_demand > 0.0:
+            seg_width = total_demand / _COST_SEGMENTS
+            seg_idx = pd.Index(range(_COST_SEGMENTS), name="seg")
+            g = model.add_variables(
+                lower=0.0, upper=seg_width, coords=[arc_idx, seg_idx], name="g"
+            )
+            # アーク総フロー（コモディティ合算）＝セグメント和
+            model.add_constraints(g.sum("seg") - f.sum("k") == 0)
+            # 段ごとの追加単価（第 1 段は基本コスト f.sum() が担うので増分のみ）
+            extra = xr.DataArray(
+                np.asarray(
+                    [congestion_increment * i for i in range(_COST_SEGMENTS)]
+                ),
+                coords=[seg_idx],
+            )
+            objective = objective + (extra * g).sum()
     for sl in slacks:
         objective = objective + _SLACK_PENALTY * sl.sum()
     model.add_objective(objective, sense="min")

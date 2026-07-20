@@ -19,6 +19,9 @@ class ResolvedConfig:
     max_trigger_zones: int = 4
     greedy_improve_margin: float = 0.05
     lightweight_opt_budget_sec: float = 120.0
+    # 配分 LP の混雑逓増（段ごとの単価増分）。>0 で等コストの並列ルートへ配分が
+    # 分散する。0 で無効（単純な最短路シード配分）
+    congestion_increment: float = 0.2
     restriction_proposal_enabled: bool = False
     tau_danger_threshold: float | None = None
     # ソルバー乱数シード（決定性担保）
