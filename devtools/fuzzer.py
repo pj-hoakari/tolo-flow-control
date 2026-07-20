@@ -21,7 +21,7 @@ from pathlib import Path
 
 from flow_control.detection.state import ArcWatchState, DetectionState
 from flow_control.detection.triggers import Event, EventKind
-from flow_control.domain import Mode
+from flow_control.domain import Graph, Mode, NodeID, NodeKind
 
 from . import graph_builder, report
 from .graph_builder import BuiltGraph
@@ -29,12 +29,49 @@ from .pipeline import PipelineRun, run_pipeline
 from .scenario_base import (
     DEFAULT_REFERENCE,
     DEFAULT_TIME,
+    ODSpec,
     Scenario,
-    build_observations_and_history,
+    build_consistent_observations_and_history,
     default_configs,
+    reachable_od,
     with_edge_danger,
 )
 from .serialize import dump_json
+
+
+def _random_od_flows(
+    rng: random.Random, graph: Graph, *, surge_edges: frozenset
+) -> tuple[ODSpec, ...]:
+    """到達可能な起終点からランダムに OD を組む（生成不能なら空）
+
+    起点は入退出点（なければ混在ノード）、終点は混在ノード・入退出点から選ぶ。
+    到達不能な組は生成器が例外を投げるため、実際に経路がある組だけを残す。
+    """
+    nodes = graph.enabled_nodes()
+    boundaries = [n.node_id for n in nodes if n.is_boundary]
+    mixed = [n.node_id for n in nodes if n.kind == NodeKind.GOAL_TRANSIT_MIXED]
+    origins = boundaries or mixed
+    targets = mixed + boundaries
+    if not origins or not targets:
+        return ()
+
+    surge_any = bool(surge_edges)
+    candidates: list[ODSpec] = []
+    for _ in range(rng.randint(1, 3)):
+        origin: NodeID = rng.choice(origins)
+        destination: NodeID = rng.choice(targets)
+        if not reachable_od(graph, origin, destination):
+            continue
+        candidates.append(
+            ODSpec(
+                origin=origin,
+                destination=destination,
+                rate=rng.uniform(5.0, 40.0),
+                # 急増エッジがあるケースでは OD にも立ち上がりを与える
+                surge=surge_any and rng.random() < 0.7,
+            )
+        )
+    return tuple(candidates)
 
 
 def random_scenario(
@@ -76,14 +113,14 @@ def random_scenario(
     else:
         prev_watch = ()
 
-    obs, hist = build_observations_and_history(
+    # ランダム OD を保存則整合で流し込む。需要ゼロでは配分・重要度・方向探索の
+    # コードパスが走らずファジングにならないため、OD は必ず 1 件以上生成する
+    od_flows = _random_od_flows(rng, built.graph, surge_edges=surge)
+    obs, hist = build_consistent_observations_and_history(
         built.graph,
+        od_flows,
         server_time,
-        surge_edges=surge,
         stagnation_edges=stag,
-        base_flow=rng.uniform(5.0, 40.0),
-        surge_start=rng.uniform(2.0, 8.0),
-        surge_slope=rng.uniform(8.0, 20.0),
         base_stag=rng.uniform(1.0, 4.0),
         hot_stag=rng.uniform(8.0, 20.0),
         p90_stag=rng.uniform(5.0, 12.0),

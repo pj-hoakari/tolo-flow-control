@@ -336,6 +336,34 @@ def test_fuzz_summary_counts_coverage(tmp_path: Path) -> None:
     assert "by_proposal" in payload["summary"]
 
 
+def test_fuzz_cases_carry_demand(tmp_path: Path) -> None:
+    """ファジングが需要ゼロで空回りしないこと（提案系コードパスを踏む）。"""
+    from devtools import fuzzer
+
+    summary, _ = fuzzer.run_fuzz(
+        "venue", count=12, seed=3, out_dir=tmp_path, save_all=False, time_limit=10.0
+    )
+    # 発火ケースがあるなら、重要度の正値が 1 件以上出る（需要が流れている証拠）
+    assert summary.downstream > 0
+    assert summary.by_proposal.get("route_importance", 0) > 0
+
+
+def test_random_od_flows_are_reachable() -> None:
+    """生成される OD は current 方向で到達可能（生成器が例外を投げない）。"""
+    import random
+
+    from devtools import fuzzer
+    from devtools.scenario_base import reachable_od
+
+    rng = random.Random(5)
+    for name in ("venue", "expo", "ring"):
+        graph = graph_builder.get_preset(name).graph
+        for _ in range(10):
+            for od in fuzzer._random_od_flows(rng, graph, surge_edges=frozenset()):
+                assert reachable_od(graph, od.origin, od.destination)
+                assert od.rate > 0.0
+
+
 def test_serialize_is_json_dumpable() -> None:
     scen = scenarios.get_scenario("multi-route-surge")
     payload = to_jsonable(scen.observations)
