@@ -18,7 +18,7 @@ from ..domain.observations import ConfidenceFlag, Observations
 from .arcs import Arc, ArcModel, build_arc_model, fixed_directions
 from .config import OptimizationMode, ResolvedConfig
 from .drainable import compute_drainable, reachable_forward
-from .localization import build_trigger_zones
+from .localization import TriggerZone, build_trigger_zones
 from .model import (
     ArcSolution,
     Commodity,
@@ -576,7 +576,7 @@ def _compute_restrictions(
     arc_model: ArcModel,
     inputs: MilpInputs,
     config: ResolvedConfig,
-    zones: tuple[object, ...],
+    zones: tuple[TriggerZone, ...],
     *,
     solution: ArcSolution,
     drainable: frozenset[EdgeID],

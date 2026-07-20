@@ -15,21 +15,31 @@ from devtools.pipeline import run_pipeline
 from devtools.serialize import to_jsonable
 
 
-def _index(scenario: str, *, tau: float, thru: float, p1: int, p2: int):
+def _index(
+    scenario: str,
+    *,
+    tau: float,
+    thru: float,
+    p1: int,
+    p2: int,
+    **optimization_extras: object,
+) -> dict[str, object]:
+    optimization: dict[str, object] = {
+        "solver_status": "OPTIMAL",
+        "phase1": {"ms": p1},
+        "phase2": {"ms": p2},
+        "tau_star": tau,
+        "throughput": thru,
+        "fallback_to_previous": False,
+    }
+    optimization.update(optimization_extras)
     return {
         "runs": [
             {
                 "scenario": scenario,
                 "verdict": "TRIGGERED",
                 "forecast": {"od_pairs": 7},
-                "optimization": {
-                    "solver_status": "OPTIMAL",
-                    "phase1": {"ms": p1},
-                    "phase2": {"ms": p2},
-                    "tau_star": tau,
-                    "throughput": thru,
-                    "fallback_to_previous": False,
-                },
+                "optimization": optimization,
             }
         ]
     }
@@ -53,10 +63,8 @@ def test_compare_flags_result_change_and_computes_perf_delta() -> None:
 
 
 def test_compare_flags_demand_all_cut_change() -> None:
-    base = _index("s", tau=1.0, thru=10.0, p1=1, p2=1)
-    against = _index("s", tau=1.0, thru=10.0, p1=1, p2=1)
-    base["runs"][0]["optimization"]["demand_all_cut"] = False
-    against["runs"][0]["optimization"]["demand_all_cut"] = True
+    base = _index("s", tau=1.0, thru=10.0, p1=1, p2=1, demand_all_cut=False)
+    against = _index("s", tau=1.0, thru=10.0, p1=1, p2=1, demand_all_cut=True)
     rows = compare.compare(base, against)
     assert "demand_all_cut" in rows[0]["result_changed"]
 
@@ -64,9 +72,9 @@ def test_compare_flags_demand_all_cut_change() -> None:
 def test_compare_ignores_demand_all_cut_when_missing_on_one_side() -> None:
     # 旧スナップショット（キーなし）との比較でノイズを出さない
     base = _index("s", tau=1.0, thru=10.0, p1=1, p2=1)
-    against = _index("s", tau=1.0, thru=10.0, p1=1, p2=1)
-    against["runs"][0]["optimization"]["demand_all_cut"] = False
-    against["runs"][0]["optimization"]["commodities_used"] = 3
+    against = _index(
+        "s", tau=1.0, thru=10.0, p1=1, p2=1, demand_all_cut=False, commodities_used=3
+    )
     rows = compare.compare(base, against)
     assert rows[0]["result_changed"] == []
 
@@ -153,6 +161,7 @@ def test_consistent_observations_conserve_flow() -> None:
     outflow: dict[NodeID, float] = defaultdict(float)
     for af in obs.arc_flows:
         edge = graph.edge_of(af.edge_id)
+        assert edge is not None
         if af.direction == FlowDirection.A_TO_B:
             src, dst = edge.endpoint_a, edge.endpoint_b
         else:
@@ -314,7 +323,7 @@ def test_fuzz_summary_counts_coverage(tmp_path: Path) -> None:
     """fuzz サマリが verdict・エビデンス・提案種別のカバレッジを集計する。"""
     from devtools import fuzzer
 
-    summary, outcomes = fuzzer.run_fuzz(
+    summary, _outcomes = fuzzer.run_fuzz(
         "venue", count=6, seed=3, out_dir=tmp_path, save_all=False, time_limit=10.0
     )
     assert summary.total == 6
@@ -331,9 +340,13 @@ def test_fuzz_summary_counts_coverage(tmp_path: Path) -> None:
     # 発火ケースがあればエビデンス種別が記録される
     if summary.triggered:
         assert summary.by_evidence
-    payload = json.loads((tmp_path / "summary.json").read_text(encoding="utf-8"))
-    assert "by_verdict" in payload["summary"]
-    assert "by_proposal" in payload["summary"]
+    payload: dict[str, object] = json.loads(  # pyright: ignore[reportAny]
+        (tmp_path / "summary.json").read_text(encoding="utf-8")
+    )
+    summary_payload = payload["summary"]
+    assert isinstance(summary_payload, dict)
+    assert "by_verdict" in summary_payload
+    assert "by_proposal" in summary_payload
 
 
 def test_fuzz_cases_carry_demand(tmp_path: Path) -> None:
