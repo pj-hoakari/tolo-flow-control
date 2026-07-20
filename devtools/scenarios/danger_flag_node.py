@@ -3,12 +3,14 @@
 from __future__ import annotations
 
 from flow_control.detection.triggers import Event, EventKind
+from flow_control.domain import NodeID
 
 from .. import graph_builder
 from ..scenario_base import (
     DEFAULT_TIME,
+    ODSpec,
     Scenario,
-    build_observations_and_history,
+    build_consistent_observations_and_history,
     make_scenario,
     with_node_danger,
 )
@@ -17,14 +19,19 @@ from ._registry import register
 
 @register("danger-flag-node")
 def build() -> Scenario:
-    # 容量はホール滞留需要（~14）より上に設定し、上限が「適用されるが実行可能」な例にする
+    # 容量はホール行き需要（14）より上に設定し、上限が「適用されるが実行可能」な例にする
     built = with_node_danger(graph_builder.venue(), "hallA", capacity=20.0)
-    obs, hist = build_observations_and_history(
-        built.graph, occupancy=30.0, occupancy_delta=10.0, eta=0.02
+    obs, hist = build_consistent_observations_and_history(
+        built.graph,
+        (
+            ODSpec(NodeID("in"), NodeID("hallA"), 14.0),
+            ODSpec(NodeID("in"), NodeID("hallB"), 10.0),
+        ),
+        eta=0.02,
     )
     return make_scenario(
         "danger-flag-node",
-        "ノード hallA に危険フラグ立ち上げ。通過量（流入）上限が MILP に反映される",
+        "ノード hallA に危険フラグ立ち上げ。通過量（流入）上限が配分に反映される",
         built,
         obs,
         hist,

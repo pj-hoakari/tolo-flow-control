@@ -149,8 +149,8 @@ def test_consistent_observations_conserve_flow() -> None:
             # 通過ノード: 保存則が厳密に成立
             assert abs(net_in) < 1e-9, f"{nid.value}: net={net_in}"
         elif node.kind == NodeKind.GOAL_TRANSIT_MIXED:
-            # 混在ホール: 流入超過がそのまま滞在（ΔOcc）
-            assert occ[nid].occupancy_delta == pytest.approx(max(0.0, net_in))
+            # 混在ホール: 流入超過（負なら放出超過）がそのまま ΔOcc
+            assert occ[nid].occupancy_delta == pytest.approx(net_in)
 
     # surge 成分の経路上エッジのみ履歴系列が立ち上がる
     series = {w.edge_id: w.flow_samples for w in hist.window_series}

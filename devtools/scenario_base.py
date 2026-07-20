@@ -399,6 +399,7 @@ def build_consistent_observations_and_history(
     base_rate: dict[tuple[EdgeID, FlowDirection], float] = {}
     surge_rate: dict[tuple[EdgeID, FlowDirection], float] = {}
     staying_rate: dict[NodeID, float] = {}
+    origin_rate: dict[NodeID, float] = {}
     for od in od_flows:
         path = _shortest_directed_path(adjacency, od.origin, od.destination)
         if path is None:
@@ -409,6 +410,7 @@ def build_consistent_observations_and_history(
         for key in path:
             target[key] = target.get(key, 0.0) + od.rate
         staying_rate[od.destination] = staying_rate.get(od.destination, 0.0) + od.rate
+        origin_rate[od.origin] = origin_rate.get(od.origin, 0.0) + od.rate
 
     # ランプ係数列（全エッジ共通の時間グリッド。最終点が server_time に一致）
     n = max(flat_samples, surge_samples, 2)
@@ -487,12 +489,15 @@ def build_consistent_observations_and_history(
         if node.node_id in unobserved_nodes:
             continue
         if node.kind == NodeKind.GOAL_TRANSIT_MIXED:
+            # 終点分は蓄積（ΔOcc>0）、起点分は放出（ΔOcc<0。Closed モードの生成源表現）。
+            # 同一ノードが起点かつ終点の場合は差分になり、滞在の帰属は縮退する
             stay = staying_rate.get(node.node_id, 0.0)
+            delta = stay - origin_rate.get(node.node_id, 0.0)
             node_occupancies.append(
                 NodeOccupancy(
                     node_id=node.node_id,
-                    occupancy=occupancy_base + stay,
-                    occupancy_delta=stay,
+                    occupancy=occupancy_base + max(0.0, delta),
+                    occupancy_delta=delta,
                 )
             )
 
