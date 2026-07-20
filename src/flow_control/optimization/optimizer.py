@@ -461,8 +461,42 @@ def _optimize_lightweight(
             is_open, throughput_arcs, int((build_sec + assign_sec) * 1000),
         )
 
-    # 重要度は全体ベースライン配分（(i)）から出す。ベースライン不可解の救済時のみ救済解を使う
-    importance_source = baseline if baseline is not None else solution
+    # 分散段: τ を保ったまま等コストの並列ルートへ配分を散らす（混雑逓増）。
+    # τ 最小化が第一目的なので、τ 維持制約を課したうえで事後検査して採用する
+    spread_solution: ArcSolution | None = None
+    if config.congestion_increment > 0.0:
+        t0 = time.perf_counter()
+        built_spread = build_assignment_lp(
+            arc_model,
+            inputs,
+            commodities,
+            fixed_x=solution.direction,
+            congestion_increment=config.congestion_increment,
+            tau_cap=best_tau + config.epsilon,
+            drainable=drainable,
+        )
+        build_sec += time.perf_counter() - t0
+        t0 = time.perf_counter()
+        spread = solve_assignment(
+            built_spread, max(_MIN_SOLVE_SEC, deadline - time.perf_counter()), seed
+        )
+        assign_sec += time.perf_counter() - t0
+        assign_lp_ms = int(assign_sec * 1000)
+        if spread.solution is not None and spread.status != SolverStatus.INFEASIBLE:
+            spread_tau = evaluate_residual_tau(
+                arc_model, inputs, drainable, spread.solution.flow
+            )
+            if spread_tau <= best_tau + config.epsilon:
+                spread_solution = replace(spread.solution, tau=spread_tau)
+                solution = spread_solution
+                best_tau = min(best_tau, spread_tau)
+
+    # 重要度は配分結果から出す。分散段が成立していればその解（並列路の利用が
+    # 反映される）、なければ全体ベースライン配分（(i)）。救済時のみ救済解。
+    if spread_solution is not None:
+        importance_source = spread_solution
+    else:
+        importance_source = baseline if baseline is not None else solution
     importance = compute_route_importance(arc_model, importance_source, config.epsilon_0)
     direction = compute_direction_proposals(arc_model, solution)
     boundary = compute_boundary_control(graph, is_open, previous_result)

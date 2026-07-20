@@ -456,3 +456,82 @@ def test_lightweight_budget_exhaustion_truncates_greedy(
     assert result.solver_stats.greedy_iterations == 0
     # ベースライン配分は成立している（空の結果にならない）
     assert result.optimization_result.route_importance
+
+
+def test_congestion_increment_spreads_across_equal_cost_parallel_routes():
+    """等コストの並列ルートがあるとき配分が 1 本へ集中せず分散する。"""
+    from datetime import datetime, timezone
+
+    from flow_control.domain import HistoryDigest, Observations
+    from flow_control.domain import (
+        CurrentDirection,
+        DirectionConstraint,
+        Edge,
+        EdgeID,
+        Graph,
+        Node,
+        NodeID,
+        NodeKind,
+        ObservationType,
+    )
+    from flow_control.forecasting import ForecastResult, ODDemand
+
+    def node(name, kind=NodeKind.TRANSIT_ONLY, boundary=False):
+        return Node(NodeID(name), kind, is_boundary=boundary, enabled=True)
+
+    def edge(eid, a, b):
+        return Edge(
+            edge_id=EdgeID(eid),
+            endpoint_a=NodeID(a),
+            endpoint_b=NodeID(b),
+            direction_constraint=DirectionConstraint.BIDIRECTIONAL_PRIOR,
+            current_direction=CurrentDirection.BIDIRECTIONAL,
+            enabled=True,
+            observation_type=ObservationType.VECTOR,
+        )
+
+    # src -(north)- dst と src -(south)- dst の完全に等コストな 2 経路
+    graph = Graph(
+        nodes=(
+            node("src", NodeKind.GOAL, boundary=True),
+            node("north"),
+            node("south"),
+            node("dst", NodeKind.GOAL, boundary=True),
+        ),
+        edges=(
+            edge("e_n_in", "src", "north"),
+            edge("e_n_out", "north", "dst"),
+            edge("e_s_in", "src", "south"),
+            edge("e_s_out", "south", "dst"),
+        ),
+    )
+    forecast = ForecastResult(od_matrix=(ODDemand(NodeID("src"), NodeID("dst"), 30.0),))
+    observations = Observations(observed_at=datetime(2026, 6, 18, tzinfo=timezone.utc))
+
+    def run(increment: float):
+        return optimize(
+            graph,
+            observations,
+            forecast,
+            DetourResult(),
+            HistoryDigest(),
+            previous_result=None,
+            config=ResolvedConfig(congestion_increment=increment),
+            seed=1,
+            time_limit=30.0,
+        )
+
+    spread = run(0.2)
+    concentrated = run(0.0)
+
+    def used(result) -> set[str]:
+        return {
+            ri.edge_id.value
+            for ri in result.optimization_result.route_importance
+            if ri.importance > 0.0
+        }
+
+    # 逓増ありでは両系統が使われる
+    assert {"e_n_in", "e_n_out", "e_s_in", "e_s_out"} <= used(spread)
+    # 逓増なしでは片系統のみ（min-cost はタイブレークで 1 本に寄せる）
+    assert len(used(concentrated)) < 4
