@@ -156,6 +156,9 @@ def test_phase2_skipped_when_no_throughput_targets(
     assert result.optimization_result.objective_values.tau_star == pytest.approx(
         2.4, abs=1e-3
     )
+    # スループット対象集合が空のときは 0 ではなく None（対象なし）を報告する
+    assert result.optimization_result.objective_values.throughput is None
+    assert result.solver_stats.throughput is None
 
 
 def test_deterministic_across_runs(

@@ -154,7 +154,8 @@ def _signature(run: PipelineRun) -> dict[str, object]:
         r = run.optimization.optimization_result
         d["solver"] = r.solver_status.value
         d["tau"] = round(r.objective_values.tau_star, 6)
-        d["thru"] = round(r.objective_values.throughput, 6)
+        thru = r.objective_values.throughput
+        d["thru"] = None if thru is None else round(thru, 6)
         d["importance"] = sorted(
             (ri.edge_id.value, ri.direction.value, round(ri.importance, 6))
             for ri in r.route_importance

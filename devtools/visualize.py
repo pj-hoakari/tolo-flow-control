@@ -42,6 +42,12 @@ _NODE_SIZE = 700.0
 # --- 低水準ヘルパー ---------------------------------------------------------
 
 
+
+def _fmt_throughput(value: float | None) -> str:
+    """スループット表示（None は対象集合なし）"""
+    return "n/a (no target)" if value is None else f"{value:.4g}"
+
+
 def _limits(
     pos: dict[str, Position],
 ) -> tuple[tuple[float, float], tuple[float, float]]:
@@ -1029,7 +1035,7 @@ def render_optimization(run: PipelineRun, built: BuiltGraph, path: Path) -> None
         f"phase1 = {stats.phase1_status.value} ({stats.phase1_ms} ms)",
         f"phase2 = {stats.phase2_status.value} ({stats.phase2_ms} ms)",
         f"tau* = {res.objective_values.tau_star:.4g}",
-        f"throughput = {res.objective_values.throughput:.4g}",
+        f"throughput = {_fmt_throughput(res.objective_values.throughput)}",
         f"restrictions = {len(res.restriction_proposal)}",
         f"fallback_to_previous = {opt.constraint_report.fallback_to_previous}",
         f"local_reachability = {opt.constraint_report.local_reachability_satisfied}",
@@ -1098,7 +1104,7 @@ def render_summary(
             f"  phase1       : {st.phase1_status.value} ({st.phase1_ms} ms)",
             f"  phase2       : {st.phase2_status.value} ({st.phase2_ms} ms)",
             f"tau*           : {res.objective_values.tau_star:.4g}",
-            f"throughput     : {res.objective_values.throughput:.4g}  (sum flow over P arcs)",
+            f"throughput     : {_fmt_throughput(res.objective_values.throughput)}  (sum flow over P arcs)",
             f"fallback       : {cr.fallback_to_previous}",
         ]
         if res.solver_status.value == "LIGHTWEIGHT":
@@ -1310,7 +1316,7 @@ def render_all(
                 f"phase 1 / phase 2: {stats.phase1_status.value} ({stats.phase1_ms} ms) / "
                 f"{stats.phase2_status.value} ({stats.phase2_ms} ms)",
                 f"tau*: {result.objective_values.tau_star:.4g}",
-                f"throughput: {result.objective_values.throughput:.4g}",
+                f"throughput: {_fmt_throughput(result.objective_values.throughput)}",
                 f"fallback: {report.fallback_to_previous}",
                 f"local / boundary reachability: {report.local_reachability_satisfied} / "
                 f"{report.boundary_reachability_satisfied}",

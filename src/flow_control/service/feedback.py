@@ -20,7 +20,8 @@ FEEDBACK_SCHEMA_VERSION = "feedback/3"
 @dataclass(frozen=True)
 class ObjectiveValues:
     tau_star: float = 0.0
-    throughput: float = 0.0
+    # スループット対象集合が空なら None（対象なし）
+    throughput: float | None = 0.0
 
 
 @dataclass(frozen=True)
