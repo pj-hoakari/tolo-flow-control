@@ -112,7 +112,9 @@ uv run python -m devtools graph ./_devout/venue.yaml --out ./_devout   # 読み�
     `cooldown-skip`（クールタイム中・トリガーなし→**SKIPPED_COOLDOWN**）/
     `cooldown-queued`（クールタイム中の発火→**QUEUED**）/
     `queue-burst-fire`（キュー累積スコア超過→**統合発火**）/
-    `warmup-skip`（全対象ウォームアップ中→**SKIPPED_WARMUP**）
+    `warmup-skip`（全対象ウォームアップ中→**SKIPPED_WARMUP**）/
+    `restriction-undrainable`（袋小路コリドーが高停滞・迂回路なし→**機能2 の通行制限提案**
+    LIMIT。`restriction_proposal_enabled` と `tau_danger_threshold` を設定して有効化）
   - 検出・性能評価用:
     `combined-surge-stagnation`（急増＋高停滞が同一エッジで重なり**組合せ発火**する
     下流実行ベースライン。急増単独・停滞単独では現行 Detection は発火しない）/
