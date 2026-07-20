@@ -135,7 +135,7 @@ uv run python -m devtools graph ./_devout/venue.yaml --out ./_devout   # 読み�
       `expo-single-hall-surge` / `expo-multi-hall-surge` / `expo-oneway-unobserved` /
       `expo-danger-hall` /
       `expo-approach-capacity`（直行制限→**一方通行ループへ迂回**）/
-      `expo-gate-overcrowded`（入口過密→**gate で入退場停止**: boundary_control）/
+      `expo-gate-overcrowded`（入口過密→**gate で入場停止**: boundary_control）/
       `expo-incident-resume`（過密解消後の**再開提案 RESUME**）
     - その他: `festival-gate-split`（入場急増を**二系統へ分散**）/
       `station-platform-closure`（階段低容量化→**代替階段へ誘導**）/

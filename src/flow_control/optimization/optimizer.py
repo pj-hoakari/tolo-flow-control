@@ -208,7 +208,7 @@ def optimize(
 
     importance = compute_route_importance(arc_model, final_solution, config.epsilon_0)
     direction = compute_direction_proposals(arc_model, final_solution)
-    boundary = compute_boundary_control(graph, is_open, previous_result)
+    boundary = compute_boundary_control(graph, is_open, previous_result, commodities)
 
     opt_result = OptimizationResult(
         route_importance=importance,
@@ -505,7 +505,7 @@ def _optimize_lightweight(
         importance_source = baseline if baseline is not None else solution
     importance = compute_route_importance(arc_model, importance_source, config.epsilon_0)
     direction = compute_direction_proposals(arc_model, solution)
-    boundary = compute_boundary_control(graph, is_open, previous_result)
+    boundary = compute_boundary_control(graph, is_open, previous_result, commodities)
     throughput = (
         sum(solution.flow.get(arc.key, 0.0) for arc in throughput_arcs)
         if throughput_arcs
@@ -962,7 +962,7 @@ def _fallback(
     lp = solve_assignment(built_lp, time_limit, seed)
     lp_ms = int((time.perf_counter() - t0) * 1000)
 
-    boundary = compute_boundary_control(graph, is_open, previous_result)
+    boundary = compute_boundary_control(graph, is_open, previous_result, commodities)
 
     if lp.solution is not None and lp.status in (
         SolverStatus.OPTIMAL,

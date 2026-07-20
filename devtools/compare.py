@@ -14,7 +14,9 @@ from typing import Any
 _RESULT_TOL = 1e-6
 
 # 後から追加された結果系キー（旧スナップショット比較で片側欠損なら比較しない）
-_OPTIONAL_RESULT_KEYS = frozenset({"demand_all_cut", "commodities"})
+_OPTIONAL_RESULT_KEYS = frozenset(
+    {"demand_all_cut", "commodities", "boundary", "restriction", "dir_changes", "degraded"}
+)
 
 
 def available_labels(out_dir: Path) -> list[str]:
@@ -89,6 +91,17 @@ def compare(base: dict[str, Any], against: dict[str, Any]) -> list[dict[str, Any
             # 「発火したのに需要全カットで空提案」の発生・解消を回帰として検出する
             "demand_all_cut": (ob.get("demand_all_cut"), oa.get("demand_all_cut")),
             "commodities": (ob.get("commodities_used"), oa.get("commodities_used")),
+            # 提案種別の差分（境界制御・通行制限・方向変更）も結果系として検出する
+            "boundary": (ob.get("boundary_controls"), oa.get("boundary_controls")),
+            "restriction": (
+                ob.get("restriction_proposals"),
+                oa.get("restriction_proposals"),
+            ),
+            "dir_changes": (
+                ob.get("direction_change_types"),
+                oa.get("direction_change_types"),
+            ),
+            "degraded": (ob.get("degraded_mode"), oa.get("degraded_mode")),
         }
         changed = [
             k
