@@ -90,22 +90,30 @@ def optimize(
     p_edges &= active_edge_ids
     throughput_arcs = _throughput_arcs(arc_model, p_edges)
 
+    # 需要カット診断: 「OD はあるのに delta_min で全カット→空提案」を統計へ顕在化する
+    od_pairs_input = len(forecast_result.od_matrix)
+    commodities_used = len(commodities)
+
     if config.optimization_mode == OptimizationMode.LIGHTWEIGHT:
-        return _optimize_lightweight(
-            arc_model,
-            inputs,
-            commodities,
-            drain.drainable,
-            graph,
-            previous_result,
-            config,
-            seed,
-            min(time_limit, config.lightweight_opt_budget_sec),
-            solved_at,
-            is_open,
-            throughput_arcs,
-            triggered_edges,
-            triggered_nodes,
+        return _with_demand_diagnostics(
+            _optimize_lightweight(
+                arc_model,
+                inputs,
+                commodities,
+                drain.drainable,
+                graph,
+                previous_result,
+                config,
+                seed,
+                min(time_limit, config.lightweight_opt_budget_sec),
+                solved_at,
+                is_open,
+                throughput_arcs,
+                triggered_edges,
+                triggered_nodes,
+            ),
+            od_pairs_input,
+            commodities_used,
         )
 
     built = build_model(
@@ -116,25 +124,33 @@ def optimize(
     phase1_ms = int((time.perf_counter() - t0) * 1000)
 
     if p1.status == SolverStatus.INFEASIBLE:
-        return _fallback(
-            arc_model,
-            inputs,
-            commodities,
-            drain.drainable,
-            graph,
-            previous_result,
-            config,
-            seed,
-            time_limit,
-            solved_at,
-            is_open,
-            throughput_arcs,
-            phase1_ms,
+        return _with_demand_diagnostics(
+            _fallback(
+                arc_model,
+                inputs,
+                commodities,
+                drain.drainable,
+                graph,
+                previous_result,
+                config,
+                seed,
+                time_limit,
+                solved_at,
+                is_open,
+                throughput_arcs,
+                phase1_ms,
+            ),
+            od_pairs_input,
+            commodities_used,
         )
 
     if p1.solution is None:
         # タイムアウト等でインカンベントが無い。最小結果を返し、再キューは呼出し側に委ねる
-        return _empty_result(p1.status, solved_at, seed, phase1_ms)
+        return _with_demand_diagnostics(
+            _empty_result(p1.status, solved_at, seed, phase1_ms),
+            od_pairs_input,
+            commodities_used,
+        )
 
     final_solution: ArcSolution = p1.solution
     phase2_status = Phase2Status.SKIPPED
@@ -203,7 +219,21 @@ def optimize(
         legal_fixed_violations=_legal_violations(arc_model, final_solution),
         fallback_to_previous=False,
     )
-    return OptimizeResult(opt_result, stats, report)
+    return _with_demand_diagnostics(
+        OptimizeResult(opt_result, stats, report), od_pairs_input, commodities_used
+    )
+
+
+def _with_demand_diagnostics(
+    result: OptimizeResult, od_pairs_input: int, commodities_used: int
+) -> OptimizeResult:
+    stats = replace(
+        result.solver_stats,
+        od_pairs_input=od_pairs_input,
+        commodities_used=commodities_used,
+        demand_all_cut=od_pairs_input > 0 and commodities_used == 0,
+    )
+    return replace(result, solver_stats=stats)
 
 
 def _optimize_lightweight(

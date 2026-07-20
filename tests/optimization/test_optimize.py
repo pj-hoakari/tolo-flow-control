@@ -368,6 +368,64 @@ def test_zone_net_supply_folds_crossing_flows():
     assert supply[NodeID("c")] == -4.0
 
 
+def test_demand_all_cut_is_diagnosed(
+    worked_example_graph,
+    worked_example_observations,
+    worked_example_detour,
+    worked_example_history,
+):
+    """OD があるのに delta_min で全カットされたことが統計に顕在化する。"""
+    from flow_control.domain import NodeID
+    from flow_control.forecasting import ForecastResult, ODDemand
+
+    tiny = ForecastResult(
+        od_matrix=(ODDemand(NodeID("n1"), NodeID("n3"), 0.3),),  # < delta_min(0.5)
+    )
+    result = optimize(
+        worked_example_graph,
+        worked_example_observations,
+        tiny,
+        worked_example_detour,
+        worked_example_history,
+        previous_result=None,
+        config=ResolvedConfig(),
+        seed=1,
+        time_limit=30.0,
+    )
+    st = result.solver_stats
+    assert st.od_pairs_input == 1
+    assert st.commodities_used == 0
+    assert st.demand_all_cut
+    # 需要が全カットされた解は全エッジで重要度 0（実質空の提案）
+    assert all(
+        ri.importance == 0.0 for ri in result.optimization_result.route_importance
+    )
+
+
+def test_demand_diagnostics_on_normal_run(
+    worked_example_graph,
+    worked_example_observations,
+    worked_example_forecast,
+    worked_example_detour,
+    worked_example_history,
+):
+    result = optimize(
+        worked_example_graph,
+        worked_example_observations,
+        worked_example_forecast,
+        worked_example_detour,
+        worked_example_history,
+        previous_result=None,
+        config=ResolvedConfig(),
+        seed=1,
+        time_limit=30.0,
+    )
+    st = result.solver_stats
+    assert st.od_pairs_input > 0
+    assert st.commodities_used > 0
+    assert not st.demand_all_cut
+
+
 def test_lightweight_budget_exhaustion_truncates_greedy(
     worked_example_graph,
     worked_example_observations,

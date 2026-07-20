@@ -134,6 +134,12 @@ class SolverStats:
     greedy_truncated: bool = False
     # ゾーン数が max_trigger_zones を超え重大度上位のみ処理したか（LOCALIZATION_CAPPED 相当）
     localization_capped: bool = False
+    # Forecasting から受けた OD ペア数（delta_min カット前）
+    od_pairs_input: int = 0
+    # delta_min カット後に最適化へ入ったコモディティ数
+    commodities_used: int = 0
+    # OD はあったのに delta_min で全カットされた（発火したのに提案が空になる主因）
+    demand_all_cut: bool = False
 
 
 @dataclass(frozen=True)
