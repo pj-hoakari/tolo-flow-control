@@ -8,6 +8,7 @@
 
 from __future__ import annotations
 
+from collections import deque
 from collections.abc import Iterable
 from dataclasses import dataclass, replace
 from datetime import datetime, timedelta, timezone
@@ -23,6 +24,7 @@ from flow_control.domain import (
     ArcStagnation,
     ArcScalarFlow,
     ArcWindowSeries,
+    CurrentDirection,
     EdgeID,
     FlowDirection,
     Graph,
@@ -334,6 +336,246 @@ def build_observations_and_history(
         completeness=1.0,
     )
     return observations, history
+
+
+# --- 保存則整合な観測生成 ---------------------------------------------------
+
+
+@dataclass(frozen=True)
+class ODSpec:
+    """観測合成用の起点→終点フロー指定（人/分）
+
+    ``surge=True`` の成分は履歴系列でランプ状に立ち上がり（急増検出の対象）、
+    False の成分は全期間一定となる。いずれも最終スナップショットでは ``rate`` が流れる。
+    """
+
+    origin: NodeID
+    destination: NodeID
+    rate: float
+    surge: bool = False
+
+
+def build_consistent_observations_and_history(
+    graph: Graph,
+    od_flows: tuple[ODSpec, ...],
+    server_time: datetime = DEFAULT_TIME,
+    *,
+    stagnation_edges: frozenset[EdgeID] = frozenset(),
+    lineless_edges: frozenset[EdgeID] = frozenset(),
+    unobserved_edges: frozenset[EdgeID] = frozenset(),
+    unobserved_nodes: frozenset[NodeID] = frozenset(),
+    surge_start_ratio: float = 0.1,
+    surge_samples: int = 6,
+    flat_samples: int = 8,
+    base_stag: float = 2.0,
+    hot_stag: float = 12.0,
+    p90_stag: float = 8.0,
+    baseline_stag: float = 3.0,
+    recent_stag_ma: float = 5.0,
+    eta: float = 0.1,
+    occupancy_base: float = 10.0,
+    route_vector_only: bool = True,
+) -> tuple[Observations, HistoryDigest]:
+    """OD 指定から保存則と整合する観測・履歴を合成する
+
+    各 OD を current 方向に従う有向最短路（BFS・ID 昇順で決定的）で流し込み、
+    方向別アークフローを合成する。通過ノードでは流入=流出が成立し、
+    混在ホールでは「流入超過 = 滞在」を占有量変化（ΔOcc）として与えるため、
+    Forecasting の需要導出（滞在=ΔOcc・生成=流出超過）と帳尻が合い、
+    OD 再現誤差が構造的に小さくなる。
+
+    - ``surge=True`` の OD 成分は履歴末尾 ``surge_samples`` 点で
+      ``surge_start_ratio``→1.0 へ線形に立ち上がる（経路上エッジのみ急増）
+    - 既定では VECTOR 観測エッジのみを経路に使う（SCALAR エッジへ流すと方向別
+      フローに現れず保存が崩れて見えるため）。``route_vector_only=False`` で解除可
+    - 混在ホール（GOAL_TRANSIT_MIXED）を通過する OD を含めると、滞在と通過の帰属が
+      観測上本質的に曖昧になり再現誤差は残る（実世界と同じ性質）。誤差を小さく
+      したい場合はホールを終点としてのみ使う OD 構成にする
+    - 停滞・ラインなし・未観測の扱いは ``build_observations_and_history`` と同じ
+    """
+    adjacency = _directed_adjacency(graph, vector_only=route_vector_only)
+
+    # OD ごとに最短路を引き、方向別レート（base, surge）を積み上げる
+    base_rate: dict[tuple[EdgeID, FlowDirection], float] = {}
+    surge_rate: dict[tuple[EdgeID, FlowDirection], float] = {}
+    staying_rate: dict[NodeID, float] = {}
+    origin_rate: dict[NodeID, float] = {}
+    for od in od_flows:
+        path = _shortest_directed_path(adjacency, od.origin, od.destination)
+        if path is None:
+            raise ValueError(
+                f"OD {od.origin.value}->{od.destination.value} は current 方向で到達不能"
+            )
+        target = surge_rate if od.surge else base_rate
+        for key in path:
+            target[key] = target.get(key, 0.0) + od.rate
+        staying_rate[od.destination] = staying_rate.get(od.destination, 0.0) + od.rate
+        origin_rate[od.origin] = origin_rate.get(od.origin, 0.0) + od.rate
+
+    # ランプ係数列（全エッジ共通の時間グリッド。最終点が server_time に一致）
+    n = max(flat_samples, surge_samples, 2)
+    start_time = server_time - timedelta(minutes=n - 1)
+    ramp: list[float] = []
+    for i in range(n):
+        k = i - (n - surge_samples)
+        if k <= 0:
+            ramp.append(surge_start_ratio)
+        else:
+            ramp.append(
+                surge_start_ratio + (1.0 - surge_start_ratio) * k / (surge_samples - 1)
+            )
+
+    arc_flows: list[ArcFlow] = []
+    arc_scalar_flows: list[ArcScalarFlow] = []
+    arc_stagnations: list[ArcStagnation] = []
+    window_series: list[ArcWindowSeries] = []
+    arc_stats: list[ArcHistoryStat] = []
+
+    for edge in graph.enabled_edges():
+        eid = edge.edge_id
+        if eid in unobserved_edges:
+            continue
+
+        stag = hot_stag if eid in stagnation_edges else base_stag
+        arc_stagnations.append(ArcStagnation(edge_id=eid, stagnation=stag))
+        arc_stats.append(
+            ArcHistoryStat(
+                edge_id=eid,
+                p90_stagnation=p90_stag,
+                baseline_stagnation=baseline_stag,
+                flow_sensitivity_eta=eta,
+            )
+        )
+
+        if eid in lineless_edges:
+            window_series.append(
+                ArcWindowSeries(
+                    edge_id=eid,
+                    flow_samples=(),
+                    stagnation_samples=((server_time, recent_stag_ma),),
+                )
+            )
+            continue
+
+        base_total = 0.0
+        surge_total = 0.0
+        for direction in (FlowDirection.A_TO_B, FlowDirection.B_TO_A):
+            b = base_rate.get((eid, direction), 0.0)
+            s = surge_rate.get((eid, direction), 0.0)
+            base_total += b
+            surge_total += s
+            final = b + s
+            if final > 0.0 and edge.observation_type == ObservationType.VECTOR:
+                arc_flows.append(
+                    ArcFlow(edge_id=eid, direction=direction, flow_rate=final)
+                )
+        arc_scalar_flows.append(
+            ArcScalarFlow(edge_id=eid, observed_count=base_total + surge_total)
+        )
+        samples = tuple(
+            (start_time + timedelta(minutes=i), base_total + surge_total * ramp[i])
+            for i in range(n - 1)
+        )
+        window_series.append(
+            ArcWindowSeries(
+                edge_id=eid,
+                flow_samples=samples,
+                stagnation_samples=((server_time, recent_stag_ma),),
+            )
+        )
+
+    node_occupancies: list[NodeOccupancy] = []
+    for node in graph.enabled_nodes():
+        if node.node_id in unobserved_nodes:
+            continue
+        if node.kind == NodeKind.GOAL_TRANSIT_MIXED:
+            # 終点分は蓄積（ΔOcc>0）、起点分は放出（ΔOcc<0。Closed モードの生成源表現）。
+            # 同一ノードが起点かつ終点の場合は差分になり、滞在の帰属は縮退する
+            stay = staying_rate.get(node.node_id, 0.0)
+            delta = stay - origin_rate.get(node.node_id, 0.0)
+            node_occupancies.append(
+                NodeOccupancy(
+                    node_id=node.node_id,
+                    occupancy=occupancy_base + max(0.0, delta),
+                    occupancy_delta=delta,
+                )
+            )
+
+    observations = Observations(
+        observed_at=server_time,
+        snapshot_ref="devtools",
+        arc_flows=tuple(arc_flows),
+        arc_stagnations=tuple(arc_stagnations),
+        arc_scalar_flows=tuple(arc_scalar_flows),
+        node_occupancies=tuple(node_occupancies),
+    )
+    history = HistoryDigest(
+        arc_stats=tuple(arc_stats),
+        window_series=tuple(window_series),
+        completeness=1.0,
+    )
+    return observations, history
+
+
+def _directed_adjacency(
+    graph: Graph,
+    *,
+    vector_only: bool = True,
+) -> dict[NodeID, tuple[tuple[NodeID, EdgeID, FlowDirection], ...]]:
+    """current 方向で通行可能な有向隣接（近傍は ID 昇順で決定的）"""
+    adjacency: dict[NodeID, list[tuple[NodeID, EdgeID, FlowDirection]]] = {}
+    enabled_nodes = {n.node_id for n in graph.enabled_nodes()}
+    for edge in graph.enabled_edges():
+        a, b = edge.endpoint_a, edge.endpoint_b
+        if a not in enabled_nodes or b not in enabled_nodes:
+            continue
+        if vector_only and edge.observation_type != ObservationType.VECTOR:
+            continue
+        if edge.current_direction in (
+            CurrentDirection.A_TO_B,
+            CurrentDirection.BIDIRECTIONAL,
+        ):
+            adjacency.setdefault(a, []).append((b, edge.edge_id, FlowDirection.A_TO_B))
+        if edge.current_direction in (
+            CurrentDirection.B_TO_A,
+            CurrentDirection.BIDIRECTIONAL,
+        ):
+            adjacency.setdefault(b, []).append((a, edge.edge_id, FlowDirection.B_TO_A))
+    return {
+        v: tuple(sorted(items, key=lambda t: (t[0].value, t[1].value)))
+        for v, items in adjacency.items()
+    }
+
+
+def _shortest_directed_path(
+    adjacency: dict[NodeID, tuple[tuple[NodeID, EdgeID, FlowDirection], ...]],
+    origin: NodeID,
+    destination: NodeID,
+) -> list[tuple[EdgeID, FlowDirection]] | None:
+    """BFS 最短路（有向アーク列）。到達不能なら None"""
+    if origin == destination:
+        return []
+    parent: dict[NodeID, tuple[NodeID, EdgeID, FlowDirection]] = {}
+    seen = {origin}
+    queue: deque[NodeID] = deque([origin])
+    while queue:
+        v = queue.popleft()
+        for w, eid, direction in adjacency.get(v, ()):
+            if w in seen:
+                continue
+            seen.add(w)
+            parent[w] = (v, eid, direction)
+            if w == destination:
+                path: list[tuple[EdgeID, FlowDirection]] = []
+                cur = w
+                while cur != origin:
+                    prev, peid, pdir = parent[cur]
+                    path.append((peid, pdir))
+                    cur = prev
+                path.reverse()
+                return path
+            queue.append(w)
+    return None
 
 
 # --- グラフ加工ヘルパー（frozen dataclass の置換）---------------------------

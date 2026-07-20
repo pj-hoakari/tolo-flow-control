@@ -10,7 +10,7 @@ from __future__ import annotations
 from flow_control.domain import EdgeID, NodeID
 from flow_control.optimization import BoundaryAction, BoundaryControl, OptimizationResult
 
-from ..scenario_base import Scenario
+from ..scenario_base import ODSpec, Scenario
 from ._expo import make_expo_scenario
 from ._registry import register
 
@@ -28,9 +28,14 @@ _PREVIOUS = OptimizationResult(
 
 @register("expo-incident-resume")
 def build() -> Scenario:
+    gate = NodeID("gate")
     return make_expo_scenario(
         "expo-incident-resume",
         "前回 gate を入場停止。危険解除後、入口の軽い急増で再評価し gate の再開(RESUME)を提案",
-        surge_edges=frozenset({EdgeID("e_gate_lobby")}),
+        od_flows=(
+            ODSpec(gate, NodeID("hallA"), 15.0, surge=True),
+            ODSpec(gate, NodeID("hallB"), 12.0),
+        ),
+        trigger_edges=frozenset({EdgeID("e_gate_lobby")}),
         previous_opt_result=_PREVIOUS,
     )

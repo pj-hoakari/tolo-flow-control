@@ -3,12 +3,14 @@
 from __future__ import annotations
 
 from flow_control.detection.triggers import Event, EventKind
+from flow_control.domain import NodeID
 
 from .. import graph_builder
 from ..scenario_base import (
     DEFAULT_TIME,
+    ODSpec,
     Scenario,
-    build_observations_and_history,
+    build_consistent_observations_and_history,
     make_scenario,
     with_edge_danger,
 )
@@ -18,12 +20,18 @@ from ._registry import register
 @register("danger-flag-edge")
 def build() -> Scenario:
     built = with_edge_danger(graph_builder.venue(), "e_j1_hallB", capacity=5.0)
-    obs, hist = build_observations_and_history(
-        built.graph, occupancy=30.0, occupancy_delta=10.0, eta=0.02
+    # hallB 行き 20 は危険容量 5 を超えるため、配分は hallA→j2 経由の迂回へ回る
+    obs, hist = build_consistent_observations_and_history(
+        built.graph,
+        (
+            ODSpec(NodeID("in"), NodeID("hallB"), 20.0),
+            ODSpec(NodeID("in"), NodeID("hallA"), 10.0),
+        ),
+        eta=0.02,
     )
     return make_scenario(
         "danger-flag-edge",
-        "e_j1_hallB に危険フラグ立ち上げ。エッジ容量上限が MILP に反映される",
+        "e_j1_hallB に危険フラグ立ち上げ。容量上限が配分に反映され迂回が生じる",
         built,
         obs,
         hist,

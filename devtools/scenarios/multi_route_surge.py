@@ -2,12 +2,13 @@
 
 from __future__ import annotations
 
-from flow_control.domain import EdgeID
+from flow_control.domain import EdgeID, NodeID
 
 from .. import graph_builder
 from ..scenario_base import (
+    ODSpec,
     Scenario,
-    build_observations_and_history,
+    build_consistent_observations_and_history,
     established_watch_state,
     make_scenario,
 )
@@ -18,13 +19,16 @@ from ._registry import register
 def build() -> Scenario:
     built = graph_builder.venue()
     hot = frozenset({EdgeID("e_in_j1"), EdgeID("e_j1_hallA"), EdgeID("e_hallA_j2")})
-    # 組合せ発火: 急増（需要警戒）に加え停滞警戒＋計時済み watch を同一エッジ群へ与える
-    obs, hist = build_observations_and_history(
+    # 保存則整合の観測: hallA 行きと出口行き（hallA 通過）の急増でホットエッジ 3 本を
+    # 覆い、hallB 行きを平常成分として残す
+    obs, hist = build_consistent_observations_and_history(
         built.graph,
-        surge_edges=hot,
+        (
+            ODSpec(NodeID("in"), NodeID("hallA"), 25.0, surge=True),
+            ODSpec(NodeID("in"), NodeID("out"), 15.0, surge=True),
+            ODSpec(NodeID("in"), NodeID("hallB"), 10.0),
+        ),
         stagnation_edges=hot,
-        occupancy=30.0,
-        occupancy_delta=10.0,
         eta=0.02,
     )
     return make_scenario(

@@ -114,8 +114,8 @@ uv run python -m devtools graph ./_devout/venue.yaml --out ./_devout   # 読み�
     `crossing-detour`（主通路 e_main 急増・低容量→**並行バイパス 2 本へ迂回**: detour_set k_eff=2、route_importance がバイパスへ）/
     `crossing-oneway`（バイパスを一方通行循環に→**direction_proposal が有向/双方向を提案**: 北 A_TO_B・南 B_TO_A・主通路 BIDIRECTIONAL）
 
-> `expo-*` はホール 4 つ・一方通行ループ・センサ無し区間を含む現実的ケース。コモディティ数が
-> 多く MILP が重いため `delta_min` を上げ MILP 時間上限を 8 秒に設定している（数〜20 秒程度）。
+> `expo-*` はホール 4 つ・一方通行ループ・センサ無し区間を含む現実的ケース。
+> STRICT で基準系を回す場合に備え MILP 時間上限を 8 秒に短縮している。
 > ファジングのランダム選択からは `expo` を除外（`fuzz --graph expo` で明示利用可）。
 
 ## 構成
@@ -179,9 +179,18 @@ def build() -> Scenario:
 イベント経由なら不要）。発火しないことが意図のシナリオは `expect_trigger=False` を渡す。
 `Scenario.expect_trigger` と実際の verdict の一致はテストで検証される（検証空洞化の防止）。
 
+**観測生成は保存則整合の `build_consistent_observations_and_history` を推奨する。**
+`ODSpec`（起点→終点レート、`surge=True` で急増成分）を渡すと current 方向の最短路で
+流し込み、通過ノードで流入=流出、混在ホールで流入超過=ΔOcc が成立する観測を合成する。
+Forecasting の OD 再現誤差が構造的に小さくなり、`delta_min` による需要全カット
+（発火したのに提案が空になる）を避けられる。旧 `build_observations_and_history`
+（エッジ一様フロー）は保存則が成立せず OD が過小になるため新規シナリオでは使わない。
+留意: 混在ホールを「通過」する OD は滞在/通過の帰属が本質的に曖昧で誤差が残る。
+境界→境界（ext→ext）の OD は設計の対象外のため内部目的地を必ず置くこと。
+
 カスタムグラフが要るなら `graph_builder.GraphBuilder` で組むか、`graph_builder` にプリセットを
 追加する。危険フラグは `scenario_base.with_edge_danger` / `with_node_danger`、観測のない
-ルート/ポイントは `build_observations_and_history(..., unobserved_edges=..., unobserved_nodes=...)`
+ルート/ポイントは `unobserved_edges=... / unobserved_nodes=...`
 で表現できる。`登録キー == 返す Scenario.name` はテストで検証される。
 
 出力先（既定 `_devout/`）は `.gitignore` 済み。画像内テキストは matplotlib 既定フォント
