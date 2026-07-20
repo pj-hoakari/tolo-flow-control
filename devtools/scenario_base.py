@@ -459,6 +459,9 @@ def build_consistent_observations_and_history(
 
         base_total = 0.0
         surge_total = 0.0
+        directional: list[
+            tuple[FlowDirection, tuple[tuple[datetime, float], ...]]
+        ] = []
         for direction in (FlowDirection.A_TO_B, FlowDirection.B_TO_A):
             b = base_rate.get((eid, direction), 0.0)
             s = surge_rate.get((eid, direction), 0.0)
@@ -468,6 +471,16 @@ def build_consistent_observations_and_history(
             if final > 0.0 and edge.observation_type == ObservationType.VECTOR:
                 arc_flows.append(
                     ArcFlow(edge_id=eid, direction=direction, flow_rate=final)
+                )
+                # 方向別ライン通過系列（排出実績 μ̂ の算出に使われる）
+                directional.append(
+                    (
+                        direction,
+                        tuple(
+                            (start_time + timedelta(minutes=i), b + s * ramp[i])
+                            for i in range(n - 1)
+                        ),
+                    )
                 )
         arc_scalar_flows.append(
             ArcScalarFlow(edge_id=eid, observed_count=base_total + surge_total)
@@ -481,6 +494,7 @@ def build_consistent_observations_and_history(
                 edge_id=eid,
                 flow_samples=samples,
                 stagnation_samples=((server_time, recent_stag_ma),),
+                directional_flow_samples=tuple(directional) if directional else None,
             )
         )
 
