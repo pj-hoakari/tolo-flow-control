@@ -243,6 +243,26 @@ def test_consistent_observations_respect_oneway() -> None:
             assert af.direction == FlowDirection(oneway[af.edge_id])
 
 
+def test_puncture_scenario_fires_puncture_evidence() -> None:
+    """パンクトリガーのカバレッジ: スカラー容量超過で PunctureEvidence が出る。"""
+    from flow_control.detection import VerdictHint, detect
+    from flow_control.detection.diagnostics import PunctureEvidence
+
+    scen = scenarios.get_scenario("puncture-scalar-corridor")
+    detection = detect(
+        graph=scen.graph,
+        observations=scen.observations,
+        history_digest=scen.history_digest,
+        previous_state=scen.previous_state,
+        events=scen.events,
+        config=scen.configs.detection,
+        server_time=scen.server_time,
+        references=scen.references,
+    )
+    assert detection.verdict_hint == VerdictHint.TRIGGERED
+    assert any(isinstance(e, PunctureEvidence) for e in detection.evidences)
+
+
 def test_serialize_is_json_dumpable() -> None:
     scen = scenarios.get_scenario("multi-route-surge")
     payload = to_jsonable(scen.observations)
