@@ -87,7 +87,10 @@ def run_summary(
             "phase2": {"status": st.phase2_status.value, "ms": st.phase2_ms},
             "lightweight": {
                 "assign_lp_ms": st.assign_lp_ms,
+                "build_ms": st.build_ms,
+                "greedy_ms": st.greedy_ms,
                 "greedy_iterations": st.greedy_iterations,
+                "greedy_truncated": st.greedy_truncated,
                 "zones_processed": st.zones_processed,
                 "tau_residual": st.tau_residual,
             },
