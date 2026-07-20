@@ -141,3 +141,81 @@ def test_infeasible_no_previous_returns_empty_proposals():
     assert result.optimization_result.solver_status == SolverStatus.INFEASIBLE
     assert result.optimization_result.route_importance == ()
     assert result.optimization_result.direction_proposal == ()
+
+
+def _graph_narrow_corridor(capacity: float) -> Graph:
+    # n1(境界) --e1(低容量)--> n2(境界)。双方向だが e1 の容量が需要に足りない
+    return Graph(
+        nodes=(
+            Node(_N1, NodeKind.GOAL, is_boundary=True, enabled=True),
+            Node(_N2, NodeKind.GOAL, is_boundary=True, enabled=True),
+        ),
+        edges=(
+            Edge(
+                _E1,
+                _N1,
+                _N2,
+                DirectionConstraint.BIDIRECTIONAL_PRIOR,
+                CurrentDirection.BIDIRECTIONAL,
+                enabled=True,
+                observation_type=ObservationType.VECTOR,
+                capacity_hint=capacity,
+            ),
+        ),
+    )
+
+
+def test_capacity_overflow_falls_back_with_slack_not_empty():
+    """需要が容量を構造的に超えても、スラック化 LP が非空の提案を返す。
+
+    容量ヒント 5 に対し需要 50。従来は配分・フォールバックとも INFEASIBLE となり
+    提案が空になっていた（過密という最も提案が欲しい局面での空振り）。
+    """
+    obs = Observations(observed_at=_OBS_AT, arc_stagnations=(ArcStagnation(_E1, 30.0),))
+    result = optimize(
+        _graph_narrow_corridor(capacity=5.0),
+        obs,
+        ForecastResult(
+            od_matrix=(ODDemand(_N1, _N2, 50.0),),
+            node_confidence=(NodeConfidence(_N1, 1.0), NodeConfidence(_N2, 1.0)),
+            arc_flow_sensitivity=(ArcFlowSensitivity(_E1, 0.5),),
+        ),
+        DetourResult(),
+        _history(),
+        previous_result=None,
+        config=ResolvedConfig(),
+        seed=1,
+        time_limit=30.0,
+        triggered_edges=(_E1,),
+    )
+    opt = result.optimization_result
+    # 容量を守れないため通常解は得られずフォールバックへ入る
+    assert result.constraint_report.fallback_to_previous
+    # スラック化により配分が得られ、重要度が出る（空提案にならない）
+    assert opt.route_importance
+    assert any(ri.importance > 0.0 for ri in opt.route_importance)
+    # 残留 τ も評価される（フローが 0 のままなら s_obs がそのまま残り τ は大きい）
+    assert opt.objective_values.tau_star < 1.0
+
+
+def test_capacity_slack_not_used_when_feasible():
+    """容量内に収まる需要ではスラックが立たず、通常解（LIGHTWEIGHT）で返る。"""
+    obs = Observations(observed_at=_OBS_AT, arc_stagnations=(ArcStagnation(_E1, 30.0),))
+    result = optimize(
+        _graph_narrow_corridor(capacity=100.0),
+        obs,
+        ForecastResult(
+            od_matrix=(ODDemand(_N1, _N2, 50.0),),
+            node_confidence=(NodeConfidence(_N1, 1.0), NodeConfidence(_N2, 1.0)),
+            arc_flow_sensitivity=(ArcFlowSensitivity(_E1, 0.5),),
+        ),
+        DetourResult(),
+        _history(),
+        previous_result=None,
+        config=ResolvedConfig(),
+        seed=1,
+        time_limit=30.0,
+        triggered_edges=(_E1,),
+    )
+    assert result.optimization_result.solver_status == SolverStatus.LIGHTWEIGHT
+    assert not result.constraint_report.fallback_to_previous

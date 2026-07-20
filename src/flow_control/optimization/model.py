@@ -38,6 +38,10 @@ _INFEASIBLE_CONDITIONS = frozenset(
 )
 _FEASIBLE_CONDITIONS = frozenset({"suboptimal", "imprecise"})
 
+# 容量スラックの罰則係数。フロー 1 単位の輸送コスト（ホップ重み 1）より十分大きくし、
+# 容量を守れる解があるかぎりスラックが立たないようにする
+_SLACK_PENALTY = 1e6
+
 
 @dataclass(frozen=True)
 class Commodity:
@@ -313,6 +317,7 @@ def build_assignment_lp(
     commodities: tuple[Commodity, ...],
     *,
     fixed_x: dict[str, int],
+    allow_capacity_slack: bool = False,
 ) -> _BuiltAssignment:
     """基本モードの配分 LP（バイナリゼロ・方向 fixed_x 固定）を構築する
 
@@ -320,6 +325,11 @@ def build_assignment_lp(
     一切作らない純 LP。目的はホップ数（アーク本数）重みの総フロー最小化で、
     正コストにより有向閉路を含む解が最適から排除される（構造的非循環）。
     τ は本 LP では扱わず、解のフローから ``evaluate_residual_tau`` で事後評価する。
+
+    ``allow_capacity_slack=True`` では容量系上限（危険容量・容量ヒント・パンク・
+    ノード通過量・排出上限）に非負スラックを付け、目的へ大きな罰則で加算する
+    （フォールバック用）。需要が容量を構造的に超える過密局面でも「最も違反の
+    少ない配分」を返せる。フロー保存則は非緩和のまま。
 
     変数・制約は linopy の配列 API で一括生成する（スカラー逐次追加は xarray の
     オーバーヘッドが支配的で構築が律速になるため）。並びはアーク定義順・
@@ -357,6 +367,8 @@ def build_assignment_lp(
     arc_pos = {key: j for j, key in enumerate(built.arc_keys)}
     f = model.add_variables(lower=0.0, coords=[arc_idx, k_idx], name="f")
     built.f = f
+    # 容量系上限のスラック（allow_capacity_slack 時のみ生成）。目的で大罰則を課す
+    slacks: list[Any] = []
 
     # フロー保存: 接続行列 (node×arc) と純供給 (node×k) で一括制約
     nodes = arc_model.active_nodes
@@ -389,10 +401,14 @@ def build_assignment_lp(
                 danger_keys.append(arc.key)
                 danger_caps.append(cap)
     if danger_keys:
-        cap_da = xr.DataArray(
-            np.asarray(danger_caps), coords=[pd.Index(danger_keys, name="arc")]
-        )
-        model.add_constraints(edge_flow.sel(arc=danger_keys) <= cap_da)
+        danger_idx = pd.Index(danger_keys, name="arc")
+        cap_da = xr.DataArray(np.asarray(danger_caps), coords=[danger_idx])
+        lhs = edge_flow.sel(arc=danger_keys)
+        if allow_capacity_slack:
+            sl = model.add_variables(lower=0.0, coords=[danger_idx], name="sl_danger")
+            slacks.append(sl)
+            lhs = lhs - sl
+        model.add_constraints(lhs <= cap_da)
 
     def edge_total(edge_ids: list[EdgeID], scale: dict[EdgeID, float] | None = None):
         # エッジ集合ごとの総フロー Σ_a f_a（scale 指定時は係数 scale_e を掛ける）
@@ -416,13 +432,19 @@ def build_assignment_lp(
         )
     ]
     if hint_edges:
+        hint_idx = pd.Index([e.value for e in hint_edges], name="edge")
         hint_da = xr.DataArray(
-            np.asarray([inputs.capacity_hint[e] for e in hint_edges]),
-            coords=[pd.Index([e.value for e in hint_edges], name="edge")],
+            np.asarray([inputs.capacity_hint[e] for e in hint_edges]), coords=[hint_idx]
         )
-        model.add_constraints(edge_total(hint_edges) <= hint_da)
+        lhs = edge_total(hint_edges)
+        if allow_capacity_slack:
+            sl = model.add_variables(lower=0.0, coords=[hint_idx], name="sl_hint")
+            slacks.append(sl)
+            lhs = lhs - sl
+        model.add_constraints(lhs <= hint_da)
         scalar_capped = [e for e in hint_edges if e in inputs.scalar_edges]
         if scalar_capped:
+            punct_idx = pd.Index([e.value for e in scalar_capped], name="edge")
             punct_da = xr.DataArray(
                 np.asarray(
                     [
@@ -430,9 +452,16 @@ def build_assignment_lp(
                         for e in scalar_capped
                     ]
                 ),
-                coords=[pd.Index([e.value for e in scalar_capped], name="edge")],
+                coords=[punct_idx],
             )
-            model.add_constraints(edge_total(scalar_capped) <= punct_da)
+            lhs = edge_total(scalar_capped)
+            if allow_capacity_slack:
+                sl = model.add_variables(
+                    lower=0.0, coords=[punct_idx], name="sl_punct"
+                )
+                slacks.append(sl)
+                lhs = lhs - sl
+            model.add_constraints(lhs <= punct_da)
 
     # ノード通過量上限（ノード危険フラグ）
     capped_nodes = [
@@ -451,10 +480,12 @@ def build_assignment_lp(
         cap_da = xr.DataArray(
             np.asarray([c for _, c in capped_nodes]), coords=[nidx]
         )
-        model.add_constraints(
-            (xr.DataArray(mem, coords=[nidx, arc_idx]) * edge_flow).sum("arc")
-            <= cap_da
-        )
+        lhs = (xr.DataArray(mem, coords=[nidx, arc_idx]) * edge_flow).sum("arc")
+        if allow_capacity_slack:
+            sl = model.add_variables(lower=0.0, coords=[nidx], name="sl_node")
+            slacks.append(sl)
+            lhs = lhs - sl
+        model.add_constraints(lhs <= cap_da)
 
     # 排出上限（線形近似の妥当域ガード）: η_e*f_e <= s_obs
     drain_edges = [
@@ -467,14 +498,23 @@ def build_assignment_lp(
         )
     ]
     if drain_edges:
+        drain_idx = pd.Index([e.value for e in drain_edges], name="edge")
         s_obs_da = xr.DataArray(
-            np.asarray([inputs.s_obs[e] for e in drain_edges]),
-            coords=[pd.Index([e.value for e in drain_edges], name="edge")],
+            np.asarray([inputs.s_obs[e] for e in drain_edges]), coords=[drain_idx]
         )
-        model.add_constraints(edge_total(drain_edges, scale=inputs.eta) <= s_obs_da)
+        lhs = edge_total(drain_edges, scale=inputs.eta)
+        if allow_capacity_slack:
+            sl = model.add_variables(lower=0.0, coords=[drain_idx], name="sl_drain")
+            slacks.append(sl)
+            lhs = lhs - sl
+        model.add_constraints(lhs <= s_obs_da)
 
-    # 最短路シードの透過配分: ホップ数重みの総フロー最小化
-    model.add_objective(f.sum(), sense="min")
+    # 最短路シードの透過配分: ホップ数重みの総フロー最小化。
+    # スラックには大罰則を課し、違反は「他に手がない場合の最小限」に留める
+    objective = f.sum()
+    for sl in slacks:
+        objective = objective + _SLACK_PENALTY * sl.sum()
+    model.add_objective(objective, sense="min")
 
     return built
 
