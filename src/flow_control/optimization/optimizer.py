@@ -168,7 +168,11 @@ def optimize(
     final_solution: ArcSolution = p1.solution
     phase2_status = Phase2Status.SKIPPED
     phase2_ms = 0
-    throughput = sum(final_solution.flow.get(a.key, 0.0) for a in throughput_arcs)
+    throughput = (
+        sum(final_solution.flow.get(a.key, 0.0) for a in throughput_arcs)
+        if throughput_arcs
+        else None
+    )
 
     run_phase2 = bool(throughput_arcs) and p1.status in (
         SolverStatus.OPTIMAL,
@@ -502,7 +506,11 @@ def _optimize_lightweight(
     importance = compute_route_importance(arc_model, importance_source, config.epsilon_0)
     direction = compute_direction_proposals(arc_model, solution)
     boundary = compute_boundary_control(graph, is_open, previous_result)
-    throughput = sum(solution.flow.get(arc.key, 0.0) for arc in throughput_arcs)
+    throughput = (
+        sum(solution.flow.get(arc.key, 0.0) for arc in throughput_arcs)
+        if throughput_arcs
+        else None
+    )
     boundary_ok = _boundary_reachability_ok(arc_model, solution) if is_open else True
 
     restrictions = _compute_restrictions(
@@ -972,7 +980,11 @@ def _fallback(
             if config.restriction_proposal_enabled
             else ()
         )
-        throughput = sum(lp.solution.flow.get(a.key, 0.0) for a in throughput_arcs)
+        throughput = (
+            sum(lp.solution.flow.get(a.key, 0.0) for a in throughput_arcs)
+            if throughput_arcs
+            else None
+        )
         opt_result = OptimizationResult(
             route_importance=importance,
             direction_proposal=direction,

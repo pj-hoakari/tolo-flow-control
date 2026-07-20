@@ -98,7 +98,9 @@ class BoundaryControl:
 @dataclass(frozen=True)
 class ObjectiveValues:
     tau_star: float = 0.0
-    throughput: float = 0.0
+    # スループット対象集合 P（トリガー∪迂回∪指定ルート）が空なら None（対象なし）。
+    # 0.0 は「対象はあるが流量ゼロ」であり意味が異なる
+    throughput: float | None = 0.0
 
 
 @dataclass(frozen=True)
@@ -122,7 +124,8 @@ class SolverStats:
     phase1_ms: int
     phase2_ms: int
     tau_star: float
-    throughput: float
+    # 対象集合 P が空なら None（対象なし）
+    throughput: float | None
     # 配分 LP 求解時間の合計（ベースライン＋貪欲候補＋フォールバック）
     assign_lp_ms: int = 0
     greedy_iterations: int = 0
