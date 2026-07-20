@@ -13,6 +13,8 @@ fallback_to_previous=true）。過需要時の応答の扱いは未整理の課�
 
 from __future__ import annotations
 
+from dataclasses import replace
+
 from flow_control.domain import EdgeID, NodeID
 
 from .. import graph_builder
@@ -20,6 +22,7 @@ from ..scenario_base import (
     ODSpec,
     Scenario,
     build_consistent_observations_and_history,
+    compact_configs,
     established_watch_state,
     make_scenario,
 )
@@ -30,6 +33,15 @@ from ._registry import register
 def build() -> Scenario:
     built = graph_builder.festival()
     hot = frozenset({EdgeID("e_gate_plaza")})
+    base = compact_configs()
+    configs = replace(
+        base,
+        optimization=replace(
+            base.optimization,
+            restriction_proposal_enabled=True,
+            tau_danger_threshold=8.0 / 3.0,
+        ),
+    )
     # フード行き・ステージ行きの両需要が入場路に重なって急増する
     obs, hist = build_consistent_observations_and_history(
         built.graph,
@@ -47,4 +59,5 @@ def build() -> Scenario:
         obs,
         hist,
         previous_state=established_watch_state(hot),
+        configs=configs,
     )

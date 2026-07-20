@@ -98,6 +98,7 @@ def run_summary(
             "tau_star": res.objective_values.tau_star,
             "throughput": res.objective_values.throughput,
             "fallback_to_previous": cr.fallback_to_previous,
+            "degraded_mode": cr.degraded_mode,
             "od_pairs_input": st.od_pairs_input,
             "commodities_used": st.commodities_used,
             "demand_all_cut": st.demand_all_cut,
