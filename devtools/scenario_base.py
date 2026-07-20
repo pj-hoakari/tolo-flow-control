@@ -517,6 +517,20 @@ def build_consistent_observations_and_history(
     return observations, history
 
 
+def reachable_od(
+    graph: Graph, origin: NodeID, destination: NodeID, *, vector_only: bool = True
+) -> bool:
+    """``origin``→``destination`` が current 方向で到達可能か
+
+    ``build_consistent_observations_and_history`` は到達不能な OD を指定すると
+    例外を投げるため、OD をランダムに組む側（ファジング等）の事前判定に使う。
+    """
+    if origin == destination:
+        return False
+    adjacency = _directed_adjacency(graph, vector_only=vector_only)
+    return _shortest_directed_path(adjacency, origin, destination) is not None
+
+
 def _directed_adjacency(
     graph: Graph,
     *,
