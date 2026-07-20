@@ -459,6 +459,56 @@ def test_open_mode_accumulating_mixed_node_is_not_origin() -> None:
     assert all(od.origin != NodeID("H") for od in result.od_matrix)
 
 
+def test_interior_goal_sink_does_not_spawn_reverse_od() -> None:
+    """純 GOAL の内部ノードは補完の錨にならず、偽の再生成（逆向き OD）を生まない
+
+    hall(境界) --e_obs(25)--> lobby(純 GOAL 内部)。未観測の e_un(lobby↔hall) が
+    あっても、lobby の流入超過は滞留が吸収するため e_un に流出を捏造しない。
+    OD は hall→lobby 25 のみで、lobby→hall の幻需要は出ない
+    """
+    graph = Graph(
+        nodes=(
+            _node("hall", NodeKind.GOAL, boundary=True),
+            _node("lobby", NodeKind.GOAL),
+        ),
+        edges=(_edge("e_obs", "hall", "lobby"), _edge("e_un", "lobby", "hall")),
+    )
+    observations = Observations(
+        observed_at=_OBSERVED_AT,
+        arc_flows=(_flow("e_obs", 25.0),),
+    )
+
+    result = _run(graph, observations, _config(), is_open_mode=True)
+
+    assert _require(result.od_matrix, "hall", "lobby").demand == pytest.approx(25.0)
+    assert _find(result.od_matrix, "lobby", "hall") is None
+
+
+def test_goal_regeneration_requires_observed_outflow() -> None:
+    """再生成は観測された流出があるときのみ（設計どおり）生成源になる
+
+    s(境界) --e1(10)--> g(純 GOAL 内部) --e2(4 観測)--> t(混在, ΔOcc=4)。
+    g の観測流出 4 が再生成として OD g→t を成立させる
+    """
+    graph = Graph(
+        nodes=(
+            _node("s", NodeKind.TRANSIT_ONLY, boundary=True),
+            _node("g", NodeKind.GOAL),
+            _node("t", NodeKind.GOAL_TRANSIT_MIXED),
+        ),
+        edges=(_edge("e1", "s", "g"), _edge("e2", "g", "t")),
+    )
+    observations = Observations(
+        observed_at=_OBSERVED_AT,
+        arc_flows=(_flow("e1", 10.0), _flow("e2", 4.0)),
+        node_occupancies=(_occ("t", occupancy=10.0, delta=4.0),),
+    )
+
+    result = _run(graph, observations, _config(), is_open_mode=True)
+
+    assert _require(result.od_matrix, "g", "t").demand == pytest.approx(4.0)
+
+
 def test_empty_when_no_observations() -> None:
     """観測が無ければ生成源・吸収先が空で OD も空（解像度は NODE_ONLY）"""
     graph = Graph(
