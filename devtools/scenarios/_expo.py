@@ -9,9 +9,10 @@ from flow_control.domain import EdgeID, NodeID
 
 from .. import graph_builder
 from ..scenario_base import (
+    ODSpec,
     PipelineConfigs,
     Scenario,
-    build_observations_and_history,
+    build_consistent_observations_and_history,
     compact_configs,
     established_watch_state,
     make_scenario,
@@ -31,17 +32,19 @@ EXPO_LOOP_EDGES = frozenset(
 def expo_configs() -> PipelineConfigs:
     """expo（大規模）向け設定
 
-    単一アクセス通路に全ホール需要が集中しコモディティ数が多いため、OD 量カット
-    ``delta_min`` を venue 系よりさらに上げて Phase2 の MILP を軽くする。
+    軽量モードが既定となり配分 LP は軽いため、OD 量カット ``delta_min`` は
+    compact 既定（8.0）をそのまま使う。STRICT で基準系を回す場合に備えて
+    MILP 時間上限のみ短縮を維持する。
     """
-    return compact_configs(delta_min=12.0, milp_time_limit_sec=8.0)
+    return compact_configs(milp_time_limit_sec=8.0)
 
 
 def make_expo_scenario(
     name: str,
     description: str,
     *,
-    surge_edges: frozenset[EdgeID] = frozenset(),
+    od_flows: tuple[ODSpec, ...],
+    trigger_edges: frozenset[EdgeID] = frozenset(),
     extra_unobserved_edges: frozenset[EdgeID] = frozenset(),
     unobserved_nodes: frozenset[NodeID] = frozenset(),
     node_danger: tuple[str, float] | None = None,
@@ -49,24 +52,24 @@ def make_expo_scenario(
     events: tuple[Event, ...] = (),
     previous_opt_result: "OptimizationResult | None" = None,
 ) -> Scenario:
-    """expo グラフ上のシナリオを共通設定（滞留あり・eta 小・delta_min 引上げ）で組む
+    """expo グラフ上のシナリオを保存則整合の観測で組む
 
-    急増エッジには停滞警戒＋計時済み watch も併せて与え、組合せ発火を成立させる
-    （急増単独では現行 Detection は発火しない）。
+    ``od_flows`` を current 方向の最短路で流し込み（一方通行ループはセンサ無しの
+    まま経路に使われ、Forecasting の保存補完が働く）、``trigger_edges`` に
+    停滞警戒＋計時済み watch を与えて組合せ発火させる（空なら危険フラグ等の
+    イベント発火のみ）。
     """
     built = graph_builder.expo()
     if node_danger is not None:
         built = with_node_danger(built, node_danger[0], node_danger[1])
     if edge_danger is not None:
         built = with_edge_danger(built, edge_danger[0], edge_danger[1])
-    obs, hist = build_observations_and_history(
+    obs, hist = build_consistent_observations_and_history(
         built.graph,
-        surge_edges=surge_edges,
-        stagnation_edges=surge_edges,
+        od_flows,
+        stagnation_edges=trigger_edges,
         unobserved_edges=EXPO_LOOP_EDGES | extra_unobserved_edges,
         unobserved_nodes=unobserved_nodes,
-        occupancy=30.0,
-        occupancy_delta=15.0,  # 各ホールに滞留が生じる（蓄積フェーズ）
         # 単一アクセス通路が全ホール需要を運べるよう排出上限 eta*f<=s_obs を緩める
         eta=0.02,
     )
@@ -76,7 +79,9 @@ def make_expo_scenario(
         built,
         obs,
         hist,
-        previous_state=established_watch_state(surge_edges) if surge_edges else None,
+        previous_state=(
+            established_watch_state(trigger_edges) if trigger_edges else None
+        ),
         events=events,
         configs=expo_configs(),
         previous_opt_result=previous_opt_result,

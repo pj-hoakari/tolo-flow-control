@@ -8,19 +8,24 @@ route_importance がスポークからループへ移るのが分かりやすい
 from __future__ import annotations
 
 from flow_control.detection.triggers import Event, EventKind
-from flow_control.domain import EdgeID
+from flow_control.domain import EdgeID, NodeID
 
-from ..scenario_base import DEFAULT_TIME, Scenario
+from ..scenario_base import DEFAULT_TIME, ODSpec, Scenario
 from ._expo import make_expo_scenario
 from ._registry import register
 
 
 @register("expo-approach-capacity")
 def build() -> Scenario:
+    gate = NodeID("gate")
     return make_expo_scenario(
         "expo-approach-capacity",
         "hallA 直行 e_con_A が低容量に制限。hallA 需要が一方通行ループ経由へ迂回する",
-        surge_edges=frozenset({EdgeID("e_gate_lobby")}),
+        od_flows=(
+            ODSpec(gate, NodeID("hallA"), 20.0, surge=True),
+            ODSpec(gate, NodeID("hallB"), 12.0),
+        ),
+        trigger_edges=frozenset({EdgeID("e_gate_lobby")}),
         edge_danger=("e_con_A", 3.0),
         events=(
             Event(

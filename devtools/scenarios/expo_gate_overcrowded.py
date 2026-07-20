@@ -8,17 +8,24 @@
 from __future__ import annotations
 
 from flow_control.detection.triggers import Event, EventKind
+from flow_control.domain import NodeID
 
-from ..scenario_base import DEFAULT_TIME, Scenario
+from ..scenario_base import DEFAULT_TIME, ODSpec, Scenario
 from ._expo import make_expo_scenario
 from ._registry import register
 
 
 @register("expo-gate-overcrowded")
 def build() -> Scenario:
+    gate = NodeID("gate")
     return make_expo_scenario(
         "expo-gate-overcrowded",
         "入口アクセス路 e_gate_lobby が過密（危険フラグ）。gate で入退場の一時停止を提案",
+        od_flows=(
+            ODSpec(gate, NodeID("hallA"), 20.0),
+            ODSpec(gate, NodeID("hallB"), 15.0),
+            ODSpec(gate, NodeID("hallD"), 10.0),
+        ),
         edge_danger=("e_gate_lobby", 100.0),
         events=(
             Event(
