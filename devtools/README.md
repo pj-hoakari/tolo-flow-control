@@ -106,6 +106,13 @@ uv run python -m devtools graph ./_devout/venue.yaml --out ./_devout   # 読み�
     `expo-gate-overcrowded`（入口過密→**gate で入退場停止**: boundary_control）/
     `expo-approach-capacity`（hallA 直行を低容量制限→**一方通行ループへ迂回**: route_importance がループへ）/
     `expo-incident-resume`（前回 gate 停止→危険解除で**再開提案 RESUME**）
+  - 検出機能のカバレッジ:
+    `puncture-scalar-corridor`（スカラー観測の直結コリドーが容量ヒント超過→
+    **パンクトリガー**発火。スカラー区間が OD 推定の盲点であることも同時に示す）/
+    `cooldown-skip`（クールタイム中・トリガーなし→**SKIPPED_COOLDOWN**）/
+    `cooldown-queued`（クールタイム中の発火→**QUEUED**）/
+    `queue-burst-fire`（キュー累積スコア超過→**統合発火**）/
+    `warmup-skip`（全対象ウォームアップ中→**SKIPPED_WARMUP**）
   - 検出・性能評価用:
     `combined-surge-stagnation`（急増＋高停滞が同一エッジで重なり**組合せ発火**する
     下流実行ベースライン。急増単独・停滞単独では現行 Detection は発火しない）/
