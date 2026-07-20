@@ -52,6 +52,8 @@ class RestrictionReason(str, Enum):
     RESIDUAL_TAU = "RESIDUAL_TAU"
     PUNCTURE = "PUNCTURE"
     NODE_DANGER_UPSTREAM = "NODE_DANGER_UPSTREAM"
+    # 需要が容量を構造的に超過（フォールバックのスラック使用）
+    OVERLOAD = "OVERLOAD"
 
 
 class BoundaryAction(str, Enum):
@@ -147,7 +149,11 @@ class ConstraintReport:
     local_reachability_satisfied: bool
     boundary_reachability_satisfied: bool
     legal_fixed_violations: tuple[EdgeID, ...]
+    # 前回結果（previous_result）の内容を返しているか（差し戻し）
     fallback_to_previous: bool
+    # 劣化経路（方向固定・容量スラック LP）による新提案か。
+    # fallback_to_previous と独立で、「劣化した新提案」と「前回への差し戻し」を区別する
+    degraded_mode: bool = False
 
 
 @dataclass(frozen=True)

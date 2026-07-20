@@ -81,7 +81,7 @@ def _previous() -> OptimizationResult:
     )
 
 
-def test_infeasible_then_lp_relaxation_holds_previous_direction():
+def test_infeasible_then_lp_relaxation_keeps_current_directions():
     # 境界連結性で MILP は INFEASIBLE。方向固定 LP は需要 n1→n2 を流せて可解
     obs = Observations(observed_at=_OBS_AT, arc_stagnations=(ArcStagnation(_E1, 30.0),))
     previous = _previous()
@@ -97,9 +97,13 @@ def test_infeasible_then_lp_relaxation_holds_previous_direction():
         time_limit=30.0,
     )
     assert result.optimization_result.solver_status == SolverStatus.INFEASIBLE
-    assert result.constraint_report.fallback_to_previous
-    # 方向提案は出さず前回提案を維持、重要度は LP 解から再計算
-    assert result.optimization_result.direction_proposal == previous.direction_proposal
+    # 劣化経路の新提案であり、前回結果への差し戻しではない
+    assert result.constraint_report.degraded_mode
+    assert not result.constraint_report.fallback_to_previous
+    # 方向変更は提案しない＝現状維持（KEEP のみ）を明示出力する
+    proposals = result.optimization_result.direction_proposal
+    assert proposals
+    assert all(p.change_type.value == "KEEP" for p in proposals)
     assert len(result.optimization_result.route_importance) == 1
 
 
@@ -119,7 +123,9 @@ def test_infeasible_lp_also_infeasible_copies_previous():
         time_limit=30.0,
     )
     assert result.optimization_result.solver_status == SolverStatus.INFEASIBLE
+    # 前回結果への差し戻し（劣化モードかつ差し戻しの両方が立つ）
     assert result.constraint_report.fallback_to_previous
+    assert result.constraint_report.degraded_mode
     # 前回の重要度・方向提案がそのままコピーされる
     assert result.optimization_result.route_importance == previous.route_importance
     assert result.optimization_result.direction_proposal == previous.direction_proposal
@@ -189,13 +195,67 @@ def test_capacity_overflow_falls_back_with_slack_not_empty():
         triggered_edges=(_E1,),
     )
     opt = result.optimization_result
-    # 容量を守れないため通常解は得られずフォールバックへ入る
-    assert result.constraint_report.fallback_to_previous
+    # 容量を守れないため通常解は得られず劣化経路へ入る（差し戻しではない）
+    assert result.constraint_report.degraded_mode
+    assert not result.constraint_report.fallback_to_previous
     # スラック化により配分が得られ、重要度が出る（空提案にならない）
     assert opt.route_importance
     assert any(ri.importance > 0.0 for ri in opt.route_importance)
     # 残留 τ も評価される（フローが 0 のままなら s_obs がそのまま残り τ は大きい）
     assert opt.objective_values.tau_star < 1.0
+
+
+def test_capacity_overflow_proposes_overload_limit_when_enabled():
+    """機能2 有効時、容量を構造的に超過したエッジへ LIMIT（持続可能レート）を提案する。"""
+    from flow_control.optimization import RestrictionAction, RestrictionReason
+
+    obs = Observations(observed_at=_OBS_AT, arc_stagnations=(ArcStagnation(_E1, 30.0),))
+    result = optimize(
+        _graph_narrow_corridor(capacity=5.0),
+        obs,
+        ForecastResult(
+            od_matrix=(ODDemand(_N1, _N2, 50.0),),
+            node_confidence=(NodeConfidence(_N1, 1.0), NodeConfidence(_N2, 1.0)),
+            arc_flow_sensitivity=(ArcFlowSensitivity(_E1, 0.5),),
+        ),
+        DetourResult(),
+        _history(),
+        previous_result=None,
+        config=ResolvedConfig(restriction_proposal_enabled=True),
+        seed=1,
+        time_limit=30.0,
+        triggered_edges=(_E1,),
+    )
+    rp = result.optimization_result.restriction_proposal
+    assert any(
+        p.edge_id == _E1
+        and p.action == RestrictionAction.LIMIT
+        and p.reason == RestrictionReason.OVERLOAD
+        and p.limit_value == 5.0
+        for p in rp
+    )
+
+
+def test_capacity_overflow_no_limit_when_restriction_disabled():
+    """機能2 が無効なら過需要でも LIMIT は出ない（ノーハーム既定の維持）。"""
+    obs = Observations(observed_at=_OBS_AT, arc_stagnations=(ArcStagnation(_E1, 30.0),))
+    result = optimize(
+        _graph_narrow_corridor(capacity=5.0),
+        obs,
+        ForecastResult(
+            od_matrix=(ODDemand(_N1, _N2, 50.0),),
+            node_confidence=(NodeConfidence(_N1, 1.0), NodeConfidence(_N2, 1.0)),
+            arc_flow_sensitivity=(ArcFlowSensitivity(_E1, 0.5),),
+        ),
+        DetourResult(),
+        _history(),
+        previous_result=None,
+        config=ResolvedConfig(),
+        seed=1,
+        time_limit=30.0,
+        triggered_edges=(_E1,),
+    )
+    assert result.optimization_result.restriction_proposal == ()
 
 
 def test_capacity_slack_not_used_when_feasible():

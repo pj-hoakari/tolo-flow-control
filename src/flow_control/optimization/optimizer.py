@@ -42,7 +42,9 @@ from .restriction import (
 from .boundary import compute_boundary_control
 from .results import (
     ConstraintReport,
+    RestrictionAction,
     RestrictionProposal,
+    RestrictionReason,
     RouteImportance,
     ObjectiveValues,
     OptimizationResult,
@@ -882,6 +884,46 @@ def _legal_violations(arc_model: ArcModel, solution: ArcSolution) -> tuple[EdgeI
     return tuple(bad[k] for k in sorted(bad))
 
 
+def _overload_limits(
+    arc_model: ArcModel,
+    inputs: MilpInputs,
+    flow: dict[str, float],
+) -> tuple[RestrictionProposal, ...]:
+    """容量系上限を超過して流れたエッジへの流入制限（LIMIT）を組む
+
+    スラック化 LP では需要が容量を構造的に超えるとき上限を超えて配分される。
+    超過エッジには持続可能レート（危険容量・容量ヒントの小さい方）を
+    limit_value とする LIMIT を提案する
+    """
+    proposals: list[RestrictionProposal] = []
+    for edge in arc_model.active_edges:
+        eid = edge.edge_id
+        caps = [
+            c
+            for c in (
+                inputs.edge_danger_capacity.get(eid),
+                inputs.capacity_hint.get(eid),
+            )
+            if c is not None
+        ]
+        if not caps:
+            continue
+        cap = min(caps)
+        total = sum(
+            flow.get(arc.key, 0.0) for arc in arc_model.arcs_of_edge.get(eid, ())
+        )
+        if total > cap + 1e-9:
+            proposals.append(
+                RestrictionProposal(
+                    edge_id=eid,
+                    action=RestrictionAction.LIMIT,
+                    limit_value=cap,
+                    reason=RestrictionReason.OVERLOAD,
+                )
+            )
+    return tuple(sorted(proposals, key=lambda p: p.edge_id.value))
+
+
 def _fallback(
     arc_model: ArcModel,
     inputs: MilpInputs,
@@ -920,12 +962,21 @@ def _fallback(
     ):
         tau_val = evaluate_residual_tau(arc_model, inputs, drainable, lp.solution.flow)
         importance = compute_route_importance(arc_model, lp.solution, config.epsilon_0)
-        # 方向属性提案は出さず、前回提案を維持
-        direction = previous_result.direction_proposal if previous_result else ()
+        # 方向変更は提案しない。方向は current 固定のため、全エッジ KEEP の提案を
+        # 明示出力し「提案なし」と「現状維持」を区別する
+        direction = compute_direction_proposals(arc_model, lp.solution)
+        # 需要が容量を構造的に超過したエッジには、機能2 有効時に持続可能レートへの
+        # 流入制限（LIMIT）を提案する（スラック使用＝過需要の能動的な抑制）
+        restriction = (
+            _overload_limits(arc_model, inputs, lp.solution.flow)
+            if config.restriction_proposal_enabled
+            else ()
+        )
         throughput = sum(lp.solution.flow.get(a.key, 0.0) for a in throughput_arcs)
         opt_result = OptimizationResult(
             route_importance=importance,
             direction_proposal=direction,
+            restriction_proposal=restriction,
             boundary_control=boundary,
             objective_values=ObjectiveValues(tau_star=tau_val, throughput=throughput),
             solver_status=SolverStatus.INFEASIBLE,
@@ -949,7 +1000,8 @@ def _fallback(
                 _boundary_reachability_ok(arc_model, lp.solution) if is_open else True
             ),
             legal_fixed_violations=_legal_violations(arc_model, lp.solution),
-            fallback_to_previous=True,
+            fallback_to_previous=False,
+            degraded_mode=True,
         )
         return OptimizeResult(opt_result, stats, report)
 
@@ -980,7 +1032,8 @@ def _fallback(
         local_reachability_satisfied=False,
         boundary_reachability_satisfied=False,
         legal_fixed_violations=(),
-        fallback_to_previous=True,
+        fallback_to_previous=previous_result is not None,
+        degraded_mode=True,
     )
     return OptimizeResult(opt_result, stats, report)
 
