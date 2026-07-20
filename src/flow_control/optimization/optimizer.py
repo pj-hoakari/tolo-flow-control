@@ -45,6 +45,10 @@ from .results import (
 from ..forecasting import ForecastResult
 from ..detour_routing import DetourResult
 
+# 予算枯渇後もベースライン配分・フォールバックには最低限渡す求解時間（秒）。
+# 空の結果よりは僅かに超過してでも解を返す方が安全側のため
+_MIN_SOLVE_SEC = 1.0
+
 
 def optimize(
     graph: Graph,
@@ -221,18 +225,30 @@ def _optimize_lightweight(
     近似残留 τ は解のフローから事後評価する。方向変更の貪欲探索は候補ごとに
     同じ LP を再解し、τ 改善がマージン超のものだけを採用する。
     安全性は固定方向と到達性検査で保つ。
+
+    時間予算 ``time_limit`` はモデル構築込みの deadline として持ち回り、
+    各求解には残時間のみを渡す。残時間が尽きたら貪欲探索を打ち切る
+    （``greedy_truncated``）。ベースライン配分だけは床値を保証して必ず試みる。
     """
+    deadline = time.perf_counter() + time_limit
     fixed_x: dict[str, int] = {}
     for edge in arc_model.active_edges:
         fixed_x.update(fixed_directions(edge))
-    built = build_assignment_lp(arc_model, inputs, commodities, fixed_x=fixed_x)
     t0 = time.perf_counter()
-    assignment = solve_assignment(built, time_limit, seed)
-    assign_lp_ms = int((time.perf_counter() - t0) * 1000)
+    built = build_assignment_lp(arc_model, inputs, commodities, fixed_x=fixed_x)
+    build_sec = time.perf_counter() - t0
+    t0 = time.perf_counter()
+    assignment = solve_assignment(
+        built, max(_MIN_SOLVE_SEC, deadline - time.perf_counter()), seed
+    )
+    assign_sec = time.perf_counter() - t0
+    assign_lp_ms = int(assign_sec * 1000)
     zones = _zone_count(graph, triggered_edges, triggered_nodes, config.max_trigger_zones)
 
     solution = assignment.solution
     greedy_iterations = 0
+    greedy_truncated = False
+    greedy_sec = 0.0
     if solution is not None:
         solution = replace(
             solution,
@@ -246,14 +262,29 @@ def _optimize_lightweight(
         {edge_id for edge_id in triggered_edges if edge_id in arc_model.arcs_of_edge},
         key=lambda edge_id: edge_id.value,
     )
+    greedy_started = time.perf_counter()
     for edge_id in candidate_ids:
+        if greedy_truncated:
+            break
         current_direction = solution.direction if solution is not None else fixed_x
         for candidate_x in _direction_candidates(arc_model, edge_id, current_direction):
+            remaining = deadline - time.perf_counter()
+            if remaining <= 0.0:
+                greedy_truncated = True
+                break
             greedy_iterations += 1
+            t0 = time.perf_counter()
             candidate_built = build_assignment_lp(
                 arc_model, inputs, commodities, fixed_x=candidate_x
             )
-            candidate = solve_assignment(candidate_built, time_limit, seed)
+            build_sec += time.perf_counter() - t0
+            t0 = time.perf_counter()
+            candidate = solve_assignment(
+                candidate_built, max(_MIN_SOLVE_SEC, deadline - time.perf_counter()), seed
+            )
+            candidate_sec = time.perf_counter() - t0
+            assign_sec += candidate_sec
+            assign_lp_ms = int(assign_sec * 1000)
             if candidate.solution is None or candidate.status == SolverStatus.INFEASIBLE:
                 continue
             if not _local_reachability_ok(arc_model, candidate.solution):
@@ -266,6 +297,7 @@ def _optimize_lightweight(
             if solution is None or candidate_tau <= best_tau - config.greedy_improve_margin:
                 solution = replace(candidate.solution, tau=candidate_tau)
                 best_tau = candidate_tau
+    greedy_sec = time.perf_counter() - greedy_started
 
     # current 方向が不可解、または全候補を試しても安全な解が得られない場合は、
     # 不安全な結果を返さず設計 v0 §7.6 の保持フォールバックへ移行する。
@@ -274,7 +306,8 @@ def _optimize_lightweight(
     ):
         return _fallback(
             arc_model, inputs, commodities, drainable, graph, previous_result, config,
-            seed, time_limit, solved_at, is_open, throughput_arcs, assign_lp_ms,
+            seed, max(_MIN_SOLVE_SEC, deadline - time.perf_counter()), solved_at,
+            is_open, throughput_arcs, int((build_sec + assign_sec) * 1000),
         )
 
     importance = compute_route_importance(arc_model, solution, config.epsilon_0)
@@ -296,7 +329,7 @@ def _optimize_lightweight(
         solver_name="highs",
         phase1_status=SolverStatus.LIGHTWEIGHT,
         phase2_status=Phase2Status.LIGHTWEIGHT,
-        phase1_ms=assign_lp_ms,
+        phase1_ms=int((build_sec + assign_sec) * 1000),
         phase2_ms=0,
         tau_star=best_tau,
         throughput=throughput,
@@ -304,6 +337,9 @@ def _optimize_lightweight(
         greedy_iterations=greedy_iterations,
         zones_processed=zones,
         tau_residual=best_tau,
+        build_ms=int(build_sec * 1000),
+        greedy_ms=int(greedy_sec * 1000),
+        greedy_truncated=greedy_truncated,
     )
     report = ConstraintReport(
         local_reachability_satisfied=_local_reachability_ok(arc_model, solution),
@@ -539,7 +575,9 @@ def _fallback(
     fixed_x: dict[str, int] = {}
     for edge in arc_model.active_edges:
         fixed_x.update(fixed_directions(edge))
+    t0 = time.perf_counter()
     built_lp = build_assignment_lp(arc_model, inputs, commodities, fixed_x=fixed_x)
+    build_ms = int((time.perf_counter() - t0) * 1000)
     t0 = time.perf_counter()
     lp = solve_assignment(built_lp, time_limit, seed)
     lp_ms = int((time.perf_counter() - t0) * 1000)
@@ -568,10 +606,12 @@ def _fallback(
             solver_name="highs",
             phase1_status=SolverStatus.INFEASIBLE,
             phase2_status=Phase2Status.SKIPPED,
-            phase1_ms=phase1_ms + lp_ms,
+            phase1_ms=phase1_ms + build_ms + lp_ms,
             phase2_ms=0,
             tau_star=tau_val,
             throughput=throughput,
+            assign_lp_ms=lp_ms,
+            build_ms=build_ms,
         )
         report = ConstraintReport(
             local_reachability_satisfied=_local_reachability_ok(arc_model, lp.solution),
@@ -599,10 +639,12 @@ def _fallback(
         solver_name="highs",
         phase1_status=SolverStatus.INFEASIBLE,
         phase2_status=Phase2Status.SKIPPED,
-        phase1_ms=phase1_ms + lp_ms,
+        phase1_ms=phase1_ms + build_ms + lp_ms,
         phase2_ms=0,
         tau_star=opt_result.objective_values.tau_star,
         throughput=opt_result.objective_values.throughput,
+        assign_lp_ms=lp_ms,
+        build_ms=build_ms,
     )
     report = ConstraintReport(
         local_reachability_satisfied=False,
