@@ -17,6 +17,7 @@ from ..domain.graph import EdgeID, NodeID
 from .arcs import ArcModel
 from .drainable import reachable_forward
 from .model import MilpInputs
+from .results import RestrictionAction, RestrictionProposal, RestrictionReason
 
 # 迂回路が構造的に不足とみなす k_effective の上限（k<=1 = 実質迂回路なし）
 _MIN_SUFFICIENT_K = 2
@@ -297,3 +298,118 @@ def close_preserves_connectivity(
         return True
     root = next(iter(sorted(active, key=lambda n: n.value)))
     return active <= reachable_forward(undirected, root)
+
+
+def _reason_for(
+    edge_id: EdgeID,
+    residual: ResidualAssessment,
+    node_danger_upstream: frozenset[EdgeID],
+) -> RestrictionReason:
+    """制限理由を決定的な優先順で決める（強い根拠から順に）"""
+    if edge_id in residual.undrainable_edges:
+        return RestrictionReason.UNDRAINABLE_STAGNATION
+    if edge_id in residual.puncture_edges:
+        return RestrictionReason.PUNCTURE
+    if edge_id in node_danger_upstream:
+        return RestrictionReason.NODE_DANGER_UPSTREAM
+    return RestrictionReason.RESIDUAL_TAU
+
+
+def build_restriction_proposals(
+    arc_model: ArcModel,
+    inputs: MilpInputs,
+    *,
+    residual: ResidualAssessment,
+    gate: DetourGate,
+    danger_edges: frozenset[EdgeID],
+    zone_edges: frozenset[EdgeID],
+    flow: Mapping[str, float],
+    direction: Mapping[str, int],
+    importance: Mapping[EdgeID, float],
+    outflow_averages: Mapping[EdgeID, float],
+    node_danger_upstream: frozenset[EdgeID] = frozenset(),
+    is_open: bool,
+    max_proposals: int = 1,
+) -> tuple[RestrictionProposal, ...]:
+    """残留＋Detour ゲート成立時に通行制限を提案する
+
+    上流フィーダを候補化し、閉鎖しても連結性を保てるものだけ ``CLOSE``、
+    保てないものは ``LIMIT`` へ格下げする。Closed モードは退路遮断・成分分断の
+    リスクから ``CLOSE`` を出さず ``LIMIT`` のみとする（設計の安全網）。
+    候補がなければ危険エッジ自身への ``LIMIT`` を最後の手段とする。
+    """
+    if not (residual.residual and gate.insufficient):
+        return ()
+
+    candidates = select_feeder_candidates(
+        arc_model,
+        danger_edges=danger_edges,
+        flow=flow,
+        importance=importance,
+        zone_edges=zone_edges,
+    )
+    if not candidates:
+        # 上流フィーダが見つからない場合は危険エッジ自身の流入を絞る
+        candidates = tuple(sorted(danger_edges, key=lambda e: e.value))
+
+    proposals: list[RestrictionProposal] = []
+    for edge_id in candidates[:max_proposals]:
+        limit = compute_limit_value(
+            inputs, edge_id, outflow_average=outflow_averages.get(edge_id)
+        )
+        can_close = is_open and close_preserves_connectivity(
+            arc_model,
+            closed_edge=edge_id,
+            direction=direction,
+            is_open=is_open,
+        )
+        if can_close:
+            action = RestrictionAction.CLOSE
+            limit_value = None
+            confidence = 1.0
+        else:
+            action = RestrictionAction.LIMIT
+            limit_value = limit.value
+            confidence = limit.confidence
+        proposals.append(
+            RestrictionProposal(
+                edge_id=edge_id,
+                action=action,
+                limit_value=limit_value,
+                reason=_reason_for(edge_id, residual, node_danger_upstream),
+                confidence=confidence,
+            )
+        )
+    return tuple(proposals)
+
+
+def build_resume_proposals(
+    previous_result: object | None,
+    *,
+    still_restricted: frozenset[EdgeID],
+) -> tuple[RestrictionProposal, ...]:
+    """前回の CLOSE/LIMIT のうち、現リクエストで危険条件を満たさないものを RESUME する
+
+    ``previous_result`` 参照のみで判断し状態を持たない（純粋性の維持）。
+    """
+    if previous_result is None:
+        return ()
+    resumed: list[RestrictionProposal] = []
+    seen: set[str] = set()
+    for prior in getattr(previous_result, "restriction_proposal", ()):
+        if prior.action == RestrictionAction.RESUME:
+            continue
+        if prior.edge_id in still_restricted or prior.edge_id.value in seen:
+            continue
+        seen.add(prior.edge_id.value)
+        resumed.append(
+            RestrictionProposal(
+                edge_id=prior.edge_id,
+                action=RestrictionAction.RESUME,
+                limit_value=None,
+                reason=prior.reason,
+                confidence=1.0,
+            )
+        )
+    resumed.sort(key=lambda p: p.edge_id.value)
+    return tuple(resumed)

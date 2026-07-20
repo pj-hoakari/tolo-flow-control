@@ -33,9 +33,17 @@ from .model import (
     solve_zone_lp,
 )
 from .postprocess import compute_direction_proposals, compute_route_importance
+from .restriction import (
+    assess_residual,
+    build_restriction_proposals,
+    build_resume_proposals,
+    evaluate_detour_gate,
+)
 from .boundary import compute_boundary_control
 from .results import (
     ConstraintReport,
+    RestrictionProposal,
+    RouteImportance,
     ObjectiveValues,
     OptimizationResult,
     OptimizeResult,
@@ -111,6 +119,9 @@ def optimize(
                 throughput_arcs,
                 triggered_edges,
                 triggered_nodes,
+                detour_result,
+                _outflow_averages(history_digest, graph),
+                drain.undrainable,
             ),
             od_pairs_input,
             commodities_used,
@@ -251,6 +262,9 @@ def _optimize_lightweight(
     throughput_arcs: tuple[Arc, ...],
     triggered_edges: tuple[EdgeID, ...],
     triggered_nodes: tuple[NodeID, ...],
+    detour_result: DetourResult,
+    outflow_averages: dict[EdgeID, float],
+    undrainable: frozenset[EdgeID],
 ) -> OptimizeResult:
     """基本モードの局所化つき配分。
 
@@ -455,9 +469,26 @@ def _optimize_lightweight(
     throughput = sum(solution.flow.get(arc.key, 0.0) for arc in throughput_arcs)
     boundary_ok = _boundary_reachability_ok(arc_model, solution) if is_open else True
 
+    restrictions = _compute_restrictions(
+        arc_model,
+        inputs,
+        config,
+        localization.zones,
+        solution=solution,
+        drainable=drainable,
+        undrainable=undrainable,
+        detour_result=detour_result,
+        triggered_edges=triggered_edges,
+        importance=importance,
+        outflow_averages=outflow_averages,
+        previous_result=previous_result,
+        is_open=is_open,
+    )
+
     opt_result = OptimizationResult(
         route_importance=importance,
         direction_proposal=direction,
+        restriction_proposal=restrictions,
         boundary_control=boundary,
         objective_values=ObjectiveValues(tau_star=best_tau, throughput=throughput),
         solver_status=SolverStatus.LIGHTWEIGHT,
@@ -516,6 +547,128 @@ def _direction_candidates(
             continue
         candidates.append(proposal)
     return tuple(candidates)
+
+
+def _outflow_averages(
+    history_digest: HistoryDigest, graph: Graph
+) -> dict[EdgeID, float]:
+    """各エッジの排出実績 μ̂_e（方向別ライン通過の直近平均）を集める
+
+    ラインなし（directional_flow_samples が None）のエッジは含めない。
+    limit_value 算定で「実測の直接量」を第一候補にするための入力。
+    """
+    averages: dict[EdgeID, float] = {}
+    for edge in graph.enabled_edges():
+        window = history_digest.window_series_of(edge.edge_id)
+        if window is None or window.directional_flow_samples is None:
+            continue
+        values = [
+            value
+            for _, samples in window.directional_flow_samples
+            for _, value in samples
+        ]
+        if values:
+            averages[edge.edge_id] = sum(values) / len(values)
+    return averages
+
+
+def _compute_restrictions(
+    arc_model: ArcModel,
+    inputs: MilpInputs,
+    config: ResolvedConfig,
+    zones: tuple[object, ...],
+    *,
+    solution: ArcSolution,
+    drainable: frozenset[EdgeID],
+    undrainable: frozenset[EdgeID],
+    detour_result: DetourResult,
+    triggered_edges: tuple[EdgeID, ...],
+    importance: tuple[RouteImportance, ...],
+    outflow_averages: dict[EdgeID, float],
+    previous_result: OptimizationResult | None,
+    is_open: bool,
+) -> tuple[RestrictionProposal, ...]:
+    """機能2（通行制限提案）: ゾーンごとに残留＋Detour ゲートを評価して提案を組む
+
+    ``restriction_proposal_enabled`` が False、または ``tau_danger_threshold`` が
+    None なら機能2 は無効（提案なし）。既存 RESUME は無効時も評価しない
+    （機能自体が切られている状態で解除だけ出すのは一貫しないため）。
+    """
+    theta = config.tau_danger_threshold
+    if not config.restriction_proposal_enabled or theta is None:
+        return ()
+
+    arc_keys_of_edge = {
+        edge.edge_id: tuple(
+            arc.key for arc in arc_model.arcs_of_edge.get(edge.edge_id, ())
+        )
+        for edge in arc_model.active_edges
+    }
+    importance_map = {ri.edge_id: ri.importance for ri in importance}
+    triggered_set = frozenset(triggered_edges)
+
+    proposals: list[RestrictionProposal] = []
+    for zone in zones:
+        zone_edges = frozenset(zone.edges)
+        zone_triggers = frozenset(zone.seed_edges) & zone_edges
+        if not zone_triggers:
+            continue
+        zone_tau = evaluate_residual_tau(
+            arc_model, inputs, drainable & zone_edges, solution.flow
+        )
+        residual = assess_residual(
+            inputs,
+            zone_edges=zone_edges,
+            tau_zone=zone_tau,
+            flow=solution.flow,
+            arc_keys_of_edge=arc_keys_of_edge,
+            undrainable=undrainable,
+            tau_danger_threshold=theta,
+        )
+        if not residual.residual:
+            continue
+
+        detour_edges: set[EdgeID] = set()
+        k_effective = 0
+        for origin in sorted(zone_triggers, key=lambda e: e.value):
+            detour_set = detour_result.detour_set_of(origin)
+            if detour_set is None:
+                continue
+            k_effective = max(k_effective, detour_set.k_effective)
+            detour_edges |= set(detour_set.edge_set())
+        detour_edges -= zone_triggers
+
+        gate = evaluate_detour_gate(
+            inputs,
+            detour_edges=frozenset(detour_edges),
+            k_effective=k_effective,
+            flow=solution.flow,
+            arc_keys_of_edge=arc_keys_of_edge,
+            triggered_edges=triggered_set,
+            watched_edges=frozenset(),
+            tau_danger_threshold=theta,
+        )
+        proposals.extend(
+            build_restriction_proposals(
+                arc_model,
+                inputs,
+                residual=residual,
+                gate=gate,
+                danger_edges=zone_triggers,
+                zone_edges=zone_edges,
+                flow=solution.flow,
+                direction=solution.direction,
+                importance=importance_map,
+                outflow_averages=outflow_averages,
+                is_open=is_open,
+            )
+        )
+
+    restricted_now = frozenset(p.edge_id for p in proposals)
+    proposals.extend(
+        build_resume_proposals(previous_result, still_restricted=restricted_now)
+    )
+    return tuple(proposals)
 
 
 def _zone_net_supply(

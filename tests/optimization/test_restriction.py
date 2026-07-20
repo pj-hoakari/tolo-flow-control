@@ -370,3 +370,128 @@ def test_close_allowed_when_parallel_route_remains():
         },
         is_open=True,
     )
+
+
+# --- 提案組み立て / RESUME ---------------------------------------------------
+
+
+def test_build_restriction_downgrades_close_to_limit_when_connectivity_breaks():
+    from flow_control.optimization.restriction import build_restriction_proposals
+    from flow_control.optimization.results import RestrictionAction
+
+    arc_model = _chain_arc_model()
+    residual = assess_residual(
+        _inputs(s_obs={EdgeID("e1"): 30.0}, s_bar={EdgeID("e1"): 10.0}, eta={EdgeID("e1"): 0.5}),
+        zone_edges=frozenset({EdgeID("e0"), EdgeID("e1"), EdgeID("e2")}),
+        tau_zone=3.0,
+        flow={},
+        arc_keys_of_edge={},
+        undrainable=frozenset(),
+        tau_danger_threshold=1.0,
+    )
+    gate = evaluate_detour_gate(
+        _inputs(),
+        detour_edges=frozenset(),
+        k_effective=0,
+        flow={},
+        arc_keys_of_edge={},
+        triggered_edges=frozenset(),
+        watched_edges=frozenset(),
+        tau_danger_threshold=1.0,
+    )
+    got = build_restriction_proposals(
+        arc_model,
+        _inputs(s_obs={EdgeID("e0"): 20.0}, eta={EdgeID("e0"): 0.5}),
+        residual=residual,
+        gate=gate,
+        danger_edges=frozenset({EdgeID("e1")}),
+        zone_edges=frozenset({EdgeID("e0"), EdgeID("e1"), EdgeID("e2")}),
+        flow={"e0|A_TO_B": 20.0, "e1|A_TO_B": 20.0},
+        direction=_all_directions(arc_model),
+        importance={},
+        outflow_averages={},
+        is_open=True,
+    )
+    # 鎖の上流 e0 は閉じるとノードが孤立するため CLOSE 不可 → LIMIT へ格下げ
+    assert len(got) == 1
+    assert got[0].edge_id == EdgeID("e0")
+    assert got[0].action == RestrictionAction.LIMIT
+    assert got[0].limit_value == pytest.approx(40.0)  # s_obs/η = 20/0.5
+
+
+def test_build_restriction_quiet_when_gate_closed():
+    from flow_control.optimization.restriction import build_restriction_proposals
+
+    arc_model = _chain_arc_model()
+    residual = assess_residual(
+        _inputs(),
+        zone_edges=frozenset({EdgeID("e1")}),
+        tau_zone=3.0,
+        flow={},
+        arc_keys_of_edge={},
+        undrainable=frozenset(),
+        tau_danger_threshold=1.0,
+    )
+    # 迂回が足りている（k=2・使用中・安全）ならゲートは開かない
+    gate = evaluate_detour_gate(
+        _inputs(),
+        detour_edges=frozenset({_E_D1, _E_D2}),
+        k_effective=2,
+        flow={"e_d1|A_TO_B": 18.0, "e_d2|A_TO_B": 18.0},
+        arc_keys_of_edge=_ARC_KEYS,
+        triggered_edges=frozenset(),
+        watched_edges=frozenset(),
+        tau_danger_threshold=2.0,
+    )
+    assert not gate.insufficient
+    got = build_restriction_proposals(
+        arc_model,
+        _inputs(),
+        residual=residual,
+        gate=gate,
+        danger_edges=frozenset({EdgeID("e1")}),
+        zone_edges=frozenset({EdgeID("e0"), EdgeID("e1")}),
+        flow={},
+        direction=_all_directions(arc_model),
+        importance={},
+        outflow_averages={},
+        is_open=True,
+    )
+    assert got == ()
+
+
+def test_resume_released_when_no_longer_restricted():
+    from flow_control.optimization.restriction import build_resume_proposals
+    from flow_control.optimization.results import (
+        OptimizationResult,
+        RestrictionAction,
+        RestrictionProposal,
+        RestrictionReason,
+    )
+
+    previous = OptimizationResult(
+        restriction_proposal=(
+            RestrictionProposal(
+                edge_id=EdgeID("e0"),
+                action=RestrictionAction.LIMIT,
+                limit_value=10.0,
+                reason=RestrictionReason.RESIDUAL_TAU,
+            ),
+            RestrictionProposal(
+                edge_id=EdgeID("e9"),
+                action=RestrictionAction.CLOSE,
+                limit_value=None,
+                reason=RestrictionReason.PUNCTURE,
+            ),
+        )
+    )
+    got = build_resume_proposals(previous, still_restricted=frozenset({EdgeID("e0")}))
+    # e0 はまだ制限中なので RESUME しない。e9 のみ解除
+    assert [p.edge_id.value for p in got] == ["e9"]
+    assert got[0].action == RestrictionAction.RESUME
+
+
+def test_resume_empty_without_previous():
+    from flow_control.optimization.restriction import build_resume_proposals
+
+    assert build_resume_proposals(None, still_restricted=frozenset()) == ()
