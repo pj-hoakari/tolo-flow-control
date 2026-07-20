@@ -310,6 +310,32 @@ def test_queue_burst_fire_reports_queue_score_evidence() -> None:
     assert any(isinstance(e, QueueScoreEvidence) for e in detection.evidences)
 
 
+def test_fuzz_summary_counts_coverage(tmp_path: Path) -> None:
+    """fuzz サマリが verdict・エビデンス・提案種別のカバレッジを集計する。"""
+    from devtools import fuzzer
+
+    summary, outcomes = fuzzer.run_fuzz(
+        "venue", count=6, seed=3, out_dir=tmp_path, save_all=False, time_limit=10.0
+    )
+    assert summary.total == 6
+    # verdict は全ケース分が計上される
+    assert sum(summary.by_verdict.values()) == 6
+    assert set(summary.by_verdict) <= {
+        "TRIGGERED",
+        "NO_TRIGGER",
+        "QUEUED",
+        "SKIPPED_COOLDOWN",
+        "SKIPPED_WARMUP",
+        "ERROR",
+    }
+    # 発火ケースがあればエビデンス種別が記録される
+    if summary.triggered:
+        assert summary.by_evidence
+    payload = json.loads((tmp_path / "summary.json").read_text(encoding="utf-8"))
+    assert "by_verdict" in payload["summary"]
+    assert "by_proposal" in payload["summary"]
+
+
 def test_serialize_is_json_dumpable() -> None:
     scen = scenarios.get_scenario("multi-route-surge")
     payload = to_jsonable(scen.observations)

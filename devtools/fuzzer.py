@@ -214,6 +214,30 @@ class FuzzSummary:
     infeasible: int = 0
     fallback: int = 0
     by_violation: dict[str, int] = field(default_factory=dict)
+    # 機能カバレッジの可視化（どの検出根拠・提案種別が試されたか）
+    by_verdict: dict[str, int] = field(default_factory=dict)
+    by_evidence: dict[str, int] = field(default_factory=dict)
+    by_proposal: dict[str, int] = field(default_factory=dict)
+    demand_all_cut: int = 0
+
+
+def _count_proposals(summary: FuzzSummary, opt: object) -> None:
+    """提案種別のカバレッジを数える（どの出力機能が実際に試されたか）"""
+
+    def bump(key: str, n: int = 1) -> None:
+        if n:
+            summary.by_proposal[key] = summary.by_proposal.get(key, 0) + n
+
+    importance = getattr(opt, "route_importance", ())
+    bump("route_importance", sum(1 for ri in importance if ri.importance > 0.0))
+    for dp in getattr(opt, "direction_proposal", ()):
+        change = dp.change_type.value
+        if change != "KEEP":
+            bump(f"direction:{change}")
+    for bc in getattr(opt, "boundary_control", ()):
+        bump(f"boundary:{bc.action.value}")
+    for rp in getattr(opt, "restriction_proposal", ()):
+        bump(f"restriction:{rp.action.value}")
 
 
 def run_fuzz(
@@ -277,13 +301,22 @@ def run_fuzz(
                 summary.triggered += 1
             if downstream:
                 summary.downstream += 1
+            summary.by_verdict[verdict] = summary.by_verdict.get(verdict, 0) + 1
+            for evidence in run.detection.evidences:
+                key = type(evidence).__name__
+                summary.by_evidence[key] = summary.by_evidence.get(key, 0) + 1
             if run.optimization is not None:
-                solver_status = run.optimization.optimization_result.solver_status.value
+                opt = run.optimization.optimization_result
+                stats = run.optimization.solver_stats
+                solver_status = opt.solver_status.value
                 fallback = run.optimization.constraint_report.fallback_to_previous
                 if solver_status == "INFEASIBLE":
                     summary.infeasible += 1
                 if fallback:
                     summary.fallback += 1
+                if stats.demand_all_cut:
+                    summary.demand_all_cut += 1
+                _count_proposals(summary, opt)
 
         outcome = CaseOutcome(
             index=i,

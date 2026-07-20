@@ -172,6 +172,18 @@ def cmd_fuzz(args: argparse.Namespace) -> int:
         f"triggered={summary.triggered} downstream={summary.downstream} "
         f"infeasible={summary.infeasible} fallback={summary.fallback}"
     )
+    if summary.demand_all_cut:
+        print(f"  demand_all_cut={summary.demand_all_cut}（需要全カットで実質空提案）")
+    for title, table in (
+        ("verdict", summary.by_verdict),
+        ("evidence", summary.by_evidence),
+        ("proposal", summary.by_proposal),
+    ):
+        if table:
+            cells = ", ".join(
+                f"{k}={v}" for k, v in sorted(table.items(), key=lambda kv: (-kv[1], kv[0]))
+            )
+            print(f"  {title}: {cells}")
     if summary.by_violation:
         print("violations by kind:")
         for kind, n in sorted(summary.by_violation.items(), key=lambda kv: -kv[1]):
