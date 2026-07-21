@@ -105,6 +105,8 @@ uv run python -m devtools graph ./_devout/venue.yaml --out ./_devout   # 読み�
     `festival`（入場一本道→二系統分岐）/
     `station-stairs`（改札→並行 2 階段→ホーム）/
     `transfer-station`（2 改札・2 ホーム・並行 2 連絡通路）/
+    `school`（唯一の1階入口→6階目的地。北・南階段と各階停止エレベーター、
+    階段以外は未観測通過区間）/
     `stadium`（ボウル・可変コンコース・スカラー支線）/
     `flex-corridor`（可変通路＋常設細通路の 2 ノード最小）/
     `museum`（特別展袋小路＋常設展）/
@@ -140,6 +142,9 @@ uv run python -m devtools graph ./_devout/venue.yaml --out ./_devout   # 読み�
     - その他: `festival-gate-split`（入場急増を**二系統へ分散**）/
       `station-platform-closure`（階段低容量化→**代替階段へ誘導**）/
       `station-transfer-peak`（乗換ピーク→**センサ未設置の地下通路へ迂回**）/
+      `school-north-stair-peak` / `school-south-stair-peak`
+      （1〜5階と1階入口から6階目的地へ集まるピークで、混雑した片側階段を分散）/
+      `school-north-stair-maintenance`（各階から6階へ集まる時間帯の北階段保守による容量低下を迂回）/
       `stadium-egress-concourse`（退場ピークで可変コンコースを**双方向へ解除**）/
       `museum-special-exhibit-limit`（特別展待ち列→**上流へ整理入場の LIMIT**）
 

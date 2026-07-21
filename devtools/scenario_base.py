@@ -353,6 +353,9 @@ class ODSpec:
     destination: NodeID
     rate: float
     surge: bool = False
+    # 指定時は current 方向に従う最短路の代わりに、このエッジ列で観測を合成する。
+    # シナリオの「既存の利用経路」を表す開発用ヒントであり、最適化の入力制約ではない。
+    path: tuple[EdgeID, ...] | None = None
 
 
 def build_consistent_observations_and_history(
@@ -378,7 +381,8 @@ def build_consistent_observations_and_history(
 ) -> tuple[Observations, HistoryDigest]:
     """OD 指定から保存則と整合する観測・履歴を合成する
 
-    各 OD を current 方向に従う有向最短路（BFS・ID 昇順で決定的）で流し込み、
+    各 OD を current 方向に従う有向最短路（BFS・ID 昇順で決定的）、または指定された
+    既存利用経路で流し込み、
     方向別アークフローを合成する。通過ノードでは流入=流出が成立し、
     混在ホールでは「流入超過 = 滞在」を占有量変化（ΔOcc）として与えるため、
     Forecasting の需要導出（滞在=ΔOcc・生成=流出超過）と帳尻が合い、
@@ -401,7 +405,11 @@ def build_consistent_observations_and_history(
     staying_rate: dict[NodeID, float] = {}
     origin_rate: dict[NodeID, float] = {}
     for od in od_flows:
-        path = _shortest_directed_path(adjacency, od.origin, od.destination)
+        path = (
+            _path_from_edge_ids(graph, od.origin, od.destination, od.path)
+            if od.path is not None
+            else _shortest_directed_path(adjacency, od.origin, od.destination)
+        )
         if path is None:
             raise ValueError(
                 f"OD {od.origin.value}->{od.destination.value} は current 方向で到達不能"
@@ -604,6 +612,40 @@ def _shortest_directed_path(
                 return path
             queue.append(w)
     return None
+
+
+def _path_from_edge_ids(
+    graph: Graph,
+    origin: NodeID,
+    destination: NodeID,
+    edge_ids: tuple[EdgeID, ...],
+) -> list[tuple[EdgeID, FlowDirection]] | None:
+    """指定エッジ列を有向の連続経路として検証し、アーク列へ変換する。"""
+    current = origin
+    path: list[tuple[EdgeID, FlowDirection]] = []
+    for edge_id in edge_ids:
+        edge = graph.edge_of(edge_id)
+        if edge is None or not edge.enabled:
+            return None
+        if current == edge.endpoint_a:
+            direction, nxt = FlowDirection.A_TO_B, edge.endpoint_b
+            allowed = edge.current_direction in (
+                CurrentDirection.A_TO_B,
+                CurrentDirection.BIDIRECTIONAL,
+            )
+        elif current == edge.endpoint_b:
+            direction, nxt = FlowDirection.B_TO_A, edge.endpoint_a
+            allowed = edge.current_direction in (
+                CurrentDirection.B_TO_A,
+                CurrentDirection.BIDIRECTIONAL,
+            )
+        else:
+            return None
+        if not allowed:
+            return None
+        path.append((edge_id, direction))
+        current = nxt
+    return path if current == destination else None
 
 
 # --- グラフ加工ヘルパー（frozen dataclass の置換）---------------------------
