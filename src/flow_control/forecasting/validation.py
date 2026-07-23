@@ -1,25 +1,32 @@
 """整合・検証
 
-推定 OD（od_matrix）から経路配分でリンク流量を再現し，観測との残差 reproduction_error を算出
-残差と観測の信頼度フラグを node_confidence に反映し，Optimization の目的関数重みに供する
+推定 OD（od_matrix）を OD 導出と同じ実測配分（転換率実測・観測流量比の前方伝播）で
+リンク流量に再現し，観測のあるアークとの残差 reproduction_error を算出
+残差と観測フラグ・観測カバレッジを node_confidence に反映し，
+Optimization の目的関数重みに供する
 
-    resid = Σ_a |v̂_a − v_a| / (Σ_a v_a + ε_0),   v̂_a = Σ_{s,t} M^{(s,t)}_a δ_{s,t}
+    resid = Σ_a |v̂_a − v_a| / (Σ_a v_a + ε_0)   （a は観測のあるアークに限る）
+
+未観測アークに載った再現フローは残差に計上しない（保存補完・prior の受け皿であり，
+観測と矛盾しているわけではない）
 """
 
-from collections import defaultdict, deque
+from collections import defaultdict
 from dataclasses import dataclass
 
 from ..domain.enums import FlowDirection, ObservationType
 from ..domain.graph import Graph, NodeID
 from ..domain.observations import ConfidenceFlag, Observations
 from .config import ResolvedConfig
-from .od import ODDemand
+from .demand import ImputedArcFlow, NodeDemand
+from .od import ODDemand, reproduce_link_flows
 
-# 観測信頼度フラグごとのノード信頼度減衰係数
+# 観測フラグごとのノード信頼度減衰係数（接続アークの最小を採る）
 _HOLD_FACTOR = 0.7
 _INVALID_FACTOR = 0.0
-# 有効ベクトルアークに観測が無い（欠損）場合：直接計測なしとして INVALID と同等に扱う
-_MISSING_FACTOR = 0.0
+# 観測カバレッジ係数: 観測欠損アークの寄与（保存補完・prior の間接推定が受け皿と
+# なるため，明示的な計測不能（INVALID = 0.0）とは区別して半減にとどめる）
+_MISSING_COVERAGE = 0.5
 
 # 有向アークのキー：(edge_id, from_node)
 _ArcKey = tuple[str, NodeID]
@@ -41,17 +48,27 @@ def validate_od(
     graph: Graph,
     observations: Observations,
     od_matrix: tuple[ODDemand, ...],
+    node_demands: tuple[NodeDemand, ...],
     config: ResolvedConfig,
+    imputed_flows: tuple[ImputedArcFlow, ...] = (),
 ) -> ValidationResult:
     """OD の再現残差とノード信頼度を算出
 
-    - reproduction_error: 推定 OD を最短路配分してリンク流量を再現し，観測との相対残差
-    - node_confidence: 再現品質（全体）× 観測信頼度（§5.5：HOLD 0.7・INVALID/欠損 0.0）
+    - reproduction_error: 推定 OD を実測配分（保存補完フローを含む）で再現し，
+      観測のあるアークとの相対残差
+    - node_confidence: 局所再現品質 × 観測フラグ（HOLD 0.7・INVALID 0.0）
+      × 観測カバレッジ（欠損アークは半減）
     """
     observed = _observed_arc_flows(graph, observations)
-    reproduced = _reproduce_arc_flows(graph, od_matrix)
-    reproduction_error = _reproduction_error(observed, reproduced, config.epsilon_0)
-    node_confidence = _node_confidence(graph, observations, reproduction_error)
+    reproduced = reproduce_link_flows(
+        graph, observations, node_demands, od_matrix, config, imputed_flows
+    )
+    reproduction_error = _reproduction_error(
+        observed, reproduced, has_od=bool(od_matrix), epsilon_0=config.epsilon_0
+    )
+    node_confidence = _node_confidence(
+        graph, observations, observed, reproduced, reproduction_error, config.epsilon_0
+    )
     return ValidationResult(
         reproduction_error=reproduction_error,
         node_confidence=node_confidence,
@@ -80,49 +97,41 @@ def _observed_arc_flows(
     return dict(flows)
 
 
-def _reproduce_arc_flows(
-    graph: Graph, od_matrix: tuple[ODDemand, ...]
-) -> dict[_ArcKey, float]:
-    """各 OD 需要を最短路に配分してリンク流量 v̂_a を再現"""
-    adjacency = _build_adjacency(graph)
-    reproduced: dict[_ArcKey, float] = defaultdict(float)
-    for od in od_matrix:
-        arcs = _shortest_path_arcs(adjacency, od.origin, od.destination)
-        if arcs is None:
-            continue  # 到達不能な OD は配分対象外
-        for key in arcs:
-            reproduced[key] += od.demand
-    return dict(reproduced)
-
-
 def _reproduction_error(
     observed: dict[_ArcKey, float],
     reproduced: dict[_ArcKey, float],
+    *,
+    has_od: bool,
     epsilon_0: float,
 ) -> float:
-    """相対再現残差 Σ|v̂−v| / (Σv + ε_0) を算出"""
+    """相対再現残差 Σ|v̂−v| / (Σv + ε_0) を観測のあるアーク上で算出"""
     total_observed = sum(observed.values())
-    keys = set(observed) | set(reproduced)
-    abs_error = sum(
-        abs(reproduced.get(key, 0.0) - observed.get(key, 0.0)) for key in keys
-    )
     if total_observed <= 0.0:
         # 検証対象のリンク観測が無い：再現すべき OD も無ければ残差 0，あれば検証不能として最大
-        return 0.0 if not reproduced else 1.0
+        return 0.0 if not has_od else 1.0
+    abs_error = sum(
+        abs(reproduced.get(key, 0.0) - value) for key, value in observed.items()
+    )
     return abs_error / (total_observed + epsilon_0)
 
 
 def _node_confidence(
     graph: Graph,
     observations: Observations,
+    observed: dict[_ArcKey, float],
+    reproduced: dict[_ArcKey, float],
     reproduction_error: float,
+    epsilon_0: float,
 ) -> tuple[NodeConfidence, ...]:
-    """再現品質（全体）と観測信頼度から各ノードの信頼度を決める
+    """再現品質・観測フラグ・観測カバレッジから各ノードの信頼度を決める
 
-    confidence_v = base × min(接続する有効ベクトルアークの信頼度係数)
-    base = clamp(1 − reproduction_error, 0, 1)
+    confidence_v = base_v × flag_v × coverage_v
+    - base_v: 接続する観測済みアークの局所再現残差から clamp(1 − resid_v, 0, 1)。
+      接続観測が無ければ全体残差ベース
+    - flag_v: 接続アークの観測フラグ係数の最小（HOLD 0.7・INVALID 0.0）
+    - coverage_v: 接続ベクトルアークの観測カバレッジ（観測あり 1.0・欠損 0.5 の平均）
     """
-    base = max(0.0, min(1.0, 1.0 - reproduction_error))
+    global_base = max(0.0, min(1.0, 1.0 - reproduction_error))
 
     flag_by_edge: dict[str, ConfidenceFlag] = {}
     for arc_flow in observations.arc_flows:
@@ -132,28 +141,57 @@ def _node_confidence(
             current, arc_flow.confidence_flag
         )
 
-    incident: dict[NodeID, list[str]] = defaultdict(list)
+    incident: dict[NodeID, list[tuple[str, NodeID, NodeID]]] = defaultdict(list)
     for edge in graph.enabled_edges():
         if edge.observation_type != ObservationType.VECTOR:
             continue
-        incident[edge.endpoint_a].append(edge.edge_id.value)
-        incident[edge.endpoint_b].append(edge.edge_id.value)
+        entry = (edge.edge_id.value, edge.endpoint_a, edge.endpoint_b)
+        incident[edge.endpoint_a].append(entry)
+        incident[edge.endpoint_b].append(entry)
 
     result: list[NodeConfidence] = []
     for node in graph.enabled_nodes():
-        factor = 1.0
-        for edge_id in incident.get(node.node_id, ()):
-            factor = min(factor, _arc_factor(flag_by_edge.get(edge_id)))
-        result.append(NodeConfidence(node_id=node.node_id, confidence=base * factor))
+        edges = incident.get(node.node_id, ())
+        if not edges:
+            # ベクトル計測の無いノード（スカラー支線等）は再現品質のみで評価する
+            result.append(
+                NodeConfidence(node_id=node.node_id, confidence=global_base)
+            )
+            continue
+
+        flag_factor = 1.0
+        covered = 0.0
+        local_error = 0.0
+        local_observed = 0.0
+        for edge_id, endpoint_a, endpoint_b in edges:
+            flag = flag_by_edge.get(edge_id)
+            if flag is None:
+                covered += _MISSING_COVERAGE
+                continue
+            covered += 1.0
+            flag_factor = min(flag_factor, _flag_factor(flag))
+            for key in ((edge_id, endpoint_a), (edge_id, endpoint_b)):
+                if key in observed:
+                    local_observed += observed[key]
+                    local_error += abs(reproduced.get(key, 0.0) - observed[key])
+
+        if local_observed > 0.0:
+            base = max(
+                0.0, min(1.0, 1.0 - local_error / (local_observed + epsilon_0))
+            )
+        else:
+            base = global_base
+        coverage = covered / len(edges)
+        result.append(
+            NodeConfidence(
+                node_id=node.node_id, confidence=base * flag_factor * coverage
+            )
+        )
     return tuple(result)
 
 
-def _arc_factor(flag: ConfidenceFlag | None) -> float:
-    """観測信頼度フラグ → ノード信頼度減衰係数
-    観測欠損（None）は計測なし扱い
-    """
-    if flag is None:
-        return _MISSING_FACTOR
+def _flag_factor(flag: ConfidenceFlag) -> float:
+    """観測信頼度フラグ → ノード信頼度減衰係数"""
     if flag == ConfidenceFlag.INVALID:
         return _INVALID_FACTOR
     if flag == ConfidenceFlag.HOLD:
@@ -169,57 +207,3 @@ def _worse_flag(
     if current is None:
         return candidate
     return current if order[current] <= order[candidate] else candidate
-
-
-def _build_adjacency(graph: Graph) -> dict[NodeID, list[tuple[NodeID, str]]]:
-    """有効エッジから (隣接ノード, edge_id) の無向隣接リストを構築"""
-    enabled_node_ids = {node.node_id for node in graph.enabled_nodes()}
-    adjacency: dict[NodeID, list[tuple[NodeID, str]]] = {
-        nid: [] for nid in enabled_node_ids
-    }
-    for edge in graph.enabled_edges():
-        a, b = edge.endpoint_a, edge.endpoint_b
-        if a in enabled_node_ids and b in enabled_node_ids:
-            adjacency[a].append((b, edge.edge_id.value))
-            adjacency[b].append((a, edge.edge_id.value))
-    return adjacency
-
-
-def _shortest_path_arcs(
-    adjacency: dict[NodeID, list[tuple[NodeID, str]]],
-    source: NodeID,
-    target: NodeID,
-) -> list[_ArcKey] | None:
-    """source→target の単一最短路を有向アーク (edge_id, from_node) 列で返す（BFS，決定的）
-
-    到達不能なら None。source == target は空列
-    """
-    if source == target:
-        return []
-    visited = {source}
-    parent: dict[NodeID, tuple[NodeID, str]] = {}
-    queue: deque[NodeID] = deque((source,))
-    while queue:
-        current = queue.popleft()
-        for neighbor, edge_id in adjacency.get(current, ()):
-            if neighbor in visited:
-                continue
-            visited.add(neighbor)
-            parent[neighbor] = (current, edge_id)
-            if neighbor == target:
-                return _reconstruct(parent, source, target)
-            queue.append(neighbor)
-    return None
-
-
-def _reconstruct(
-    parent: dict[NodeID, tuple[NodeID, str]], source: NodeID, target: NodeID
-) -> list[_ArcKey]:
-    arcs: list[_ArcKey] = []
-    node = target
-    while node != source:
-        prev, edge_id = parent[node]
-        arcs.append((edge_id, prev))  # prev からの有向アーク
-        node = prev
-    arcs.reverse()
-    return arcs
