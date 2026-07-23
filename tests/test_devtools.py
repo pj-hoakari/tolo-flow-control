@@ -13,6 +13,7 @@ from devtools import compare, graph_builder, report, scenarios
 from devtools.graph_builder import resolve_positions
 from devtools.pipeline import run_pipeline
 from devtools.serialize import to_jsonable
+from flow_control.domain import CurrentDirection, DirectionConstraint, NodeID, NodeKind
 
 
 def _index(
@@ -106,6 +107,52 @@ def test_graph_presets_build_and_layout(name: str) -> None:
     pos = resolve_positions(built)
     # 全ノードに座標が解決される
     assert {n.node_id.value for n in built.graph.nodes} == set(pos)
+
+
+def test_school_matches_six_floor_observation_layout() -> None:
+    """校舎プリセットは指定された入口・目的地・観測区間を持つ。"""
+    built = graph_builder.school()
+    graph = built.graph
+    assert len(graph.nodes) == 20  # 6階×（ホール・北・南踊り場）+ 唯一の入口 + 6階ゴール
+    assert graph.node_of(NodeID("entrance")).is_boundary
+    assert graph.node_of(NodeID("floor6_goal")).kind == NodeKind.GOAL_TRANSIT_MIXED
+
+    edge_ids = {edge.edge_id.value for edge in graph.edges}
+    for floor in range(1, 6):
+        assert f"north_landing_f{floor}" in {node.node_id.value for node in graph.nodes}
+        assert f"south_landing_f{floor}" in {node.node_id.value for node in graph.nodes}
+        assert f"e_north_stairs_f{floor}_{floor + 1}" in edge_ids
+        assert f"e_south_stairs_f{floor}_{floor + 1}" in edge_ids
+        assert f"e_vertical_elevator_f{floor}_{floor + 1}" in edge_ids
+
+    stairs = [edge for edge in graph.edges if "_stairs_" in edge.edge_id.value]
+    assert all(edge.current_direction == CurrentDirection.BIDIRECTIONAL for edge in stairs)
+    assert all(
+        edge.direction_constraint == DirectionConstraint.BIDIRECTIONAL_PRIOR
+        for edge in stairs
+    )
+
+    from devtools.scenarios._school import school_unobserved_edges
+
+    unobserved = {edge_id.value for edge_id in school_unobserved_edges()}
+    assert "e_vertical_elevator_f3_4" in unobserved
+    assert "e_hall_north_landing_f2" in unobserved
+    assert "e_entrance_hall_f1" not in unobserved
+    assert "e_north_stairs_f3_4" not in unobserved
+
+
+def test_school_scenarios_do_not_fix_directions() -> None:
+    """校舎シナリオは、既存利用経路を観測合成にだけ指定し、方向は固定しない。"""
+    for name in (
+        "school-north-stair-peak",
+        "school-south-stair-peak",
+        "school-north-stair-maintenance",
+    ):
+        scenario = scenarios.get_scenario(name)
+        assert all(
+            edge.current_direction == CurrentDirection.BIDIRECTIONAL
+            for edge in scenario.graph.edges
+        )
 
 
 @pytest.mark.parametrize("name", sorted(scenarios.SCENARIOS))

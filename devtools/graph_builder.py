@@ -601,6 +601,74 @@ def transfer_station() -> BuiltGraph:
     return b.build()
 
 
+def school() -> BuiltGraph:
+    """6 階建て校舎: 北・南階段と各階停止エレベーターを持つ導線。
+
+    1 階の ``entrance`` が唯一の出入口で、6 階の ``floor6_goal`` が目的地である。
+    各階のエレベーターホールはポイント観測、北・南の各階間階段はルート観測を
+    想定する。各階の北・南踊り場はホールから分離した通過点で、ホール―踊り場の
+    廊下とエレベーター区間は観測のない通過区間として、シナリオ側で
+    ``unobserved_edges`` に指定する。
+    """
+    b = GraphBuilder()
+    # 1〜6 階のホールはポイント観測。北・南の踊り場は、ホールとは別の
+    # 通過専用ノードとして配置する。
+    for floor in range(1, 7):
+        b.node(
+            f"elevator_hall_f{floor}",
+            kind=NodeKind.GOAL_TRANSIT_MIXED,
+            pos=(0.0, float(floor - 1)),
+        )
+        b.node(
+            f"north_landing_f{floor}",
+            kind=NodeKind.TRANSIT_ONLY,
+            pos=(-2.0, float(floor - 1)),
+        )
+        b.node(
+            f"south_landing_f{floor}",
+            kind=NodeKind.TRANSIT_ONLY,
+            pos=(2.0, float(floor - 1)),
+        )
+        b.edge(
+            f"e_hall_north_landing_f{floor}",
+            f"elevator_hall_f{floor}",
+            f"north_landing_f{floor}",
+        )
+        b.edge(
+            f"e_hall_south_landing_f{floor}",
+            f"elevator_hall_f{floor}",
+            f"south_landing_f{floor}",
+        )
+
+    b.node("entrance", kind=NodeKind.GOAL, boundary=True, pos=(0.0, -0.8))
+    b.node("floor6_goal", kind=NodeKind.GOAL_TRANSIT_MIXED, pos=(0.0, 5.8))
+    b.edge("e_entrance_hall_f1", "entrance", "elevator_hall_f1")
+    b.edge("e_hall_f6_goal", "elevator_hall_f6", "floor6_goal")
+
+    for floor in range(1, 6):
+        # 各階停止エレベーターはホールのポイント観測のみで、区間自体は未観測。
+        b.edge(
+            f"e_vertical_elevator_f{floor}_{floor + 1}",
+            f"elevator_hall_f{floor}",
+            f"elevator_hall_f{floor + 1}",
+            capacity_hint=36.0,
+        )
+        # 北・南階段は踊り場同士を結ぶ、各階間の個別ライン観測アーク。
+        b.edge(
+            f"e_north_stairs_f{floor}_{floor + 1}",
+            f"north_landing_f{floor}",
+            f"north_landing_f{floor + 1}",
+            capacity_hint=22.0,
+        )
+        b.edge(
+            f"e_south_stairs_f{floor}_{floor + 1}",
+            f"south_landing_f{floor}",
+            f"south_landing_f{floor + 1}",
+            capacity_hint=22.0,
+        )
+    return b.build()
+
+
 def stadium() -> BuiltGraph:
     """スタジアム: ボウルから東主出口・北南ゲートへ抜ける退場導線の位相
 
@@ -750,6 +818,7 @@ PRESETS: dict[str, Any] = {
     "festival": festival,
     "station-stairs": station_stairs,
     "transfer-station": transfer_station,
+    "school": school,
     "stadium": stadium,
     "flex-corridor": flex_corridor,
     "museum": museum,
