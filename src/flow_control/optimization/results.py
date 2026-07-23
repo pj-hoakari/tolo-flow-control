@@ -89,6 +89,20 @@ class RestrictionProposal:
 
 
 @dataclass(frozen=True)
+class DetourPathProposal:
+    """採用迂回パス（パス単位の任意出力）
+
+    重要度と同一の最適化解から導出する。最適化解でフローが乗った迂回路と、
+    迂回候補加重が割当を行った迂回路が採用となる
+    """
+
+    origin_edge_id: EdgeID
+    edge_ids: tuple[EdgeID, ...]
+    # 構成エッジの信頼度重み（node_confidence 由来・下限クリップ付き）の最小値
+    confidence: float
+
+
+@dataclass(frozen=True)
 class BoundaryControl:
     node_id: NodeID
     action: BoundaryAction
@@ -108,6 +122,7 @@ class OptimizationResult:
     route_importance: tuple[RouteImportance, ...] = ()
     direction_proposal: tuple[DirectionProposal, ...] = ()
     restriction_proposal: tuple[RestrictionProposal, ...] = ()
+    detour_paths: tuple[DetourPathProposal, ...] = ()
     boundary_control: tuple[BoundaryControl, ...] = ()
     objective_values: ObjectiveValues = field(default_factory=ObjectiveValues)
     solver_status: SolverStatus = SolverStatus.OPTIMAL

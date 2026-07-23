@@ -2,6 +2,7 @@
 
 import math
 from collections.abc import Mapping
+from dataclasses import dataclass, field
 
 from ..detour_routing import DetourPath, DetourResult
 from ..domain.enums import CurrentDirection, DirectionConstraint
@@ -9,6 +10,7 @@ from ..domain.graph import Edge, EdgeID, NodeID
 from .arcs import Arc, ArcModel
 from .model import ArcSolution
 from .results import (
+    DetourPathProposal,
     DirectionProposal,
     DirectionChangeType,
     ImportanceDirection,
@@ -67,29 +69,52 @@ def compute_route_importance(
     return tuple(result)
 
 
+@dataclass(frozen=True)
+class DetourEmphasis:
+    """迂回候補加重の結果
+
+    ``arc_bonus`` は重要度合成用のアーク key → 加算フロー。
+    ``assigned_paths`` は割当が付いた (起点エッジ, 候補パス, 割当量) の列で、
+    採用迂回パス出力（detour_paths）の導出に使う
+    """
+
+    arc_bonus: dict[str, float] = field(default_factory=dict)
+    assigned_paths: tuple[tuple[EdgeID, DetourPath, float], ...] = ()
+
+
 def compute_detour_emphasis(
     arc_model: ArcModel,
     detour_result: DetourResult,
     observed_edge_flow: Mapping[EdgeID, float],
     solution: ArcSolution,
     weight: float,
-) -> dict[str, float]:
-    """迂回候補パスへの誘導強調量（アーク key → 加算フロー）を求める
+    *,
+    adopted_direction: Mapping[str, int],
+    triggered_edges: frozenset[EdgeID] = frozenset(),
+) -> DetourEmphasis:
+    """迂回候補パスへの誘導強調量を求める
 
     トリガー起点エッジの現況流量（解フローと観測フローの大きい方）を、
     非直行の候補パスへ逆距離重みで配分し、パス残容量でクリップする。
+    誘導できない候補は除外する: 他のトリガーエッジを通るパス（迂回先も
+    混雑しており、そこへの誘導は混雑の付け替えになる）と、採用方向で
+    無効化されたアークを逆走するパス（方向提案と矛盾する誘導になる）。
     結果は重要度出力の合成にのみ使い、フロー解・τ・方向提案・
     通行制限・境界制御には影響させない
     """
     if weight <= 0.0:
-        return {}
+        return DetourEmphasis()
     edge_by_id = {e.edge_id: e for e in arc_model.active_edges}
+    trigger_set = triggered_edges | frozenset(
+        ds.origin_edge for ds in detour_result.detour_sets
+    )
 
     def edge_flow(edge_id: EdgeID) -> float:
         arcs = arc_model.arcs_of_edge.get(edge_id, ())
         return sum(solution.flow.get(a.key, 0.0) for a in arcs)
 
     bonus: dict[str, float] = {}
+    assigned_paths: list[tuple[EdgeID, DetourPath, float]] = []
     for detour_set in detour_result.detour_sets:
         if detour_set.origin_edge not in edge_by_id:
             continue
@@ -100,22 +125,26 @@ def compute_detour_emphasis(
         if redirect <= 0.0:
             continue
 
-        candidates: list[tuple[tuple[Arc, ...], float]] = []
+        candidates: list[tuple[DetourPath, tuple[Arc, ...], float]] = []
         for path in detour_set.paths:
             if path.contains_trigger:
+                continue
+            if any(edge_id in trigger_set for edge_id in path.edge_ids):
                 continue
             arcs = _walk_path_arcs(
                 arc_model, edge_by_id, detour_set.endpoint_pair, path
             )
             if arcs is None:
                 continue
+            if any(adopted_direction.get(a.key, 0) != 1 for a in arcs):
+                continue
             length = path.total_length if path.total_length > 0.0 else 1.0
-            candidates.append((arcs, 1.0 / length))
+            candidates.append((path, arcs, 1.0 / length))
         if not candidates:
             continue
 
-        total_weight = sum(w for _, w in candidates)
-        for arcs, path_weight in candidates:
+        total_weight = sum(w for _, _, w in candidates)
+        for path, arcs, path_weight in candidates:
             share = redirect * (path_weight / total_weight)
             residual = min(
                 max(0.0, _effective_capacity(edge_by_id[a.edge_id]) - edge_flow(a.edge_id))
@@ -124,9 +153,59 @@ def compute_detour_emphasis(
             assigned = min(share, residual)
             if assigned <= 0.0:
                 continue
+            assigned_paths.append((detour_set.origin_edge, path, assigned))
             for arc in arcs:
                 bonus[arc.key] = bonus.get(arc.key, 0.0) + weight * assigned
-    return bonus
+    return DetourEmphasis(arc_bonus=bonus, assigned_paths=tuple(assigned_paths))
+
+
+_FLOW_CARRIED_EPS = 1e-9
+
+
+def compute_detour_path_proposals(
+    arc_model: ArcModel,
+    detour_result: DetourResult,
+    solution: ArcSolution,
+    emphasis: DetourEmphasis,
+    edge_confidence: Mapping[EdgeID, float],
+) -> tuple[DetourPathProposal, ...]:
+    """採用迂回パス（パス単位の任意出力）を導出する
+
+    重要度と同一の解から、全構成エッジにフローが乗った迂回路と、
+    迂回候補加重が割当を行った迂回路を採用として列挙する。
+    信頼度は構成エッジの信頼度重み（node_confidence 由来・下限クリップ付き）の最小値
+    """
+    edge_ids_active = {e.edge_id for e in arc_model.active_edges}
+
+    def edge_flow(edge_id: EdgeID) -> float:
+        arcs = arc_model.arcs_of_edge.get(edge_id, ())
+        return sum(solution.flow.get(a.key, 0.0) for a in arcs)
+
+    assigned = {(origin, path) for origin, path, _ in emphasis.assigned_paths}
+
+    proposals: list[DetourPathProposal] = []
+    for detour_set in detour_result.detour_sets:
+        for path in detour_set.paths:
+            if path.contains_trigger:
+                continue
+            if any(edge_id not in edge_ids_active for edge_id in path.edge_ids):
+                continue
+            flow_carried = all(
+                edge_flow(edge_id) > _FLOW_CARRIED_EPS for edge_id in path.edge_ids
+            )
+            if not flow_carried and (detour_set.origin_edge, path) not in assigned:
+                continue
+            proposals.append(
+                DetourPathProposal(
+                    origin_edge_id=detour_set.origin_edge,
+                    edge_ids=path.edge_ids,
+                    confidence=min(
+                        (edge_confidence.get(eid, 1.0) for eid in path.edge_ids),
+                        default=1.0,
+                    ),
+                )
+            )
+    return tuple(proposals)
 
 
 def _effective_capacity(edge: Edge) -> float:

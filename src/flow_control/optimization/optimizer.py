@@ -34,6 +34,7 @@ from .model import (
 )
 from .postprocess import (
     compute_detour_emphasis,
+    compute_detour_path_proposals,
     compute_direction_proposals,
     compute_route_importance,
 )
@@ -108,6 +109,9 @@ def optimize(
     od_pairs_input = len(forecast_result.od_matrix)
     commodities_used = len(commodities)
 
+    # 迂回候補加重・採用迂回パス出力に使うエッジ別の観測フロー合算
+    observed_edge_flow = _observed_edge_flows(observations, active_edge_ids)
+
     if config.optimization_mode == OptimizationMode.LIGHTWEIGHT:
         return _with_demand_diagnostics(
             _optimize_lightweight(
@@ -128,7 +132,7 @@ def optimize(
                 detour_result,
                 _outflow_averages(history_digest, graph),
                 drain.undrainable,
-                _observed_edge_flows(observations, active_edge_ids),
+                observed_edge_flow,
             ),
             od_pairs_input,
             commodities_used,
@@ -214,19 +218,25 @@ def optimize(
     emphasis = compute_detour_emphasis(
         arc_model,
         detour_result,
-        _observed_edge_flows(observations, active_edge_ids),
+        observed_edge_flow,
         final_solution,
         config.detour_importance_weight,
+        adopted_direction=final_solution.direction,
+        triggered_edges=frozenset(triggered_edges),
     )
     importance = compute_route_importance(
-        arc_model, final_solution, config.epsilon_0, detour_emphasis=emphasis
+        arc_model, final_solution, config.epsilon_0, detour_emphasis=emphasis.arc_bonus
     )
     direction = compute_direction_proposals(arc_model, final_solution)
     boundary = compute_boundary_control(graph, is_open, previous_result, commodities)
+    detour_paths = compute_detour_path_proposals(
+        arc_model, detour_result, final_solution, emphasis, inputs.c_e
+    )
 
     opt_result = OptimizationResult(
         route_importance=importance,
         direction_proposal=direction,
+        detour_paths=detour_paths,
         boundary_control=boundary,
         objective_values=ObjectiveValues(tau_star=p1.objective, throughput=throughput),
         solver_status=p1.status,
@@ -527,13 +537,21 @@ def _optimize_lightweight(
         observed_edge_flow,
         importance_source,
         config.detour_importance_weight,
+        adopted_direction=solution.direction,
+        triggered_edges=frozenset(triggered_edges),
     )
     output_importance = (
         compute_route_importance(
-            arc_model, importance_source, config.epsilon_0, detour_emphasis=emphasis
+            arc_model,
+            importance_source,
+            config.epsilon_0,
+            detour_emphasis=emphasis.arc_bonus,
         )
-        if emphasis
+        if emphasis.arc_bonus
         else importance
+    )
+    detour_paths = compute_detour_path_proposals(
+        arc_model, detour_result, importance_source, emphasis, inputs.c_e
     )
     direction = compute_direction_proposals(arc_model, solution)
     boundary = compute_boundary_control(graph, is_open, previous_result, commodities)
@@ -564,6 +582,7 @@ def _optimize_lightweight(
         route_importance=output_importance,
         direction_proposal=direction,
         restriction_proposal=restrictions,
+        detour_paths=detour_paths,
         boundary_control=boundary,
         objective_values=ObjectiveValues(tau_star=best_tau, throughput=throughput),
         solver_status=SolverStatus.LIGHTWEIGHT,

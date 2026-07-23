@@ -58,6 +58,12 @@ def test_worked_example_reproduces_golden_values(
     assert _importance_of(opt, "e12").direction == ImportanceDirection.A_TO_B
     assert _importance_of(opt, "e13").direction == ImportanceDirection.A_TO_B
 
+    # 採用迂回パス: 加重割当を受けた e13→e23 が起点 e12 の迂回としてパス出力される
+    assert len(opt.detour_paths) == 1
+    assert opt.detour_paths[0].origin_edge_id.value == "e12"
+    assert tuple(e.value for e in opt.detour_paths[0].edge_ids) == ("e13", "e23")
+    assert opt.detour_paths[0].confidence == pytest.approx(1.0)
+
     # 方向提案は全エッジ双方向のまま
     for dp in opt.direction_proposal:
         assert dp.proposed_direction == ProposedDirection.BIDIRECTIONAL
