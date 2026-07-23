@@ -32,7 +32,12 @@ from .model import (
     solve_phase2,
     solve_zone_lp,
 )
-from .postprocess import compute_direction_proposals, compute_route_importance
+from .postprocess import (
+    compute_detour_emphasis,
+    compute_detour_path_proposals,
+    compute_direction_proposals,
+    compute_route_importance,
+)
 from .restriction import (
     assess_residual,
     build_restriction_proposals,
@@ -104,6 +109,9 @@ def optimize(
     od_pairs_input = len(forecast_result.od_matrix)
     commodities_used = len(commodities)
 
+    # 迂回候補加重・採用迂回パス出力に使うエッジ別の観測フロー合算
+    observed_edge_flow = _observed_edge_flows(observations, active_edge_ids)
+
     if config.optimization_mode == OptimizationMode.LIGHTWEIGHT:
         return _with_demand_diagnostics(
             _optimize_lightweight(
@@ -124,6 +132,7 @@ def optimize(
                 detour_result,
                 _outflow_averages(history_digest, graph),
                 drain.undrainable,
+                observed_edge_flow,
             ),
             od_pairs_input,
             commodities_used,
@@ -206,13 +215,28 @@ def optimize(
         elif p2.status == SolverStatus.INFEASIBLE:
             phase2_status = Phase2Status.INFEASIBLE
 
-    importance = compute_route_importance(arc_model, final_solution, config.epsilon_0)
+    emphasis = compute_detour_emphasis(
+        arc_model,
+        detour_result,
+        observed_edge_flow,
+        final_solution,
+        config.detour_importance_weight,
+        adopted_direction=final_solution.direction,
+        triggered_edges=frozenset(triggered_edges),
+    )
+    importance = compute_route_importance(
+        arc_model, final_solution, config.epsilon_0, detour_emphasis=emphasis.arc_bonus
+    )
     direction = compute_direction_proposals(arc_model, final_solution)
     boundary = compute_boundary_control(graph, is_open, previous_result, commodities)
+    detour_paths = compute_detour_path_proposals(
+        arc_model, detour_result, final_solution, emphasis, inputs.c_e
+    )
 
     opt_result = OptimizationResult(
         route_importance=importance,
         direction_proposal=direction,
+        detour_paths=detour_paths,
         boundary_control=boundary,
         objective_values=ObjectiveValues(tau_star=p1.objective, throughput=throughput),
         solver_status=p1.status,
@@ -271,6 +295,7 @@ def _optimize_lightweight(
     detour_result: DetourResult,
     outflow_averages: dict[EdgeID, float],
     undrainable: frozenset[EdgeID],
+    observed_edge_flow: dict[EdgeID, float],
 ) -> OptimizeResult:
     """基本モードの局所化つき配分。
 
@@ -499,11 +524,35 @@ def _optimize_lightweight(
 
     # 重要度は配分結果から出す。分散段が成立していればその解（並列路の利用が
     # 反映される）、なければ全体ベースライン配分（(i)）。救済時のみ救済解。
+    # 機能2 の迂回不使用判定には合成前の重要度を渡す必要があるため、
+    # 迂回候補加重は出力用の重要度にのみ合成する
     if spread_solution is not None:
         importance_source = spread_solution
     else:
         importance_source = baseline if baseline is not None else solution
     importance = compute_route_importance(arc_model, importance_source, config.epsilon_0)
+    emphasis = compute_detour_emphasis(
+        arc_model,
+        detour_result,
+        observed_edge_flow,
+        importance_source,
+        config.detour_importance_weight,
+        adopted_direction=solution.direction,
+        triggered_edges=frozenset(triggered_edges),
+    )
+    output_importance = (
+        compute_route_importance(
+            arc_model,
+            importance_source,
+            config.epsilon_0,
+            detour_emphasis=emphasis.arc_bonus,
+        )
+        if emphasis.arc_bonus
+        else importance
+    )
+    detour_paths = compute_detour_path_proposals(
+        arc_model, detour_result, importance_source, emphasis, inputs.c_e
+    )
     direction = compute_direction_proposals(arc_model, solution)
     boundary = compute_boundary_control(graph, is_open, previous_result, commodities)
     throughput = (
@@ -530,9 +579,10 @@ def _optimize_lightweight(
     )
 
     opt_result = OptimizationResult(
-        route_importance=importance,
+        route_importance=output_importance,
         direction_proposal=direction,
         restriction_proposal=restrictions,
+        detour_paths=detour_paths,
         boundary_control=boundary,
         objective_values=ObjectiveValues(tau_star=best_tau, throughput=throughput),
         solver_status=SolverStatus.LIGHTWEIGHT,
@@ -759,6 +809,27 @@ def _build_commodities(
         Commodity(index=i, origin=od.origin, destination=od.destination, demand=od.demand)
         for i, od in enumerate(filtered)
     )
+
+
+def _observed_edge_flows(
+    observations: Observations, active_edge_ids: set[EdgeID]
+) -> dict[EdgeID, float]:
+    """迂回候補加重の再誘導対象量に使う、エッジ別の観測フロー合算を求める
+
+    ライン観測は非 INVALID の方向合算、スカラー観測は observed_count を用いる
+    """
+    flows: dict[EdgeID, float] = {}
+    for af in observations.arc_flows:
+        if af.confidence_flag == ConfidenceFlag.INVALID:
+            continue
+        if af.edge_id in active_edge_ids:
+            flows[af.edge_id] = flows.get(af.edge_id, 0.0) + af.flow_rate
+    for sf in observations.arc_scalar_flows:
+        if sf.confidence_flag == ConfidenceFlag.INVALID:
+            continue
+        if sf.edge_id in active_edge_ids:
+            flows[sf.edge_id] = max(flows.get(sf.edge_id, 0.0), sf.observed_count)
+    return flows
 
 
 def _build_inputs(

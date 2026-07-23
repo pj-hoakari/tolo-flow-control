@@ -22,6 +22,9 @@ class ResolvedConfig:
     # 配分 LP の混雑逓増（段ごとの単価増分）。>0 で等コストの並列ルートへ配分が
     # 分散する。0 で無効（単純な最短路シード配分）
     congestion_increment: float = 0.2
+    # 迂回候補加重: トリガー起点の現況流量を候補迂回路へ振り向けた強調フローを
+    # 重要度出力にのみ合成する係数。0 で無効（フロー解・提案類には影響しない）
+    detour_importance_weight: float = 1.0
     restriction_proposal_enabled: bool = False
     tau_danger_threshold: float | None = None
     # ソルバー乱数シード（決定性担保）

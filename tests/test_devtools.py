@@ -114,8 +114,10 @@ def test_school_matches_six_floor_observation_layout() -> None:
     built = graph_builder.school()
     graph = built.graph
     assert len(graph.nodes) == 20  # 6階×（ホール・北・南踊り場）+ 唯一の入口 + 6階ゴール
-    assert graph.node_of(NodeID("entrance")).is_boundary
-    assert graph.node_of(NodeID("floor6_goal")).kind == NodeKind.GOAL_TRANSIT_MIXED
+    entrance = graph.node_of(NodeID("entrance"))
+    assert entrance is not None and entrance.is_boundary
+    goal = graph.node_of(NodeID("floor6_goal"))
+    assert goal is not None and goal.kind == NodeKind.GOAL_TRANSIT_MIXED
 
     edge_ids = {edge.edge_id.value for edge in graph.edges}
     for floor in range(1, 6):
