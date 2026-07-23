@@ -69,6 +69,9 @@ def compute_route_importance(
     return tuple(result)
 
 
+_NO_TRIGGERED_EDGES: frozenset[EdgeID] = frozenset()
+
+
 @dataclass(frozen=True)
 class DetourEmphasis:
     """迂回候補加重の結果
@@ -90,7 +93,7 @@ def compute_detour_emphasis(
     weight: float,
     *,
     adopted_direction: Mapping[str, int],
-    triggered_edges: frozenset[EdgeID] = frozenset(),
+    triggered_edges: frozenset[EdgeID] = _NO_TRIGGERED_EDGES,
 ) -> DetourEmphasis:
     """迂回候補パスへの誘導強調量を求める
 
