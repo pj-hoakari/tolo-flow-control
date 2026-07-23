@@ -50,12 +50,13 @@ def test_worked_example_reproduces_golden_values(
     assert opt.objective_values.tau_star == pytest.approx(2.4, abs=1e-3)
     assert opt.objective_values.throughput == pytest.approx(24.0, abs=1e-6)
 
-    # 重要度: 混雑エッジ e12 とその下流 e23 が最大、直行 e13 は 0
-    assert _importance_of(opt, "e12").importance == pytest.approx(1.0, abs=1e-3)
+    # 重要度（迂回候補加重あり・既定）: 起点 e12 の再誘導対象量 12 が
+    # 迂回路 e13→e23 へ加算され、迂回路を構成するエッジが誘導対象として現れる
+    assert _importance_of(opt, "e12").importance == pytest.approx(0.5, abs=1e-3)
     assert _importance_of(opt, "e23").importance == pytest.approx(1.0, abs=1e-3)
-    assert _importance_of(opt, "e13").importance == pytest.approx(0.0, abs=1e-6)
+    assert _importance_of(opt, "e13").importance == pytest.approx(0.5, abs=1e-3)
     assert _importance_of(opt, "e12").direction == ImportanceDirection.A_TO_B
-    assert _importance_of(opt, "e13").direction == ImportanceDirection.NONE
+    assert _importance_of(opt, "e13").direction == ImportanceDirection.A_TO_B
 
     # 方向提案は全エッジ双方向のまま
     for dp in opt.direction_proposal:
@@ -67,6 +68,36 @@ def test_worked_example_reproduces_golden_values(
     assert not result.constraint_report.fallback_to_previous
     assert opt.solved_at == worked_example_observations.observed_at
     assert opt.seed == 1
+
+
+def test_worked_example_importance_without_detour_emphasis(
+    worked_example_graph,
+    worked_example_observations,
+    worked_example_forecast,
+    worked_example_detour,
+    worked_example_history,
+):
+    # 迂回候補加重を無効化すると素の正規化 w = f_e / max f_e に戻る
+    result = optimize(
+        worked_example_graph,
+        worked_example_observations,
+        worked_example_forecast,
+        worked_example_detour,
+        worked_example_history,
+        previous_result=None,
+        config=ResolvedConfig(
+            optimization_mode=OptimizationMode.STRICT,
+            detour_importance_weight=0.0,
+        ),
+        seed=1,
+        time_limit=30.0,
+    )
+    opt = result.optimization_result
+
+    assert _importance_of(opt, "e12").importance == pytest.approx(1.0, abs=1e-3)
+    assert _importance_of(opt, "e23").importance == pytest.approx(1.0, abs=1e-3)
+    assert _importance_of(opt, "e13").importance == pytest.approx(0.0, abs=1e-6)
+    assert _importance_of(opt, "e13").direction == ImportanceDirection.NONE
 
 
 def test_big_m_factor_does_not_change_solution(

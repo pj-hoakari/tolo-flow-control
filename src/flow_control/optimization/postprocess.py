@@ -1,7 +1,12 @@
 """MILP 解から重要度スコア・方向属性提案を導く後処理"""
 
+import math
+from collections.abc import Mapping
+
+from ..detour_routing import DetourPath, DetourResult
 from ..domain.enums import CurrentDirection, DirectionConstraint
-from .arcs import ArcModel
+from ..domain.graph import Edge, EdgeID, NodeID
+from .arcs import Arc, ArcModel
 from .model import ArcSolution
 from .results import (
     DirectionProposal,
@@ -13,26 +18,36 @@ from .results import (
 
 
 def compute_route_importance(
-    arc_model: ArcModel, solution: ArcSolution, epsilon_0: float
+    arc_model: ArcModel,
+    solution: ArcSolution,
+    epsilon_0: float,
+    detour_emphasis: Mapping[str, float] | None = None,
 ) -> tuple[RouteImportance, ...]:
     """各エッジの重要度 w = f_e / (max f_e' + ε0) を算出する
 
     向きはエッジ上で支配的なフロー方向を示す（両方向ゼロなら NONE）
+    ``detour_emphasis``（アーク key → 加算フロー）が与えられた場合は
+    迂回候補加重を合成した値で正規化・支配方向判定を行う
     """
+    emphasis: Mapping[str, float] = detour_emphasis or {}
+
     edge_flow: dict[str, float] = {}
     for edge in arc_model.active_edges:
         arc_ab, arc_ba = arc_model.arcs_of_edge[edge.edge_id]
-        edge_flow[edge.edge_id.value] = solution.flow.get(
-            arc_ab.key, 0.0
-        ) + solution.flow.get(arc_ba.key, 0.0)
+        edge_flow[edge.edge_id.value] = (
+            solution.flow.get(arc_ab.key, 0.0)
+            + solution.flow.get(arc_ba.key, 0.0)
+            + emphasis.get(arc_ab.key, 0.0)
+            + emphasis.get(arc_ba.key, 0.0)
+        )
     max_flow = max(edge_flow.values(), default=0.0)
     denom = max_flow + epsilon_0
 
     result: list[RouteImportance] = []
     for edge in arc_model.active_edges:
         arc_ab, arc_ba = arc_model.arcs_of_edge[edge.edge_id]
-        flow_ab = solution.flow.get(arc_ab.key, 0.0)
-        flow_ba = solution.flow.get(arc_ba.key, 0.0)
+        flow_ab = solution.flow.get(arc_ab.key, 0.0) + emphasis.get(arc_ab.key, 0.0)
+        flow_ba = solution.flow.get(arc_ba.key, 0.0) + emphasis.get(arc_ba.key, 0.0)
         importance = edge_flow[edge.edge_id.value] / denom
 
         if flow_ab == 0.0 and flow_ba == 0.0:
@@ -50,6 +65,112 @@ def compute_route_importance(
             )
         )
     return tuple(result)
+
+
+def compute_detour_emphasis(
+    arc_model: ArcModel,
+    detour_result: DetourResult,
+    observed_edge_flow: Mapping[EdgeID, float],
+    solution: ArcSolution,
+    weight: float,
+) -> dict[str, float]:
+    """迂回候補パスへの誘導強調量（アーク key → 加算フロー）を求める
+
+    トリガー起点エッジの現況流量（解フローと観測フローの大きい方）を、
+    非直行の候補パスへ逆距離重みで配分し、パス残容量でクリップする。
+    結果は重要度出力の合成にのみ使い、フロー解・τ・方向提案・
+    通行制限・境界制御には影響させない
+    """
+    if weight <= 0.0:
+        return {}
+    edge_by_id = {e.edge_id: e for e in arc_model.active_edges}
+
+    def edge_flow(edge_id: EdgeID) -> float:
+        arcs = arc_model.arcs_of_edge.get(edge_id, ())
+        return sum(solution.flow.get(a.key, 0.0) for a in arcs)
+
+    bonus: dict[str, float] = {}
+    for detour_set in detour_result.detour_sets:
+        if detour_set.origin_edge not in edge_by_id:
+            continue
+        redirect = max(
+            edge_flow(detour_set.origin_edge),
+            observed_edge_flow.get(detour_set.origin_edge, 0.0),
+        )
+        if redirect <= 0.0:
+            continue
+
+        candidates: list[tuple[tuple[Arc, ...], float]] = []
+        for path in detour_set.paths:
+            if path.contains_trigger:
+                continue
+            arcs = _walk_path_arcs(
+                arc_model, edge_by_id, detour_set.endpoint_pair, path
+            )
+            if arcs is None:
+                continue
+            length = path.total_length if path.total_length > 0.0 else 1.0
+            candidates.append((arcs, 1.0 / length))
+        if not candidates:
+            continue
+
+        total_weight = sum(w for _, w in candidates)
+        for arcs, path_weight in candidates:
+            share = redirect * (path_weight / total_weight)
+            residual = min(
+                max(0.0, _effective_capacity(edge_by_id[a.edge_id]) - edge_flow(a.edge_id))
+                for a in arcs
+            )
+            assigned = min(share, residual)
+            if assigned <= 0.0:
+                continue
+            for arc in arcs:
+                bonus[arc.key] = bonus.get(arc.key, 0.0) + weight * assigned
+    return bonus
+
+
+def _effective_capacity(edge: Edge) -> float:
+    caps: list[float] = []
+    if edge.danger_flag and edge.danger_capacity is not None:
+        caps.append(edge.danger_capacity)
+    if edge.capacity_hint is not None:
+        caps.append(edge.capacity_hint)
+    return min(caps) if caps else math.inf
+
+
+def _walk_path_arcs(
+    arc_model: ArcModel,
+    edge_by_id: Mapping[EdgeID, Edge],
+    endpoint_pair: tuple[NodeID, NodeID],
+    path: DetourPath,
+) -> tuple[Arc, ...] | None:
+    """パスを起点エッジの u→v 向きに辿り、通過方向のアーク列を返す
+
+    構成エッジが有効集合に無い、または端点が連結しない場合は None
+    """
+    current, goal = endpoint_pair
+    arcs: list[Arc] = []
+    for edge_id in path.edge_ids:
+        edge = edge_by_id.get(edge_id)
+        if edge is None:
+            return None
+        if edge.endpoint_a == current:
+            next_node = edge.endpoint_b
+        elif edge.endpoint_b == current:
+            next_node = edge.endpoint_a
+        else:
+            return None
+        matched = next(
+            (a for a in arc_model.arcs_of_edge.get(edge_id, ()) if a.tail == current),
+            None,
+        )
+        if matched is None:
+            return None
+        arcs.append(matched)
+        current = next_node
+    if current != goal:
+        return None
+    return tuple(arcs)
 
 
 def compute_direction_proposals(
