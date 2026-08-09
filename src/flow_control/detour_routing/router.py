@@ -81,9 +81,7 @@ def _route_one(graph: Graph, edge: Edge, config: ResolvedConfig) -> DetourSet:
     detours = k_shortest_paths(adjacency, u, v, config.k_shortest)
 
     # 起点アーク自身を直行路として 1 本含める
-    origin_path = DetourPath(
-        edge_ids=(edge.edge_id,), total_length=1.0, contains_trigger=True
-    )
+    origin_path = DetourPath(edge_ids=(edge.edge_id,), total_length=1.0, contains_trigger=True)
     detour_paths = tuple(
         DetourPath(
             edge_ids=path.edge_ids,
@@ -96,6 +94,6 @@ def _route_one(graph: Graph, edge: Edge, config: ResolvedConfig) -> DetourSet:
     return DetourSet(
         origin_edge=edge.edge_id,
         endpoint_pair=(u, v),
-        paths=(origin_path,) + detour_paths,
+        paths=(origin_path, *detour_paths),
         k_effective=len(detour_paths),
     )

@@ -73,9 +73,7 @@ def compare(base: dict[str, Any], against: dict[str, Any]) -> list[dict[str, Any
     for name in sorted(set(b) | set(a)):
         rb, ra = b.get(name), a.get(name)
         if rb is None or ra is None:
-            rows.append(
-                {"scenario": name, "presence": "ADDED" if rb is None else "REMOVED"}
-            )
+            rows.append({"scenario": name, "presence": "ADDED" if rb is None else "REMOVED"})
             continue
         ob, oa = _opt(rb), _opt(ra)
         fb = rb.get("forecast") or {}
@@ -136,9 +134,7 @@ def _pair(vb: Any, va: Any) -> str:
     return _fmt(vb) if not _changed(vb, va) else f"{_fmt(vb)}→{_fmt(va)}"
 
 
-def format_report(
-    rows: list[dict[str, Any]], base_label: str, against_label: str
-) -> str:
+def format_report(rows: list[dict[str, Any]], base_label: str, against_label: str) -> str:
     lines: list[str] = [f"compare: {base_label}  →  {against_label}", ""]
     header = (
         f"{'scenario':24} {'verdict':14} {'solver':16} {'tau*':14} "

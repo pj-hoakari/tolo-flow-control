@@ -16,14 +16,12 @@ Detection は「組合せ発火（AND）」モデルである。あるアーク�
                               ``(history, observations, previous_state)`` を返す
 """
 
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 
 import pytest
 
 from flow_control.detection.config import ResolvedConfig
 from flow_control.detection.state import ArcWatchState, DetectionState
-from flow_control.domain.history import ArcHistoryStat, ArcWindowSeries, HistoryDigest
-from flow_control.domain.observations import ArcScalarFlow, ArcStagnation, Observations
 from flow_control.domain import (
     CurrentDirection,
     DirectionConstraint,
@@ -35,14 +33,16 @@ from flow_control.domain import (
     NodeKind,
     ObservationType,
 )
+from flow_control.domain.history import ArcHistoryStat, ArcWindowSeries, HistoryDigest
+from flow_control.domain.observations import ArcScalarFlow, ArcStagnation, Observations
 
 # 停滞量移動平均の平均は時刻に依存しないため固定タイムスタンプで表現する
-_STAGNATION_SAMPLE_TS = datetime(2026, 1, 1, tzinfo=timezone.utc)
+_STAGNATION_SAMPLE_TS = datetime(2026, 1, 1, tzinfo=UTC)
 
 
 @pytest.fixture
 def base_time() -> datetime:
-    return datetime(2026, 5, 13, 10, 0, 0, tzinfo=timezone.utc)
+    return datetime(2026, 5, 13, 10, 0, 0, tzinfo=UTC)
 
 
 @pytest.fixture
@@ -217,9 +217,7 @@ def make_history():
                     stagnation_samples=stagnation_samples,
                 )
             )
-        return HistoryDigest(
-            arc_stats=tuple(arc_stats), window_series=tuple(windows)
-        )
+        return HistoryDigest(arc_stats=tuple(arc_stats), window_series=tuple(windows))
 
     return _make
 
@@ -299,9 +297,7 @@ def make_combined_firing(make_history, make_line_samples, make_established_watch
             start_value=0.0,
             slope_per_min=surge_slope,
         )
-        history = make_history(
-            (edge_id, p90, recent_ma, baseline), flow={edge_id: line}
-        )
+        history = make_history((edge_id, p90, recent_ma, baseline), flow={edge_id: line})
         observations = Observations(
             observed_at=base_time,
             snapshot_ref=snapshot_ref,
@@ -352,9 +348,7 @@ def make_scalar_observation():
     ) -> Observations:
         return Observations(
             observed_at=observed_at,
-            arc_scalar_flows=(
-                ArcScalarFlow(edge_id=edge_id, observed_count=observed_count),
-            ),
+            arc_scalar_flows=(ArcScalarFlow(edge_id=edge_id, observed_count=observed_count),),
         )
 
     return _make

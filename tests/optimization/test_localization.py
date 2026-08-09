@@ -41,9 +41,7 @@ def _edge(name: str, a: str, b: str) -> Edge:
 
 def _chain_graph(*, boundaries: bool = True) -> Graph:
     names = ["b0", "n1", "n2", "n3", "n4", "n5", "b6"]
-    nodes = tuple(
-        _node(n, boundary=boundaries and n in ("b0", "b6")) for n in names
-    )
+    nodes = tuple(_node(n, boundary=boundaries and n in ("b0", "b6")) for n in names)
     edges = tuple(
         _edge(f"e{names[i][1]}{names[i + 1][1]}", names[i], names[i + 1])
         for i in range(len(names) - 1)
@@ -173,12 +171,8 @@ def test_deterministic_across_calls():
         (EdgeID("e01"), EdgeID("e34"), EdgeID("e45")),
         (NodeID("n2"),),
     )
-    first = build_trigger_zones(
-        arc_model, *args, local_radius_hops=2, max_trigger_zones=2
-    )
-    second = build_trigger_zones(
-        arc_model, *args, local_radius_hops=2, max_trigger_zones=2
-    )
+    first = build_trigger_zones(arc_model, *args, local_radius_hops=2, max_trigger_zones=2)
+    second = build_trigger_zones(arc_model, *args, local_radius_hops=2, max_trigger_zones=2)
     assert first == second
 
 

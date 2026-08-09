@@ -5,7 +5,7 @@
 抽出・オーケストレーションのロジックは後続 Phase の対象で、ここでは扱わない。
 """
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from flow_control.detection.state import (
     ArcDemandDigestEntry,
@@ -37,7 +37,7 @@ from flow_control.service import (
     Verdict,
 )
 
-_NOW = datetime(2026, 7, 19, 12, 0, 0, tzinfo=timezone.utc)
+_NOW = datetime(2026, 7, 19, 12, 0, 0, tzinfo=UTC)
 
 
 def test_verdict_has_eight_values() -> None:
@@ -80,9 +80,7 @@ def test_unified_config_defaults_are_noharm() -> None:
 def test_request_response_construct() -> None:
     req = Request(
         request_id="r1",
-        tenant_context=TenantContext(
-            tenant_id="t1", tenant_category=TenantCategory.SHORT_TERM
-        ),
+        tenant_context=TenantContext(tenant_id="t1", tenant_category=TenantCategory.SHORT_TERM),
         graph=Graph(),
         observations=Observations(observed_at=_NOW),
         history_digest=HistoryDigest(),

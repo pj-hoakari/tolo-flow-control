@@ -1,9 +1,14 @@
 from dataclasses import replace
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from flow_control.detection.state import DetectionState
 from flow_control.detection.triggers import Event, EventKind
-from flow_control.domain.enums import CurrentDirection, DirectionConstraint, NodeKind, ObservationType
+from flow_control.domain.enums import (
+    CurrentDirection,
+    DirectionConstraint,
+    NodeKind,
+    ObservationType,
+)
 from flow_control.domain.graph import Edge, EdgeID, Graph, Node, NodeID
 from flow_control.domain.history import HistoryDigest
 from flow_control.domain.observations import Observations
@@ -17,8 +22,7 @@ from flow_control.service import (
     handle_request,
 )
 
-
-NOW = datetime(2026, 7, 20, tzinfo=timezone.utc)
+NOW = datetime(2026, 7, 20, tzinfo=UTC)
 
 
 def _request(graph: Graph | None = None) -> Request:
@@ -41,7 +45,9 @@ def test_handle_request_returns_no_trigger_without_running_downstream() -> None:
     assert response.verdict is Verdict.SKIPPED_NO_TRIGGER
     assert response.optimization_result is None
     assert [item.step.value for item in response.diagnostics.steps_executed] == [
-        "VALIDATION", "MODE_DECISION", "DETECTION"
+        "VALIDATION",
+        "MODE_DECISION",
+        "DETECTION",
     ]
 
 
@@ -56,7 +62,7 @@ def test_handle_request_rejects_unknown_schema() -> None:
 
 
 def test_handle_request_rejects_graph_over_fixed_limit() -> None:
-    graph = Graph(nodes=tuple())
+    graph = Graph(nodes=())
     # The node count alone is sufficient and does not require valid edges.
     from flow_control.domain.enums import NodeKind
     from flow_control.domain.graph import Node, NodeID
@@ -75,14 +81,19 @@ def test_handle_request_runs_all_steps_for_manual_danger_trigger() -> None:
             Node(b, NodeKind.GOAL, True, True),
         ),
         edges=(
-            Edge(edge_id, a, b, DirectionConstraint.BIDIRECTIONAL_PRIOR,
-                 CurrentDirection.BIDIRECTIONAL, True, ObservationType.VECTOR),
+            Edge(
+                edge_id,
+                a,
+                b,
+                DirectionConstraint.BIDIRECTIONAL_PRIOR,
+                CurrentDirection.BIDIRECTIONAL,
+                True,
+                ObservationType.VECTOR,
+            ),
         ),
     )
     request = _request(graph)
-    request = replace(request, events=(
-        Event(EventKind.DANGER_FLAG_UP, "edge:e", NOW),
-    ))
+    request = replace(request, events=(Event(EventKind.DANGER_FLAG_UP, "edge:e", NOW),))
 
     response = handle_request(request)
 
@@ -90,5 +101,11 @@ def test_handle_request_runs_all_steps_for_manual_danger_trigger() -> None:
     assert response.optimization_result is not None
     assert response.updated_detection_state.consecutive_skip_count == 0
     assert [item.step.value for item in response.diagnostics.steps_executed] == [
-        "VALIDATION", "MODE_DECISION", "DETECTION", "FORECASTING", "DETOUR", "OPTIMIZATION", "FEEDBACK"
+        "VALIDATION",
+        "MODE_DECISION",
+        "DETECTION",
+        "FORECASTING",
+        "DETOUR",
+        "OPTIMIZATION",
+        "FEEDBACK",
     ]

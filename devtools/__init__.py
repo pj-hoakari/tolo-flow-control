@@ -10,4 +10,3 @@ import logging
 # linopy/HiGHS は INFEASIBLE/TIMEOUT 時に warning を多量に標準出力へ流す。
 # フォールバックは設計上の正常系なので開発ツールでは抑制する。
 logging.getLogger("linopy").setLevel(logging.ERROR)
-

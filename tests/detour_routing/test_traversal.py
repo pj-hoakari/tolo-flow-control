@@ -78,9 +78,7 @@ def test_build_adjacency_bidirectional_arcs():
 def test_build_adjacency_legal_fixed_one_direction_only():
     graph = Graph(
         nodes=(_node("n1"), _node("n2")),
-        edges=(
-            _edge("e1", "n1", "n2", constraint=DirectionConstraint.LEGAL_FIXED_A_TO_B),
-        ),
+        edges=(_edge("e1", "n1", "n2", constraint=DirectionConstraint.LEGAL_FIXED_A_TO_B),),
     )
     adjacency = build_adjacency(graph)
     assert _targets(adjacency[NodeID("n1")]) == {"n2"}

@@ -21,9 +21,7 @@ class ArcWindowSeries:
     # 直近ウィンドウの流量系列（エッジ合算・正準単位。急増判定用）
     flow_samples: tuple[tuple[datetime, float], ...] = field(default_factory=tuple)
     # 直近ウィンドウの停滞量系列（高停滞 (b).2 の直近移動平均用）
-    stagnation_samples: tuple[tuple[datetime, float], ...] = field(
-        default_factory=tuple
-    )
+    stagnation_samples: tuple[tuple[datetime, float], ...] = field(default_factory=tuple)
     # 方向別ライン通過系列（排出実績 μ̂_e の算出用。ラインなしは None）
     directional_flow_samples: (
         tuple[tuple[FlowDirection, tuple[tuple[datetime, float], ...]], ...] | None

@@ -16,7 +16,7 @@ established は片方だけでは成立せず、両条件（p90 欠損時は (a)
   - ライン無し: ``established`` 単独で縮退発火（DEGRADED_COMBINED_TRIGGER 警告）
 """
 
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 
 import pytest
 
@@ -37,7 +37,7 @@ from flow_control.domain import EdgeID, FlowDirection, Graph
 from flow_control.domain.history import ArcHistoryStat, ArcWindowSeries, HistoryDigest
 from flow_control.domain.observations import ArcStagnation, Observations
 
-_TS = datetime(2026, 1, 1, tzinfo=timezone.utc)
+_TS = datetime(2026, 1, 1, tzinfo=UTC)
 
 
 def _run(
@@ -75,9 +75,7 @@ def test_records_watch_when_only_percentile_breached(
     # stagnation=10, p90=5 → (a).1 成立
     # recent_ma=9, baseline=5 → (10-9)/5=0.2 < 1.0 で (a).2 不成立
     history = make_history((edge_id, 5.0, 9.0, 5.0))
-    observations = make_stagnation_observation(
-        edge_id, observed_at=base_time, stagnation=10.0
-    )
+    observations = make_stagnation_observation(edge_id, observed_at=base_time, stagnation=10.0)
 
     result = _run(
         graph=basic_graph,
@@ -106,9 +104,7 @@ def test_records_watch_when_only_delta_breached(
     # stagnation=15, p90=20 → (a).1 不成立
     # recent_ma=5, baseline=5 → (15-5)/5=2.0 >= 1.0 で (a).2 成立
     history = make_history((edge_id, 20.0, 5.0, 5.0))
-    observations = make_stagnation_observation(
-        edge_id, observed_at=base_time, stagnation=15.0
-    )
+    observations = make_stagnation_observation(edge_id, observed_at=base_time, stagnation=15.0)
 
     result = _run(
         graph=basic_graph,
@@ -136,9 +132,7 @@ def test_no_watch_when_neither_condition_satisfied(
 ):
     # stagnation=1, p90=20, recent_ma=5, baseline=5 → どちらも不成立
     history = make_history((edge_id, 20.0, 5.0, 5.0))
-    observations = make_stagnation_observation(
-        edge_id, observed_at=base_time, stagnation=1.0
-    )
+    observations = make_stagnation_observation(edge_id, observed_at=base_time, stagnation=1.0)
 
     result = _run(
         graph=basic_graph,
@@ -208,9 +202,7 @@ def test_records_watch_start_when_both_first_become_satisfied(
     # 先行警戒なし、今回両条件を初めて満たす
     # → 発火せず（継続時間=0）、stagnation_watch_since=now で警戒を新規記録
     history = make_history((edge_id, 5.0, 5.0, 5.0))
-    observations = make_stagnation_observation(
-        edge_id, observed_at=base_time, stagnation=15.0
-    )
+    observations = make_stagnation_observation(edge_id, observed_at=base_time, stagnation=15.0)
 
     result = _run(
         graph=basic_graph,
@@ -240,9 +232,7 @@ def test_records_watch_when_both_satisfied_but_duration_short(
     # 両条件成立、先行 watch_since = now - 1 分（M=5 分未満）
     # → established に至らず発火せず、警戒（継続計時）を保持する
     history = make_history((edge_id, 5.0, 5.0, 5.0))
-    observations = make_stagnation_observation(
-        edge_id, observed_at=base_time, stagnation=15.0
-    )
+    observations = make_stagnation_observation(edge_id, observed_at=base_time, stagnation=15.0)
     previous = DetectionState(
         arc_watch_states=(
             ArcWatchState(
@@ -282,9 +272,7 @@ def test_clears_watch_when_conditions_no_longer_met(
 ):
     # 先行警戒あり、今回は両条件とも不成立 → 発火せず、警戒は解除される
     history = make_history((edge_id, 20.0, 5.0, 5.0))
-    observations = make_stagnation_observation(
-        edge_id, observed_at=base_time, stagnation=1.0
-    )
+    observations = make_stagnation_observation(edge_id, observed_at=base_time, stagnation=1.0)
     previous = DetectionState(
         arc_watch_states=(
             ArcWatchState(
@@ -343,9 +331,7 @@ def test_does_not_fire_when_history_stat_missing(
     # 観測は揃っているが履歴統計が無い
     # → p90 欠損で (a).1 は縮退、recent_ma も無く (a).2 も評価不能 → 発火も警戒もなし
     history = HistoryDigest()
-    observations = make_stagnation_observation(
-        edge_id, observed_at=base_time, stagnation=10.0
-    )
+    observations = make_stagnation_observation(edge_id, observed_at=base_time, stagnation=10.0)
 
     result = _run(
         graph=basic_graph,
@@ -405,16 +391,10 @@ def test_no_fire_when_established_but_no_demand_and_line_present(
 ):
     # established だがラインは平坦（急増なし）・需要超過も無効 → demand_warning 偽で非発火
     # ラインが存在するため縮退もしない。警戒は保持される（AND 否定）
-    flat_line = make_line_samples(
-        base_time, sample_count=11, start_value=100.0, slope_per_min=0.0
-    )
+    flat_line = make_line_samples(base_time, sample_count=11, start_value=100.0, slope_per_min=0.0)
     history = make_history((edge_id, 5.0, 5.0, 5.0), flow={edge_id: flat_line})
-    observations = make_stagnation_observation(
-        edge_id, observed_at=base_time, stagnation=15.0
-    )
-    previous = DetectionState(
-        arc_watch_states=(make_established_watch(edge_id, base_time),)
-    )
+    observations = make_stagnation_observation(edge_id, observed_at=base_time, stagnation=15.0)
+    previous = DetectionState(arc_watch_states=(make_established_watch(edge_id, base_time),))
 
     result = _run(
         graph=basic_graph,
@@ -442,12 +422,8 @@ def test_degraded_fire_when_no_line_and_established(
 ):
     # ラインが全く無いエッジは established 単独で縮退発火し、DEGRADED_COMBINED_TRIGGER を積む
     history = make_history((edge_id, 5.0, 5.0, 5.0))
-    observations = make_stagnation_observation(
-        edge_id, observed_at=base_time, stagnation=15.0
-    )
-    previous = DetectionState(
-        arc_watch_states=(make_established_watch(edge_id, base_time),)
-    )
+    observations = make_stagnation_observation(edge_id, observed_at=base_time, stagnation=15.0)
+    previous = DetectionState(arc_watch_states=(make_established_watch(edge_id, base_time),))
 
     result = _run(
         graph=basic_graph,
@@ -478,12 +454,8 @@ def test_p90_missing_uses_delta_only_and_degraded_fires(
     # p90 欠損 → (a).1 省略、(a).2 のみで established。ラインなしで縮退発火する
     # p90 が無いため HighStagnationEvidence は付与されない
     history = make_history((edge_id, None, 5.0, 5.0))
-    observations = make_stagnation_observation(
-        edge_id, observed_at=base_time, stagnation=15.0
-    )
-    previous = DetectionState(
-        arc_watch_states=(make_established_watch(edge_id, base_time),)
-    )
+    observations = make_stagnation_observation(edge_id, observed_at=base_time, stagnation=15.0)
+    previous = DetectionState(arc_watch_states=(make_established_watch(edge_id, base_time),))
 
     result = _run(
         graph=basic_graph,
@@ -509,26 +481,18 @@ def test_fires_on_demand_excess(
 ):
     # established 停滞 ＋ 需要超過 (b).2（ρ̂ = λ̂/(μ̂+eps) > theta_demand）→ 組合せ発火
     # ラインは平坦で急増しないため、発火根拠は需要超過側
-    flat_line = tuple(
-        (base_time - timedelta(minutes=10 - i), 100.0) for i in range(11)
-    )
+    flat_line = tuple((base_time - timedelta(minutes=10 - i), 100.0) for i in range(11))
     window = ArcWindowSeries(
         edge_id=edge_id,
         flow_samples=flat_line,
         stagnation_samples=((_TS, 5.0),),
-        directional_flow_samples=(
-            (FlowDirection.A_TO_B, ((_TS, 10.0),)),
-        ),
+        directional_flow_samples=((FlowDirection.A_TO_B, ((_TS, 10.0),)),),
     )
     history = HistoryDigest(
-        arc_stats=(
-            ArcHistoryStat(edge_id=edge_id, p90_stagnation=5.0, baseline_stagnation=5.0),
-        ),
+        arc_stats=(ArcHistoryStat(edge_id=edge_id, p90_stagnation=5.0, baseline_stagnation=5.0),),
         window_series=(window,),
     )
-    observations = make_stagnation_observation(
-        edge_id, observed_at=base_time, stagnation=15.0
-    )
+    observations = make_stagnation_observation(edge_id, observed_at=base_time, stagnation=15.0)
     previous = DetectionState(
         arc_watch_states=(make_established_watch(edge_id, base_time),),
         # λ̂ = 100, μ̂ = 10 → ρ̂ = 10 > theta_demand=2
@@ -566,9 +530,7 @@ def test_demand_excess_disabled_without_theta_demand(
     make_established_watch,
 ):
     # theta_demand 未設定なら需要超過は無効。established＋平坦ライン→非発火
-    flat_line = tuple(
-        (base_time - timedelta(minutes=10 - i), 100.0) for i in range(11)
-    )
+    flat_line = tuple((base_time - timedelta(minutes=10 - i), 100.0) for i in range(11))
     window = ArcWindowSeries(
         edge_id=edge_id,
         flow_samples=flat_line,
@@ -576,14 +538,10 @@ def test_demand_excess_disabled_without_theta_demand(
         directional_flow_samples=((FlowDirection.A_TO_B, ((_TS, 10.0),)),),
     )
     history = HistoryDigest(
-        arc_stats=(
-            ArcHistoryStat(edge_id=edge_id, p90_stagnation=5.0, baseline_stagnation=5.0),
-        ),
+        arc_stats=(ArcHistoryStat(edge_id=edge_id, p90_stagnation=5.0, baseline_stagnation=5.0),),
         window_series=(window,),
     )
-    observations = make_stagnation_observation(
-        edge_id, observed_at=base_time, stagnation=15.0
-    )
+    observations = make_stagnation_observation(edge_id, observed_at=base_time, stagnation=15.0)
     previous = DetectionState(
         arc_watch_states=(make_established_watch(edge_id, base_time),),
         arc_demand_digest=(ArcDemandDigestEntry(edge_id=edge_id, demand=100.0),),
@@ -632,9 +590,7 @@ def _stagnation_setup(
             specs.append((eid, 20.0, 5.0, 5.0))
             stagnations.append(ArcStagnation(edge_id=eid, stagnation=1.0))
     history = make_history(*specs)
-    observations = Observations(
-        observed_at=base_time, arc_stagnations=tuple(stagnations)
-    )
+    observations = Observations(observed_at=base_time, arc_stagnations=tuple(stagnations))
     return history, observations
 
 
@@ -645,9 +601,7 @@ def test_y_graph_no_trigger_when_all_edges_calm(
     high_stagnation_config: ResolvedConfig,
     make_history,
 ):
-    history, observations = _stagnation_setup(
-        y_graph_edge_ids, set(), base_time, make_history
-    )
+    history, observations = _stagnation_setup(y_graph_edge_ids, set(), base_time, make_history)
 
     result = _run(
         graph=y_graph,
@@ -677,9 +631,7 @@ def test_y_graph_fires_only_on_stagnating_edge_after_m_minutes(
         y_graph_edge_ids, {stagnating_index}, base_time, make_history
     )
     target = y_graph_edge_ids[stagnating_index]
-    previous = DetectionState(
-        arc_watch_states=(make_established_watch(target, base_time),)
-    )
+    previous = DetectionState(arc_watch_states=(make_established_watch(target, base_time),))
 
     result = _run(
         graph=y_graph,
@@ -702,9 +654,7 @@ def test_y_graph_fires_on_multiple_stagnating_edges(
     make_established_watch,
 ):
     e1, _e2, e3 = y_graph_edge_ids
-    history, observations = _stagnation_setup(
-        y_graph_edge_ids, {0, 2}, base_time, make_history
-    )
+    history, observations = _stagnation_setup(y_graph_edge_ids, {0, 2}, base_time, make_history)
     previous = DetectionState(
         arc_watch_states=(
             make_established_watch(e1, base_time),

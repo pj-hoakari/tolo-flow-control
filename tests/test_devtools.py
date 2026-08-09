@@ -73,9 +73,7 @@ def test_compare_flags_demand_all_cut_change() -> None:
 def test_compare_ignores_demand_all_cut_when_missing_on_one_side() -> None:
     # 旧スナップショット（キーなし）との比較でノイズを出さない
     base = _index("s", tau=1.0, thru=10.0, p1=1, p2=1)
-    against = _index(
-        "s", tau=1.0, thru=10.0, p1=1, p2=1, demand_all_cut=False, commodities_used=3
-    )
+    against = _index("s", tau=1.0, thru=10.0, p1=1, p2=1, demand_all_cut=False, commodities_used=3)
     rows = compare.compare(base, against)
     assert rows[0]["result_changed"] == []
 
@@ -115,9 +113,11 @@ def test_school_matches_six_floor_observation_layout() -> None:
     graph = built.graph
     assert len(graph.nodes) == 20  # 6階×（ホール・北・南踊り場）+ 唯一の入口 + 6階ゴール
     entrance = graph.node_of(NodeID("entrance"))
-    assert entrance is not None and entrance.is_boundary
+    assert entrance is not None
+    assert entrance.is_boundary
     goal = graph.node_of(NodeID("floor6_goal"))
-    assert goal is not None and goal.kind == NodeKind.GOAL_TRANSIT_MIXED
+    assert goal is not None
+    assert goal.kind == NodeKind.GOAL_TRANSIT_MIXED
 
     edge_ids = {edge.edge_id.value for edge in graph.edges}
     for floor in range(1, 6):
@@ -130,8 +130,7 @@ def test_school_matches_six_floor_observation_layout() -> None:
     stairs = [edge for edge in graph.edges if "_stairs_" in edge.edge_id.value]
     assert all(edge.current_direction == CurrentDirection.BIDIRECTIONAL for edge in stairs)
     assert all(
-        edge.direction_constraint == DirectionConstraint.BIDIRECTIONAL_PRIOR
-        for edge in stairs
+        edge.direction_constraint == DirectionConstraint.BIDIRECTIONAL_PRIOR for edge in stairs
     )
 
     from devtools.scenarios._school import school_unobserved_edges
@@ -185,8 +184,7 @@ def test_scenarios_trigger_as_expected(name: str) -> None:
     )
     triggered = detection.verdict_hint == VerdictHint.TRIGGERED
     assert triggered == scen.expect_trigger, (
-        f"{name}: expect_trigger={scen.expect_trigger} but verdict="
-        f"{detection.verdict_hint.value}"
+        f"{name}: expect_trigger={scen.expect_trigger} but verdict={detection.verdict_hint.value}"
     )
 
 
@@ -194,8 +192,8 @@ def test_consistent_observations_conserve_flow() -> None:
     """保存則整合生成器: 通過ノードで流入=流出、混在ホールで流入超過=ΔOcc。"""
     from collections import defaultdict
 
-    from flow_control.domain import EdgeID, FlowDirection, NodeID, NodeKind
     from devtools.scenario_base import ODSpec, build_consistent_observations_and_history
+    from flow_control.domain import EdgeID, FlowDirection, NodeID, NodeKind
 
     built = graph_builder.venue()
     graph = built.graph
@@ -238,19 +236,20 @@ def test_consistent_observations_conserve_flow() -> None:
 
     # 決定性
     obs2, hist2 = build_consistent_observations_and_history(graph, od)
-    assert obs == obs2 and hist == hist2
+    assert obs == obs2
+    assert hist == hist2
 
 
 def test_consistent_observations_yield_low_reproduction_error() -> None:
     """保存則整合な観測では Forecasting の OD 再現誤差が構造的に小さい。"""
-    from flow_control.domain import Mode, NodeID
-    from flow_control.forecasting import forecast
     from devtools.scenario_base import (
         DEFAULT_REFERENCE,
         ODSpec,
         build_consistent_observations_and_history,
         default_configs,
     )
+    from flow_control.domain import Mode, NodeID
+    from flow_control.forecasting import forecast
 
     built = graph_builder.venue()
     graph = built.graph
@@ -274,17 +273,15 @@ def test_consistent_observations_yield_low_reproduction_error() -> None:
     # 従来生成器では 0.36〜1.05 だった再現誤差が 1 桁以上下がる
     assert fc.reproduction_error < 0.05
     # 真の OD（in→hallA 30 / in→hallB 10）が需要として残る
-    demands = {
-        (od.origin.value, od.destination.value): od.demand for od in fc.od_matrix
-    }
+    demands = {(od.origin.value, od.destination.value): od.demand for od in fc.od_matrix}
     assert demands.get(("in", "hallA"), 0.0) == pytest.approx(30.0, rel=0.25)
     assert demands.get(("in", "hallB"), 0.0) == pytest.approx(10.0, rel=0.35)
 
 
 def test_consistent_observations_respect_oneway() -> None:
     """current 方向が一方通行のエッジには逆向きフローを載せない。"""
-    from flow_control.domain import FlowDirection, NodeID
     from devtools.scenario_base import ODSpec, build_consistent_observations_and_history
+    from flow_control.domain import FlowDirection, NodeID
 
     built = graph_builder.expo()  # 一方通行ループを含む
     graph = built.graph
@@ -322,7 +319,7 @@ def test_puncture_scenario_fires_puncture_evidence() -> None:
 
 
 @pytest.mark.parametrize(
-    "name,expected_verdict",
+    ("name", "expected_verdict"),
     [
         ("cooldown-skip", "SKIPPED_COOLDOWN"),
         ("cooldown-queued", "QUEUED"),

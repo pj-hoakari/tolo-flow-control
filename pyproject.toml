@@ -19,6 +19,7 @@ dev = [
     # devtoolsの依存
     "matplotlib>=3.9",
     "pyyaml>=6.0",
+    "ruff>=0.14",
 ]
 
 [build-system]
@@ -27,6 +28,64 @@ build-backend = "hatchling.build"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/flow_control"]
+
+[tool.ruff]
+target-version = "py312"
+# 日本語コメントを含むため既定の 88 では折返しが過剰になる
+line-length = 100
+src = ["src", "."]
+
+[tool.ruff.lint]
+select = [
+    "F",    # Pyflakes
+    "E",    # pycodestyle error
+    "W",    # pycodestyle warning
+    "I",    # isort
+    "N",    # pep8-naming
+    "UP",   # pyupgrade
+    "B",    # flake8-bugbear
+    "C4",   # flake8-comprehensions
+    "SIM",  # flake8-simplify
+    "RET",  # flake8-return
+    "PIE",  # flake8-pie
+    "PERF", # Perflint
+    "DTZ",  # flake8-datetimez
+    "ISC",  # flake8-implicit-str-concat
+    "LOG",  # flake8-logging
+    "G",    # flake8-logging-format
+    "PT",   # flake8-pytest-style
+    "BLE",  # flake8-blind-except
+    "FURB", # refurb
+    "PLC",  # Pylint convention
+    "PLE",  # Pylint error
+    "PLW",  # Pylint warning
+    "RUF",  # Ruff 固有
+]
+ignore = [
+    # 行長は formatter に委ねる。日本語コメント・長い定数式の強制折返しは行わない
+    "E501",
+    # 日本語の全角記号（，．（）等）を曖昧文字として検出しない
+    "RUF001",
+    "RUF002",
+    "RUF003",
+    # formatter と競合するため無効化
+    "ISC001",
+    # 循環 import 回避・遅延 import を許容する
+    "PLC0415",
+    # str+Enum から StrEnum への置換は str()/f-string の出力が変わるため見送る
+    "UP042",
+    # 三項演算子への畳み込みは条件が長い箇所で可読性を落とすため強制しない
+    "SIM108",
+    # 検証結果・描画テキストの逐次 append はループ形式のまま維持する）
+    "PERF401",
+]
+
+[tool.ruff.lint.per-file-ignores]
+# テストは内部ヘルパーをホワイトボックス検証で利用し、短縮 import も許容する
+"tests/**" = ["N817", "PLW0603"]
+
+[tool.ruff.lint.isort]
+known-first-party = ["flow_control", "devtools"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

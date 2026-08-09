@@ -75,9 +75,7 @@ def validate_od(
     )
 
 
-def _observed_arc_flows(
-    graph: Graph, observations: Observations
-) -> dict[_ArcKey, float]:
+def _observed_arc_flows(graph: Graph, observations: Observations) -> dict[_ArcKey, float]:
     """有効ベクトルアークの観測流量を有向アーク (edge_id, from_node) で集める（INVALID 除外）"""
     flows: dict[_ArcKey, float] = defaultdict(float)
     for arc_flow in observations.arc_flows:
@@ -89,9 +87,7 @@ def _observed_arc_flows(
         if edge.observation_type != ObservationType.VECTOR:
             continue
         from_node = (
-            edge.endpoint_a
-            if arc_flow.direction == FlowDirection.A_TO_B
-            else edge.endpoint_b
+            edge.endpoint_a if arc_flow.direction == FlowDirection.A_TO_B else edge.endpoint_b
         )
         flows[(edge.edge_id.value, from_node)] += arc_flow.flow_rate
     return dict(flows)
@@ -109,9 +105,7 @@ def _reproduction_error(
     if total_observed <= 0.0:
         # 検証対象のリンク観測が無い：再現すべき OD も無ければ残差 0，あれば検証不能として最大
         return 0.0 if not has_od else 1.0
-    abs_error = sum(
-        abs(reproduced.get(key, 0.0) - value) for key, value in observed.items()
-    )
+    abs_error = sum(abs(reproduced.get(key, 0.0) - value) for key, value in observed.items())
     return abs_error / (total_observed + epsilon_0)
 
 
@@ -137,9 +131,7 @@ def _node_confidence(
     for arc_flow in observations.arc_flows:
         # 同一エッジに複数観測があれば最も低信頼（INVALID > HOLD > OK）を採る
         current = flag_by_edge.get(arc_flow.edge_id.value)
-        flag_by_edge[arc_flow.edge_id.value] = _worse_flag(
-            current, arc_flow.confidence_flag
-        )
+        flag_by_edge[arc_flow.edge_id.value] = _worse_flag(current, arc_flow.confidence_flag)
 
     incident: dict[NodeID, list[tuple[str, NodeID, NodeID]]] = defaultdict(list)
     for edge in graph.enabled_edges():
@@ -154,9 +146,7 @@ def _node_confidence(
         edges = incident.get(node.node_id, ())
         if not edges:
             # ベクトル計測の無いノード（スカラー支線等）は再現品質のみで評価する
-            result.append(
-                NodeConfidence(node_id=node.node_id, confidence=global_base)
-            )
+            result.append(NodeConfidence(node_id=node.node_id, confidence=global_base))
             continue
 
         flag_factor = 1.0
@@ -176,16 +166,12 @@ def _node_confidence(
                     local_error += abs(reproduced.get(key, 0.0) - observed[key])
 
         if local_observed > 0.0:
-            base = max(
-                0.0, min(1.0, 1.0 - local_error / (local_observed + epsilon_0))
-            )
+            base = max(0.0, min(1.0, 1.0 - local_error / (local_observed + epsilon_0)))
         else:
             base = global_base
         coverage = covered / len(edges)
         result.append(
-            NodeConfidence(
-                node_id=node.node_id, confidence=base * flag_factor * coverage
-            )
+            NodeConfidence(node_id=node.node_id, confidence=base * flag_factor * coverage)
         )
     return tuple(result)
 
@@ -199,9 +185,7 @@ def _flag_factor(flag: ConfidenceFlag) -> float:
     return 1.0
 
 
-def _worse_flag(
-    current: ConfidenceFlag | None, candidate: ConfidenceFlag
-) -> ConfidenceFlag:
+def _worse_flag(current: ConfidenceFlag | None, candidate: ConfidenceFlag) -> ConfidenceFlag:
     """より低信頼なフラグを返す（INVALID < HOLD < OK）"""
     order = {ConfidenceFlag.INVALID: 0, ConfidenceFlag.HOLD: 1, ConfidenceFlag.OK: 2}
     if current is None:

@@ -29,9 +29,7 @@ class ODResolutionMode(str, Enum):
 
 class ODResolutionReason(str, Enum):
     DETERMINED = "DETERMINED"  # 単入口/単出口で転換率を導出可
-    MERGE_SPLIT_AMBIGUOUS = (
-        "MERGE_SPLIT_AMBIGUOUS"  # 合流＋分岐で不定（追加観測の優先対象）
-    )
+    MERGE_SPLIT_AMBIGUOUS = "MERGE_SPLIT_AMBIGUOUS"  # 合流＋分岐で不定（追加観測の優先対象）
     SPARSE_OBSERVATION = "SPARSE_OBSERVATION"  # 流量が一部欠測
     NODE_ONLY = "NODE_ONLY"  # 通路観測なし・占有のみ
 
@@ -113,10 +111,7 @@ def _od_marginals(
         else:
             # Closed の通常の生成源は占有が減った排出ノード。GOAL の
             # 再生成は、占有変化に関係なく許す。
-            if (
-                occupancy_delta.get(demand.node_id, 0.0) < 0.0
-                and demand.production > 0.0
-            ):
+            if occupancy_delta.get(demand.node_id, 0.0) < 0.0 and demand.production > 0.0:
                 production[demand.node_id] = demand.production
             if node.kind == NodeKind.GOAL and demand.production > 0.0:
                 production[demand.node_id] = demand.production
@@ -266,9 +261,7 @@ def reproduce_link_flows(
     return arc_load
 
 
-def _directed_flows(
-    graph: Graph, observations: Observations
-) -> dict[str, _DirectedFlow]:
+def _directed_flows(graph: Graph, observations: Observations) -> dict[str, _DirectedFlow]:
     """有効ベクトルアークの観測流量を有向（source→destination）で取り出す"""
     flows: dict[str, _DirectedFlow] = {}
     for arc_flow in observations.arc_flows:
@@ -283,9 +276,7 @@ def _directed_flows(
             source, destination = edge.endpoint_a, edge.endpoint_b
         else:
             source, destination = edge.endpoint_b, edge.endpoint_a
-        flows[edge.edge_id.value] = _DirectedFlow(
-            source, destination, arc_flow.flow_rate
-        )
+        flows[edge.edge_id.value] = _DirectedFlow(source, destination, arc_flow.flow_rate)
     return flows
 
 
@@ -308,9 +299,7 @@ def _missing_observation_by_node(
     graph: Graph, flows: dict[str, _DirectedFlow]
 ) -> dict[NodeID, bool]:
     """各ノードに観測欠落の有効ベクトルアークが接続しているか"""
-    missing: dict[NodeID, bool] = {
-        node.node_id: False for node in graph.enabled_nodes()
-    }
+    missing: dict[NodeID, bool] = {node.node_id: False for node in graph.enabled_nodes()}
     for edge in graph.enabled_edges():
         if edge.observation_type != ObservationType.VECTOR:
             continue
@@ -359,15 +348,12 @@ def _complete_turning_nodes(
 
     result: set[NodeID] = set()
     for node in graph.enabled_nodes():
-        incoming = [
-            edge_id for edge_id, flow in flows.items() if flow.destination == node.node_id
-        ]
+        incoming = [edge_id for edge_id, flow in flows.items() if flow.destination == node.node_id]
         outgoing = sum(1 for flow in flows.values() if flow.source == node.node_id)
         if _is_decidable(node, len(incoming), outgoing) or not incoming:
             continue
         if all(
-            abs(by_node_and_entry[(node.node_id, edge_id)] - 1.0) <= 1e-6
-            for edge_id in incoming
+            abs(by_node_and_entry[(node.node_id, edge_id)] - 1.0) <= 1e-6 for edge_id in incoming
         ):
             result.add(node.node_id)
     return result
@@ -405,9 +391,7 @@ def _build_resolutions(
             mode = ODResolutionMode.DOUBLY_CONSTRAINED
             if missing_by_node[node.node_id]:
                 reason = ODResolutionReason.SPARSE_OBSERVATION
-            elif not _is_decidable(
-                node, in_count[node.node_id], out_count[node.node_id]
-            ):
+            elif not _is_decidable(node, in_count[node.node_id], out_count[node.node_id]):
                 reason = ODResolutionReason.MERGE_SPLIT_AMBIGUOUS
             else:
                 reason = ODResolutionReason.DETERMINED
@@ -553,9 +537,7 @@ def _out_split_with_edge(
         out_edges[flow.source].append((edge_id, flow.destination, flow.rate))
         totals[flow.source] += flow.rate
     return {
-        node_id: tuple(
-            (edge_id, dest, rate / totals[node_id]) for edge_id, dest, rate in edges
-        )
+        node_id: tuple((edge_id, dest, rate / totals[node_id]) for edge_id, dest, rate in edges)
         for node_id, edges in out_edges.items()
         if totals[node_id] > 0.0
     }
@@ -603,21 +585,21 @@ def _ipf(
         row_sum: dict[NodeID, float] = defaultdict(float)
         for (s, _t), value in matrix.items():
             row_sum[s] += value
-        for key in matrix:
+        for key, value in matrix.items():
             s = key[0]
             if row_sum[s] > 0.0:
-                scaled = matrix[key] * production[s] / row_sum[s]
-                max_delta = max(max_delta, abs(scaled - matrix[key]))
+                scaled = value * production[s] / row_sum[s]
+                max_delta = max(max_delta, abs(scaled - value))
                 matrix[key] = scaled
         # 列スケーリング（吸収制約）
         col_sum: dict[NodeID, float] = defaultdict(float)
         for (_s, t), value in matrix.items():
             col_sum[t] += value
-        for key in matrix:
+        for key, value in matrix.items():
             t = key[1]
             if col_sum[t] > 0.0:
-                scaled = matrix[key] * absorption[t] / col_sum[t]
-                max_delta = max(max_delta, abs(scaled - matrix[key]))
+                scaled = value * absorption[t] / col_sum[t]
+                max_delta = max(max_delta, abs(scaled - value))
                 matrix[key] = scaled
         if max_delta < config.ipf_tolerance:
             break
@@ -629,10 +611,10 @@ def _ipf(
     row_sum = defaultdict(float)
     for (s, _t), value in matrix.items():
         row_sum[s] += value
-    for key in matrix:
+    for key, value in matrix.items():
         s = key[0]
         if row_sum[s] > production[s]:
-            matrix[key] = matrix[key] * production[s] / row_sum[s]
+            matrix[key] = value * production[s] / row_sum[s]
 
     return matrix
 
@@ -671,9 +653,7 @@ def _build_adjacency(graph: Graph) -> dict[NodeID, list[NodeID]]:
     return adjacency
 
 
-def _hop_distances(
-    adjacency: dict[NodeID, list[NodeID]], source: NodeID
-) -> dict[NodeID, int]:
+def _hop_distances(adjacency: dict[NodeID, list[NodeID]], source: NodeID) -> dict[NodeID, int]:
     """source から各ノードへの無向ホップ数を BFS で算出（到達不能ノードは欠落）"""
     distances: dict[NodeID, int] = {source: 0}
     queue: deque[NodeID] = deque((source,))
@@ -747,7 +727,5 @@ def _to_od_matrix(
         for destination in order:
             value = od.get((origin, destination))
             if value is not None:
-                matrix.append(
-                    ODDemand(origin=origin, destination=destination, demand=value)
-                )
+                matrix.append(ODDemand(origin=origin, destination=destination, demand=value))
     return tuple(matrix)

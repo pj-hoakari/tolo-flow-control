@@ -57,8 +57,10 @@ def test_residual_fires_on_tau_exceeded():
         undrainable=frozenset(),
         tau_danger_threshold=2.0,
     )
-    assert got.residual and got.tau_exceeded
-    assert not got.puncture_residual and not got.undrainable_present
+    assert got.residual
+    assert got.tau_exceeded
+    assert not got.puncture_residual
+    assert not got.undrainable_present
 
 
 def test_residual_quiet_when_below_threshold():
@@ -85,7 +87,8 @@ def test_residual_fires_on_puncture_overflow():
         undrainable=frozenset(),
         tau_danger_threshold=2.0,
     )
-    assert got.residual and got.puncture_residual
+    assert got.residual
+    assert got.puncture_residual
     assert got.puncture_edges == (_E_SCALAR,)
 
 
@@ -112,7 +115,8 @@ def test_residual_fires_on_undrainable_in_zone():
         undrainable=frozenset({_E_HOT}),
         tau_danger_threshold=2.0,
     )
-    assert got.residual and got.undrainable_present
+    assert got.residual
+    assert got.undrainable_present
     assert got.undrainable_edges == (_E_HOT,)
 
 
@@ -127,7 +131,8 @@ def test_gate_structural_shortage_when_k_small():
         watched_edges=frozenset(),
         tau_danger_threshold=2.0,
     )
-    assert got.insufficient and got.structural_shortage
+    assert got.insufficient
+    assert got.structural_shortage
 
 
 def test_gate_unused_when_detour_carries_no_flow():
@@ -141,7 +146,8 @@ def test_gate_unused_when_detour_carries_no_flow():
         watched_edges=frozenset(),
         tau_danger_threshold=2.0,
     )
-    assert got.insufficient and got.unused
+    assert got.insufficient
+    assert got.unused
     assert got.used_ratio == pytest.approx(0.0)
 
 
@@ -173,7 +179,8 @@ def test_gate_endangered_when_detour_stagnates():
         watched_edges=frozenset(),
         tau_danger_threshold=0.5,
     )
-    assert got.insufficient and got.detour_endangered
+    assert got.insufficient
+    assert got.detour_endangered
     assert set(got.endangered_edges) == {_E_D1, _E_D2}
 
 
@@ -188,7 +195,8 @@ def test_gate_endangered_when_detour_is_triggered_or_watched():
         watched_edges=frozenset({_E_D2}),
         tau_danger_threshold=2.0,
     )
-    assert got.insufficient and got.detour_endangered
+    assert got.insufficient
+    assert got.detour_endangered
     assert set(got.endangered_edges) == {_E_D1, _E_D2}
 
 
@@ -221,9 +229,9 @@ def _chain_arc_model(*, oneway_middle: bool = False, boundaries: bool = True):
         Graph,
         Node,
         NodeKind,
+        ObservationType,
     )
     from flow_control.domain import NodeID as NID
-    from flow_control.domain import ObservationType
     from flow_control.optimization.arcs import build_arc_model
 
     names = ["b0", "n1", "n2", "b3"]
@@ -281,9 +289,7 @@ def test_limit_value_falls_back_to_drain_bound_with_low_confidence():
 
 
 def test_limit_value_none_when_no_basis():
-    got = compute_limit_value(
-        _inputs(s_obs={}, eta={}), _E_HOT, outflow_average=None
-    )
+    got = compute_limit_value(_inputs(s_obs={}, eta={}), _E_HOT, outflow_average=None)
     assert got.value is None
 
 

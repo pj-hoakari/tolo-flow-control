@@ -72,9 +72,7 @@ def forecast(
     )
 
     # フロー感度 η_e（エッジ単位）
-    sensitivity = resolve_arc_flow_sensitivity(
-        graph, history_digest, references, config
-    )
+    sensitivity = resolve_arc_flow_sensitivity(graph, history_digest, references, config)
 
     return ForecastResult(
         od_matrix=od_result.od_matrix,

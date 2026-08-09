@@ -16,7 +16,12 @@ from flow_control.optimization.arcs import build_arc_model, fixed_directions
 
 def _edge(eid, a, b, constraint, current=CurrentDirection.BIDIRECTIONAL):
     return Edge(
-        EdgeID(eid), a, b, constraint, current, enabled=True,
+        EdgeID(eid),
+        a,
+        b,
+        constraint,
+        current,
+        enabled=True,
         observation_type=ObservationType.VECTOR,
     )
 
@@ -81,5 +86,7 @@ def test_fixed_directions_per_current_direction():
     e_ab = _edge("e1", n1, n2, DirectionConstraint.BIDIRECTIONAL_PRIOR, CurrentDirection.A_TO_B)
     assert fixed_directions(e_ab) == {"e1|A_TO_B": 1, "e1|B_TO_A": 0}
 
-    e_bi = _edge("e1", n1, n2, DirectionConstraint.BIDIRECTIONAL_PRIOR, CurrentDirection.BIDIRECTIONAL)
+    e_bi = _edge(
+        "e1", n1, n2, DirectionConstraint.BIDIRECTIONAL_PRIOR, CurrentDirection.BIDIRECTIONAL
+    )
     assert fixed_directions(e_bi) == {"e1|A_TO_B": 1, "e1|B_TO_A": 1}

@@ -74,9 +74,7 @@ def _random_od_flows(
     return tuple(candidates)
 
 
-def random_scenario(
-    rng: random.Random, base: BuiltGraph, label: str, index: int
-) -> Scenario:
+def random_scenario(rng: random.Random, base: BuiltGraph, label: str, index: int) -> Scenario:
     """ランダムな観測・履歴・イベントを持つシナリオを 1 件生成する"""
     built = base
     edge_ids = [e.edge_id for e in built.graph.enabled_edges()]
@@ -161,8 +159,7 @@ def _signature(run: PipelineRun) -> dict[str, object]:
             for ri in r.route_importance
         )
         d["direction"] = sorted(
-            (dp.edge_id.value, dp.proposed_direction.value)
-            for dp in r.direction_proposal
+            (dp.edge_id.value, dp.proposed_direction.value) for dp in r.direction_proposal
         )
     return d
 
@@ -191,9 +188,7 @@ def check_invariants(
             violations.append(f"reproduction_error not finite: {fc.reproduction_error}")
         for c in fc.node_confidence:
             if not (-1e-9 <= c.confidence <= 1.0 + 1e-9):
-                violations.append(
-                    f"node_confidence out of [0,1]: {c.node_id.value}={c.confidence}"
-                )
+                violations.append(f"node_confidence out of [0,1]: {c.node_id.value}={c.confidence}")
         for o in fc.od_matrix:
             if o.demand < -1e-9:
                 violations.append(
@@ -206,8 +201,7 @@ def check_invariants(
         status = opt.optimization_result.solver_status.value
         if cr.legal_fixed_violations:
             violations.append(
-                "legal_fixed_violations: "
-                + ",".join(e.value for e in cr.legal_fixed_violations)
+                "legal_fixed_violations: " + ",".join(e.value for e in cr.legal_fixed_violations)
             )
         # 可達性は「解が得られた正常系（非フォールバック）」でのみ要求する。
         # TIMEOUT/INFEASIBLE（フォールバック）はインカンベント不在で False になり得るため除外
@@ -215,14 +209,10 @@ def check_invariants(
             if not cr.local_reachability_satisfied:
                 violations.append("local_reachability not satisfied (non-fallback)")
             if run.mode == Mode.OPEN and not cr.boundary_reachability_satisfied:
-                violations.append(
-                    "boundary_reachability not satisfied (non-fallback, open)"
-                )
+                violations.append("boundary_reachability not satisfied (non-fallback, open)")
         for ri in opt.optimization_result.route_importance:
             if not (-1e-9 <= ri.importance <= 1.0 + 1e-9):
-                violations.append(
-                    f"importance out of [0,1]: {ri.edge_id.value}={ri.importance}"
-                )
+                violations.append(f"importance out of [0,1]: {ri.edge_id.value}={ri.importance}")
 
     return run, violations
 
@@ -316,9 +306,7 @@ def run_fuzz(
 
         determinism = i % 5 == 0
         scen = random_scenario(rng, base, label, i)
-        run, violations = check_invariants(
-            scen, time_limit=time_limit, determinism=determinism
-        )
+        run, violations = check_invariants(scen, time_limit=time_limit, determinism=determinism)
 
         summary.total += 1
         if violations:

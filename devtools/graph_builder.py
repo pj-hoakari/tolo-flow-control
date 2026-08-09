@@ -60,7 +60,7 @@ class GraphBuilder:
         danger_flag: bool = False,
         danger_capacity: float | None = None,
         pos: Position | None = None,
-    ) -> "GraphBuilder":
+    ) -> GraphBuilder:
         self._nodes.append(
             Node(
                 node_id=NodeID(node_id),
@@ -92,7 +92,7 @@ class GraphBuilder:
         danger_flag: bool = False,
         danger_capacity: float | None = None,
         capacity_hint: float | None = None,
-    ) -> "GraphBuilder":
+    ) -> GraphBuilder:
         self._edges.append(
             Edge(
                 edge_id=EdgeID(edge_id),
@@ -127,7 +127,7 @@ def resolve_positions(built: BuiltGraph, *, seed: int = 42) -> dict[str, Positio
     if all(nid in built.positions for nid in node_ids) and node_ids:
         return {nid: built.positions[nid] for nid in node_ids}
 
-    g: "nx.Graph[str]" = nx.Graph()
+    g: nx.Graph[str] = nx.Graph()
     g.add_nodes_from(node_ids)
     for e in built.graph.edges:
         g.add_edge(e.endpoint_a.value, e.endpoint_b.value)
@@ -436,22 +436,30 @@ def crossing_oneway() -> BuiltGraph:
     b.edge("e_in", "in", "hub_w")
     b.edge("e_main", "hub_w", "hub_e", capacity_hint=10.0)
     b.edge(
-        "e_n1a", "hub_w", "n1",
+        "e_n1a",
+        "hub_w",
+        "n1",
         direction_constraint=DirectionConstraint.LEGAL_FIXED_A_TO_B,
         current_direction=CurrentDirection.A_TO_B,
     )
     b.edge(
-        "e_n1b", "n1", "hub_e",
+        "e_n1b",
+        "n1",
+        "hub_e",
         direction_constraint=DirectionConstraint.LEGAL_FIXED_A_TO_B,
         current_direction=CurrentDirection.A_TO_B,
     )
     b.edge(
-        "e_s1a", "hub_w", "s1",
+        "e_s1a",
+        "hub_w",
+        "s1",
         direction_constraint=DirectionConstraint.LEGAL_FIXED_B_TO_A,
         current_direction=CurrentDirection.B_TO_A,
     )
     b.edge(
-        "e_s1b", "s1", "hub_e",
+        "e_s1b",
+        "s1",
+        "hub_e",
         direction_constraint=DirectionConstraint.LEGAL_FIXED_B_TO_A,
         current_direction=CurrentDirection.B_TO_A,
     )

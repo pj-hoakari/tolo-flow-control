@@ -1,6 +1,6 @@
 """``compute_node_demand``（Step A: 点需要分解）のテスト"""
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 import pytest
 
@@ -30,7 +30,7 @@ from flow_control.forecasting.demand import (
 
 @pytest.fixture
 def observed_at() -> datetime:
-    return datetime(2026, 6, 1, 10, 0, 0, tzinfo=timezone.utc)
+    return datetime(2026, 6, 1, 10, 0, 0, tzinfo=UTC)
 
 
 def _node(
@@ -175,9 +175,7 @@ def test_invalid_contributes_nothing(observed_at: datetime) -> None:
     )
     observations = Observations(
         observed_at=observed_at,
-        arc_flows=(
-            _flow("e1", FlowDirection.A_TO_B, 5.0, flag=ConfidenceFlag.INVALID),
-        ),
+        arc_flows=(_flow("e1", FlowDirection.A_TO_B, 5.0, flag=ConfidenceFlag.INVALID),),
     )
 
     demands = compute_node_demand(graph, observations, _config())
@@ -314,9 +312,7 @@ def test_mixed_accumulation_uses_occupancy_delta(observed_at: datetime) -> None:
             _flow("e1", FlowDirection.A_TO_B, 10.0),
             _flow("e2", FlowDirection.A_TO_B, 6.0),
         ),
-        node_occupancies=(
-            NodeOccupancy(node_id=NodeID("v"), occupancy=20.0, occupancy_delta=3.0),
-        ),
+        node_occupancies=(NodeOccupancy(node_id=NodeID("v"), occupancy=20.0, occupancy_delta=3.0),),
     )
 
     v = _demand_of(compute_node_demand(graph, observations, _config()), "v")
@@ -367,9 +363,7 @@ def test_mixed_steady_skips_littles_law_without_shared_sensor(
     observations = Observations(
         observed_at=observed_at,
         arc_flows=(_flow("e1", FlowDirection.A_TO_B, 10.0),),
-        node_occupancies=(
-            NodeOccupancy(node_id=NodeID("v"), occupancy=60.0, occupancy_delta=0.0),
-        ),
+        node_occupancies=(NodeOccupancy(node_id=NodeID("v"), occupancy=60.0, occupancy_delta=0.0),),
     )
 
     v = _demand_of(
@@ -411,9 +405,7 @@ def test_mixed_occupancy_only_drives_demand(observed_at: datetime) -> None:
     )
     observations = Observations(
         observed_at=observed_at,
-        node_occupancies=(
-            NodeOccupancy(node_id=NodeID("v"), occupancy=8.0, occupancy_delta=8.0),
-        ),
+        node_occupancies=(NodeOccupancy(node_id=NodeID("v"), occupancy=8.0, occupancy_delta=8.0),),
     )
 
     v = _demand_of(compute_node_demand(graph, observations, _config()), "v")
@@ -466,9 +458,7 @@ def test_conservation_accounts_for_occupancy_delta(observed_at: datetime) -> Non
     observations = Observations(
         observed_at=observed_at,
         arc_flows=(_flow("e1", FlowDirection.A_TO_B, 10.0),),
-        node_occupancies=(
-            NodeOccupancy(node_id=NodeID("v"), occupancy=10.0, occupancy_delta=4.0),
-        ),
+        node_occupancies=(NodeOccupancy(node_id=NodeID("v"), occupancy=10.0, occupancy_delta=4.0),),
     )
 
     demands = compute_node_demand(graph, observations, _config())

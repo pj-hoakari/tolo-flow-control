@@ -58,9 +58,7 @@ def detect(
     state = apply_danger_flag_down(state, events)
 
     # 全対象がウォームアップ中かつ危険フラグなしなら検知をスキップ
-    if all_targets_in_warmup(state, graph, server_time) and not has_danger_event(
-        events
-    ):
+    if all_targets_in_warmup(state, graph, server_time) and not has_danger_event(events):
         # ウォームアップスキップは発火なし → abort_state は new_state と等価
         return DetectionResult(
             verdict_hint=VerdictHint.SKIPPED_WARMUP,
@@ -131,9 +129,7 @@ def detect(
     else:
         danger_edges = set(manual_result.triggered_edges)
         if decision.verdict == VerdictHint.TRIGGERED:
-            fired_normal_edges = tuple(
-                e for e in decision.triggered_edges if e not in danger_edges
-            )
+            fired_normal_edges = tuple(e for e in decision.triggered_edges if e not in danger_edges)
         else:
             fired_normal_edges = ()
         retrigger_counts = update_retrigger_counts(
@@ -160,9 +156,7 @@ def detect(
             config=config,
         )
         abort_base = (
-            decision.abort_state
-            if decision.abort_state is not None
-            else decision.new_state
+            decision.abort_state if decision.abort_state is not None else decision.new_state
         )
         abort_state = replace(abort_base, arc_retrigger_counts=abort_retrigger_counts)
     else:

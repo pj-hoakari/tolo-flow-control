@@ -1,10 +1,11 @@
 """MILP 制約のユニットテスト（モデル層を直接呼んでフロー値を検証する）"""
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 import pytest
 
 from flow_control.domain import (
+    ArcHistoryStat,
     ArcScalarFlow,
     ArcStagnation,
     CurrentDirection,
@@ -12,7 +13,6 @@ from flow_control.domain import (
     Edge,
     EdgeID,
     Graph,
-    ArcHistoryStat,
     HistoryDigest,
     Node,
     NodeID,
@@ -29,15 +29,13 @@ from flow_control.optimization.drainable import compute_drainable
 from flow_control.optimization.model import build_model, solve_phase1
 from flow_control.optimization.optimizer import _build_commodities, _build_inputs
 
-_OBS_AT = datetime(2026, 6, 18, tzinfo=timezone.utc)
+_OBS_AT = datetime(2026, 6, 18, tzinfo=UTC)
 
 
 def _solve(graph, observations, forecast, history, config, *, is_open=True):
     arc_model = build_arc_model(graph)
     commodities = _build_commodities(forecast, set(arc_model.active_nodes), config.delta_min)
-    inputs = _build_inputs(
-        graph, observations, forecast, history, arc_model, commodities, config
-    )
+    inputs = _build_inputs(graph, observations, forecast, history, arc_model, commodities, config)
     od_pairs = tuple((k.origin, k.destination) for k in commodities)
     drain = compute_drainable(arc_model, od_pairs, frozenset(inputs.s_obs.keys()))
     built = build_model(arc_model, inputs, commodities, drain.drainable, is_open=is_open)
@@ -131,9 +129,7 @@ def test_capacity_hint_limits_edge_flow():
 
 def test_scalar_puncture_constraint():
     # スカラー型エッジは f_e <= max(0, C_e - σ_e)。C_e=10, σ_e=7 → 上限 3
-    graph = _diamond(
-        _mk("e_d", NodeID("n1"), NodeID("n2"), obs=ObservationType.SCALAR, hint=10.0)
-    )
+    graph = _diamond(_mk("e_d", NodeID("n1"), NodeID("n2"), obs=ObservationType.SCALAR, hint=10.0))
     obs = Observations(
         observed_at=_OBS_AT,
         arc_stagnations=(ArcStagnation(EdgeID("e_d"), 100.0),),
@@ -174,9 +170,7 @@ def test_node_danger_capacity_limits_throughput():
     assert inflow_n3 == pytest.approx(6.0, abs=1e-6)
 
 
-@pytest.mark.parametrize(
-    "confidence,expected_tau", [(1.0, 3.0), (0.0, 1.5)]
-)
+@pytest.mark.parametrize(("confidence", "expected_tau"), [(1.0, 3.0), (0.0, 1.5)])
 def test_confidence_weight_floor_scales_tau(confidence, expected_tau):
     # η=0 でフローが τ に効かない単一エッジ。τ = c_e·s_obs/s̄。
     # 信頼度 0 でも c_e は下限 0.5 でクリップされ τ=1.5（3.0 の半分）になる

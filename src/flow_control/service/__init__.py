@@ -36,8 +36,8 @@ from .feedback import (
     RestrictionReason,
     TagObservation,
 )
-from .messages import REQUEST_SCHEMA_VERSION, Request, Response
 from .handler import finalize_detection_state, handle_request
+from .messages import REQUEST_SCHEMA_VERSION, Request, Response
 from .verdict import Verdict
 
 __all__ = [
@@ -60,8 +60,6 @@ __all__ = [
     "ReachabilityConstraints",
     "ReferenceUsageReport",
     "Request",
-    "finalize_detection_state",
-    "handle_request",
     "ResolvedConfig",
     "Response",
     "RestrictionMetrics",
@@ -78,4 +76,6 @@ __all__ = [
     "Verdict",
     "Warning",
     "WarningCode",
+    "finalize_detection_state",
+    "handle_request",
 ]

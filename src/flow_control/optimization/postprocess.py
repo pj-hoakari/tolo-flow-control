@@ -11,8 +11,8 @@ from .arcs import Arc, ArcModel
 from .model import ArcSolution
 from .results import (
     DetourPathProposal,
-    DirectionProposal,
     DirectionChangeType,
+    DirectionProposal,
     ImportanceDirection,
     ProposedDirection,
     RouteImportance,
@@ -108,9 +108,7 @@ def compute_detour_emphasis(
     if weight <= 0.0:
         return DetourEmphasis()
     edge_by_id = {e.edge_id: e for e in arc_model.active_edges}
-    trigger_set = triggered_edges | frozenset(
-        ds.origin_edge for ds in detour_result.detour_sets
-    )
+    trigger_set = triggered_edges | frozenset(ds.origin_edge for ds in detour_result.detour_sets)
 
     def edge_flow(edge_id: EdgeID) -> float:
         arcs = arc_model.arcs_of_edge.get(edge_id, ())
@@ -134,9 +132,7 @@ def compute_detour_emphasis(
                 continue
             if any(edge_id in trigger_set for edge_id in path.edge_ids):
                 continue
-            arcs = _walk_path_arcs(
-                arc_model, edge_by_id, detour_set.endpoint_pair, path
-            )
+            arcs = _walk_path_arcs(arc_model, edge_by_id, detour_set.endpoint_pair, path)
             if arcs is None:
                 continue
             if any(adopted_direction.get(a.key, 0) != 1 for a in arcs):
@@ -193,9 +189,7 @@ def compute_detour_path_proposals(
                 continue
             if any(edge_id not in edge_ids_active for edge_id in path.edge_ids):
                 continue
-            flow_carried = all(
-                edge_flow(edge_id) > _FLOW_CARRIED_EPS for edge_id in path.edge_ids
-            )
+            flow_carried = all(edge_flow(edge_id) > _FLOW_CARRIED_EPS for edge_id in path.edge_ids)
             if not flow_carried and (detour_set.origin_edge, path) not in assigned:
                 continue
             proposals.append(
@@ -277,7 +271,9 @@ def compute_direction_proposals(
             DirectionProposal(
                 edge_id=edge.edge_id,
                 proposed_direction=proposed,
-                change_type=_change_type(edge.current_direction, proposed, edge.direction_constraint),
+                change_type=_change_type(
+                    edge.current_direction, proposed, edge.direction_constraint
+                ),
             )
         )
     return tuple(result)

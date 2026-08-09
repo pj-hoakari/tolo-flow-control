@@ -132,9 +132,7 @@ def test_danger_node_on_boundary_follows_demand_rules():
 def test_resume_proposed_after_danger_cleared():
     # 前回 PAUSE した境界ノードに、危険が消えた今回 RESUME を出す
     previous = OptimizationResult(
-        boundary_control=(
-            BoundaryControl(_N1, BoundaryAction.PAUSE_INGRESS, "prev"),
-        )
+        boundary_control=(BoundaryControl(_N1, BoundaryAction.PAUSE_INGRESS, "prev"),)
     )
     controls = compute_boundary_control(
         _graph(danger_edge=False),

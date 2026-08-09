@@ -70,8 +70,10 @@ def test_only_clears_targeted_edge(base_time: datetime):
 
     e1 = _entry_of(result, "e1")
     e2 = _entry_of(result, "e2")
-    assert e1 is not None and e1.count == 0
-    assert e2 is not None and e2.count == 2
+    assert e1 is not None
+    assert e1.count == 0
+    assert e2 is not None
+    assert e2.count == 2
 
 
 def test_no_danger_down_returns_same_state(base_time: datetime):

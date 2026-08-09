@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from flow_control.detection.triggers import Event, EventKind
+
 from .. import graph_builder
 from ..scenario_base import (
     DEFAULT_TIME,
@@ -11,11 +12,11 @@ from ..scenario_base import (
     make_scenario,
     with_edge_danger,
 )
+from ._registry import register
 from ._school import (
     school_gathering_od_specs,
     school_unobserved_edges,
 )
-from ._registry import register
 
 
 @register("school-north-stair-maintenance")

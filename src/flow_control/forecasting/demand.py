@@ -70,8 +70,8 @@ def compute_node_demand_result(
     """
     active_nodes = graph.enabled_nodes()
     active_ids = {node.node_id for node in active_nodes}
-    outflow: dict[NodeID, float] = {nid: 0.0 for nid in active_ids}  # P_v
-    inflow: dict[NodeID, float] = {nid: 0.0 for nid in active_ids}  # A_v
+    outflow: dict[NodeID, float] = dict.fromkeys(active_ids, 0.0)  # P_v
+    inflow: dict[NodeID, float] = dict.fromkeys(active_ids, 0.0)  # A_v
 
     # ── 10.1.1 粗流出・粗流入（相殺しない） ──
     observed_edges: set[str] = set()
@@ -107,9 +107,7 @@ def compute_node_demand_result(
     for node in active_nodes:
         gross_out = outflow[node.node_id]
         gross_in = inflow[node.node_id]
-        staying = _staying_demand(
-            node, gross_in, occupancy_by_node.get(node.node_id), config
-        )
+        staying = _staying_demand(node, gross_in, occupancy_by_node.get(node.node_id), config)
         transit = gross_in - staying
         production = max(0.0, gross_out - gross_in + staying)
         demands.append(
@@ -139,9 +137,7 @@ def compute_node_demand_result(
 def graph_edge_order(graph: Graph, edge_ids: set[str]) -> tuple[str, ...]:
     """グラフ定義順で、保存補完アークを決定的に並べる。"""
     return tuple(
-        edge.edge_id.value
-        for edge in graph.enabled_edges()
-        if edge.edge_id.value in edge_ids
+        edge.edge_id.value for edge in graph.enabled_edges() if edge.edge_id.value in edge_ids
     )
 
 
@@ -258,9 +254,7 @@ def _impute_unobserved_arcs(
             if not can_anchor(node):
                 continue
             unobserved = [
-                edge
-                for edge in incident[node.node_id]
-                if edge.edge_id.value not in resolved
+                edge for edge in incident[node.node_id] if edge.edge_id.value not in resolved
             ]
             if len(unobserved) != 1:
                 continue
@@ -271,9 +265,7 @@ def _impute_unobserved_arcs(
             residual = inflow[node.node_id] - outflow[node.node_id] - delta_occ
             magnitude = abs(residual)
 
-            neighbor = (
-                edge.endpoint_b if edge.endpoint_a == node.node_id else edge.endpoint_a
-            )
+            neighbor = edge.endpoint_b if edge.endpoint_a == node.node_id else edge.endpoint_a
             if residual > 0.0:
                 # 流入超過 → 未観測アークは v からの流出（出発）
                 outflow[node.node_id] += magnitude

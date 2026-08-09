@@ -14,12 +14,12 @@ import matplotlib
 
 matplotlib.use("Agg")
 
-import matplotlib.pyplot as plt  # noqa: E402
-from matplotlib.cm import ScalarMappable  # noqa: E402
-from matplotlib.colors import Normalize  # noqa: E402
-from matplotlib.patches import FancyArrowPatch  # noqa: E402
+import matplotlib.pyplot as plt
+from matplotlib.cm import ScalarMappable
+from matplotlib.colors import Normalize
+from matplotlib.patches import FancyArrowPatch
 
-from flow_control.domain import (  # noqa: E402
+from flow_control.domain import (
     CurrentDirection,
     Edge,
     Graph,
@@ -27,8 +27,8 @@ from flow_control.domain import (  # noqa: E402
     ObservationType,
 )
 
-from .graph_builder import BuiltGraph, Position, resolve_positions  # noqa: E402
-from .pipeline import PipelineRun  # noqa: E402
+from .graph_builder import BuiltGraph, Position, resolve_positions
+from .pipeline import PipelineRun
 
 _KIND_COLOR = {
     NodeKind.GOAL: "#7bc96f",
@@ -37,10 +37,14 @@ _KIND_COLOR = {
 }
 _TRIGGER_COLOR = "#d62728"
 _NODE_SIZE = 700.0
+_BND_LABEL = {
+    "PAUSE_INGRESS": "PAUSE-IN",
+    "PAUSE_EGRESS": "PAUSE-OUT",
+    "RESUME": "RESUME",
+}
 
 
 # --- 低水準ヘルパー ---------------------------------------------------------
-
 
 
 def _fmt_throughput(value: float | None) -> str:
@@ -83,15 +87,15 @@ def _arrow(
         xy=pb,
         xytext=pa,
         zorder=zorder,
-        arrowprops=dict(
-            arrowstyle="-|>",
-            color=color,
-            lw=width,
-            alpha=alpha,
-            shrinkA=16,
-            shrinkB=16,
-            connectionstyle=f"arc3,rad={rad}",
-        ),
+        arrowprops={
+            "arrowstyle": "-|>",
+            "color": color,
+            "lw": width,
+            "alpha": alpha,
+            "shrinkA": 16,
+            "shrinkB": 16,
+            "connectionstyle": f"arc3,rad={rad}",
+        },
     )
 
 
@@ -183,8 +187,15 @@ def draw_base(
         ls = ":" if edge.observation_type == ObservationType.SCALAR else "-"
         rad = lane_radii[edge.edge_id.value]
         _edge_line(
-            ax, pa, pb, color=color, width=2.0, rad=rad, linestyle=ls,
-            alpha=edge_alpha, zorder=1,
+            ax,
+            pa,
+            pb,
+            color=color,
+            width=2.0,
+            rad=rad,
+            linestyle=ls,
+            alpha=edge_alpha,
+            zorder=1,
         )
         if show_direction and enabled:
             cd = edge.current_direction
@@ -201,7 +212,7 @@ def draw_base(
                 color="#444444",
                 ha="center",
                 va="center",
-                bbox=dict(boxstyle="round,pad=0.15", fc="white", ec="none", alpha=0.6),
+                bbox={"boxstyle": "round,pad=0.15", "fc": "white", "ec": "none", "alpha": 0.6},
                 zorder=10,  # ハイライト（zorder 3）より上に置きラベルの隠れを防ぐ
             )
 
@@ -229,12 +240,12 @@ def draw_base(
             fontsize=8,
             ha="center",
             va="center",
-            bbox=dict(
-                boxstyle="round,pad=0.14",
-                fc="white",
-                ec="none",
-                alpha=0.9,
-            ),
+            bbox={
+                "boxstyle": "round,pad=0.14",
+                "fc": "white",
+                "ec": "none",
+                "alpha": 0.9,
+            },
             # 方向矢印・重要度・危険ハイライトより常に前面に置く。
             zorder=30,
         )
@@ -256,8 +267,14 @@ def _highlight_edges(
             continue
         pa, pb = _edge_endpoints(pos, edge)
         _edge_line(
-            ax, pa, pb, color=color, width=width,
-            rad=lane_radii[edge.edge_id.value], alpha=alpha, zorder=3,
+            ax,
+            pa,
+            pb,
+            color=color,
+            width=width,
+            rad=lane_radii[edge.edge_id.value],
+            alpha=alpha,
+            zorder=3,
         )
 
 
@@ -318,9 +335,7 @@ def render_legend(
     if colorbar is not None:
         cmap, norm, label = colorbar
         cax = fig.add_axes((0.13, 0.04, 0.74, 0.08))
-        bar = fig.colorbar(
-            ScalarMappable(norm=norm, cmap=cmap), cax=cax, orientation="horizontal"
-        )
+        bar = fig.colorbar(ScalarMappable(norm=norm, cmap=cmap), cax=cax, orientation="horizontal")
         bar.set_label(label, fontsize=8)
         bar.ax.tick_params(labelsize=7)
     path.parent.mkdir(parents=True, exist_ok=True)
@@ -429,9 +444,7 @@ def _evidence_line(ev: Any) -> str:
     if name == "QueueScoreEvidence":
         return f"queue score {ev.accumulated_score:.1f} > {ev.score_threshold:.1f}"
     if name == "QueueDiversityEvidence":
-        return (
-            f"queue diversity {ev.distinct_origin_count} > {ev.diversity_threshold}"
-        )
+        return f"queue diversity {ev.distinct_origin_count} > {ev.diversity_threshold}"
     if name == "QueueExpiredEvidence":
         return f"queue expired (dropped {ev.dropped_count})"
     return name
@@ -441,9 +454,7 @@ def render_detection(run: PipelineRun, built: BuiltGraph, path: Path) -> None:
     pos = resolve_positions(built)
     det = run.detection
     fig, ax = plt.subplots(figsize=(9, 7))
-    draw_base(
-        ax, built.graph, pos, title=f"Detection — verdict={det.verdict_hint.value}"
-    )
+    draw_base(ax, built.graph, pos, title=f"Detection — verdict={det.verdict_hint.value}")
     _highlight_edges(
         ax,
         built.graph,
@@ -451,19 +462,13 @@ def render_detection(run: PipelineRun, built: BuiltGraph, path: Path) -> None:
         {e.value for e in det.triggered_edges},
         color=_TRIGGER_COLOR,
     )
-    _highlight_nodes(
-        ax, pos, {n.value for n in det.triggered_nodes}, color=_TRIGGER_COLOR
-    )
+    _highlight_nodes(ax, pos, {n.value for n in det.triggered_nodes}, color=_TRIGGER_COLOR)
 
     lines = [f"mode = {run.mode.value}", f"verdict = {det.verdict_hint.value}"]
     if det.triggered_edges:
-        lines.append(
-            "triggered edges: " + ", ".join(e.value for e in det.triggered_edges)
-        )
+        lines.append("triggered edges: " + ", ".join(e.value for e in det.triggered_edges))
     if det.triggered_nodes:
-        lines.append(
-            "triggered nodes: " + ", ".join(n.value for n in det.triggered_nodes)
-        )
+        lines.append("triggered nodes: " + ", ".join(n.value for n in det.triggered_nodes))
     if det.evidences:
         lines.append("evidence:")
         for ev in det.evidences[:8]:
@@ -471,9 +476,7 @@ def render_detection(run: PipelineRun, built: BuiltGraph, path: Path) -> None:
     from matplotlib.lines import Line2D
 
     handles = _kind_legend_handles()
-    handles.append(
-        Line2D([0], [0], color=_TRIGGER_COLOR, lw=4, label="triggered")
-    )
+    handles.append(Line2D([0], [0], color=_TRIGGER_COLOR, lw=4, label="triggered"))
     _save(fig, path)
     render_legend(
         path.with_name(f"{path.stem}_legend.png"),
@@ -506,7 +509,7 @@ def render_forecasting(run: PipelineRun, built: BuiltGraph, path: Path) -> None:
     )
     demand_by = {d.node_id.value: d for d in fc.node_demand}
     stays = [d.staying for d in fc.node_demand] or [0.0]
-    norm = Normalize(vmin=min(stays), vmax=max(max(stays), 1e-6))
+    norm = Normalize(vmin=min(stays), vmax=max(*stays, 1e-06))
     cmap = plt.get_cmap("YlOrRd")
     for node in graph.nodes:
         d = demand_by.get(node.node_id.value)
@@ -531,9 +534,7 @@ def render_forecasting(run: PipelineRun, built: BuiltGraph, path: Path) -> None:
             va="center",
             zorder=9,
         )
-    fig.colorbar(
-        ScalarMappable(norm=norm, cmap=cmap), ax=ax, fraction=0.046, label="staying"
-    )
+    fig.colorbar(ScalarMappable(norm=norm, cmap=cmap), ax=ax, fraction=0.046, label="staying")
 
     # (2) OD フロー: origin→destination の曲線矢印、太さ ∝ demand
     ax = axes[0][1]
@@ -590,7 +591,7 @@ def render_forecasting(run: PipelineRun, built: BuiltGraph, path: Path) -> None:
     )
     eta_by = {a.edge_id.value: a.eta for a in fc.arc_flow_sensitivity}
     etas = list(eta_by.values()) or [0.0]
-    enorm = Normalize(vmin=min(etas), vmax=max(max(etas), 1e-6))
+    enorm = Normalize(vmin=min(etas), vmax=max(*etas, 1e-06))
     ecmap = plt.get_cmap("viridis")
     # 観測が無くフォールバック eta を使ったエッジ（センサ無し区間）を破線で明示
     fallback_edges = {e.value for e in fc.fallback_usage.used_default_edges} | {
@@ -620,9 +621,7 @@ def render_forecasting(run: PipelineRun, built: BuiltGraph, path: Path) -> None:
     if fallback_edges:
         ax.plot([], [], color="#111111", ls=(0, (2, 2)), lw=1.6, label="fallback η (no obs)")
         ax.legend(loc="lower right", fontsize=7, framealpha=0.9)
-    fig.colorbar(
-        ScalarMappable(norm=enorm, cmap=ecmap), ax=ax, fraction=0.046, label="η"
-    )
+    fig.colorbar(ScalarMappable(norm=enorm, cmap=ecmap), ax=ax, fraction=0.046, label="η")
 
     # (4) ノード信頼度
     ax = axes[1][1]
@@ -666,9 +665,7 @@ def render_forecasting(run: PipelineRun, built: BuiltGraph, path: Path) -> None:
         label="confidence",
     )
 
-    fig.suptitle(
-        f"Forecasting (reproduction_error={fc.reproduction_error:.4g})", fontsize=13
-    )
+    fig.suptitle(f"Forecasting (reproduction_error={fc.reproduction_error:.4g})", fontsize=13)
     _save(fig, path)
 
 
@@ -684,16 +681,26 @@ def render_forecasting_node_demand(run: PipelineRun, built: BuiltGraph, path: Pa
         plt.close(fig)
         return
     graph = built.graph
-    draw_base(ax, graph, pos, title="Forecasting — node demand", show_edge_labels=False, edge_alpha=0.5)
+    draw_base(
+        ax, graph, pos, title="Forecasting — node demand", show_edge_labels=False, edge_alpha=0.5
+    )
     demand_by = {d.node_id.value: d for d in fc.node_demand}
     stays = [d.staying for d in fc.node_demand] or [0.0]
-    norm, cmap = Normalize(vmin=min(stays), vmax=max(max(stays), 1e-6)), plt.get_cmap("YlOrRd")
+    norm, cmap = Normalize(vmin=min(stays), vmax=max(*stays, 1e-06)), plt.get_cmap("YlOrRd")
     for node in graph.nodes:
         d = demand_by.get(node.node_id.value)
         if d is None:
             continue
         p = pos[node.node_id.value]
-        ax.scatter([p[0]], [p[1]], s=300.0 + (d.gross_in + d.gross_out) * 12.0, c=[cmap(norm(d.staying))], edgecolors="#333333", linewidths=1.2, zorder=8)
+        ax.scatter(
+            [p[0]],
+            [p[1]],
+            s=300.0 + (d.gross_in + d.gross_out) * 12.0,
+            c=[cmap(norm(d.staying))],
+            edgecolors="#333333",
+            linewidths=1.2,
+            zorder=8,
+        )
     _save(fig, path)
 
 
@@ -703,41 +710,89 @@ def render_forecasting_od_demand(run: PipelineRun, built: BuiltGraph, path: Path
         plt.close(fig)
         return
     graph, od = built.graph, fc.od_matrix
-    draw_base(ax, graph, pos, title="Forecasting — OD demand", show_edge_labels=False, edge_alpha=0.4, show_direction=False)
+    draw_base(
+        ax,
+        graph,
+        pos,
+        title="Forecasting — OD demand",
+        show_edge_labels=False,
+        edge_alpha=0.4,
+        show_direction=False,
+    )
     dmax = max((o.demand for o in od), default=1.0)
     for o in od:
         if o.origin.value not in pos or o.destination.value not in pos:
             continue
-        _arrow(ax, pos[o.origin.value], pos[o.destination.value], color="#1f77b4", width=1.0 + 5.0 * o.demand / dmax, rad=0.2, alpha=0.8, zorder=4)
+        _arrow(
+            ax,
+            pos[o.origin.value],
+            pos[o.destination.value],
+            color="#1f77b4",
+            width=1.0 + 5.0 * o.demand / dmax,
+            rad=0.2,
+            alpha=0.8,
+            zorder=4,
+        )
     if not od:
-        ax.text(0.5, 0.5, "OD matrix empty", transform=ax.transAxes, ha="center", fontsize=11, color="#888")
+        ax.text(
+            0.5,
+            0.5,
+            "OD matrix empty",
+            transform=ax.transAxes,
+            ha="center",
+            fontsize=11,
+            color="#888",
+        )
     _save(fig, path)
 
 
-def render_forecasting_arc_flow_sensitivity(run: PipelineRun, built: BuiltGraph, path: Path) -> None:
+def render_forecasting_arc_flow_sensitivity(
+    run: PipelineRun, built: BuiltGraph, path: Path
+) -> None:
     fig, ax, pos, fc = _forecast_ax(run, built)
     if fc is None:
         plt.close(fig)
         return
     graph = built.graph
     lane_radii = _parallel_edge_radii(graph)
-    draw_base(ax, graph, pos, title="Forecasting — arc flow sensitivity", show_edge_labels=False, edge_alpha=0.25, show_direction=False)
+    draw_base(
+        ax,
+        graph,
+        pos,
+        title="Forecasting — arc flow sensitivity",
+        show_edge_labels=False,
+        edge_alpha=0.25,
+        show_direction=False,
+    )
     eta_by = {a.edge_id.value: a.eta for a in fc.arc_flow_sensitivity}
     etas, ecmap = list(eta_by.values()) or [0.0], plt.get_cmap("viridis")
-    enorm = Normalize(vmin=min(etas), vmax=max(max(etas), 1e-6))
-    fallback_edges = {e.value for e in fc.fallback_usage.used_default_edges} | {e.value for e in fc.fallback_usage.used_reference_edges}
+    enorm = Normalize(vmin=min(etas), vmax=max(*etas, 1e-06))
+    fallback_edges = {e.value for e in fc.fallback_usage.used_default_edges} | {
+        e.value for e in fc.fallback_usage.used_reference_edges
+    }
     for edge in graph.edges:
         if edge.edge_id.value not in eta_by:
             continue
         pa, pb = _edge_endpoints(pos, edge)
         _edge_line(
-            ax, pa, pb, color=ecmap(enorm(eta_by[edge.edge_id.value])), width=5.0,
-            rad=lane_radii[edge.edge_id.value], zorder=3,
+            ax,
+            pa,
+            pb,
+            color=ecmap(enorm(eta_by[edge.edge_id.value])),
+            width=5.0,
+            rad=lane_radii[edge.edge_id.value],
+            zorder=3,
         )
         if edge.edge_id.value in fallback_edges:
             _edge_line(
-                ax, pa, pb, color="#111111", width=1.6,
-                rad=lane_radii[edge.edge_id.value], linestyle=(0, (2, 2)), zorder=4,
+                ax,
+                pa,
+                pb,
+                color="#111111",
+                width=1.6,
+                rad=lane_radii[edge.edge_id.value],
+                linestyle=(0, (2, 2)),
+                zorder=4,
             )
     _save(fig, path)
 
@@ -748,13 +803,33 @@ def render_forecasting_node_confidence(run: PipelineRun, built: BuiltGraph, path
         plt.close(fig)
         return
     graph = built.graph
-    draw_base(ax, graph, pos, title="Forecasting — node confidence", show_edge_labels=False, edge_alpha=0.3, show_direction=False)
-    conf_by, ccmap, cnorm = {c.node_id.value: c.confidence for c in fc.node_confidence}, plt.get_cmap("RdYlGn"), Normalize(vmin=0.0, vmax=1.0)
+    draw_base(
+        ax,
+        graph,
+        pos,
+        title="Forecasting — node confidence",
+        show_edge_labels=False,
+        edge_alpha=0.3,
+        show_direction=False,
+    )
+    conf_by, ccmap, cnorm = (
+        {c.node_id.value: c.confidence for c in fc.node_confidence},
+        plt.get_cmap("RdYlGn"),
+        Normalize(vmin=0.0, vmax=1.0),
+    )
     for node in graph.nodes:
         if node.node_id.value not in conf_by:
             continue
         p = pos[node.node_id.value]
-        ax.scatter([p[0]], [p[1]], s=_NODE_SIZE, c=[ccmap(cnorm(conf_by[node.node_id.value]))], edgecolors="#333", linewidths=1.2, zorder=8)
+        ax.scatter(
+            [p[0]],
+            [p[1]],
+            s=_NODE_SIZE,
+            c=[ccmap(cnorm(conf_by[node.node_id.value]))],
+            edgecolors="#333",
+            linewidths=1.2,
+            zorder=8,
+        )
     _save(fig, path)
 
 
@@ -789,16 +864,10 @@ def render_detour(run: PipelineRun, built: BuiltGraph, path: Path) -> None:
             show_edge_labels=False,
             show_direction=False,
         )
-        _highlight_edges(
-            ax, graph, pos, {ds.origin_edge.value}, color=_TRIGGER_COLOR, width=6.0
-        )
+        _highlight_edges(ax, graph, pos, {ds.origin_edge.value}, color=_TRIGGER_COLOR, width=6.0)
         for pi, p in enumerate(ds.paths):
             color = palette[pi % len(palette)]
-            label = (
-                "direct"
-                if p.contains_trigger
-                else f"detour{pi} (len {p.total_length:.1f})"
-            )
+            label = "direct" if p.contains_trigger else f"detour{pi} (len {p.total_length:.1f})"
             _highlight_edges(
                 ax,
                 graph,
@@ -819,12 +888,30 @@ def render_detour_set(built: BuiltGraph, detour_set: Any, path: Path) -> None:
     """1 つの起点エッジの迂回候補だけを 1 枚に描く。"""
     pos, graph = resolve_positions(built), built.graph
     fig, ax = plt.subplots(figsize=(9, 7))
-    draw_base(ax, graph, pos, title="DetourRouting — candidate paths", edge_alpha=0.3, show_edge_labels=False, show_direction=False)
-    _highlight_edges(ax, graph, pos, {detour_set.origin_edge.value}, color=_TRIGGER_COLOR, width=6.0)
+    draw_base(
+        ax,
+        graph,
+        pos,
+        title="DetourRouting — candidate paths",
+        edge_alpha=0.3,
+        show_edge_labels=False,
+        show_direction=False,
+    )
+    _highlight_edges(
+        ax, graph, pos, {detour_set.origin_edge.value}, color=_TRIGGER_COLOR, width=6.0
+    )
     palette = ["#1f77b4", "#2ca02c", "#9467bd", "#8c564b", "#e377c2"]
     for index, route in enumerate(detour_set.paths):
         color = palette[index % len(palette)]
-        _highlight_edges(ax, graph, pos, {edge.value for edge in route.edge_ids}, color=color, width=3.0, alpha=0.7)
+        _highlight_edges(
+            ax,
+            graph,
+            pos,
+            {edge.value for edge in route.edge_ids},
+            color=color,
+            width=3.0,
+            alpha=0.7,
+        )
     _save(fig, path)
 
 
@@ -833,9 +920,7 @@ def render_detour_set(built: BuiltGraph, detour_set: Any, path: Path) -> None:
 _IMP_DIR_ARROW = {"A_TO_B": 1, "B_TO_A": -1, "NONE": 0}
 
 
-def render_optimization_route_importance(
-    run: PipelineRun, built: BuiltGraph, path: Path
-) -> None:
+def render_optimization_route_importance(run: PipelineRun, built: BuiltGraph, path: Path) -> None:
     """重要度と実フロー方向を 1 枚に描く。"""
     if run.optimization is None:
         return
@@ -843,8 +928,20 @@ def render_optimization_route_importance(
     lane_radii = _parallel_edge_radii(graph)
     res = run.optimization.optimization_result
     fig, ax = plt.subplots(figsize=(10, 8))
-    draw_base(ax, graph, pos, title="Optimization — route importance", edge_alpha=0.2, show_edge_labels=False, show_direction=False)
-    imp_by, cmap, norm = {r.edge_id.value: r for r in res.route_importance}, plt.get_cmap("plasma"), Normalize(vmin=0.0, vmax=1.0)
+    draw_base(
+        ax,
+        graph,
+        pos,
+        title="Optimization — route importance",
+        edge_alpha=0.2,
+        show_edge_labels=False,
+        show_direction=False,
+    )
+    imp_by, cmap, norm = (
+        {r.edge_id.value: r for r in res.route_importance},
+        plt.get_cmap("plasma"),
+        Normalize(vmin=0.0, vmax=1.0),
+    )
     for edge in graph.edges:
         route = imp_by.get(edge.edge_id.value)
         if route is None:
@@ -853,8 +950,14 @@ def render_optimization_route_importance(
         color = cmap(norm(route.importance))
         rad = lane_radii[edge.edge_id.value]
         _edge_line(
-            ax, pa, pb, color=color, width=1.5 + 6.0 * route.importance,
-            rad=rad, zorder=3, alpha=0.9,
+            ax,
+            pa,
+            pb,
+            color=color,
+            width=1.5 + 6.0 * route.importance,
+            rad=rad,
+            zorder=3,
+            alpha=0.9,
         )
         direction = _IMP_DIR_ARROW.get(route.direction.value, 0)
         if direction == 1:
@@ -866,16 +969,22 @@ def render_optimization_route_importance(
         if edge.edge_id.value in triggered_edges:
             pa, pb = _edge_endpoints(pos, edge)
             _edge_line(
-                ax, pa, pb, color=_TRIGGER_COLOR, width=1.6,
-                rad=lane_radii[edge.edge_id.value], linestyle=(0, (2, 2)), zorder=6,
+                ax,
+                pa,
+                pb,
+                color=_TRIGGER_COLOR,
+                width=1.6,
+                rad=lane_radii[edge.edge_id.value],
+                linestyle=(0, (2, 2)),
+                zorder=6,
             )
-    _highlight_nodes(ax, pos, {node.value for node in run.detection.triggered_nodes}, color=_TRIGGER_COLOR)
+    _highlight_nodes(
+        ax, pos, {node.value for node in run.detection.triggered_nodes}, color=_TRIGGER_COLOR
+    )
     _save(fig, path)
 
 
-def render_optimization_direction_proposal(
-    run: PipelineRun, built: BuiltGraph, path: Path
-) -> None:
+def render_optimization_direction_proposal(run: PipelineRun, built: BuiltGraph, path: Path) -> None:
     """方向属性・境界制御の提案とソルバー結果を 1 枚に描く。"""
     if run.optimization is None:
         return
@@ -883,7 +992,15 @@ def render_optimization_direction_proposal(
     lane_radii = _parallel_edge_radii(graph)
     res = opt.optimization_result
     fig, ax = plt.subplots(figsize=(10, 8))
-    draw_base(ax, graph, pos, title="Optimization — direction proposal", edge_alpha=0.25, show_edge_labels=False, show_direction=False)
+    draw_base(
+        ax,
+        graph,
+        pos,
+        title="Optimization — direction proposal",
+        edge_alpha=0.25,
+        show_edge_labels=False,
+        show_direction=False,
+    )
     edge_by = {edge.edge_id.value: edge for edge in graph.edges}
     for proposal in res.direction_proposal:
         edge = edge_by.get(proposal.edge_id.value)
@@ -970,9 +1087,7 @@ def render_optimization(run: PipelineRun, built: BuiltGraph, path: Path) -> None
     if trig_edges or run.detection.triggered_nodes:
         ax.plot([], [], color=_TRIGGER_COLOR, ls=(0, (2, 2)), lw=1.6, label="triggered")
         ax.legend(loc="lower right", fontsize=7, framealpha=0.9)
-    fig.colorbar(
-        ScalarMappable(norm=norm, cmap=cmap), ax=ax, fraction=0.046, label="importance"
-    )
+    fig.colorbar(ScalarMappable(norm=norm, cmap=cmap), ax=ax, fraction=0.046, label="importance")
 
     # (2) 方向属性提案 + 境界制御
     ax = axes[1]
@@ -1011,11 +1126,6 @@ def render_optimization(run: PipelineRun, built: BuiltGraph, path: Path) -> None
             continue
         pa, pb = _edge_endpoints(pos, edge)
         ax.plot([pa[0], pb[0]], [pa[1], pb[1]], color="#d62728", lw=5.0, alpha=0.5, zorder=5)
-    _BND_LABEL = {
-        "PAUSE_INGRESS": "PAUSE-IN",
-        "PAUSE_EGRESS": "PAUSE-OUT",
-        "RESUME": "RESUME",
-    }
     for bc in res.boundary_control:
         if bc.node_id.value not in pos:
             continue
@@ -1052,7 +1162,7 @@ def render_optimization(run: PipelineRun, built: BuiltGraph, path: Path) -> None
         va="top",
         ha="left",
         family="monospace",
-        bbox=dict(boxstyle="round", fc="#f3f0ff", ec="#6a3d9a", alpha=0.9),
+        bbox={"boxstyle": "round", "fc": "#f3f0ff", "ec": "#6a3d9a", "alpha": 0.9},
     )
     _save(fig, path)
 
@@ -1060,9 +1170,7 @@ def render_optimization(run: PipelineRun, built: BuiltGraph, path: Path) -> None
 # --- サマリ -----------------------------------------------------------------
 
 
-def render_summary(
-    run: PipelineRun, path: Path, *, invariants: list[str] | None = None
-) -> None:
+def render_summary(run: PipelineRun, path: Path, *, invariants: list[str] | None = None) -> None:
     """実行サマリをテキストで描く（各モジュールの所要時間は数値で列挙）"""
     fig, ax = plt.subplots(figsize=(9, 7))
     ax.axis("off")
@@ -1075,13 +1183,9 @@ def render_summary(
         f"downstream ran : {run.downstream_ran}",
     ]
     if det.triggered_edges:
-        lines.append(
-            "triggered edges: " + ", ".join(e.value for e in det.triggered_edges)
-        )
+        lines.append("triggered edges: " + ", ".join(e.value for e in det.triggered_edges))
     if det.triggered_nodes:
-        lines.append(
-            "triggered nodes: " + ", ".join(n.value for n in det.triggered_nodes)
-        )
+        lines.append("triggered nodes: " + ", ".join(n.value for n in det.triggered_nodes))
 
     # 各モジュールの所要時間（数値表示）と合計
     lines.append("")
@@ -1259,9 +1363,7 @@ def render_all(
                         ],
                     ],
                     handles=[
-                        _line_legend_handle(
-                            "trigger edge", color=_TRIGGER_COLOR, width=6.0
-                        ),
+                        _line_legend_handle("trigger edge", color=_TRIGGER_COLOR, width=6.0),
                         *[
                             _line_legend_handle(
                                 "direct" if route.contains_trigger else f"detour {index}",
@@ -1313,13 +1415,17 @@ def render_all(
             title="Optimization — direction proposal legend",
             lines=[
                 f"solver: {result.solver_status.value}",
-                f"phase 1 / phase 2: {stats.phase1_status.value} ({stats.phase1_ms} ms) / "
-                f"{stats.phase2_status.value} ({stats.phase2_ms} ms)",
+                (
+                    f"phase 1 / phase 2: {stats.phase1_status.value} ({stats.phase1_ms} ms) / "
+                    f"{stats.phase2_status.value} ({stats.phase2_ms} ms)"
+                ),
                 f"tau*: {result.objective_values.tau_star:.4g}",
                 f"throughput: {_fmt_throughput(result.objective_values.throughput)}",
                 f"fallback: {report.fallback_to_previous}",
-                f"local / boundary reachability: {report.local_reachability_satisfied} / "
-                f"{report.boundary_reachability_satisfied}",
+                (
+                    f"local / boundary reachability: {report.local_reachability_satisfied} / "
+                    f"{report.boundary_reachability_satisfied}"
+                ),
                 *[
                     f"{item.edge_id.value}: {item.proposed_direction.value} "
                     f"({item.change_type.value})"

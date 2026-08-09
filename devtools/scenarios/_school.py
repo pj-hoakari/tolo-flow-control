@@ -26,12 +26,9 @@ def school_gathering_od_specs(*, staircase: str) -> tuple[ODSpec, ...]:
             floor = 1
         edges.append(EdgeID(f"e_hall_{staircase}_landing_f{floor}"))
         edges.extend(
-            EdgeID(f"e_{staircase}_stairs_f{level}_{level + 1}")
-            for level in range(floor, 6)
+            EdgeID(f"e_{staircase}_stairs_f{level}_{level + 1}") for level in range(floor, 6)
         )
-        edges.extend(
-            (EdgeID(f"e_hall_{staircase}_landing_f6"), EdgeID("e_hall_f6_goal"))
-        )
+        edges.extend((EdgeID(f"e_hall_{staircase}_landing_f6"), EdgeID("e_hall_f6_goal")))
         return tuple(edges)
 
     return (
@@ -58,4 +55,3 @@ def school_unobserved_edges() -> frozenset[EdgeID]:
             ("e_hall_north_landing_", "e_hall_south_landing_", "e_vertical_elevator_")
         )
     )
-

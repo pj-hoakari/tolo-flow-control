@@ -76,9 +76,7 @@ def compute_boundary_control(
         for edge in graph.enabled_edges():
             if node.node_id not in (edge.endpoint_a, edge.endpoint_b):
                 continue
-            other = (
-                edge.endpoint_b if edge.endpoint_a == node.node_id else edge.endpoint_a
-            )
+            other = edge.endpoint_b if edge.endpoint_a == node.node_id else edge.endpoint_a
             if other in boundary_ids:
                 note_danger(other, f"danger node {node.node_id.value}")
 

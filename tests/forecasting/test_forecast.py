@@ -1,6 +1,6 @@
 """``forecast`` の統合テスト（観測 → Step A 点需要分解 → Step B OD 推定）"""
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 import pytest
 
@@ -44,9 +44,7 @@ def _vector_edge(edge_id: str, a: str, b: str) -> Edge:
 
 
 def _flow(edge_id: str, rate: float) -> ArcFlow:
-    return ArcFlow(
-        edge_id=EdgeID(edge_id), direction=FlowDirection.A_TO_B, flow_rate=rate
-    )
+    return ArcFlow(edge_id=EdgeID(edge_id), direction=FlowDirection.A_TO_B, flow_rate=rate)
 
 
 def _config() -> ResolvedConfig:
@@ -82,7 +80,7 @@ def test_forecast_open_mode_decomposes_then_builds_od() -> None:
         ),
     )
     observations = Observations(
-        observed_at=datetime(2026, 6, 1, tzinfo=timezone.utc),
+        observed_at=datetime(2026, 6, 1, tzinfo=UTC),
         arc_flows=(_flow("e1", 10.0), _flow("e2", 10.0)),
     )
 
@@ -119,7 +117,7 @@ def test_forecast_closed_mode_decomposes_and_builds_od() -> None:
         edges=(_vector_edge("e1", "a", "b"),),
     )
     observations = Observations(
-        observed_at=datetime(2026, 6, 1, tzinfo=timezone.utc),
+        observed_at=datetime(2026, 6, 1, tzinfo=UTC),
         arc_flows=(_flow("e1", 5.0),),
     )
 
@@ -158,7 +156,7 @@ def test_forecast_populates_full_schema() -> None:
         ),
     )
     observations = Observations(
-        observed_at=datetime(2026, 6, 1, tzinfo=timezone.utc),
+        observed_at=datetime(2026, 6, 1, tzinfo=UTC),
         arc_flows=(_flow("e1", 10.0), _flow("e2", 10.0)),
     )
     history = HistoryDigest(
@@ -181,9 +179,7 @@ def test_forecast_populates_full_schema() -> None:
     assert result.od_matrix[0].origin == NodeID("entrance")
     assert result.od_matrix[0].destination == NodeID("hall")
     assert len(result.estimation_resolution) == 3
-    assert all(
-        r.mode == ODResolutionMode.TURNING_EXACT for r in result.estimation_resolution
-    )
+    assert all(r.mode == ODResolutionMode.TURNING_EXACT for r in result.estimation_resolution)
     # Step C: 再現残差 0・全ノード信頼度 1.0
     assert result.reproduction_error == pytest.approx(0.0)
     assert len(result.node_confidence) == 3
@@ -210,7 +206,7 @@ def test_forecast_mode_none_matches_graph_derivation() -> None:
         ),
     )
     observations = Observations(
-        observed_at=datetime(2026, 6, 1, tzinfo=timezone.utc),
+        observed_at=datetime(2026, 6, 1, tzinfo=UTC),
         arc_flows=(_flow("e1", 10.0), _flow("e2", 10.0)),
     )
 
@@ -246,7 +242,7 @@ def test_forecast_mode_overrides_graph_derivation() -> None:
         edges=(_vector_edge("e1", "ent", "ex"),),
     )
     observations = Observations(
-        observed_at=datetime(2026, 6, 1, tzinfo=timezone.utc),
+        observed_at=datetime(2026, 6, 1, tzinfo=UTC),
         arc_flows=(_flow("e1", 10.0),),
     )
 

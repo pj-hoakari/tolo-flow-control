@@ -16,9 +16,7 @@ from .pipeline import PipelineRun
 from .serialize import dump_json
 
 
-def run_summary(
-    run: PipelineRun, invariants: list[str] | None = None
-) -> dict[str, Any]:
+def run_summary(run: PipelineRun, invariants: list[str] | None = None) -> dict[str, Any]:
     """1 実行の数値要約 dict（run.json／横断インデックス／compare の共通ソース）
 
     個別モジュール JSON を開かずとも `index.json` 1 ファイルで解析が完結するよう、
@@ -57,21 +55,17 @@ def run_summary(
                     for edge_id in resolution.imputed_arcs
                 }
             ),
-            "fallback_default_edges": [
-                e.value for e in fc.fallback_usage.used_default_edges
-            ],
+            "fallback_default_edges": [e.value for e in fc.fallback_usage.used_default_edges],
             "staying_nodes": [d.node_id.value for d in fc.node_demand if d.staying > 0.0],
         }
     if run.detour is not None:
         summary["detour"] = {
             "trigger_sets": len(run.detour.detour_sets),
             "k_effective": {
-                detour.origin_edge.value: detour.k_effective
-                for detour in run.detour.detour_sets
+                detour.origin_edge.value: detour.k_effective for detour in run.detour.detour_sets
             },
             "path_counts": {
-                detour.origin_edge.value: len(detour.paths)
-                for detour in run.detour.detour_sets
+                detour.origin_edge.value: len(detour.paths) for detour in run.detour.detour_sets
             },
             "trigger_edge_union": sorted(
                 edge_id.value for edge_id in run.detour.trigger_edge_set()
