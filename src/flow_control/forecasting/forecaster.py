@@ -62,7 +62,14 @@ def forecast(
     )
 
     # Step C: 整合・検証
-    validation = validate_od(graph, observations, od_result.od_matrix, config)
+    validation = validate_od(
+        graph,
+        observations,
+        od_result.od_matrix,
+        node_demand,
+        config,
+        demand_result.imputed_flows,
+    )
 
     # フロー感度 η_e（エッジ単位）
     sensitivity = resolve_arc_flow_sensitivity(

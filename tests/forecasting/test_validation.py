@@ -77,7 +77,7 @@ def _confidence_of(result, node_id: str) -> float:
 def test_perfect_reproduction_gives_zero_error_and_full_confidence() -> None:
     """OD が観測リンク流量を完全再現すれば残差 0・信頼度 1.0
 
-    s -e1=10-> m -e2=10-> t に対し OD(s->t)=10 を最短路配分 → 各アーク再現一致
+    s -e1=10-> m -e2=10-> t に対し OD(s->t)=10 を実測配分で伝播 → 各アーク再現一致
     """
     graph = Graph(
         nodes=(
@@ -92,7 +92,7 @@ def test_perfect_reproduction_gives_zero_error_and_full_confidence() -> None:
         arc_flows=(_flow("e1", 10.0), _flow("e2", 10.0)),
     )
 
-    result = validate_od(graph, observations, (_od("s", "t", 10.0),), _config())
+    result = validate_od(graph, observations, (_od("s", "t", 10.0),), (), _config())
 
     assert result.reproduction_error == pytest.approx(0.0)
     assert _confidence_of(result, "s") == pytest.approx(1.0)
@@ -114,7 +114,7 @@ def test_reproduction_mismatch_lowers_confidence() -> None:
         arc_flows=(_flow("e1", 10.0),),
     )
 
-    result = validate_od(graph, observations, (_od("s", "t", 4.0),), _config())
+    result = validate_od(graph, observations, (_od("s", "t", 4.0),), (), _config())
 
     assert result.reproduction_error == pytest.approx(0.6, abs=1e-3)
     assert _confidence_of(result, "s") == pytest.approx(0.4, abs=1e-3)
@@ -131,7 +131,7 @@ def test_hold_flag_attenuates_confidence() -> None:
         arc_flows=(_flow("e1", 10.0, flag=ConfidenceFlag.HOLD),),
     )
 
-    result = validate_od(graph, observations, (_od("s", "t", 10.0),), _config())
+    result = validate_od(graph, observations, (_od("s", "t", 10.0),), (), _config())
 
     # HOLD でも再現は一致（残差 0, base=1.0）→ 0.7 倍が効く
     assert result.reproduction_error == pytest.approx(0.0)
@@ -150,28 +150,58 @@ def test_invalid_flag_zeroes_confidence() -> None:
         arc_flows=(_flow("e1", 10.0, flag=ConfidenceFlag.INVALID),),
     )
 
-    result = validate_od(graph, observations, (), _config())
+    result = validate_od(graph, observations, (), (), _config())
 
     assert _confidence_of(result, "s") == pytest.approx(0.0)
     assert _confidence_of(result, "t") == pytest.approx(0.0)
 
 
-def test_missing_observation_zeroes_confidence() -> None:
-    """観測欠損の有効ベクトルアークの両端ノードは信頼度 0.0"""
+def test_missing_observation_halves_confidence() -> None:
+    """観測欠損の有効ベクトルアークはカバレッジ減衰（0.5）にとどめる
+
+    欠損は保存補完・prior の間接推定が受け皿となるため INVALID（0.0）と同一視しない
+    """
     graph = Graph(
         nodes=(_node("s", NodeKind.TRANSIT_ONLY), _node("t", NodeKind.GOAL)),
         edges=(_edge("e1", "s", "t"),),
     )
     observations = Observations(observed_at=_OBSERVED_AT)
 
-    result = validate_od(graph, observations, (), _config())
+    result = validate_od(graph, observations, (), (), _config())
 
-    assert _confidence_of(result, "s") == pytest.approx(0.0)
-    assert _confidence_of(result, "t") == pytest.approx(0.0)
+    assert _confidence_of(result, "s") == pytest.approx(0.5)
+    assert _confidence_of(result, "t") == pytest.approx(0.5)
 
 
-def test_unreachable_od_pair_is_skipped() -> None:
-    """到達不能な OD ペアは配分対象外で残差計算が破綻しない"""
+def test_partial_coverage_grades_confidence() -> None:
+    """観測済み・欠損が混在するノードはカバレッジ比で段階的に減衰する
+
+    m は e1（観測あり・再現一致）と e2（欠損）に接続 → coverage = (1 + 0.5)/2
+    """
+    graph = Graph(
+        nodes=(
+            _node("s", NodeKind.TRANSIT_ONLY),
+            _node("m", NodeKind.TRANSIT_ONLY),
+            _node("t", NodeKind.GOAL),
+        ),
+        edges=(_edge("e1", "s", "m"), _edge("e2", "m", "t")),
+    )
+    observations = Observations(
+        observed_at=_OBSERVED_AT,
+        arc_flows=(_flow("e1", 10.0),),
+    )
+
+    result = validate_od(graph, observations, (_od("s", "m", 10.0),), (), _config())
+
+    assert _confidence_of(result, "s") == pytest.approx(1.0)
+    assert _confidence_of(result, "m") == pytest.approx(0.75)
+
+
+def test_unreachable_od_row_shows_up_as_residual() -> None:
+    """観測で運びきれない OD 行和は残差として現れる（計算は破綻しない）
+
+    OD 行和 15 が観測 10 の e1 に流し込まれ |15-10|/10 = 0.5
+    """
     graph = Graph(
         nodes=(
             _node("s", NodeKind.TRANSIT_ONLY),
@@ -186,11 +216,10 @@ def test_unreachable_od_pair_is_skipped() -> None:
     )
 
     result = validate_od(
-        graph, observations, (_od("s", "t", 10.0), _od("s", "u", 5.0)), _config()
+        graph, observations, (_od("s", "t", 10.0), _od("s", "u", 5.0)), (), _config()
     )
 
-    # s->u は到達不能で無視され，s->t のみ再現 → 残差 0
-    assert result.reproduction_error == pytest.approx(0.0)
+    assert result.reproduction_error == pytest.approx(0.5, abs=1e-3)
 
 
 def test_forecast_populates_validation_outputs() -> None:

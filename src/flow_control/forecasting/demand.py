@@ -23,11 +23,25 @@ class NodeDemand:
 
 
 @dataclass(frozen=True)
+class ImputedArcFlow:
+    """保存補完で復元した有向アーク流量
+
+    実測に準ずる復元値として Step C の再現配分にも供する
+    """
+
+    edge_id: EdgeID
+    from_node: NodeID
+    to_node: NodeID
+    rate: float
+
+
+@dataclass(frozen=True)
 class DemandResult:
     """Step A の需要と、保存則で復元したアークの診断情報。"""
 
     node_demand: tuple[NodeDemand, ...]
     imputed_arcs: tuple[EdgeID, ...] = ()
+    imputed_flows: tuple[ImputedArcFlow, ...] = ()
 
 
 def compute_node_demand(
@@ -84,7 +98,7 @@ def compute_node_demand_result(
     occupancy_by_node = _valid_occupancy_by_node(observations)
 
     # ── 未観測アークの保存補完（in-place で P_v, A_v を更新） ──
-    imputed_arcs = _impute_unobserved_arcs(
+    imputed_arcs, imputed_flow_by_edge = _impute_unobserved_arcs(
         active_nodes, outflow, inflow, observed_edges, occupancy_by_node, graph
     )
 
@@ -110,10 +124,14 @@ def compute_node_demand_result(
             )
         )
 
+    ordered_imputed = graph_edge_order(graph, imputed_arcs)
     return DemandResult(
         node_demand=tuple(demands),
-        imputed_arcs=tuple(
-            EdgeID(edge_id) for edge_id in graph_edge_order(graph, imputed_arcs)
+        imputed_arcs=tuple(EdgeID(edge_id) for edge_id in ordered_imputed),
+        imputed_flows=tuple(
+            imputed_flow_by_edge[edge_id]
+            for edge_id in ordered_imputed
+            if edge_id in imputed_flow_by_edge
         ),
     )
 
@@ -184,7 +202,7 @@ def _impute_unobserved_arcs(
     observed_edges: set[str],
     occupancy_by_node: dict[NodeID, NodeOccupancy],
     graph: Graph,
-) -> set[str]:
+) -> tuple[set[str], dict[str, ImputedArcFlow]]:
     """単一未観測アークの保存補完
 
     保存恒等式「到着 = 出発 + 滞留増」より，ノードに未観測のベクトルアークが
@@ -202,13 +220,13 @@ def _impute_unobserved_arcs(
     実在しない流出を捏造して偽の再生成（逆向き OD）を生む。境界ノードは外部との
     出入りが観測されないため恒等式が閉じず、同じく錨にしない
 
-    補完したエッジ ID の集合を返す
+    補完したエッジ ID の集合と、復元した有向フロー値（流量 0 の確定は含まない）を返す
     """
     # 補完は観測フロンティアからの逆算である。ベクトル流量の観測が 1 つも無ければ
     # フロンティアが存在せず、ΔOcc 単独からのフロー捏造になるため何もしない
     # （占有のみの NODE_ONLY 縮退は距離 prior の純再配分に委ねる）
     if not observed_edges:
-        return set()
+        return set(), {}
 
     active_ids = {node.node_id for node in active_nodes}
     incident: dict[NodeID, list[Edge]] = {nid: [] for nid in active_ids}
@@ -222,6 +240,7 @@ def _impute_unobserved_arcs(
 
     resolved = set(observed_edges)
     imputed: set[str] = set()
+    imputed_flow_by_edge: dict[str, ImputedArcFlow] = {}
 
     def can_anchor(node: Node) -> bool:
         if node.is_boundary:
@@ -260,15 +279,27 @@ def _impute_unobserved_arcs(
                 outflow[node.node_id] += magnitude
                 if neighbor in inflow:
                     inflow[neighbor] += magnitude
+                imputed_flow_by_edge[edge.edge_id.value] = ImputedArcFlow(
+                    edge_id=edge.edge_id,
+                    from_node=node.node_id,
+                    to_node=neighbor,
+                    rate=magnitude,
+                )
             elif residual < 0.0:
                 # 流出超過 → 未観測アークは v への流入（到着）
                 inflow[node.node_id] += magnitude
                 if neighbor in outflow:
                     outflow[neighbor] += magnitude
+                imputed_flow_by_edge[edge.edge_id.value] = ImputedArcFlow(
+                    edge_id=edge.edge_id,
+                    from_node=neighbor,
+                    to_node=node.node_id,
+                    rate=magnitude,
+                )
             # residual == 0 のときは流量 0 のアークとして確定（加算なし）
 
             resolved.add(edge.edge_id.value)
             imputed.add(edge.edge_id.value)
             progressed = True
 
-    return imputed
+    return imputed, imputed_flow_by_edge

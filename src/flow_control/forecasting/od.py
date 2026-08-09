@@ -15,7 +15,7 @@ from ..domain.enums import FlowDirection, NodeKind, ObservationType
 from ..domain.graph import EdgeID, Graph, Node, NodeID
 from ..domain.observations import ConfidenceFlag, Observations
 from .config import ResolvedConfig
-from .demand import NodeDemand
+from .demand import ImputedArcFlow, NodeDemand
 
 # 前方伝播の伝播ステップ上限（純通過サイクルの無限ループ防止。1 ステップ = 1 ホップ）
 _MAX_PROPAGATION_STEPS = 1000
@@ -191,7 +191,7 @@ def estimate_od(
     )
 
     if forward_ok:
-        raw = _forward_propagate(
+        raw, _ = _forward_propagate(
             node_demands, production, flows, config, observations=observations
         )
         raw = _exclude_invalid_pairs(raw, boundary_ids, is_open_mode)
@@ -211,6 +211,59 @@ def estimate_od(
 
     od_matrix = _to_od_matrix(od, node_demands)
     return ODResult(od_matrix=od_matrix, resolutions=resolutions)
+
+
+def reproduce_link_flows(
+    graph: Graph,
+    observations: Observations,
+    node_demands: tuple[NodeDemand, ...],
+    od_matrix: tuple[ODDemand, ...],
+    config: ResolvedConfig,
+    imputed_flows: tuple[ImputedArcFlow, ...] = (),
+) -> dict[tuple[str, NodeID], float]:
+    """推定 OD を実測配分で再現したリンク流量 v̂ を返す（Step C の検証用）
+
+    OD 行列の行和（起点別総需要）を、OD 導出と同じ実測配分
+    （転換率実測・観測流量比の前方伝播）でネットワークに流し込み、
+    各有向アーク (edge_id, from_node) に載る流量を返す。
+    保存補完で復元した有向フローは実測に準ずる配分として組み入れ、
+    未観測区間で伝播が途切れないようにする。
+    転換率実測区間では実測 M による再現に一致し、欠測区間は観測が
+    無いため比較対象にならない（残差は観測アーク上でのみ評価される）
+    """
+    if not od_matrix:
+        return {}
+    flows = _directed_flows(graph, observations)
+    for imputed in imputed_flows:
+        if imputed.edge_id.value not in flows and imputed.rate > 0.0:
+            flows[imputed.edge_id.value] = _DirectedFlow(
+                imputed.from_node, imputed.to_node, imputed.rate
+            )
+    if not flows:
+        return {}
+    production: dict[NodeID, float] = defaultdict(float)
+    for od in od_matrix:
+        production[od.origin] += od.demand
+    # 前方伝播は node_demands を起点リストとして走査するため、
+    # 点需要に現れない起点（境界生成源等）は空エントリで補う
+    known = {d.node_id for d in node_demands}
+    sources = node_demands + tuple(
+        NodeDemand(
+            node_id=nid,
+            gross_out=0.0,
+            gross_in=0.0,
+            production=0.0,
+            absorption=0.0,
+            transit=0.0,
+            staying=0.0,
+        )
+        for nid in production
+        if nid not in known
+    )
+    _, arc_load = _forward_propagate(
+        sources, dict(production), flows, config, observations=observations
+    )
+    return arc_load
 
 
 def _directed_flows(
@@ -390,12 +443,15 @@ def _forward_propagate(
     config: ResolvedConfig,
     *,
     observations: Observations,
-) -> dict[tuple[NodeID, NodeID], float]:
+) -> tuple[dict[tuple[NodeID, NodeID], float], dict[tuple[str, NodeID], float]]:
     """転換率の前方伝播で OD を直接同定
 
     各生成源 s の prod_s を seed に，各ノードで終端割合 ρ_v = stay_v/A_v を吸収し，
     残りを出口エッジへ観測流量比で配分して下流へ伝播する
     `A→B`（B で終端）と `A→（B→）C`（B を通過）が厳密に分離される
+
+    戻り値は (OD 行列, 伝播が各アークに載せた流量)。アークは
+    (edge_id, from_node) の有向キー。後者は Step C の再現検証に使う
     """
     gross_in = {d.node_id: d.gross_in for d in node_demands}
     staying = {d.node_id: d.staying for d in node_demands}
@@ -409,6 +465,7 @@ def _forward_propagate(
     tol = config.ipf_tolerance
 
     od: dict[tuple[NodeID, NodeID], float] = defaultdict(float)
+    arc_load: dict[tuple[str, NodeID], float] = defaultdict(float)
     for source in node_demands:
         if source.node_id not in production:
             continue
@@ -416,6 +473,7 @@ def _forward_propagate(
         pending: dict[tuple[NodeID, str], float] = defaultdict(float)
         for edge_id, neighbor, share in out_split.get(source.node_id, ()):
             pending[(neighbor, edge_id)] += production[source.node_id] * share
+            arc_load[(edge_id, source.node_id)] += production[source.node_id] * share
 
         absorbed: dict[NodeID, float] = defaultdict(float)
         steps = 0
@@ -433,6 +491,7 @@ def _forward_propagate(
                         continue
                     for edge_id, neighbor, share in out_split.get(node_id, ()):
                         nxt[(neighbor, edge_id)] += relay * share
+                        arc_load[(edge_id, node_id)] += relay * share
                         moving += relay * share
                     continue
 
@@ -443,6 +502,7 @@ def _forward_propagate(
                     else:
                         flow = flows[out_edge]
                         nxt[(flow.destination, out_edge)] += allocated
+                        arc_load[(out_edge, node_id)] += allocated
                         moving += allocated
             pending = {k: v for k, v in nxt.items() if v > tol}
             if moving <= tol:
@@ -452,7 +512,7 @@ def _forward_propagate(
             if amount > 0.0 and dest != source.node_id:
                 od[(source.node_id, dest)] += amount
 
-    return dict(od)
+    return dict(od), dict(arc_load)
 
 
 def _turning_split(
