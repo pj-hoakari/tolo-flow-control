@@ -74,6 +74,10 @@ ignore = [
     "PLC0415",
     # str+Enum から StrEnum への置換は str()/f-string の出力が変わるため見送る
     "UP042",
+    # 三項演算子への畳み込みは条件が長い箇所で可読性を落とすため強制しない
+    "SIM108",
+    # 検証結果・描画テキストの逐次 append はループ形式のまま維持する）
+    "PERF401",
 ]
 
 [tool.ruff.lint.per-file-ignores]
