@@ -111,9 +111,7 @@ def test_normal_trigger_fires_and_starts_cooldown(base_time: datetime):
 def test_danger_node_fires_and_starts_cooldown(base_time: datetime):
     state = DetectionState()
 
-    result = evaluate_cooldown(
-        state, (_danger_node("n1", base_time),), base_time, _config()
-    )
+    result = evaluate_cooldown(state, (_danger_node("n1", base_time),), base_time, _config())
 
     assert result.verdict == VerdictHint.TRIGGERED
     assert result.triggered_edges == ()
@@ -233,9 +231,7 @@ def test_danger_fires_during_cooldown_and_integrates_queue(base_time: datetime):
     q_e3 = _queued("e3", base_time - timedelta(minutes=5), score=1.0)
     state = DetectionState(cooldown_until=cooldown_until, trigger_queue=(q_e2, q_e3))
 
-    result = evaluate_cooldown(
-        state, (_danger_edge("e1", base_time),), base_time, _config()
-    )
+    result = evaluate_cooldown(state, (_danger_edge("e1", base_time),), base_time, _config())
 
     assert result.verdict == VerdictHint.TRIGGERED
     # キュー起点（e2, e3）を先に統合し、今回の危険フラグ起点（e1）を続ける

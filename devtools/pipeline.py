@@ -19,8 +19,8 @@ import time
 from dataclasses import dataclass, field
 
 from flow_control.detection import DetectionResult, VerdictHint, detect
-from flow_control.detour_routing import DetourResult, route_detour
 from flow_control.detection.state import DetectionState
+from flow_control.detour_routing import DetourResult, route_detour
 from flow_control.domain import Mode
 from flow_control.forecasting import ForecastResult, forecast
 from flow_control.optimization import OptimizeResult, optimize

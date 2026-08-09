@@ -124,9 +124,7 @@ def test_puncture_threshold_boundary(
     graph = _scalar_graph(edge_id, capacity_hint=100.0)
     observations = Observations(
         observed_at=base_time,
-        arc_scalar_flows=(
-            ArcScalarFlow(edge_id=edge_id, observed_count=observed_count),
-        ),
+        arc_scalar_flows=(ArcScalarFlow(edge_id=edge_id, observed_count=observed_count),),
     )
 
     result = _run(

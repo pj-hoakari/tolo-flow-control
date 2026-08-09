@@ -1,16 +1,18 @@
 """統合・ゴールデンテスト（手計算例の再現含む）"""
 
+from datetime import UTC
+
 import pytest
 
 from flow_control.detour_routing import DetourResult
 from flow_control.domain import Mode
 from flow_control.optimization import (
     ImportanceDirection,
+    OptimizationMode,
     Phase2Status,
     ProposedDirection,
-    SolverStatus,
-    OptimizationMode,
     ResolvedConfig,
+    SolverStatus,
     optimize,
 )
 
@@ -125,18 +127,12 @@ def test_big_m_factor_does_not_change_solution(
         worked_example_detour,
         worked_example_history,
         previous_result=None,
-        config=ResolvedConfig(
-            optimization_mode=OptimizationMode.STRICT, big_m_factor=100.0
-        ),
+        config=ResolvedConfig(optimization_mode=OptimizationMode.STRICT, big_m_factor=100.0),
         seed=1,
         time_limit=30.0,
     )
-    assert result.optimization_result.objective_values.tau_star == pytest.approx(
-        2.4, abs=1e-3
-    )
-    assert result.optimization_result.objective_values.throughput == pytest.approx(
-        24.0, abs=1e-6
-    )
+    assert result.optimization_result.objective_values.tau_star == pytest.approx(2.4, abs=1e-3)
+    assert result.optimization_result.objective_values.throughput == pytest.approx(24.0, abs=1e-6)
 
 
 def test_lightweight_residual_tau_is_conservative(
@@ -190,9 +186,7 @@ def test_phase2_skipped_when_no_throughput_targets(
     )
     assert result.solver_stats.phase2_status == Phase2Status.SKIPPED
     # Phase 1 単独でも τ* は変わらない
-    assert result.optimization_result.objective_values.tau_star == pytest.approx(
-        2.4, abs=1e-3
-    )
+    assert result.optimization_result.objective_values.tau_star == pytest.approx(2.4, abs=1e-3)
     # スループット対象集合が空のときは 0 ではなく None（対象なし）を報告する
     assert result.optimization_result.objective_values.throughput is None
     assert result.solver_stats.throughput is None
@@ -391,9 +385,7 @@ def test_zone_net_supply_folds_crossing_flows():
         edges=(edge("e_ab", "a", "b"), edge("e_bc", "b", "c")),
     )
     arc_model = build_arc_model(graph)
-    commodities = (
-        Commodity(index=0, origin=NodeID("b"), destination=NodeID("c"), demand=4.0),
-    )
+    commodities = (Commodity(index=0, origin=NodeID("b"), destination=NodeID("c"), demand=4.0),)
     # ベースライン: a→b に 3.0 流入（横断）
     flow = {"e_ab|A_TO_B": 3.0}
     supply = _zone_net_supply(
@@ -437,9 +429,7 @@ def test_demand_all_cut_is_diagnosed(
     assert st.commodities_used == 0
     assert st.demand_all_cut
     # 需要が全カットされた解は全エッジで重要度 0（実質空の提案）
-    assert all(
-        ri.importance == 0.0 for ri in result.optimization_result.route_importance
-    )
+    assert all(ri.importance == 0.0 for ri in result.optimization_result.route_importance)
 
 
 def test_demand_diagnostics_on_normal_run(
@@ -500,18 +490,19 @@ def test_lightweight_budget_exhaustion_truncates_greedy(
 
 def test_congestion_increment_spreads_across_equal_cost_parallel_routes():
     """等コストの並列ルートがあるとき配分が 1 本へ集中せず分散する。"""
-    from datetime import datetime, timezone
+    from datetime import datetime
 
-    from flow_control.domain import HistoryDigest, Observations
     from flow_control.domain import (
         CurrentDirection,
         DirectionConstraint,
         Edge,
         EdgeID,
         Graph,
+        HistoryDigest,
         Node,
         NodeID,
         NodeKind,
+        Observations,
         ObservationType,
     )
     from flow_control.forecasting import ForecastResult, ODDemand
@@ -546,7 +537,7 @@ def test_congestion_increment_spreads_across_equal_cost_parallel_routes():
         ),
     )
     forecast = ForecastResult(od_matrix=(ODDemand(NodeID("src"), NodeID("dst"), 30.0),))
-    observations = Observations(observed_at=datetime(2026, 6, 18, tzinfo=timezone.utc))
+    observations = Observations(observed_at=datetime(2026, 6, 18, tzinfo=UTC))
 
     def run(increment: float):
         return optimize(

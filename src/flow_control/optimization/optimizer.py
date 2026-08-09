@@ -11,11 +11,15 @@ import time
 from dataclasses import replace
 from datetime import datetime
 
+# DetourResult / ForecastResult は型注釈のみで取り込む
+from ..detour_routing import DetourResult
 from ..domain.enums import Mode, ObservationType
 from ..domain.graph import EdgeID, Graph, NodeID
 from ..domain.history import HistoryDigest
 from ..domain.observations import ConfidenceFlag, Observations
+from ..forecasting import ForecastResult
 from .arcs import Arc, ArcModel, build_arc_model, fixed_directions
+from .boundary import compute_boundary_control
 from .config import OptimizationMode, ResolvedConfig
 from .drainable import compute_drainable, reachable_forward
 from .localization import TriggerZone, build_trigger_zones
@@ -44,24 +48,19 @@ from .restriction import (
     build_resume_proposals,
     evaluate_detour_gate,
 )
-from .boundary import compute_boundary_control
 from .results import (
     ConstraintReport,
-    RestrictionAction,
-    RestrictionProposal,
-    RestrictionReason,
-    RouteImportance,
     ObjectiveValues,
     OptimizationResult,
     OptimizeResult,
     Phase2Status,
+    RestrictionAction,
+    RestrictionProposal,
+    RestrictionReason,
+    RouteImportance,
     SolverStats,
     SolverStatus,
 )
-
-# フォワード参照のため ForecastResult / DetourResult は型注釈のみで取り込む
-from ..forecasting import ForecastResult
-from ..detour_routing import DetourResult
 
 # 予算枯渇後もベースライン配分・フォールバックには最低限渡す求解時間（秒）。
 # 空の結果よりは僅かに超過してでも解を返す方が安全側のため
@@ -83,9 +82,7 @@ def optimize(
     triggered_edges: tuple[EdgeID, ...] = (),
     triggered_nodes: tuple[NodeID, ...] = (),
 ) -> OptimizeResult:
-    is_open = (mode == Mode.OPEN) if mode is not None else (
-        len(graph.boundary_nodes()) > 0
-    )
+    is_open = (mode == Mode.OPEN) if mode is not None else (len(graph.boundary_nodes()) > 0)
     arc_model = build_arc_model(graph)
     active_node_set = set(arc_model.active_nodes)
     active_edge_ids = {e.edge_id for e in arc_model.active_edges}
@@ -101,7 +98,7 @@ def optimize(
     drain = compute_drainable(arc_model, od_pairs, stagnation_edges)
 
     # スループット最大化対象 P = トリガー起点迂回路 ∪ オペレータ指定
-    p_edges = (set(detour_result.trigger_edge_set()) | set(config.throughput_target_edges))
+    p_edges = set(detour_result.trigger_edge_set()) | set(config.throughput_target_edges)
     p_edges &= active_edge_ids
     throughput_arcs = _throughput_arcs(arc_model, p_edges)
 
@@ -138,9 +135,7 @@ def optimize(
             commodities_used,
         )
 
-    built = build_model(
-        arc_model, inputs, commodities, drain.drainable, is_open=is_open
-    )
+    built = build_model(arc_model, inputs, commodities, drain.drainable, is_open=is_open)
     t0 = time.perf_counter()
     p1 = solve_phase1(built, time_limit, seed, config.mip_rel_gap)
     phase1_ms = int((time.perf_counter() - t0) * 1000)
@@ -205,9 +200,7 @@ def optimize(
         ):
             final_solution = p2.solution
             phase2_status = (
-                Phase2Status.OPTIMAL
-                if p2.status == SolverStatus.OPTIMAL
-                else Phase2Status.FEASIBLE
+                Phase2Status.OPTIMAL if p2.status == SolverStatus.OPTIMAL else Phase2Status.FEASIBLE
             )
             throughput = p2.objective
         elif p2.status == SolverStatus.TIMEOUT:
@@ -321,9 +314,7 @@ def _optimize_lightweight(
     built = build_assignment_lp(arc_model, inputs, commodities, fixed_x=fixed_x)
     build_sec = time.perf_counter() - t0
     t0 = time.perf_counter()
-    assignment = solve_assignment(
-        built, max(_MIN_SOLVE_SEC, deadline - time.perf_counter()), seed
-    )
+    assignment = solve_assignment(built, max(_MIN_SOLVE_SEC, deadline - time.perf_counter()), seed)
     assign_sec = time.perf_counter() - t0
     assign_lp_ms = int(assign_sec * 1000)
 
@@ -336,9 +327,7 @@ def _optimize_lightweight(
 
     # ゾーン抽出。重大度はゾーン τ と同じ正規化停滞ストレスで代表する
     severity = {
-        eid: inputs.c_e.get(eid, 1.0)
-        * s_obs
-        / (inputs.s_bar.get(eid, 0.0) + inputs.epsilon_0)
+        eid: inputs.c_e.get(eid, 1.0) * s_obs / (inputs.s_bar.get(eid, 0.0) + inputs.epsilon_0)
         for eid, s_obs in inputs.s_obs.items()
     }
     localization = build_trigger_zones(
@@ -365,12 +354,8 @@ def _optimize_lightweight(
         for edge_id in candidate_ids:
             if greedy_truncated:
                 break
-            current_direction = (
-                solution.direction if solution is not None else fixed_x
-            )
-            for candidate_x in _direction_candidates(
-                arc_model, edge_id, current_direction
-            ):
+            current_direction = solution.direction if solution is not None else fixed_x
+            for candidate_x in _direction_candidates(arc_model, edge_id, current_direction):
                 remaining = deadline - time.perf_counter()
                 if remaining <= 0.0:
                     greedy_truncated = True
@@ -389,16 +374,11 @@ def _optimize_lightweight(
                 )
                 assign_sec += time.perf_counter() - t0
                 assign_lp_ms = int(assign_sec * 1000)
-                if (
-                    candidate.solution is None
-                    or candidate.status == SolverStatus.INFEASIBLE
-                ):
+                if candidate.solution is None or candidate.status == SolverStatus.INFEASIBLE:
                     continue
                 if not _local_reachability_ok(arc_model, candidate.solution):
                     continue
-                if is_open and not _boundary_reachability_ok(
-                    arc_model, candidate.solution
-                ):
+                if is_open and not _boundary_reachability_ok(arc_model, candidate.solution):
                     continue
                 candidate_tau = evaluate_residual_tau(
                     arc_model, inputs, drainable, candidate.solution.flow
@@ -419,9 +399,7 @@ def _optimize_lightweight(
             net_supply = _zone_net_supply(
                 arc_model, commodities, zone_edge_set, zone_node_set, composed_flow
             )
-            zone_tau = evaluate_residual_tau(
-                arc_model, inputs, zone_drainable, composed_flow
-            )
+            zone_tau = evaluate_residual_tau(arc_model, inputs, zone_drainable, composed_flow)
             candidates = sorted(
                 (e for e in zone.seed_edges if e in arc_model.arcs_of_edge),
                 key=lambda e: (-severity.get(e, 0.0), e.value),
@@ -429,9 +407,7 @@ def _optimize_lightweight(
             for edge_id in candidates:
                 if greedy_truncated:
                     break
-                for candidate_x in _direction_candidates(
-                    arc_model, edge_id, adopted_x
-                ):
+                for candidate_x in _direction_candidates(arc_model, edge_id, adopted_x):
                     remaining = deadline - time.perf_counter()
                     if remaining <= 0.0:
                         greedy_truncated = True
@@ -466,9 +442,7 @@ def _optimize_lightweight(
                     for eid in zone_edge_set:
                         for arc in arc_model.arcs_of_edge.get(eid, ()):
                             cand_flow[arc.key] = zone_flows.get(arc.key, 0.0)
-                    cand_tau = evaluate_residual_tau(
-                        arc_model, inputs, zone_drainable, cand_flow
-                    )
+                    cand_tau = evaluate_residual_tau(arc_model, inputs, zone_drainable, cand_flow)
                     if cand_tau <= zone_tau - config.greedy_improve_margin:
                         adopted_x = candidate_x
                         composed_flow = cand_flow
@@ -483,13 +457,25 @@ def _optimize_lightweight(
 
     # current 方向が不可解、または全候補を試しても安全な解が得られない場合は、
     # 不安全な結果を返さず保持フォールバック（方向固定 LP → 前回結果コピー）へ移行する。
-    if solution is None or not _local_reachability_ok(arc_model, solution) or (
-        is_open and not _boundary_reachability_ok(arc_model, solution)
+    if (
+        solution is None
+        or not _local_reachability_ok(arc_model, solution)
+        or (is_open and not _boundary_reachability_ok(arc_model, solution))
     ):
         return _fallback(
-            arc_model, inputs, commodities, drainable, graph, previous_result, config,
-            seed, max(_MIN_SOLVE_SEC, deadline - time.perf_counter()), solved_at,
-            is_open, throughput_arcs, int((build_sec + assign_sec) * 1000),
+            arc_model,
+            inputs,
+            commodities,
+            drainable,
+            graph,
+            previous_result,
+            config,
+            seed,
+            max(_MIN_SOLVE_SEC, deadline - time.perf_counter()),
+            solved_at,
+            is_open,
+            throughput_arcs,
+            int((build_sec + assign_sec) * 1000),
         )
 
     # 分散段: τ を保ったまま等コストの並列ルートへ配分を散らす（混雑逓増）。
@@ -514,9 +500,7 @@ def _optimize_lightweight(
         assign_sec += time.perf_counter() - t0
         assign_lp_ms = int(assign_sec * 1000)
         if spread.solution is not None and spread.status != SolverStatus.INFEASIBLE:
-            spread_tau = evaluate_residual_tau(
-                arc_model, inputs, drainable, spread.solution.flow
-            )
+            spread_tau = evaluate_residual_tau(arc_model, inputs, drainable, spread.solution.flow)
             if spread_tau <= best_tau + config.epsilon:
                 spread_solution = replace(spread.solution, tau=spread_tau)
                 solution = spread_solution
@@ -556,9 +540,7 @@ def _optimize_lightweight(
     direction = compute_direction_proposals(arc_model, solution)
     boundary = compute_boundary_control(graph, is_open, previous_result, commodities)
     throughput = (
-        sum(solution.flow.get(arc.key, 0.0) for arc in throughput_arcs)
-        if throughput_arcs
-        else None
+        sum(solution.flow.get(arc.key, 0.0) for arc in throughput_arcs) if throughput_arcs else None
     )
     boundary_ok = _boundary_reachability_ok(arc_model, solution) if is_open else True
 
@@ -643,9 +625,7 @@ def _direction_candidates(
     return tuple(candidates)
 
 
-def _outflow_averages(
-    history_digest: HistoryDigest, graph: Graph
-) -> dict[EdgeID, float]:
+def _outflow_averages(history_digest: HistoryDigest, graph: Graph) -> dict[EdgeID, float]:
     """各エッジの排出実績 μ̂_e（方向別ライン通過の直近平均）を集める
 
     ラインなし（directional_flow_samples が None）のエッジは含めない。
@@ -656,11 +636,7 @@ def _outflow_averages(
         window = history_digest.window_series_of(edge.edge_id)
         if window is None or window.directional_flow_samples is None:
             continue
-        values = [
-            value
-            for _, samples in window.directional_flow_samples
-            for _, value in samples
-        ]
+        values = [value for _, samples in window.directional_flow_samples for _, value in samples]
         if values:
             averages[edge.edge_id] = sum(values) / len(values)
     return averages
@@ -693,9 +669,7 @@ def _compute_restrictions(
         return ()
 
     arc_keys_of_edge = {
-        edge.edge_id: tuple(
-            arc.key for arc in arc_model.arcs_of_edge.get(edge.edge_id, ())
-        )
+        edge.edge_id: tuple(arc.key for arc in arc_model.arcs_of_edge.get(edge.edge_id, ()))
         for edge in arc_model.active_edges
     }
     importance_map = {ri.edge_id: ri.importance for ri in importance}
@@ -707,9 +681,7 @@ def _compute_restrictions(
         zone_triggers = frozenset(zone.seed_edges) & zone_edges
         if not zone_triggers:
             continue
-        zone_tau = evaluate_residual_tau(
-            arc_model, inputs, drainable & zone_edges, solution.flow
-        )
+        zone_tau = evaluate_residual_tau(arc_model, inputs, drainable & zone_edges, solution.flow)
         residual = assess_residual(
             inputs,
             zone_edges=zone_edges,
@@ -759,9 +731,7 @@ def _compute_restrictions(
         )
 
     restricted_now = frozenset(p.edge_id for p in proposals)
-    proposals.extend(
-        build_resume_proposals(previous_result, still_restricted=restricted_now)
-    )
+    proposals.extend(build_resume_proposals(previous_result, still_restricted=restricted_now))
     return tuple(proposals)
 
 
@@ -779,7 +749,7 @@ def _zone_net_supply(
     横断アーク（ゾーン誘導エッジに属さない接続アーク）はゾーン外扱いで
     ベースライン値に固定され、所与の流入出条件として畳み込まれる。
     """
-    supply: dict[NodeID, float] = {v: 0.0 for v in zone_nodes}
+    supply: dict[NodeID, float] = dict.fromkeys(zone_nodes, 0.0)
     for k in commodities:
         if k.origin in supply:
             supply[k.origin] += k.demand
@@ -801,9 +771,7 @@ def _build_commodities(
     filtered = [
         od
         for od in forecast_result.od_matrix
-        if od.demand > delta_min
-        and od.origin in active_nodes
-        and od.destination in active_nodes
+        if od.demand > delta_min and od.origin in active_nodes and od.destination in active_nodes
     ]
     return tuple(
         Commodity(index=i, origin=od.origin, destination=od.destination, demand=od.demand)
@@ -948,9 +916,7 @@ def _boundary_reachability_ok(arc_model: ArcModel, solution: ArcSolution) -> boo
         forward.setdefault(arc.tail, []).append(arc.head)
         backward.setdefault(arc.head, []).append(arc.tail)
     active = set(arc_model.active_nodes)
-    return active <= reachable_forward(forward, r) and active <= reachable_forward(
-        backward, r
-    )
+    return active <= reachable_forward(forward, r) and active <= reachable_forward(backward, r)
 
 
 def _legal_violations(arc_model: ArcModel, solution: ArcSolution) -> tuple[EdgeID, ...]:
@@ -988,9 +954,7 @@ def _overload_limits(
         if not caps:
             continue
         cap = min(caps)
-        total = sum(
-            flow.get(arc.key, 0.0) for arc in arc_model.arcs_of_edge.get(eid, ())
-        )
+        total = sum(flow.get(arc.key, 0.0) for arc in arc_model.arcs_of_edge.get(eid, ()))
         if total > cap + 1e-9:
             proposals.append(
                 RestrictionProposal(
@@ -1124,9 +1088,7 @@ def _fallback(
 def _empty_result(
     status: SolverStatus, solved_at: datetime, seed: int, phase1_ms: int
 ) -> OptimizeResult:
-    opt_result = OptimizationResult(
-        solver_status=status, solved_at=solved_at, seed=seed
-    )
+    opt_result = OptimizationResult(solver_status=status, solved_at=solved_at, seed=seed)
     stats = SolverStats(
         solver_name="highs",
         phase1_status=status,

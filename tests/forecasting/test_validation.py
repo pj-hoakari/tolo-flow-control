@@ -1,6 +1,6 @@
 """``validate_od``（Step C: 整合・検証）のテスト"""
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 import pytest
 
@@ -27,12 +27,10 @@ from flow_control.forecasting.config import ResolvedConfig
 from flow_control.forecasting.od import ODDemand
 from flow_control.forecasting.validation import validate_od
 
-_OBSERVED_AT = datetime(2026, 6, 1, tzinfo=timezone.utc)
+_OBSERVED_AT = datetime(2026, 6, 1, tzinfo=UTC)
 
 
-def _node(
-    node_id: str, kind: NodeKind = NodeKind.GOAL, *, boundary: bool = False
-) -> Node:
+def _node(node_id: str, kind: NodeKind = NodeKind.GOAL, *, boundary: bool = False) -> Node:
     return Node(node_id=NodeID(node_id), kind=kind, is_boundary=boundary, enabled=True)
 
 
@@ -48,9 +46,7 @@ def _edge(edge_id: str, a: str, b: str) -> Edge:
     )
 
 
-def _flow(
-    edge_id: str, rate: float, *, flag: ConfidenceFlag = ConfidenceFlag.OK
-) -> ArcFlow:
+def _flow(edge_id: str, rate: float, *, flag: ConfidenceFlag = ConfidenceFlag.OK) -> ArcFlow:
     return ArcFlow(
         edge_id=EdgeID(edge_id),
         direction=FlowDirection.A_TO_B,
@@ -238,9 +234,7 @@ def test_forecast_populates_validation_outputs() -> None:
     observations = Observations(
         observed_at=_OBSERVED_AT,
         arc_flows=(_flow("e1", 10.0), _flow("e2", 4.0)),
-        node_occupancies=(
-            NodeOccupancy(node_id=NodeID("B"), occupancy=20.0, occupancy_delta=6.0),
-        ),
+        node_occupancies=(NodeOccupancy(node_id=NodeID("B"), occupancy=20.0, occupancy_delta=6.0),),
     )
 
     result = forecast(

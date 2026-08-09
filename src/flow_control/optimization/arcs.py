@@ -76,9 +76,7 @@ def build_arc_model(graph: Graph) -> ArcModel:
 
         arc_ab = Arc(edge.edge_id, FlowDirection.A_TO_B, tail=a, head=b)
         arc_ba = Arc(edge.edge_id, FlowDirection.B_TO_A, tail=b, head=a)
-        (alpha_ab, alpha_ba), (beta_ab, beta_ba) = _ALPHA_BETA[
-            edge.direction_constraint
-        ]
+        (alpha_ab, alpha_ba), (beta_ab, beta_ba) = _ALPHA_BETA[edge.direction_constraint]
         alpha[arc_ab.key] = alpha_ab
         alpha[arc_ba.key] = alpha_ba
         beta[arc_ab.key] = beta_ab

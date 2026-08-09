@@ -33,9 +33,7 @@ _TIMEOUT_CONDITIONS = frozenset(
         "user_interrupt",
     }
 )
-_INFEASIBLE_CONDITIONS = frozenset(
-    {"infeasible", "infeasible_or_unbounded", "unbounded"}
-)
+_INFEASIBLE_CONDITIONS = frozenset({"infeasible", "infeasible_or_unbounded", "unbounded"})
 _FEASIBLE_CONDITIONS = frozenset({"suboptimal", "imprecise"})
 
 # 容量スラックの罰則係数。フロー 1 単位の輸送コスト（ホップ重み 1）より十分大きくし、
@@ -123,11 +121,7 @@ def _balance(out_expr: Any | None, in_expr: Any | None) -> Any | None:
 
 
 def _arc_flow_terms(built: _Built, arc: Arc) -> list[Any]:
-    return [
-        built.f[(arc.key, k.index)]
-        for k in built.commodities
-        if (arc.key, k.index) in built.f
-    ]
+    return [built.f[(arc.key, k.index)] for k in built.commodities if (arc.key, k.index) in built.f]
 
 
 def _edge_flow_terms(built: _Built, edge_id: EdgeID) -> list[Any]:
@@ -165,9 +159,7 @@ def build_model(
                     lower=alpha, upper=alpha, integer=True, name=f"x{i}"
                 )
             elif alpha == 0:
-                x[arc.key] = model.add_variables(
-                    lower=0, upper=0, integer=True, name=f"x{i}"
-                )
+                x[arc.key] = model.add_variables(lower=0, upper=0, integer=True, name=f"x{i}")
             else:
                 x[arc.key] = model.add_variables(binary=True, name=f"x{i}")
 
@@ -175,9 +167,7 @@ def build_model(
     f: dict[tuple[str, int], Any] = {}
     for ai, arc in enumerate(arc_model.arcs):
         for k in commodities:
-            f[(arc.key, k.index)] = model.add_variables(
-                lower=0, name=f"f{ai}_{k.index}"
-            )
+            f[(arc.key, k.index)] = model.add_variables(lower=0, name=f"f{ai}_{k.index}")
 
     tau = model.add_variables(lower=0, name="tau")
 
@@ -368,9 +358,7 @@ def build_assignment_lp(
         incident.add(arc.tail)
         incident.add(arc.head)
     for k in commodities:
-        if k.demand != 0.0 and (
-            k.origin not in incident or k.destination not in incident
-        ):
+        if k.demand != 0.0 and (k.origin not in incident or k.destination not in incident):
             built.infeasible = True
             return built
     if not enabled:
@@ -441,9 +429,7 @@ def build_assignment_lp(
         edge.edge_id
         for edge in arc_model.active_edges
         if edge.edge_id in inputs.capacity_hint
-        and any(
-            a.key in arc_pos for a in arc_model.arcs_of_edge.get(edge.edge_id, ())
-        )
+        and any(a.key in arc_pos for a in arc_model.arcs_of_edge.get(edge.edge_id, ()))
     ]
     if hint_edges:
         hint_idx = pd.Index([e.value for e in hint_edges], name="edge")
@@ -470,9 +456,7 @@ def build_assignment_lp(
             )
             lhs = edge_total(scalar_capped)
             if allow_capacity_slack:
-                sl = model.add_variables(
-                    lower=0.0, coords=[punct_idx], name="sl_punct"
-                )
+                sl = model.add_variables(lower=0.0, coords=[punct_idx], name="sl_punct")
                 slacks.append(sl)
                 lhs = lhs - sl
             model.add_constraints(lhs <= punct_da)
@@ -491,9 +475,7 @@ def build_assignment_lp(
                 j = arc_pos.get(arc.key)
                 if j is not None:
                     mem[i, j] = 1.0
-        cap_da = xr.DataArray(
-            np.asarray([c for _, c in capped_nodes]), coords=[nidx]
-        )
+        cap_da = xr.DataArray(np.asarray([c for _, c in capped_nodes]), coords=[nidx])
         lhs = (xr.DataArray(mem, coords=[nidx, arc_idx]) * edge_flow).sum("arc")
         if allow_capacity_slack:
             sl = model.add_variables(lower=0.0, coords=[nidx], name="sl_node")
@@ -507,9 +489,7 @@ def build_assignment_lp(
         for edge in arc_model.active_edges
         if edge.edge_id in inputs.s_obs
         and inputs.eta.get(edge.edge_id, 0.0) > 0.0
-        and any(
-            a.key in arc_pos for a in arc_model.arcs_of_edge.get(edge.edge_id, ())
-        )
+        and any(a.key in arc_pos for a in arc_model.arcs_of_edge.get(edge.edge_id, ()))
     ]
     if drain_edges:
         drain_idx = pd.Index([e.value for e in drain_edges], name="edge")
@@ -538,9 +518,9 @@ def build_assignment_lp(
                 continue
             if not any(a.key in arc_pos for a in arc_model.arcs_of_edge.get(eid, ())):
                 continue
-            rhs = inputs.s_obs[eid] - tau_cap * (
-                inputs.s_bar.get(eid, 0.0) + inputs.epsilon_0
-            ) / c_e
+            rhs = (
+                inputs.s_obs[eid] - tau_cap * (inputs.s_bar.get(eid, 0.0) + inputs.epsilon_0) / c_e
+            )
             if rhs <= 0.0:
                 continue  # 制約が自明に成立
             bound_edges.append(eid)
@@ -569,16 +549,12 @@ def build_assignment_lp(
         if total_demand > 0.0:
             seg_width = total_demand / _COST_SEGMENTS
             seg_idx = pd.Index(range(_COST_SEGMENTS), name="seg")
-            g = model.add_variables(
-                lower=0.0, upper=seg_width, coords=[arc_idx, seg_idx], name="g"
-            )
+            g = model.add_variables(lower=0.0, upper=seg_width, coords=[arc_idx, seg_idx], name="g")
             # アーク総フロー（コモディティ合算）＝セグメント和
             model.add_constraints(g.sum("seg") - f.sum("k") == 0)
             # 段ごとの追加単価（第 1 段は基本コスト f.sum() が担うので増分のみ）
             extra = xr.DataArray(
-                np.asarray(
-                    [congestion_increment * i for i in range(_COST_SEGMENTS)]
-                ),
+                np.asarray([congestion_increment * i for i in range(_COST_SEGMENTS)]),
                 coords=[seg_idx],
             )
             objective = objective + (extra * g).sum()
@@ -618,13 +594,9 @@ def build_zone_lp(
     """
     model = linopy.Model()
     enabled = tuple(
-        a
-        for a in arc_model.arcs
-        if a.edge_id in zone_edges and fixed_x.get(a.key, 0) == 1
+        a for a in arc_model.arcs if a.edge_id in zone_edges and fixed_x.get(a.key, 0) == 1
     )
-    built = _BuiltZone(
-        model=model, f=None, arc_keys=tuple(a.key for a in enabled)
-    )
+    built = _BuiltZone(model=model, f=None, arc_keys=tuple(a.key for a in enabled))
     demanded = {v for v, b in net_supply.items() if abs(b) > 1e-9}
     if not demanded:
         # 純供給ゼロ: ゼロフローが自明解（min-cost で正コストのため）。求解不要
@@ -671,9 +643,7 @@ def build_zone_lp(
                 danger_keys.append(arc.key)
                 danger_caps.append(cap)
     if danger_keys:
-        cap_da = xr.DataArray(
-            np.asarray(danger_caps), coords=[pd.Index(danger_keys, name="arc")]
-        )
+        cap_da = xr.DataArray(np.asarray(danger_caps), coords=[pd.Index(danger_keys, name="arc")])
         model.add_constraints(f.sel(arc=danger_keys) <= cap_da)
 
     def edge_total(edge_ids: list[EdgeID], scale: dict[EdgeID, float] | None = None):
@@ -725,12 +695,8 @@ def build_zone_lp(
                 j = arc_pos.get(arc.key)
                 if j is not None:
                     mem[i, j] = 1.0
-        cap_da = xr.DataArray(
-            np.asarray([c for _, c in capped_nodes]), coords=[nidx]
-        )
-        model.add_constraints(
-            (xr.DataArray(mem, coords=[nidx, arc_idx]) * f).sum("arc") <= cap_da
-        )
+        cap_da = xr.DataArray(np.asarray([c for _, c in capped_nodes]), coords=[nidx])
+        model.add_constraints((xr.DataArray(mem, coords=[nidx, arc_idx]) * f).sum("arc") <= cap_da)
 
     drain_edges = [
         eid
@@ -763,11 +729,10 @@ def solve_zone_lp(
         sol = built.f.solution
         values = {
             str(key): float(val)
-            for key, val in zip(
-                sol.coords["arc"].values.tolist(), sol.values.tolist()
-            )
+            for key, val in zip(sol.coords["arc"].values.tolist(), sol.values.tolist(), strict=True)
         }
-    except Exception:
+    # solver が解を持たない場合の linopy/xarray 側の例外は種類を問わず「解なし」として扱う
+    except Exception:  # noqa: BLE001
         values = None
     if values is not None and any(math.isnan(v) for v in values.values()):
         values = None
@@ -791,12 +756,10 @@ def evaluate_residual_tau(
         eid = edge.edge_id
         if eid not in drainable or eid not in inputs.s_obs:
             continue
-        f_e = sum(
-            flow.get(arc.key, 0.0) for arc in arc_model.arcs_of_edge.get(eid, ())
-        )
+        f_e = sum(flow.get(arc.key, 0.0) for arc in arc_model.arcs_of_edge.get(eid, ()))
         residual = inputs.s_obs[eid] - inputs.eta.get(eid, 0.0) * f_e
-        value = inputs.c_e.get(eid, 1.0) * residual / (
-            inputs.s_bar.get(eid, 0.0) + inputs.epsilon_0
+        value = (
+            inputs.c_e.get(eid, 1.0) * residual / (inputs.s_bar.get(eid, 0.0) + inputs.epsilon_0)
         )
         tau = max(tau, value)
     return tau
@@ -872,7 +835,8 @@ def _value(var: Any) -> float:
 def _extract(built: _Built) -> ArcSolution | None:
     try:
         tau_val = _value(built.tau)
-    except Exception:
+    # solver が解を持たない場合の linopy/xarray 側の例外は種類を問わず「解なし」として扱う
+    except Exception:  # noqa: BLE001
         return None
     if math.isnan(tau_val):
         return None
@@ -892,7 +856,7 @@ def _extract(built: _Built) -> ArcSolution | None:
         if built.fixed_x is not None:
             direction[arc.key] = built.fixed_x.get(arc.key, 0)
         else:
-            direction[arc.key] = int(round(_value(built.x[arc.key])))
+            direction[arc.key] = round(_value(built.x[arc.key]))
 
     return ArcSolution(flow=flow, direction=direction, tau=tau_val)
 
@@ -904,13 +868,13 @@ def _solve(
     mip_rel_gap: float = 0.0,
     io_api: str | None = None,
 ) -> str:
-    options: dict[str, Any] = dict(
-        solver_name="highs",
-        time_limit=float(time_limit),
-        threads=1,
-        random_seed=int(seed),
-        output_flag=False,
-    )
+    options: dict[str, Any] = {
+        "solver_name": "highs",
+        "time_limit": float(time_limit),
+        "threads": 1,
+        "random_seed": int(seed),
+        "output_flag": False,
+    }
     if io_api is not None:
         options["io_api"] = io_api
     if mip_rel_gap > 0.0:
@@ -919,9 +883,7 @@ def _solve(
     return str(model.termination_condition)
 
 
-def solve_assignment(
-    built: _BuiltAssignment, time_limit: float, seed: int
-) -> PhaseResult:
+def solve_assignment(built: _BuiltAssignment, time_limit: float, seed: int) -> PhaseResult:
     """配分 LP を求解する（build_assignment_lp 専用）
 
     τ は解に含めない（呼出し側が evaluate_residual_tau で事後評価する。
@@ -956,10 +918,11 @@ def _extract_assignment(built: _BuiltAssignment) -> ArcSolution | None:
         values = {
             str(key): float(val)
             for key, val in zip(
-                totals.coords["arc"].values.tolist(), totals.values.tolist()
+                totals.coords["arc"].values.tolist(), totals.values.tolist(), strict=True
             )
         }
-    except Exception:
+    # solver が解を持たない場合の linopy/xarray 側の例外は種類を問わず「解なし」として扱う
+    except Exception:  # noqa: BLE001
         return None
     if any(math.isnan(v) for v in values.values()):
         return None

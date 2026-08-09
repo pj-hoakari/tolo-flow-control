@@ -5,7 +5,7 @@ Step A（compute_node_demand）の出力を入力に，前方伝播（TURNING_EX
 """
 
 from dataclasses import replace
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 import pytest
 
@@ -34,7 +34,7 @@ from flow_control.forecasting.od import (
     estimate_od,
 )
 
-_OBSERVED_AT = datetime(2026, 6, 1, tzinfo=timezone.utc)
+_OBSERVED_AT = datetime(2026, 6, 1, tzinfo=UTC)
 
 
 def _node(
@@ -59,15 +59,11 @@ def _edge(edge_id: str, a: str, b: str) -> Edge:
 
 
 def _flow(edge_id: str, rate: float) -> ArcFlow:
-    return ArcFlow(
-        edge_id=EdgeID(edge_id), direction=FlowDirection.A_TO_B, flow_rate=rate
-    )
+    return ArcFlow(edge_id=EdgeID(edge_id), direction=FlowDirection.A_TO_B, flow_rate=rate)
 
 
 def _occ(node_id: str, occupancy: float, delta: float) -> NodeOccupancy:
-    return NodeOccupancy(
-        node_id=NodeID(node_id), occupancy=occupancy, occupancy_delta=delta
-    )
+    return NodeOccupancy(node_id=NodeID(node_id), occupancy=occupancy, occupancy_delta=delta)
 
 
 def _config(**overrides: float) -> ResolvedConfig:
@@ -77,9 +73,7 @@ def _config(**overrides: float) -> ResolvedConfig:
 
 def _run(graph, observations, config, *, is_open_mode):
     node_demands = compute_node_demand(graph, observations, config)
-    return estimate_od(
-        graph, observations, node_demands, config, is_open_mode=is_open_mode
-    )
+    return estimate_od(graph, observations, node_demands, config, is_open_mode=is_open_mode)
 
 
 def _find(ods: tuple[ODDemand, ...], origin: str, dest: str) -> ODDemand | None:

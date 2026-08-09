@@ -200,11 +200,13 @@ def build() -> Scenario:
     hot = frozenset({EdgeID("e_in_j1")})
     # 組合せ発火: 急増（需要警戒）と停滞警戒＋計時済み watch を同一エッジへ与える。
     # 急増単独・停滞単独では現行 Detection は発火しない
-    obs, hist = build_observations_and_history(
-        built.graph, surge_edges=hot, stagnation_edges=hot
-    )
+    obs, hist = build_observations_and_history(built.graph, surge_edges=hot, stagnation_edges=hot)
     return make_scenario(
-        "my-case", "説明文", built, obs, hist,
+        "my-case",
+        "説明文",
+        built,
+        obs,
+        hist,
         previous_state=established_watch_state(hot),
     )
 ```

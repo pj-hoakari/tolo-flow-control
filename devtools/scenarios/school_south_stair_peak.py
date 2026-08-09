@@ -11,11 +11,11 @@ from ..scenario_base import (
     established_watch_state,
     make_scenario,
 )
-from ._school import (
-    school_unobserved_edges,
-    school_gathering_od_specs,
-)
 from ._registry import register
+from ._school import (
+    school_gathering_od_specs,
+    school_unobserved_edges,
+)
 
 
 @register("school-south-stair-peak")

@@ -119,9 +119,7 @@ def test_consecutive_fire_increments_count(base_time: datetime):
         ),
     )
 
-    counts = _run(
-        counts=previous, graph=graph, fired=(EdgeID("e1"),), server_time=base_time
-    )
+    counts = _run(counts=previous, graph=graph, fired=(EdgeID("e1"),), server_time=base_time)
 
     entry = _entry_of(counts, "e1")
     assert entry is not None
@@ -134,14 +132,15 @@ def test_rule1_different_origin_resets_other_arc(base_time: datetime):
     graph = _graph(_edge(EdgeID("e1")), _edge(EdgeID("e2")))
     previous = (RetriggerEntry(edge_id=EdgeID("e1"), count=2),)
 
-    counts = _run(
-        counts=previous, graph=graph, fired=(EdgeID("e2"),), server_time=base_time
-    )
+    counts = _run(counts=previous, graph=graph, fired=(EdgeID("e2"),), server_time=base_time)
 
     e1 = _entry_of(counts, "e1")
     e2 = _entry_of(counts, "e2")
-    assert e1 is not None and e1.count == 0 and e1.quiet_cycles == 0
-    assert e2 is not None and e2.count == 1
+    assert e1 is not None
+    assert e1.count == 0
+    assert e1.quiet_cycles == 0
+    assert e2 is not None
+    assert e2.count == 1
 
 
 def test_rule2_quiet_cycles_accumulate_then_reset(base_time: datetime):
@@ -158,7 +157,9 @@ def test_rule2_quiet_cycles_accumulate_then_reset(base_time: datetime):
         config=config,
     )
     e1 = _entry_of(step1, "e1")
-    assert e1 is not None and e1.count == 2 and e1.quiet_cycles == 1
+    assert e1 is not None
+    assert e1.count == 2
+    assert e1.quiet_cycles == 1
 
     # quiet が閾値（3）に到達するとリセット
     step3 = _run(
@@ -169,7 +170,9 @@ def test_rule2_quiet_cycles_accumulate_then_reset(base_time: datetime):
         config=config,
     )
     e1 = _entry_of(step3, "e1")
-    assert e1 is not None and e1.count == 0 and e1.quiet_cycles == 0
+    assert e1 is not None
+    assert e1.count == 0
+    assert e1.quiet_cycles == 0
 
 
 def test_rule2_does_not_increment_quiet_when_in_watch(base_time: datetime):
@@ -224,8 +227,10 @@ def test_both_arcs_fire_increment_independently(base_time: datetime):
 
     e1 = _entry_of(counts, "e1")
     e2 = _entry_of(counts, "e2")
-    assert e1 is not None and e1.count == 2
-    assert e2 is not None and e2.count == 1
+    assert e1 is not None
+    assert e1.count == 2
+    assert e2 is not None
+    assert e2.count == 1
 
 
 # ---------------------------------------------------------------------------

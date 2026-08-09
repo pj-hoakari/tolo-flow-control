@@ -78,9 +78,7 @@ def assess_residual(
     """
     tau_exceeded = tau_zone > tau_danger_threshold
 
-    undrainable_in_zone = tuple(
-        sorted(zone_edges & undrainable, key=lambda e: e.value)
-    )
+    undrainable_in_zone = tuple(sorted(zone_edges & undrainable, key=lambda e: e.value))
 
     puncture_edges: list[EdgeID] = []
     for edge_id in sorted(zone_edges, key=lambda e: e.value):
@@ -90,15 +88,11 @@ def assess_residual(
         if hint is None:
             continue
         limit = max(0.0, hint - inputs.sigma.get(edge_id, 0.0))
-        total = sum(
-            flow.get(key, 0.0) for key in arc_keys_of_edge.get(edge_id, ())
-        )
+        total = sum(flow.get(key, 0.0) for key in arc_keys_of_edge.get(edge_id, ()))
         if total > limit + _EPSILON_FLOW:
             puncture_edges.append(edge_id)
 
-    residual = (
-        tau_exceeded or bool(puncture_edges) or bool(undrainable_in_zone)
-    )
+    residual = tau_exceeded or bool(puncture_edges) or bool(undrainable_in_zone)
     return ResidualAssessment(
         residual=residual,
         tau_exceeded=tau_exceeded,
@@ -136,9 +130,7 @@ def evaluate_detour_gate(
     if detour_edges:
         used = 0
         for edge_id in detour_edges:
-            total = sum(
-                flow.get(key, 0.0) for key in arc_keys_of_edge.get(edge_id, ())
-            )
+            total = sum(flow.get(key, 0.0) for key in arc_keys_of_edge.get(edge_id, ()))
             if total > _EPSILON_FLOW:
                 used += 1
         used_ratio = used / len(detour_edges)
@@ -155,12 +147,12 @@ def evaluate_detour_gate(
         if s_obs is None:
             # 停滞観測なし: 正規化停滞は評価しない
             continue
-        total = sum(
-            flow.get(key, 0.0) for key in arc_keys_of_edge.get(edge_id, ())
-        )
+        total = sum(flow.get(key, 0.0) for key in arc_keys_of_edge.get(edge_id, ()))
         residual_stag = s_obs - inputs.eta.get(edge_id, 0.0) * total
-        normalized = inputs.c_e.get(edge_id, 1.0) * residual_stag / (
-            inputs.s_bar.get(edge_id, 0.0) + inputs.epsilon_0
+        normalized = (
+            inputs.c_e.get(edge_id, 1.0)
+            * residual_stag
+            / (inputs.s_bar.get(edge_id, 0.0) + inputs.epsilon_0)
         )
         if normalized > tau_danger_threshold:
             endangered.append(edge_id)
@@ -203,9 +195,7 @@ def compute_limit_value(
     どちらも得られなければ value=None（制限値なしの提案＝運用判断に委ねる）。
     """
     if outflow_average is not None and outflow_average >= 0.0:
-        return LimitValue(
-            value=outflow_average, confidence=1.0, derived_from_drain_bound=False
-        )
+        return LimitValue(value=outflow_average, confidence=1.0, derived_from_drain_bound=False)
     s_obs = inputs.s_obs.get(edge_id)
     eta = inputs.eta.get(edge_id, 0.0)
     if s_obs is not None and eta > _EPSILON_FLOW:
@@ -250,9 +240,7 @@ def select_feeder_candidates(
                 contribution += flow.get(arc.key, 0.0)
         if contribution <= _EPSILON_FLOW:
             continue
-        scored.append(
-            (-contribution, importance.get(edge_id, 0.0), edge_id.value, edge_id)
-        )
+        scored.append((-contribution, importance.get(edge_id, 0.0), edge_id.value, edge_id))
     scored.sort(key=lambda t: (t[0], t[1], t[2]))
     return tuple(item[3] for item in scored)
 
@@ -361,9 +349,7 @@ def build_restriction_proposals(
 
     proposals: list[RestrictionProposal] = []
     for edge_id in candidates[:max_proposals]:
-        limit = compute_limit_value(
-            inputs, edge_id, outflow_average=outflow_averages.get(edge_id)
-        )
+        limit = compute_limit_value(inputs, edge_id, outflow_average=outflow_averages.get(edge_id))
         can_close = is_open and close_preserves_connectivity(
             arc_model,
             closed_edge=edge_id,

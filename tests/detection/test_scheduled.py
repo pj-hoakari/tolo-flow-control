@@ -30,9 +30,7 @@ from flow_control.domain.history import HistoryDigest
 from flow_control.domain.observations import Observations
 
 
-def _config(
-    *, surge_threshold: float = 10.0, cooldown_min: float = 60.0
-) -> ResolvedConfig:
+def _config(*, surge_threshold: float = 10.0, cooldown_min: float = 60.0) -> ResolvedConfig:
     return ResolvedConfig(
         surge_rate_threshold_percent_per_min=surge_threshold,
         high_stagnation_duration_min=5.0,
@@ -107,9 +105,7 @@ def test_non_scheduled_events_do_not_reset_cooldown(base_time: datetime):
     cooldown_until = base_time + timedelta(minutes=30)
     state = DetectionState(cooldown_until=cooldown_until)
     events = (
-        Event(
-            kind=EventKind.DANGER_FLAG_UP, target_id="edge:e1", occurred_at=base_time
-        ),
+        Event(kind=EventKind.DANGER_FLAG_UP, target_id="edge:e1", occurred_at=base_time),
         Event(kind=EventKind.ENABLE, target_id="edge:e2", occurred_at=base_time),
         Event(kind=EventKind.DISABLE, target_id="edge:e3", occurred_at=base_time),
     )

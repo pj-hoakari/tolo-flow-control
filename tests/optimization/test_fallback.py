@@ -1,15 +1,16 @@
 """INFEASIBLE 時の二段フォールバック（方向固定 LP → 前回結果コピー）"""
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
+from flow_control.detour_routing import DetourResult
 from flow_control.domain import (
+    ArcHistoryStat,
     ArcStagnation,
     CurrentDirection,
     DirectionConstraint,
     Edge,
     EdgeID,
     Graph,
-    ArcHistoryStat,
     HistoryDigest,
     Node,
     NodeID,
@@ -17,7 +18,6 @@ from flow_control.domain import (
     Observations,
     ObservationType,
 )
-from flow_control.detour_routing import DetourResult
 from flow_control.forecasting import ForecastResult, ODDemand
 from flow_control.forecasting.sensitivity import ArcFlowSensitivity
 from flow_control.forecasting.validation import NodeConfidence
@@ -25,8 +25,8 @@ from flow_control.optimization import (
     DirectionProposal,
     ImportanceDirection,
     ObjectiveValues,
-    OptimizationResult,
     OptimizationMode,
+    OptimizationResult,
     ProposedDirection,
     ResolvedConfig,
     RouteImportance,
@@ -34,7 +34,7 @@ from flow_control.optimization import (
     optimize,
 )
 
-_OBS_AT = datetime(2026, 6, 18, tzinfo=timezone.utc)
+_OBS_AT = datetime(2026, 6, 18, tzinfo=UTC)
 _N1, _N2 = NodeID("n1"), NodeID("n2")
 _E1 = EdgeID("e1")
 

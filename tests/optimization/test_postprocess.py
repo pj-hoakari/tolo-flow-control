@@ -6,10 +6,10 @@ from flow_control.detour_routing import DetourPath, DetourResult, DetourSet
 from flow_control.domain.enums import (
     CurrentDirection,
     DirectionConstraint,
+    NodeKind,
     ObservationType,
 )
 from flow_control.domain.graph import Edge, EdgeID, Graph, Node, NodeID
-from flow_control.domain.enums import NodeKind
 from flow_control.optimization.arcs import build_arc_model
 from flow_control.optimization.model import ArcSolution
 from flow_control.optimization.postprocess import (
@@ -17,7 +17,6 @@ from flow_control.optimization.postprocess import (
     compute_detour_path_proposals,
     compute_route_importance,
 )
-
 
 _N1, _N2, _N3, _N4 = NodeID("n1"), NodeID("n2"), NodeID("n3"), NodeID("n4")
 _E_MAIN = EdgeID("e_main")  # n1-n2（トリガー起点）
@@ -66,7 +65,7 @@ def _detour_result(paths: tuple[DetourPath, ...]) -> DetourResult:
             DetourSet(
                 origin_edge=_E_MAIN,
                 endpoint_pair=(_N1, _N2),
-                paths=(origin,) + paths,
+                paths=(origin, *paths),
                 k_effective=len(paths),
             ),
         )
@@ -86,9 +85,7 @@ def test_emphasis_distributes_by_inverse_length(diamond_graph):
     detour = _detour_result(
         (
             DetourPath(edge_ids=(_E_UP, _E_DOWN), total_length=2.0, contains_trigger=False),
-            DetourPath(
-                edge_ids=(_E_ALT1, _E_ALT2), total_length=4.0, contains_trigger=False
-            ),
+            DetourPath(edge_ids=(_E_ALT1, _E_ALT2), total_length=4.0, contains_trigger=False),
         )
     )
     solution = _solution(arc_model, {"e_main|A_TO_B": 12.0})
@@ -131,9 +128,7 @@ def test_emphasis_excludes_path_through_other_trigger(diamond_graph):
     detour = _detour_result(
         (
             DetourPath(edge_ids=(_E_UP, _E_DOWN), total_length=2.0, contains_trigger=False),
-            DetourPath(
-                edge_ids=(_E_ALT1, _E_ALT2), total_length=2.0, contains_trigger=False
-            ),
+            DetourPath(edge_ids=(_E_ALT1, _E_ALT2), total_length=2.0, contains_trigger=False),
         )
     )
     solution = _solution(arc_model, {"e_main|A_TO_B": 10.0})
@@ -156,9 +151,7 @@ def test_emphasis_excludes_direction_disabled_path(diamond_graph):
     detour = _detour_result(
         (
             DetourPath(edge_ids=(_E_UP, _E_DOWN), total_length=2.0, contains_trigger=False),
-            DetourPath(
-                edge_ids=(_E_ALT1, _E_ALT2), total_length=2.0, contains_trigger=False
-            ),
+            DetourPath(edge_ids=(_E_ALT1, _E_ALT2), total_length=2.0, contains_trigger=False),
         )
     )
     solution = _solution(arc_model, {"e_main|A_TO_B": 10.0})
@@ -225,9 +218,7 @@ def test_emphasis_disabled_with_zero_weight(diamond_graph):
 def test_detour_path_proposals_from_emphasis_and_flow(diamond_graph):
     arc_model = build_arc_model(diamond_graph)
     up_path = DetourPath(edge_ids=(_E_UP, _E_DOWN), total_length=2.0, contains_trigger=False)
-    alt_path = DetourPath(
-        edge_ids=(_E_ALT1, _E_ALT2), total_length=2.0, contains_trigger=False
-    )
+    alt_path = DetourPath(edge_ids=(_E_ALT1, _E_ALT2), total_length=2.0, contains_trigger=False)
     detour = _detour_result((up_path, alt_path))
     # n4 経由にはフローが乗っている。n3 経由はフローゼロだが加重割当あり
     solution = _solution(

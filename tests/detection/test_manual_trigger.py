@@ -73,8 +73,7 @@ def test_non_danger_kinds_do_not_fire(base_time: datetime):
         EventKind.SCHEDULED_ATTR_CHANGE,
     )
     events = tuple(
-        Event(kind=kind, target_id="edge:e1", occurred_at=base_time)
-        for kind in other_kinds
+        Event(kind=kind, target_id="edge:e1", occurred_at=base_time) for kind in other_kinds
     )
 
     result = detect_manual_triggers(events=events)
@@ -86,13 +85,9 @@ def test_non_danger_kinds_do_not_fire(base_time: datetime):
 def test_only_danger_flag_up_is_extracted_from_mixed_events(base_time: datetime):
     events = (
         _danger_up("edge:e1", base_time),
-        Event(
-            kind=EventKind.DANGER_FLAG_DOWN, target_id="edge:e2", occurred_at=base_time
-        ),
+        Event(kind=EventKind.DANGER_FLAG_DOWN, target_id="edge:e2", occurred_at=base_time),
         Event(kind=EventKind.ENABLE, target_id="edge:e3", occurred_at=base_time),
-        Event(
-            kind=EventKind.SCHEDULED_INFLOW, target_id="node:n1", occurred_at=base_time
-        ),
+        Event(kind=EventKind.SCHEDULED_INFLOW, target_id="node:n1", occurred_at=base_time),
     )
 
     result = detect_manual_triggers(events=events)

@@ -18,9 +18,7 @@ from flow_control.domain import (
 
 
 def _node(node_id: str) -> Node:
-    return Node(
-        node_id=NodeID(node_id), kind=NodeKind.GOAL, is_boundary=False, enabled=True
-    )
+    return Node(node_id=NodeID(node_id), kind=NodeKind.GOAL, is_boundary=False, enabled=True)
 
 
 def _edge(
@@ -148,18 +146,14 @@ def test_respects_k_shortest_config():
             _edge("e_bt", "b", "t"),
         ),
     )
-    result = route_detour(
-        diamond, (EdgeID("e_st"),), None, ResolvedConfig(k_shortest=1)
-    )
+    result = route_detour(diamond, (EdgeID("e_st"),), None, ResolvedConfig(k_shortest=1))
     detour_set = result.detour_set_of(EdgeID("e_st"))
     assert detour_set is not None
     assert detour_set.k_effective == 1
 
 
 def test_multiple_triggers_preserve_order_and_union():
-    result = route_detour(
-        _TRIANGLE, (EdgeID("e23"), EdgeID("e13")), None, ResolvedConfig()
-    )
+    result = route_detour(_TRIANGLE, (EdgeID("e23"), EdgeID("e13")), None, ResolvedConfig())
     # detour_sets は入力順（決定的）
     assert tuple(ds.origin_edge.value for ds in result.detour_sets) == ("e23", "e13")
     # 各起点で全エッジが P_trigger に入り，和集合は全 3 エッジ
@@ -191,16 +185,12 @@ def test_disabled_triggered_edge_is_skipped():
 
 
 def test_duplicate_trigger_is_deduplicated_in_result_map():
-    result = route_detour(
-        _TRIANGLE, (EdgeID("e12"), EdgeID("e12")), None, ResolvedConfig()
-    )
+    result = route_detour(_TRIANGLE, (EdgeID("e12"), EdgeID("e12")), None, ResolvedConfig())
     assert tuple(detour.origin_edge for detour in result.detour_sets) == (EdgeID("e12"),)
 
 
 def test_forecast_result_and_mode_do_not_affect_v0_result():
     # v0 では forecast_result / mode は結果に影響しない
     baseline = route_detour(_TRIANGLE, (EdgeID("e12"),), None, ResolvedConfig())
-    with_mode = route_detour(
-        _TRIANGLE, (EdgeID("e12"),), None, ResolvedConfig(), mode=Mode.OPEN
-    )
+    with_mode = route_detour(_TRIANGLE, (EdgeID("e12"),), None, ResolvedConfig(), mode=Mode.OPEN)
     assert baseline == with_mode

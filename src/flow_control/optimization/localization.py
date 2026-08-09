@@ -63,9 +63,7 @@ def build_trigger_zones(
     - 並び・併合順は ID 昇順で決定的
     """
     adjacency = _build_adjacency(arc_model)
-    severity: Mapping[EdgeID, float] = (
-        edge_severity if edge_severity is not None else _NO_SEVERITY
-    )
+    severity: Mapping[EdgeID, float] = edge_severity if edge_severity is not None else _NO_SEVERITY
 
     cores: list[_MutableZone] = []
     active_edge_ids = {edge.edge_id for edge in arc_model.active_edges}
@@ -135,7 +133,7 @@ def _bfs_within(
     adjacency: dict[NodeID, tuple[NodeID, ...]],
     hops: int,
 ) -> set[NodeID]:
-    visited: dict[NodeID, int] = {s: 0 for s in seeds}
+    visited: dict[NodeID, int] = dict.fromkeys(seeds, 0)
     queue: deque[NodeID] = deque(sorted(seeds, key=lambda n: n.value))
     while queue:
         v = queue.popleft()
@@ -157,7 +155,7 @@ def _shortest_path_nodes(
     # 多始点 BFS の最短経路 1 本分のノード集合（到達不能なら空）
     if target in seeds:
         return {target}
-    parent: dict[NodeID, NodeID | None] = {s: None for s in seeds}
+    parent: dict[NodeID, NodeID | None] = dict.fromkeys(seeds)
     queue: deque[NodeID] = deque(sorted(seeds, key=lambda n: n.value))
     while queue:
         v = queue.popleft()

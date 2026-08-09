@@ -1,11 +1,12 @@
 """Optimization テスト用の共有フィクスチャ"""
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 import pytest
 
 from flow_control.detour_routing import DetourPath, DetourResult, DetourSet
 from flow_control.domain import (
+    ArcHistoryStat,
     ArcStagnation,
     CurrentDirection,
     DirectionConstraint,
@@ -13,7 +14,6 @@ from flow_control.domain import (
     EdgeID,
     Graph,
     HistoryDigest,
-    ArcHistoryStat,
     Node,
     NodeID,
     NodeKind,
@@ -28,7 +28,7 @@ from flow_control.optimization import OptimizationMode, ResolvedConfig
 
 @pytest.fixture
 def observed_at() -> datetime:
-    return datetime(2026, 6, 18, 10, 0, 0, tzinfo=timezone.utc)
+    return datetime(2026, 6, 18, 10, 0, 0, tzinfo=UTC)
 
 
 @pytest.fixture
@@ -120,9 +120,7 @@ def worked_example_detour() -> DetourResult:
                 endpoint_pair=(_N1, _N2),
                 paths=(
                     DetourPath(edge_ids=(_E12,), total_length=1.0, contains_trigger=True),
-                    DetourPath(
-                        edge_ids=(_E13, _E23), total_length=2.0, contains_trigger=False
-                    ),
+                    DetourPath(edge_ids=(_E13, _E23), total_length=2.0, contains_trigger=False),
                 ),
                 k_effective=1,
             ),

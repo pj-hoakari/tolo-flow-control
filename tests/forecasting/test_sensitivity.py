@@ -53,9 +53,7 @@ def _graph(*edges: Edge) -> Graph:
     return Graph(nodes=(_node("a"), _node("b")), edges=edges)
 
 
-def _config(
-    *, min_reference_sample_count: int = 5, fallback_eta: float = 2.0
-) -> ResolvedConfig:
+def _config(*, min_reference_sample_count: int = 5, fallback_eta: float = 2.0) -> ResolvedConfig:
     return ResolvedConfig(
         min_reference_sample_count=min_reference_sample_count,
         fallback_eta=fallback_eta,
@@ -87,9 +85,7 @@ def test_reference_eta_used_when_history_absent() -> None:
     """履歴が無く参照値が K しきい値を満たせば参照値を使い，記録する"""
     graph = _graph(_edge("e1", attribute_tags=("wide",)))
     references = Reference(
-        by_attribute_tag=(
-            TagReference(attribute_tag="wide", eta_typical=0.5, sample_count=10),
-        )
+        by_attribute_tag=(TagReference(attribute_tag="wide", eta_typical=0.5, sample_count=10),)
     )
 
     result = resolve_arc_flow_sensitivity(
@@ -109,9 +105,7 @@ def test_reference_skipped_below_sample_threshold() -> None:
     """参照値の sample_count が min 未満なら採用せず最終フォールバックへ"""
     graph = _graph(_edge("e1", attribute_tags=("wide",)))
     references = Reference(
-        by_attribute_tag=(
-            TagReference(attribute_tag="wide", eta_typical=0.5, sample_count=3),
-        )
+        by_attribute_tag=(TagReference(attribute_tag="wide", eta_typical=0.5, sample_count=3),)
     )
 
     result = resolve_arc_flow_sensitivity(
@@ -142,9 +136,7 @@ def test_scalar_edge_excluded() -> None:
     """スカラー型エッジは η_e の対象外（ベクトル型のみ）"""
     graph = _graph(_edge("e1", observation_type=ObservationType.SCALAR))
 
-    result = resolve_arc_flow_sensitivity(
-        graph, HistoryDigest(), Reference(), _config()
-    )
+    result = resolve_arc_flow_sensitivity(graph, HistoryDigest(), Reference(), _config())
 
     assert result.arc_flow_sensitivity == ()
 

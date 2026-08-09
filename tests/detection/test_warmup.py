@@ -25,9 +25,7 @@ from flow_control.domain.history import HistoryDigest
 from flow_control.domain.observations import Observations
 
 
-def _config(
-    *, warmup_min: float = 60.0, surge_threshold: float = 10.0
-) -> ResolvedConfig:
+def _config(*, warmup_min: float = 60.0, surge_threshold: float = 10.0) -> ResolvedConfig:
     return ResolvedConfig(
         surge_rate_threshold_percent_per_min=surge_threshold,
         warmup_duration_min=warmup_min,
@@ -56,9 +54,7 @@ def _event(kind: EventKind, target_id: str, at: datetime) -> Event:
 def test_enable_event_sets_warmup_until(base_time: datetime):
     events = (_event(EventKind.ENABLE, "edge:e1", base_time),)
 
-    state = apply_warmup_events(
-        DetectionState(), events, base_time, _config(warmup_min=60.0)
-    )
+    state = apply_warmup_events(DetectionState(), events, base_time, _config(warmup_min=60.0))
 
     assert state.warmup_until_of("edge:e1") == base_time + timedelta(minutes=60.0)
     assert state.is_in_warmup("edge:e1", base_time) is True
@@ -104,9 +100,7 @@ def test_disable_event_removes_existing_warmup_entry(base_time: datetime):
 def test_disable_event_no_change_when_target_not_in_warmup(base_time: datetime):
     # 存在しない warmup エントリへの DISABLE は無変化（同一インスタンスを返す）
     previous = DetectionState(
-        warmup_states=(
-            WarmupState(target_key="edge:e1", until=base_time + timedelta(minutes=60)),
-        )
+        warmup_states=(WarmupState(target_key="edge:e1", until=base_time + timedelta(minutes=60)),)
     )
     events = (_event(EventKind.DISABLE, "edge:e2", base_time),)
 
@@ -125,9 +119,7 @@ def test_apply_warmup_events_returns_same_state_when_no_change(base_time: dateti
 
 def test_warmup_expires_after_duration(base_time: datetime):
     state = DetectionState(
-        warmup_states=(
-            WarmupState(target_key="edge:e1", until=base_time + timedelta(minutes=60)),
-        )
+        warmup_states=(WarmupState(target_key="edge:e1", until=base_time + timedelta(minutes=60)),)
     )
 
     assert state.is_in_warmup("edge:e1", base_time) is True
@@ -155,9 +147,7 @@ def test_all_targets_in_warmup_true_when_every_target_warming(
     assert all_targets_in_warmup(state, basic_graph, base_time) is True
 
 
-def test_all_targets_in_warmup_false_when_one_active(
-    base_time: datetime, basic_graph: Graph
-):
+def test_all_targets_in_warmup_false_when_one_active(base_time: datetime, basic_graph: Graph):
     until = base_time + timedelta(minutes=60)
     # n2 を含めないため全対象ウォームアップにはならない
     state = DetectionState(
@@ -186,9 +176,7 @@ def test_detect_skips_when_all_targets_in_warmup(
     make_combined_firing,
 ):
     # 組合せ発火が成立する入力でも、全対象ウォームアップ中なら判定をスキップする
-    history, observations, fire_state = _firing_inputs(
-        edge_id, base_time, make_combined_firing
-    )
+    history, observations, fire_state = _firing_inputs(edge_id, base_time, make_combined_firing)
     until = base_time + timedelta(minutes=60)
     previous = DetectionState(
         arc_watch_states=fire_state.arc_watch_states,
@@ -222,14 +210,10 @@ def test_detect_suppresses_normal_trigger_for_warmup_edge(
 ):
     # edge:e1 のみウォームアップ中。node は警戒外なので全対象ウォームアップではない
     # → SKIPPED_WARMUP にはならず、ただし e1 の組合せ発火は抑止されるため NO_TRIGGER
-    history, observations, fire_state = _firing_inputs(
-        edge_id, base_time, make_combined_firing
-    )
+    history, observations, fire_state = _firing_inputs(edge_id, base_time, make_combined_firing)
     previous = DetectionState(
         arc_watch_states=fire_state.arc_watch_states,
-        warmup_states=(
-            WarmupState(target_key="edge:e1", until=base_time + timedelta(minutes=60)),
-        ),
+        warmup_states=(WarmupState(target_key="edge:e1", until=base_time + timedelta(minutes=60)),),
     )
 
     result = detect(
@@ -283,9 +267,7 @@ def test_newly_enabled_edge_is_warmed_up_same_request(
 ):
     # 同一リクエストで ENABLE された edge:e1 は即ウォームアップ対象となり発火が抑止される。
     # node は警戒外なので全対象ウォームアップにはならず NO_TRIGGER
-    history, observations, fire_state = _firing_inputs(
-        edge_id, base_time, make_combined_firing
-    )
+    history, observations, fire_state = _firing_inputs(edge_id, base_time, make_combined_firing)
 
     result = detect(
         graph=basic_graph,

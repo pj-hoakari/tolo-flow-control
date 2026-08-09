@@ -67,9 +67,7 @@ def _quiet_inputs(
 _E = TypeVar("_E")
 
 
-def _evidences_of(
-    evidences: tuple[TriggerEvidence, ...], evidence_type: type[_E]
-) -> list[_E]:
+def _evidences_of[E](evidences: tuple[TriggerEvidence, ...], evidence_type: type[E]) -> list[E]:
     return [e for e in evidences if isinstance(e, evidence_type)]
 
 

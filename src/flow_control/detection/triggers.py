@@ -151,11 +151,7 @@ def detect_metric_triggers(
         mu_hat = _downstream_outflow_average(window, edge.current_direction)
         rho_hat: float | None = None
         demand_excess_breached = False
-        if (
-            config.theta_demand is not None
-            and lambda_hat is not None
-            and mu_hat is not None
-        ):
+        if config.theta_demand is not None and lambda_hat is not None and mu_hat is not None:
             rho_hat = lambda_hat / (mu_hat + config.epsilon_0)
             demand_excess_breached = rho_hat > config.theta_demand
 
@@ -332,7 +328,7 @@ def _slope_percent_per_min(
     ys = [v for (_, v) in series]
     x_mean = statistics.mean(xs)
     y_mean = statistics.mean(ys)
-    num = sum((x - x_mean) * (y - y_mean) for (x, y) in zip(xs, ys))
+    num = sum((x - x_mean) * (y - y_mean) for (x, y) in zip(xs, ys, strict=True))
     den = sum((x - x_mean) ** 2 for x in xs)
     if den < EPSILON_FLOW or y_mean < EPSILON_FLOW:
         return None
@@ -412,14 +408,11 @@ def _evaluate_stagnation(
     percentile_breached = percentile_available and stagnation >= p90
     # (a).2: 相対増分が基準停滞量比で beta 以上
     delta_breached = (
-        recent_ma is not None
-        and (stagnation - recent_ma) / (baseline + epsilon_0) >= beta
+        recent_ma is not None and (stagnation - recent_ma) / (baseline + epsilon_0) >= beta
     )
 
     condition_now = (
-        (percentile_breached and delta_breached)
-        if percentile_available
-        else delta_breached
+        (percentile_breached and delta_breached) if percentile_available else delta_breached
     )
     if not condition_now:
         # 条件が破れたら計時をリセット（フラグは診断用に返す）
@@ -626,12 +619,8 @@ def evaluate_cooldown(
     watched_edges: frozenset[EdgeID] = _NO_WATCHED_EDGES,
 ) -> CooldownDecision:
     # watched_edges: 現時点で停滞警戒（パーセンタイル超過または相対増分超過）を満たすエッジ集合（鮮度ガード用）
-    danger_triggers = tuple(
-        t for t in fired_triggers if t.kind == QueuedTriggerKind.DANGER
-    )
-    normal_triggers = tuple(
-        t for t in fired_triggers if t.kind != QueuedTriggerKind.DANGER
-    )
+    danger_triggers = tuple(t for t in fired_triggers if t.kind == QueuedTriggerKind.DANGER)
+    normal_triggers = tuple(t for t in fired_triggers if t.kind != QueuedTriggerKind.DANGER)
 
     if previous_state.is_in_cooldown(server_time):
         if danger_triggers:
@@ -646,16 +635,12 @@ def evaluate_cooldown(
             )
             return replace(decision, abort_state=previous_state)
         if normal_triggers:
-            merged_queue = _merge_into_queue(
-                previous_state.trigger_queue, normal_triggers
-            )
+            merged_queue = _merge_into_queue(previous_state.trigger_queue, normal_triggers)
             if _queue_exceeds_score(merged_queue, config) or _queue_is_diverse(
                 merged_queue, config
             ):
                 # スコア超過 or 多様性超過
-                queue_evidences = _queue_fire_evidences(
-                    merged_queue, config, server_time
-                )
+                queue_evidences = _queue_fire_evidences(merged_queue, config, server_time)
                 decision = _fire(
                     previous_state,
                     server_time,
@@ -693,9 +678,7 @@ def evaluate_cooldown(
 
     # 新規トリガーなし・キュー残あり → 鮮度ガード付きの統合発火
     if previous_state.trigger_queue:
-        if _queue_fresh(
-            previous_state.trigger_queue, watched_edges, server_time, config
-        ):
+        if _queue_fresh(previous_state.trigger_queue, watched_edges, server_time, config):
             # abort: キュー消化しない・cooldown 据え置き
             decision = _fire(
                 previous_state,
@@ -761,9 +744,7 @@ def _queue_fresh(
         return True
     # キュー対象アークのいずれかが現時点で停滞警戒（パーセンタイル超過または相対増分超過）を満たすか
     return any(
-        entry.origin_edge_id in watched_edges
-        for entry in queue
-        if entry.origin_edge_id is not None
+        entry.origin_edge_id in watched_edges for entry in queue if entry.origin_edge_id is not None
     )
 
 
@@ -784,11 +765,7 @@ def _queue_fire_evidences(
         )
     if _queue_is_diverse(queue, config):
         distinct = len(
-            {
-                entry.origin_edge_id
-                for entry in queue
-                if entry.origin_edge_id is not None
-            }
+            {entry.origin_edge_id for entry in queue if entry.origin_edge_id is not None}
         )
         evidences.append(
             QueueDiversityEvidence(
@@ -843,17 +820,13 @@ def _find_same_route(queue: list[QueuedTrigger], trigger: FiredTrigger) -> int |
     return None
 
 
-def _queue_exceeds_score(
-    queue: tuple[QueuedTrigger, ...], config: ResolvedConfig
-) -> bool:
+def _queue_exceeds_score(queue: tuple[QueuedTrigger, ...], config: ResolvedConfig) -> bool:
     total = sum(entry.accumulated_score for entry in queue)
     return total > config.queue_score_threshold
 
 
 def _queue_is_diverse(queue: tuple[QueuedTrigger, ...], config: ResolvedConfig) -> bool:
-    distinct_edges = {
-        entry.origin_edge_id for entry in queue if entry.origin_edge_id is not None
-    }
+    distinct_edges = {entry.origin_edge_id for entry in queue if entry.origin_edge_id is not None}
     return len(distinct_edges) > config.queue_diversity_threshold
 
 
@@ -984,9 +957,7 @@ def update_retrigger_counts(
     fired_edges = list(dict.fromkeys(normal_trigger_edges))  # 出現順・重複排除
     fired_set = set(fired_edges)
     watched = {
-        watch.edge_id
-        for watch in watch_states
-        if watch.percentile_breached or watch.delta_breached
+        watch.edge_id for watch in watch_states if watch.percentile_breached or watch.delta_breached
     }
     enabled_edges = {edge.edge_id for edge in graph.enabled_edges()}
 
@@ -1002,9 +973,7 @@ def update_retrigger_counts(
 
         if different_origin and not fired_this_cycle:
             # 別アーク起点発火 → 当該アークのカウントをリセット
-            entries[edge_id] = RetriggerEntry(
-                edge_id=edge_id, last_fired_at=entry.last_fired_at
-            )
+            entries[edge_id] = RetriggerEntry(edge_id=edge_id, last_fired_at=entry.last_fired_at)
         elif not fired_this_cycle and edge_id not in watched:
             quiet_cycles = entry.quiet_cycles + 1
             if quiet_cycles >= config.retrigger_reset_quiet_cycles:
@@ -1061,9 +1030,7 @@ def apply_danger_flag_down(
     updated: list[RetriggerEntry] = []
     for entry in previous_state.arc_retrigger_counts:
         if entry.edge_id in cleared_edges and (entry.count or entry.quiet_cycles):
-            updated.append(
-                RetriggerEntry(edge_id=entry.edge_id, last_fired_at=entry.last_fired_at)
-            )
+            updated.append(RetriggerEntry(edge_id=entry.edge_id, last_fired_at=entry.last_fired_at))
             changed = True
         else:
             updated.append(entry)

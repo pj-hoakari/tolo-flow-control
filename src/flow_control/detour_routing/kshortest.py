@@ -1,5 +1,4 @@
 from dataclasses import dataclass
-from typing import TypeAlias
 
 import networkx as nx
 
@@ -7,7 +6,7 @@ from ..domain.graph import EdgeID, NodeID
 from .traversal import DirectedArc
 
 Adjacency = dict[NodeID, tuple[DirectedArc, ...]]
-_RouteNode: TypeAlias = NodeID | tuple[str, str, str, str]
+type _RouteNode = NodeID | tuple[str, str, str, str]
 
 
 @dataclass(frozen=True)
@@ -34,9 +33,7 @@ def k_shortest_paths(
 
     paths: list[WeightedPath] = []
     try:
-        for node_path in nx.shortest_simple_paths(
-            graph, source, target, weight="weight"
-        ):
+        for node_path in nx.shortest_simple_paths(graph, source, target, weight="weight"):
             paths.append(_to_weighted_path(arc_of, node_path))
             if len(paths) >= k:
                 break
@@ -49,12 +46,14 @@ def _build_digraph(
     adjacency: Adjacency,
 ) -> tuple["nx.DiGraph[_RouteNode]", dict[_RouteNode, DirectedArc]]:
     """有向アークを仮想ノードへ展開して、並行エッジも独立経路として保持する。"""
-    graph: "nx.DiGraph[_RouteNode]" = nx.DiGraph()
+    graph: nx.DiGraph[_RouteNode] = nx.DiGraph()
     arc_of: dict[_RouteNode, DirectedArc] = {}
     for node in sorted(adjacency, key=lambda node_id: node_id.value):
         arcs = adjacency[node]
         graph.add_node(node)
-        for arc in sorted(arcs, key=lambda item: (item.weight, item.edge_id.value, item.to_node.value)):
+        for arc in sorted(
+            arcs, key=lambda item: (item.weight, item.edge_id.value, item.to_node.value)
+        ):
             virtual: _RouteNode = (
                 "__detour_arc__",
                 node.value,

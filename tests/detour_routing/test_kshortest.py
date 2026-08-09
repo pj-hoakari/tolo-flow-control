@@ -1,6 +1,8 @@
 # k_shortest_paths（NetworkX shortest_simple_paths）のテスト
 # 距離昇順・k 上限・到達不能・並行エッジ集約・決定性を検証
 
+from flow_control.detour_routing.kshortest import WeightedPath, k_shortest_paths
+from flow_control.detour_routing.traversal import build_adjacency
 from flow_control.domain import (
     CurrentDirection,
     DirectionConstraint,
@@ -12,14 +14,10 @@ from flow_control.domain import (
     NodeKind,
     ObservationType,
 )
-from flow_control.detour_routing.kshortest import WeightedPath, k_shortest_paths
-from flow_control.detour_routing.traversal import build_adjacency
 
 
 def _node(node_id: str) -> Node:
-    return Node(
-        node_id=NodeID(node_id), kind=NodeKind.GOAL, is_boundary=False, enabled=True
-    )
+    return Node(node_id=NodeID(node_id), kind=NodeKind.GOAL, is_boundary=False, enabled=True)
 
 
 def _edge(edge_id: str, a: str, b: str) -> Edge:

@@ -76,8 +76,7 @@ def cmd_run(args: argparse.Namespace) -> int:
                 f" greedy_iterations={stats.greedy_iterations}"
                 f" assign_lp_ms={stats.assign_lp_ms}"
                 f" build_ms={stats.build_ms}"
-                f" greedy_ms={stats.greedy_ms}"
-                + (" [TRUNCATED]" if stats.greedy_truncated else "")
+                f" greedy_ms={stats.greedy_ms}" + (" [TRUNCATED]" if stats.greedy_truncated else "")
             )
         if stats.demand_all_cut:
             print(
@@ -85,13 +84,18 @@ def cmd_run(args: argparse.Namespace) -> int:
                 f" (od_pairs_input={stats.od_pairs_input} が delta_min で全カット。提案は実質空)"
             )
         if r.restriction_proposal:
-            print("  restrictions:", ", ".join(
-                f"{proposal.edge_id.value}:{proposal.action.value}"
-                for proposal in r.restriction_proposal
-            ))
+            print(
+                "  restrictions:",
+                ", ".join(
+                    f"{proposal.edge_id.value}:{proposal.action.value}"
+                    for proposal in r.restriction_proposal
+                ),
+            )
     if run.forecast is not None:
-        print(f"  OD pairs={len(run.forecast.od_matrix)} "
-              f"reproduction_error={run.forecast.reproduction_error:.4g}")
+        print(
+            f"  OD pairs={len(run.forecast.od_matrix)} "
+            f"reproduction_error={run.forecast.reproduction_error:.4g}"
+        )
     print("  timings(ms):", {k: round(v, 1) for k, v in run.timings_ms.items()})
     print(f"  wrote {len(written)} files under {out}/")
     return 0
@@ -129,12 +133,12 @@ def cmd_run_all(args: argparse.Namespace) -> int:
             if run.optimization.solver_stats.demand_all_cut:
                 ostr += " [DEMAND_ALL_CUT]"
         print(f"  {name:24s} {run.mode.value:6s} {det.verdict_hint.value:12s}{ostr}")
-    created_at = datetime.now().isoformat(timespec="seconds")
-    label = args.label or datetime.now().strftime("%Y%m%d-%H%M%S")
+    # ローカル時刻にオフセットを付けて出力の時刻を一意にする
+    now = datetime.now().astimezone()
+    created_at = now.isoformat(timespec="seconds")
+    label = args.label or now.strftime("%Y%m%d-%H%M%S")
     idx = report.write_index(out_root, entries, label=label, created_at=created_at)
-    snap = report.save_history_snapshot(
-        out_root, entries, label=label, created_at=created_at
-    )
+    snap = report.save_history_snapshot(out_root, entries, label=label, created_at=created_at)
     print(f"wrote index: {idx}")
     print(f"history snapshot [{label}]: {snap}")
     print(f"比較: uv run python -m devtools compare <base> {label}")
@@ -193,8 +197,10 @@ def cmd_fuzz(args: argparse.Namespace) -> int:
     if failing:
         print(f"failing cases ({len(failing)}):")
         for o in failing[:20]:
-            print(f"  {o.name} [{o.graph_name}] verdict={o.verdict} "
-                  f"solver={o.solver_status}: {'; '.join(o.violations)}")
+            print(
+                f"  {o.name} [{o.graph_name}] verdict={o.verdict} "
+                f"solver={o.solver_status}: {'; '.join(o.violations)}"
+            )
         if len(failing) > 20:
             print(f"  ... and {len(failing) - 20} more")
         print(f"artifacts saved under {out}/fail/")

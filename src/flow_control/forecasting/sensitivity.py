@@ -32,13 +32,9 @@ class ReferenceSampleCount:
 
 @dataclass(frozen=True)
 class FallbackReport:
-    used_reference_edges: tuple[
-        EdgeID, ...
-    ] = ()  # η_e を参照値からフォールバックしたエッジ
+    used_reference_edges: tuple[EdgeID, ...] = ()  # η_e を参照値からフォールバックしたエッジ
     used_default_edges: tuple[EdgeID, ...] = ()  # 最終フォールバック値を使ったアーク
-    reference_sample_counts: tuple[
-        ReferenceSampleCount, ...
-    ] = ()  # 使った参照値の信頼度
+    reference_sample_counts: tuple[ReferenceSampleCount, ...] = ()  # 使った参照値の信頼度
 
 
 @dataclass(frozen=True)
@@ -67,9 +63,7 @@ def resolve_arc_flow_sensitivity(
         if edge.observation_type != ObservationType.VECTOR:
             continue
 
-        eta, source, tag, sample_count = _resolve_eta(
-            edge, history_digest, references, config
-        )
+        eta, source, tag, sample_count = _resolve_eta(edge, history_digest, references, config)
         sensitivities.append(ArcFlowSensitivity(edge_id=edge.edge_id, eta=eta))
 
         if source == _SOURCE_REFERENCE:

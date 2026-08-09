@@ -11,7 +11,7 @@ from __future__ import annotations
 from collections import deque
 from collections.abc import Iterable
 from dataclasses import dataclass, replace
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 from typing import TYPE_CHECKING
 
 from flow_control.detection.config import ResolvedConfig as DetectionConfig
@@ -21,8 +21,8 @@ from flow_control.detour_routing.config import ResolvedConfig as DetourConfig
 from flow_control.domain import (
     ArcFlow,
     ArcHistoryStat,
-    ArcStagnation,
     ArcScalarFlow,
+    ArcStagnation,
     ArcWindowSeries,
     CurrentDirection,
     EdgeID,
@@ -46,7 +46,7 @@ if TYPE_CHECKING:
 
 
 # 全シナリオで共有する固定時刻（決定性のため）
-DEFAULT_TIME = datetime(2026, 6, 18, 12, 0, 0, tzinfo=timezone.utc)
+DEFAULT_TIME = datetime(2026, 6, 18, 12, 0, 0, tzinfo=UTC)
 
 # 既定の参照値（K>=5 で信頼）
 DEFAULT_REFERENCE = Reference(by_attribute_tag=(), source_k_anonymity=5)
@@ -72,8 +72,7 @@ def established_watch_state(
                 edge_id=edge_id,
                 percentile_breached=True,
                 delta_breached=True,
-                stagnation_watch_since=server_time
-                - timedelta(minutes=established_minutes),
+                stagnation_watch_since=server_time - timedelta(minutes=established_minutes),
             )
             for edge_id in sorted(edges, key=lambda e: e.value)
         )
@@ -143,7 +142,7 @@ class Scenario:
     events: tuple[Event, ...]
     server_time: datetime
     configs: PipelineConfigs
-    previous_opt_result: "OptimizationResult | None" = None
+    previous_opt_result: OptimizationResult | None = None
     # 検証用ヒント（ファジングの不変条件チェックで参照）
     expect_trigger: bool = True
     notes: str = ""
@@ -167,7 +166,7 @@ def make_scenario(
     configs: PipelineConfigs | None = None,
     references: Reference | None = None,
     server_time: datetime = DEFAULT_TIME,
-    previous_opt_result: "OptimizationResult | None" = None,
+    previous_opt_result: OptimizationResult | None = None,
     expect_trigger: bool = True,
     skip_in_run_all: bool = False,
 ) -> Scenario:
@@ -429,9 +428,7 @@ def build_consistent_observations_and_history(
         if k <= 0:
             ramp.append(surge_start_ratio)
         else:
-            ramp.append(
-                surge_start_ratio + (1.0 - surge_start_ratio) * k / (surge_samples - 1)
-            )
+            ramp.append(surge_start_ratio + (1.0 - surge_start_ratio) * k / (surge_samples - 1))
 
     arc_flows: list[ArcFlow] = []
     arc_scalar_flows: list[ArcScalarFlow] = []
@@ -467,9 +464,7 @@ def build_consistent_observations_and_history(
 
         base_total = 0.0
         surge_total = 0.0
-        directional: list[
-            tuple[FlowDirection, tuple[tuple[datetime, float], ...]]
-        ] = []
+        directional: list[tuple[FlowDirection, tuple[tuple[datetime, float], ...]]] = []
         for direction in (FlowDirection.A_TO_B, FlowDirection.B_TO_A):
             b = base_rate.get((eid, direction), 0.0)
             s = surge_rate.get((eid, direction), 0.0)
@@ -477,9 +472,7 @@ def build_consistent_observations_and_history(
             surge_total += s
             final = b + s
             if final > 0.0 and edge.observation_type == ObservationType.VECTOR:
-                arc_flows.append(
-                    ArcFlow(edge_id=eid, direction=direction, flow_rate=final)
-                )
+                arc_flows.append(ArcFlow(edge_id=eid, direction=direction, flow_rate=final))
                 # 方向別ライン通過系列（排出実績 μ̂ の算出に使われる）
                 directional.append(
                     (
@@ -490,9 +483,7 @@ def build_consistent_observations_and_history(
                         ),
                     )
                 )
-        arc_scalar_flows.append(
-            ArcScalarFlow(edge_id=eid, observed_count=base_total + surge_total)
-        )
+        arc_scalar_flows.append(ArcScalarFlow(edge_id=eid, observed_count=base_total + surge_total))
         samples = tuple(
             (start_time + timedelta(minutes=i), base_total + surge_total * ramp[i])
             for i in range(n - 1)
@@ -655,9 +646,7 @@ def with_edge_danger(built: BuiltGraph, edge_id: str, capacity: float) -> BuiltG
     """指定エッジに危険フラグと容量上限を立てた新しい ``BuiltGraph`` を返す"""
     eid = EdgeID(edge_id)
     new_edges = tuple(
-        replace(e, danger_flag=True, danger_capacity=capacity)
-        if e.edge_id == eid
-        else e
+        replace(e, danger_flag=True, danger_capacity=capacity) if e.edge_id == eid else e
         for e in built.graph.edges
     )
     return BuiltGraph(
@@ -670,9 +659,7 @@ def with_node_danger(built: BuiltGraph, node_id: str, capacity: float) -> BuiltG
     """指定ノードに危険フラグと通過量上限を立てた新しい ``BuiltGraph`` を返す"""
     nid = NodeID(node_id)
     new_nodes = tuple(
-        replace(n, danger_flag=True, danger_capacity=capacity)
-        if n.node_id == nid
-        else n
+        replace(n, danger_flag=True, danger_capacity=capacity) if n.node_id == nid else n
         for n in built.graph.nodes
     )
     return BuiltGraph(

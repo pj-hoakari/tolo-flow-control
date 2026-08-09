@@ -134,11 +134,13 @@ def test_abort_state_excludes_fire_side_effects_on_trigger(
     # new_state: cooldown 計時・再発火カウント加算
     assert result.new_state.cooldown_until == base_time + timedelta(minutes=60.0)
     new_entry = result.new_state.retrigger_entry_of(edge_id)
-    assert new_entry is not None and new_entry.count == 3
+    assert new_entry is not None
+    assert new_entry.count == 3
     # abort_state: cooldown 据え置き・再発火カウント加算なし
     assert result.abort_state.cooldown_until is None
     abort_entry = result.abort_state.retrigger_entry_of(edge_id)
-    assert abort_entry is not None and abort_entry.count == 2
+    assert abort_entry is not None
+    assert abort_entry.count == 2
 
 
 def test_danger_flag_fires_for_node(
@@ -212,9 +214,7 @@ def test_queued_trigger_carries_observation_snapshot_ref(
     history, observations, fire_state = make_combined_firing(
         edge_id, base_time, snapshot_ref="snap-42"
     )
-    previous = replace(
-        fire_state, cooldown_until=base_time + timedelta(minutes=30)
-    )
+    previous = replace(fire_state, cooldown_until=base_time + timedelta(minutes=30))
 
     result = detect(
         graph=basic_graph,

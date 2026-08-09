@@ -50,7 +50,7 @@ def make_expo_scenario(
     node_danger: tuple[str, float] | None = None,
     edge_danger: tuple[str, float] | None = None,
     events: tuple[Event, ...] = (),
-    previous_opt_result: "OptimizationResult | None" = None,
+    previous_opt_result: OptimizationResult | None = None,
 ) -> Scenario:
     """expo グラフ上のシナリオを保存則整合の観測で組む
 
@@ -79,9 +79,7 @@ def make_expo_scenario(
         built,
         obs,
         hist,
-        previous_state=(
-            established_watch_state(trigger_edges) if trigger_edges else None
-        ),
+        previous_state=(established_watch_state(trigger_edges) if trigger_edges else None),
         events=events,
         configs=expo_configs(),
         previous_opt_result=previous_opt_result,

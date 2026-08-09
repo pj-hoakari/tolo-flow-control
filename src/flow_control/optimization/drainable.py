@@ -11,9 +11,7 @@ class DrainableResult:
     undrainable: frozenset[EdgeID]  # 停滞観測ありだが排出不能なエッジ
 
 
-def reachable_forward(
-    adjacency: dict[NodeID, list[NodeID]], source: NodeID
-) -> set[NodeID]:
+def reachable_forward(adjacency: dict[NodeID, list[NodeID]], source: NodeID) -> set[NodeID]:
     seen: set[NodeID] = {source}
     queue: deque[NodeID] = deque((source,))
     while queue:
@@ -77,6 +75,4 @@ def compute_drainable(
             drainable.add(edge.edge_id)
 
     undrainable = stagnation_edges - drainable
-    return DrainableResult(
-        drainable=frozenset(drainable), undrainable=frozenset(undrainable)
-    )
+    return DrainableResult(drainable=frozenset(drainable), undrainable=frozenset(undrainable))
