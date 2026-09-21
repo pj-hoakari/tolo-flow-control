@@ -2,6 +2,7 @@ import asyncio
 import json
 import socket
 import threading
+import time
 from collections.abc import Awaitable, Callable
 from datetime import UTC, datetime
 from typing import cast
@@ -31,25 +32,68 @@ from flow_control.domain.history import HistoryDigest
 from flow_control.domain.observations import Observations
 from flow_control.domain.references import Reference
 from flow_control.rpc import codec
+from flow_control.rpc.auth import (
+    AuthenticationError,
+    CloudRunAuthenticator,
+)
 from flow_control.rpc.generated.tolo.flow.v1 import flow_pb2 as pb
 from flow_control.rpc.generated.tolo.flow.v1.flow_connect import FlowControlServiceClient
 from flow_control.service.config import ResolvedConfig
 from flow_control.service.context import TenantContext
 from flow_control.service.messages import Request, Response
 from flow_control.service.verdict import Verdict
+from tests.rpc.test_auth import _claims, _config, _token, _verifier
 
 type _Receive = Callable[[], Awaitable[dict[str, object]]]
 type _Send = Callable[[dict[str, object]], Awaitable[None]]
 type _ASGIApp = Callable[[dict[str, object], _Receive, _Send], Awaitable[None]]
 
 _RPC_HEADERS = [
+    (b"workload-authorization", b"Bearer token"),
     (b"content-type", b"application/proto"),
     (b"connect-protocol-version", b"1"),
 ]
 
 
-def _create_app(settings: server.ServerSettings | None = None) -> _ASGIApp:
-    return cast(_ASGIApp, server.create_app(settings=settings))
+class _Authenticator:
+    def __init__(
+        self,
+        *,
+        ready: bool = True,
+        error: Exception | None = None,
+        delay_sec: float = 0.0,
+    ) -> None:
+        self._ready = ready
+        self.error = error
+        self.delay_sec = delay_sec
+        self.refresh_calls = 0
+        self.tokens: list[str] = []
+
+    @property
+    def ready(self) -> bool:
+        return self._ready
+
+    def refresh(self) -> None:
+        self.refresh_calls += 1
+        self._ready = True
+
+    def authenticate(self, token: str) -> None:
+        self.tokens.append(token)
+        if self.delay_sec:
+            time.sleep(self.delay_sec)
+        if self.error is not None:
+            raise self.error
+
+
+def _create_app(
+    authenticator: _Authenticator,
+    settings: server.ServerSettings | None = None,
+) -> _ASGIApp:
+    app = server.create_app(
+        settings=settings,
+        authenticator=cast(CloudRunAuthenticator, cast(object, authenticator)),
+    )
+    return cast(_ASGIApp, app)
 
 
 def _ctx(timeout_ms: int | None = None) -> RequestContext[pb.OptimizeRequest, pb.OptimizeResponse]:
@@ -133,34 +177,71 @@ def _request() -> Request:
     )
 
 
-def test_unknown_paths_cannot_reach_generated() -> None:
+def test_authentication_precedes_body_and_unknown_paths_cannot_reach_generated() -> None:
     async def run() -> None:
-        app = _create_app()
+        authenticator = _Authenticator(error=AuthenticationError("bad"))
+        app = _create_app(authenticator)
+        headers = [(b"workload-authorization", b"Bearer token")]
         sent, received = await _invoke(
             app,
-            _http_scope("/mounted/other", [], "/mounted"),
+            _http_scope(server.RPC_PATH, headers),
+            [{"type": "http.request", "body": b"invalid", "more_body": False}],
+        )
+        assert sent[0]["status"] == 401
+        assert received == 0
+
+        sent, received = await _invoke(
+            app,
+            _http_scope("/mounted/other", headers, "/mounted"),
             [{"type": "http.request", "body": b"invalid", "more_body": False}],
         )
         assert sent[0]["status"] == 404
         assert received == 0
 
-    asyncio.run(run())
-
-
-def test_ready_probe_reports_ready() -> None:
-    async def run() -> None:
-        app = _create_app()
-        sent, received = await _invoke(app, _http_scope("/readyz", []), [])
-        assert _status(sent) == 200
-        assert json.loads(_body(sent))["status"] == "ready"
+        sent, received = await _invoke(
+            app,
+            _http_scope("/mounted" + server.RPC_PATH, headers, "/mounted"),
+            [{"type": "http.request", "body": b"invalid", "more_body": False}],
+        )
+        assert sent[0]["status"] == 401
         assert received == 0
 
     asyncio.run(run())
 
 
-def test_connect_timeout_covers_body_read() -> None:
+def test_ready_probe_refreshes_expired_trust() -> None:
     async def run() -> None:
-        app = _create_app()
+        authenticator = _Authenticator(ready=False)
+        app = _create_app(authenticator)
+        sent, received = await _invoke(
+            app,
+            _http_scope("/readyz", []),
+            [],
+        )
+        assert sent[0]["status"] == 200
+        assert authenticator.refresh_calls == 1
+        assert received == 0
+
+    asyncio.run(run())
+
+
+def test_connect_timeout_covers_authentication_and_body() -> None:
+    async def run() -> None:
+        slow_auth = _Authenticator(delay_sec=0.05)
+        app = _create_app(slow_auth)
+        sent, received = await _invoke(
+            app,
+            _http_scope(
+                server.RPC_PATH,
+                [(b"workload-authorization", b"Bearer token"), (b"connect-timeout-ms", b"5")],
+            ),
+            [],
+        )
+        assert sent[0]["status"] == 504
+        assert received == 0
+
+        authenticator = _Authenticator()
+        app = _create_app(authenticator)
         entered = asyncio.Event()
 
         async def receive() -> dict[str, object]:
@@ -175,7 +256,13 @@ def test_connect_timeout_covers_body_read() -> None:
 
         task = asyncio.ensure_future(
             app(
-                _http_scope(server.RPC_PATH, [(b"connect-timeout-ms", b"5")]),
+                _http_scope(
+                    server.RPC_PATH,
+                    [
+                        (b"workload-authorization", b"Bearer token"),
+                        (b"connect-timeout-ms", b"5"),
+                    ],
+                ),
                 receive,
                 send,
             )
@@ -274,13 +361,14 @@ def test_cancel_keeps_single_executor_slot_until_worker_finishes(
 
 def test_body_limit_stops_before_generated_decode(monkeypatch: pytest.MonkeyPatch) -> None:
     async def run() -> None:
+        authenticator = _Authenticator()
         monkeypatch.setattr(
             server, "decode_request", lambda _: pytest.fail("decoded oversized body")
         )
-        app = _create_app(server.ServerSettings(max_request_bytes=1))
+        app = _create_app(authenticator, server.ServerSettings(max_request_bytes=1))
         sent, received = await _invoke(
             app,
-            _http_scope(server.RPC_PATH, []),
+            _http_scope(server.RPC_PATH, [(b"workload-authorization", b"Bearer token")]),
             [{"type": "http.request", "body": b"12", "more_body": False}],
         )
         assert sent[0]["status"] == 429
@@ -353,7 +441,7 @@ def test_disconnect_cancels_generated_task_and_keeps_worker_slot(
         monkeypatch.setattr(
             server, "encode_response", lambda _: pb.OptimizeResponse(request_id="r1")
         )
-        app = _create_app()
+        app = _create_app(_Authenticator())
 
         async def disconnect_once_started() -> dict[str, object]:
             _ = await asyncio.to_thread(started.wait, 5)
@@ -375,9 +463,59 @@ def test_disconnect_cancels_generated_task_and_keeps_worker_slot(
     asyncio.run(run())
 
 
+def test_iam_and_workload_headers_coexist_but_repeats_are_rejected(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    async def run() -> None:
+        response = Response(
+            request_id="r1",
+            verdict=Verdict.SKIPPED_NO_TRIGGER,
+            updated_detection_state=DetectionState(),
+        )
+        monkeypatch.setattr(server, "decode_request", lambda _: object())
+        monkeypatch.setattr(server, "handle_request", lambda _, **__: response)
+        monkeypatch.setattr(
+            server, "encode_response", lambda _: pb.OptimizeResponse(request_id="r1")
+        )
+        authenticator = _Authenticator()
+        app = _create_app(authenticator)
+
+        accepted = await asyncio.wait_for(
+            _rpc_call(
+                app,
+                _stay_connected,
+                [
+                    (b"authorization", b"Bearer token"),
+                    (b"x-serverless-authorization", b"Bearer token"),
+                    *_RPC_HEADERS,
+                ],
+            ),
+            2,
+        )
+        assert _status(accepted) == 200
+        assert authenticator.tokens == ["token"]
+
+        sent, received = await _invoke(
+            app,
+            _http_scope(
+                server.RPC_PATH,
+                [
+                    (b"workload-authorization", b"Bearer token"),
+                    (b"Workload-Authorization", b"Bearer token"),
+                ],
+            ),
+            [],
+        )
+        assert sent[0]["status"] == 401
+        assert received == 0
+        assert authenticator.tokens == ["token"]
+
+    asyncio.run(run())
+
+
 def test_compressed_request_is_refused_before_decompression() -> None:
     async def run() -> None:
-        app = _create_app()
+        app = _create_app(_Authenticator())
         sent = await asyncio.wait_for(
             _rpc_call(app, _stay_connected, [*_RPC_HEADERS, (b"content-encoding", b"gzip")]),
             2,
@@ -388,9 +526,12 @@ def test_compressed_request_is_refused_before_decompression() -> None:
     asyncio.run(run())
 
 
-def test_generated_client_binary_and_protojson_over_hypercorn() -> None:
+def test_generated_client_binary_and_protojson_over_hypercorn(key_material) -> None:
     async def run() -> None:
-        app = server.create_app(settings=server.ServerSettings())
+        key, cert = key_material
+        authenticator = CloudRunAuthenticator(_config(), _verifier(cert))
+        token = _token(key, _claims())
+        app = server.create_app(authenticator=authenticator)
         port_socket = socket.socket()
         port_socket.bind(("127.0.0.1", 0))
         port = port_socket.getsockname()[1]
@@ -431,7 +572,10 @@ def test_generated_client_binary_and_protojson_over_hypercorn() -> None:
                     send_compression=None,
                     http_client=async_client,
                 )
-                binary_response = await client.optimize(request)
+                binary_response = await client.optimize(
+                    request,
+                    headers={"workload-authorization": f"Bearer {token}"},
+                )
                 assert binary_response.request_id == "r1"
 
                 json_response = await async_client.post(
@@ -439,6 +583,7 @@ def test_generated_client_binary_and_protojson_over_hypercorn() -> None:
                     headers={
                         "content-type": "application/json",
                         "accept": "application/json",
+                        "workload-authorization": f"Bearer {token}",
                     },
                     content=json_format.MessageToJson(request).encode(),
                 )

@@ -28,6 +28,14 @@ from hypercorn.typing import (
 
 from ..service.handler import handle_request
 from ..service.messages import Response
+from .auth import (
+    AuthConfigurationError,
+    AuthenticationError,
+    AuthorizationError,
+    CloudRunAuthenticator,
+    create_authenticator,
+    parse_workload_authorization,
+)
 from .codec import decode_request, encode_response
 from .generated.tolo.flow.v1.flow_pb2 import OptimizeRequest, OptimizeResponse
 
@@ -187,8 +195,13 @@ class FlowControlService:
         return handle_request(domain_request, deadline=deadline)
 
 
-def create_app(*, settings: ServerSettings | None = None) -> ASGIFramework:
+def create_app(
+    *,
+    settings: ServerSettings | None = None,
+    authenticator: CloudRunAuthenticator | None = None,
+) -> ASGIFramework:
     selected_settings = settings or ServerSettings.from_env()
+    selected_auth = authenticator or create_authenticator()
     pool = _ExecutionPool()
     service = FlowControlService(pool, selected_settings.max_execution_sec)
     generated = _load_generated_app(service, selected_settings.max_request_bytes)
@@ -196,7 +209,7 @@ def create_app(*, settings: ServerSettings | None = None) -> ASGIFramework:
     async def app(scope: Scope, receive: ASGIReceiveCallable, send: ASGISendCallable) -> None:
         scope_type = scope["type"]
         if scope_type == "lifespan":
-            await _lifespan(scope, receive, send, pool)
+            await _lifespan(scope, receive, send, selected_auth, pool)
             return
         if scope_type != "http":
             if scope_type == "websocket":
@@ -209,16 +222,21 @@ def create_app(*, settings: ServerSettings | None = None) -> ASGIFramework:
             await _send_json(send, 200, {"status": "ok"})
             return
         if path == "/readyz":
-            await _send_json(send, 200, {"status": "ready"})
+            if not selected_auth.ready:
+                with suppress(Exception):
+                    await asyncio.to_thread(selected_auth.refresh)
+            status = 200 if selected_auth.ready else 503
+            await _send_json(send, status, {"status": "ready" if status == 200 else "not_ready"})
             return
         if path != RPC_PATH:
             await _send_connect_error(send, "not_found", "not found")
             return
-        await _handle_rpc(
+        await _authenticated_request(
             scope,
             receive,
             send,
             generated,
+            selected_auth,
             selected_settings.max_request_bytes,
             selected_settings.max_execution_sec,
         )
@@ -226,11 +244,12 @@ def create_app(*, settings: ServerSettings | None = None) -> ASGIFramework:
     return app
 
 
-async def _handle_rpc(
+async def _authenticated_request(
     scope: Scope,
     receive: ASGIReceiveCallable,
     send: ASGISendCallable,
     generated: ASGIFramework,
+    authenticator: CloudRunAuthenticator,
     max_request_bytes: int,
     max_execution_sec: float,
 ) -> None:
@@ -245,19 +264,48 @@ async def _handle_rpc(
         return
     deadline_token = _ARRIVAL_DEADLINE.set(arrival_deadline)
     try:
-        await _dispatch(send, receive, scope, generated, max_request_bytes, arrival_deadline)
+        await _authenticated_request_inner(
+            scope,
+            receive,
+            send,
+            generated,
+            authenticator,
+            max_request_bytes,
+            arrival_deadline,
+            headers,
+        )
     finally:
         _ARRIVAL_DEADLINE.reset(deadline_token)
 
 
-async def _dispatch(
-    send: ASGISendCallable,
-    receive: ASGIReceiveCallable,
+async def _authenticated_request_inner(
     scope: Scope,
+    receive: ASGIReceiveCallable,
+    send: ASGISendCallable,
     generated: ASGIFramework,
+    authenticator: CloudRunAuthenticator,
     max_request_bytes: int,
     arrival_deadline: float,
+    headers: list[tuple[bytes, bytes]],
 ) -> None:
+    if _duplicate_credentials(headers):
+        await _send_connect_error(send, "unauthenticated", "invalid workload authorization")
+        return
+    try:
+        token = parse_workload_authorization(headers)
+        await asyncio.wait_for(
+            asyncio.to_thread(authenticator.authenticate, token),
+            timeout=_remaining(arrival_deadline),
+        )
+    except TimeoutError:
+        await _send_connect_error(send, "deadline_exceeded", "request deadline exceeded")
+        return
+    except AuthorizationError:
+        await _send_connect_error(send, "permission_denied", "workload principal is not allowed")
+        return
+    except (AuthenticationError, AuthConfigurationError):
+        await _send_connect_error(send, "unauthenticated", "workload authentication failed")
+        return
     try:
         body = await asyncio.wait_for(
             _read_body(receive, max_request_bytes), timeout=_remaining(arrival_deadline)
@@ -312,12 +360,17 @@ async def _lifespan(
     scope: Scope,
     receive: ASGIReceiveCallable,
     send: ASGISendCallable,
+    authenticator: CloudRunAuthenticator,
     pool: _ExecutionPool,
 ) -> None:
     del scope
     while True:
         message = await receive()
         if message.get("type") == "lifespan.startup":
+            try:
+                await asyncio.to_thread(authenticator.refresh)
+            except Exception:
+                LOGGER.exception("workload trust initialization failed")
             await send({"type": "lifespan.startup.complete"})
         elif message.get("type") == "lifespan.shutdown":
             await asyncio.to_thread(pool.shutdown)
@@ -405,6 +458,19 @@ async def _read_body(receive: ASGIReceiveCallable, limit: int) -> bytes:
             return b"".join(chunks)
 
 
+def _duplicate_credentials(headers: list[tuple[bytes, bytes]]) -> bool:
+    counts: dict[bytes, int] = {}
+    for key, _ in headers:
+        lowered = key.lower()
+        if lowered in {
+            b"workload-authorization",
+            b"authorization",
+            b"x-serverless-authorization",
+        }:
+            counts[lowered] = counts.get(lowered, 0) + 1
+    return any(count > 1 for count in counts.values())
+
+
 async def _wait_for_disconnect(receive: ASGIReceiveCallable, receive_lock: asyncio.Lock) -> bool:
     while True:
         async with receive_lock:
@@ -463,9 +529,9 @@ def _positive_int(value: str, name: str, maximum: int | None = None) -> int:
     try:
         parsed = int(value)
     except (TypeError, ValueError) as exc:
-        raise ValueError(name) from exc
+        raise AuthConfigurationError(name) from exc
     if parsed <= 0 or (maximum is not None and parsed > maximum):
-        raise ValueError(name)
+        raise AuthConfigurationError(name)
     return parsed
 
 
@@ -473,9 +539,9 @@ def _positive_float(value: str, name: str) -> float:
     try:
         parsed = float(value)
     except (TypeError, ValueError) as exc:
-        raise ValueError(name) from exc
+        raise AuthConfigurationError(name) from exc
     if parsed <= 0 or not parsed < float("inf"):
-        raise ValueError(name)
+        raise AuthConfigurationError(name)
     return parsed
 
 
