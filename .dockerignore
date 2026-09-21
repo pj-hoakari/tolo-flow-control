@@ -1,0 +1,12 @@
+*
+
+!.python-version
+!pyproject.toml
+!uv.lock
+!README.md
+!src
+
+**/__pycache__
+**/*.py[oc]
+**/.env
+**/.env.*
