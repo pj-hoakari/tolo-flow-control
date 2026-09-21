@@ -1,0 +1,13 @@
+services:
+    server:
+        build:
+            context: .
+        environment:
+            PORT: "8080"
+            TOLO_RPC_MAX_REQUEST_BYTES: "8388608"
+            TOLO_RPC_MAX_EXECUTION_SEC: "720"
+        read_only: true
+        tmpfs:
+            - /tmp
+        ports:
+            - "8080:8080"
