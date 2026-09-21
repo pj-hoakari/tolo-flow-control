@@ -1,0 +1,5 @@
+pre-commit:
+    parallel: true
+    jobs:
+        - name: Scan credential leaks
+          run: mise exec -- betterleaks git --pre-commit --redact --staged --verbose
