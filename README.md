@@ -25,6 +25,8 @@ docker buildx build --platform linux/arm64 -t tolo-flow-control:arm64 --load .
 docker run -d --read-only --tmpfs /tmp -p 8080:8080 tolo-flow-control:arm64
 ```
 
+`docker compose up --build` でも起動できる。環境変数は `compose.yml` の `environment` で変更できる。
+
 ## 環境変数
 
 | 変数 | 既定値 | 内容 |
@@ -40,5 +42,7 @@ docker run -d --read-only --tmpfs /tmp -p 8080:8080 tolo-flow-control:arm64
 ```sh
 TOLO_SMOKE_BASE_URL=http://127.0.0.1:8080 uv run pytest tests/rpc/test_container_smoke.py
 ```
+
+`docker compose up --build` で起動した場合も `TOLO_SMOKE_BASE_URL=http://127.0.0.1:8080` で検証できる。
 
 `TOLO_SMOKE_BASE_URL` を設定しない場合は skip される。
