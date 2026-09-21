@@ -34,12 +34,10 @@ tasks:
 
     proto:dist:check:
         desc: Check that the distributable proto file set builds on its own.
-        vars:
-            SRC: '{{.SRC | default "proto"}}'
         cmds:
             - |
                 WORK="$(mktemp -d)"
-                cd "{{.SRC}}"
+                cd proto
                 find . -type f -name '*.proto' | sed 's|^\./||' | sort >"$WORK/files"
                 COUNT="$(wc -l <"$WORK/files" | tr -d ' ')"
                 if [ "$COUNT" -eq 0 ]; then
