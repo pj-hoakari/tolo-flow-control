@@ -15,9 +15,6 @@ on:
 permissions:
   contents: read
 
-env:
-  BUF_VERSION: 1.73.0
-
 jobs:
   checks:
     runs-on: ubuntu-24.04
@@ -27,46 +24,17 @@ jobs:
         with:
           ref: ${{ inputs.ref }}
 
-      - name: Set up Buf
-        uses: bufbuild/buf-action@8c6a16e16f12ba20b6470afa9c2ba9b5ba8c97c3 # v1.5.0
-        with:
-          version: ${{ env.BUF_VERSION }}
-          setup_only: true
+      - name: Set up mise
+        uses: jdx/mise-action@c2a87611a18de5b3828c5652fe268e992400cb5c # v4.3.0
 
-      - name: Buf lint
-        run: buf lint
-
-      - name: Buf build
-        run: buf build
+      - name: Buf lint and build
+        run: task proto:lint
 
       - name: Check generated code is up to date
-        run: |
-          buf generate --template buf.gen.python.yaml
-          if [ -n "$(git status --porcelain)" ]; then
-            echo "::error::buf generate の出力がコミット済みの生成コードと一致しません"
-            git status --porcelain
-            git diff
-            exit 1
-          fi
+        run: task proto:gen:check
 
       - name: Verify distributable proto file set
-        run: |
-          WORK="$(mktemp -d)"
-          COUNT=0
-          cd proto
-          while IFS= read -r f; do
-            mkdir -p "$WORK/proto/$(dirname "$f")"
-            cp "$f" "$WORK/proto/$f"
-            COUNT=$((COUNT + 1))
-          done < <(find . -type f -name '*.proto' | sed 's|^\./||' | sort)
-          if [ "$COUNT" -eq 0 ]; then
-            echo "::error::配布対象の .proto ファイルが見つかりません"
-            exit 1
-          fi
-          echo "配布用ファイル集合: ${COUNT} file(s)"
-          printf 'version: v2\nmodules:\n  - path: proto\n' >"$WORK/buf.yaml"
-          cd "$WORK"
-          buf build
+        run: task proto:dist:check
 
       - name: Set up uv
         uses: astral-sh/setup-uv@bec219d24cd3e171d82865faccec33120bb574f4 # v10.1.0

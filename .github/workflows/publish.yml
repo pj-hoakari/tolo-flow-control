@@ -23,7 +23,6 @@ env:
   PROTO_NAME: ${{ github.repository }}-proto
   ARTIFACT_TYPE: application/vnd.protobuf
   LAYER_MEDIA_TYPE: application/vnd.protobuf
-  BUF_VERSION: 1.73.0
 
 jobs:
   resolve:
@@ -182,11 +181,8 @@ jobs:
       - name: Set up ORAS
         uses: oras-project/setup-oras@1d808f7d7f6995cc68b7bf507bfe5c5446e1dc9d # v2.0.1
 
-      - name: Set up Buf
-        uses: bufbuild/buf-action@8c6a16e16f12ba20b6470afa9c2ba9b5ba8c97c3 # v1.5.0
-        with:
-          version: ${{ env.BUF_VERSION }}
-          setup_only: true
+      - name: Set up mise
+        uses: jdx/mise-action@c2a87611a18de5b3828c5652fe268e992400cb5c # v4.3.0
 
       - name: Log in to GitHub Container Registry
         env:
@@ -254,10 +250,8 @@ jobs:
         run: |
           WORK="$(mktemp -d)"
           oras pull "${REGISTRY}/${PROTO_NAME}@${DIGEST}" -o "$WORK/proto"
-          printf 'version: v2\nmodules:\n  - path: proto\n' >"$WORK/buf.yaml"
-          cd "$WORK"
-          find proto -type f -name '*.proto' | sort
-          buf build
+          find "$WORK/proto" -type f -name '*.proto' | sort
+          task proto:dist:check SRC="$WORK/proto"
 
   summary:
     needs: [resolve, image, proto]

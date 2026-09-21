@@ -1,0 +1,56 @@
+# yaml-language-server: $schema=https://taskfile.dev/schema.json
+
+version: "3"
+
+tasks:
+    proto:
+        desc: Lint proto and regenerate Python code.
+        cmds:
+            - task: proto:lint
+            - task: proto:gen
+
+    proto:lint:
+        desc: Lint and build proto.
+        cmds:
+            - buf lint
+            - buf build
+
+    proto:gen:
+        desc: Regenerate Python code from proto.
+        cmds:
+            - buf generate --template buf.gen.python.yaml
+
+    proto:gen:check:
+        desc: Check that the generated Python code is up to date.
+        cmds:
+            - task: proto:gen
+            - |
+                if [ -n "$(git status --porcelain -- src/flow_control/rpc/generated)" ]; then
+                    echo "::error::buf generate の出力がコミット済みの生成コードと一致しません"
+                    git status --porcelain -- src/flow_control/rpc/generated
+                    git diff -- src/flow_control/rpc/generated
+                    exit 1
+                fi
+
+    proto:dist:check:
+        desc: Check that the distributable proto file set builds on its own.
+        vars:
+            SRC: '{{.SRC | default "proto"}}'
+        cmds:
+            - |
+                WORK="$(mktemp -d)"
+                cd "{{.SRC}}"
+                find . -type f -name '*.proto' | sed 's|^\./||' | sort >"$WORK/files"
+                COUNT="$(wc -l <"$WORK/files" | tr -d ' ')"
+                if [ "$COUNT" -eq 0 ]; then
+                    echo "::error::配布対象の .proto ファイルが見つかりません"
+                    exit 1
+                fi
+                while IFS= read -r f; do
+                    mkdir -p "$WORK/proto/$(dirname "$f")"
+                    cp "$f" "$WORK/proto/$f"
+                done <"$WORK/files"
+                echo "配布用ファイル集合: ${COUNT} file(s)"
+                printf 'version: v2\nmodules:\n  - path: proto\n' >"$WORK/buf.yaml"
+                cd "$WORK"
+                buf build
