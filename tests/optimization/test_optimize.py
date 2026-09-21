@@ -1,9 +1,11 @@
 """統合・ゴールデンテスト（手計算例の再現含む）"""
 
+import time
 from datetime import UTC
 
 import pytest
 
+import flow_control.optimization.optimizer as optimizer_module
 from flow_control.detour_routing import DetourResult
 from flow_control.domain import Mode
 from flow_control.optimization import (
@@ -15,6 +17,7 @@ from flow_control.optimization import (
     SolverStatus,
     optimize,
 )
+from flow_control.optimization.model import ArcSolution, PhaseResult
 
 
 def _importance_of(opt_result, edge_value):
@@ -106,6 +109,98 @@ def test_worked_example_importance_without_detour_emphasis(
     assert _importance_of(opt, "e23").importance == pytest.approx(1.0, abs=1e-3)
     assert _importance_of(opt, "e13").importance == pytest.approx(0.0, abs=1e-6)
     assert _importance_of(opt, "e13").direction == ImportanceDirection.NONE
+
+
+def test_strict_phases_share_remaining_deadline(
+    worked_example_graph,
+    worked_example_observations,
+    worked_example_forecast,
+    worked_example_detour,
+    worked_example_history,
+    monkeypatch,
+):
+    clock = [100.0]
+    limits = []
+
+    def monotonic() -> float:
+        return clock[0]
+
+    def solution(built) -> ArcSolution:
+        return ArcSolution(
+            flow={arc.key: 0.0 for arc in built.arc_model.arcs},
+            direction={arc.key: 1 for arc in built.arc_model.arcs},
+            tau=0.0,
+        )
+
+    def phase1(built, time_limit, _seed, _mip_rel_gap=0.0):
+        limits.append(("phase1", time_limit))
+        clock[0] += 2.0
+        return PhaseResult(SolverStatus.OPTIMAL, solution(built), 0.0)
+
+    def phase2(built, _tau_star, _throughput_arcs, _epsilon, time_limit, _seed, _mip_rel_gap=0.0):
+        limits.append(("phase2", time_limit))
+        return PhaseResult(SolverStatus.OPTIMAL, solution(built), 0.0)
+
+    monkeypatch.setattr(time, "monotonic", monotonic)
+    monkeypatch.setattr(optimizer_module, "solve_phase1", phase1)
+    monkeypatch.setattr(optimizer_module, "solve_phase2", phase2)
+    result = optimize(
+        worked_example_graph,
+        worked_example_observations,
+        worked_example_forecast,
+        worked_example_detour,
+        worked_example_history,
+        previous_result=None,
+        config=ResolvedConfig(optimization_mode=OptimizationMode.STRICT),
+        seed=1,
+        time_limit=10.0,
+    )
+
+    assert result.optimization_result.solver_status is SolverStatus.OPTIMAL
+    assert limits == [("phase1", 10.0), ("phase2", 8.0)]
+
+
+def test_strict_fallback_receives_remaining_deadline(
+    worked_example_graph,
+    worked_example_observations,
+    worked_example_forecast,
+    worked_example_detour,
+    worked_example_history,
+    monkeypatch,
+):
+    clock = [100.0]
+    fallback_limits = []
+
+    def monotonic() -> float:
+        return clock[0]
+
+    def phase1(_built, _time_limit, _seed, _mip_rel_gap=0.0):
+        clock[0] += 3.0
+        return PhaseResult(SolverStatus.INFEASIBLE, None, 0.0)
+
+    def fallback(*args, **_kwargs):
+        fallback_limits.append(args[8])
+        return optimizer_module._empty_result(
+            SolverStatus.INFEASIBLE, worked_example_observations.observed_at, 1, 0
+        )
+
+    monkeypatch.setattr(time, "monotonic", monotonic)
+    monkeypatch.setattr(optimizer_module, "solve_phase1", phase1)
+    monkeypatch.setattr(optimizer_module, "_fallback", fallback)
+    result = optimize(
+        worked_example_graph,
+        worked_example_observations,
+        worked_example_forecast,
+        worked_example_detour,
+        worked_example_history,
+        previous_result=None,
+        config=ResolvedConfig(optimization_mode=OptimizationMode.STRICT),
+        seed=1,
+        time_limit=10.0,
+    )
+
+    assert result.optimization_result.solver_status is SolverStatus.INFEASIBLE
+    assert fallback_limits == [7.0]
 
 
 def test_big_m_factor_does_not_change_solution(
@@ -456,14 +551,13 @@ def test_demand_diagnostics_on_normal_run(
     assert not st.demand_all_cut
 
 
-def test_lightweight_budget_exhaustion_truncates_greedy(
+def test_lightweight_budget_exhaustion_returns_timeout(
     worked_example_graph,
     worked_example_observations,
     worked_example_forecast,
     worked_example_detour,
     worked_example_history,
 ):
-    """予算が尽きたら貪欲探索を打ち切り、ベースライン解は床値で必ず返す。"""
     from flow_control.domain import EdgeID
 
     result = optimize(
@@ -481,11 +575,8 @@ def test_lightweight_budget_exhaustion_truncates_greedy(
         triggered_nodes=(),
     )
 
-    assert result.optimization_result.solver_status == SolverStatus.LIGHTWEIGHT
-    assert result.solver_stats.greedy_truncated
-    assert result.solver_stats.greedy_iterations == 0
-    # ベースライン配分は成立している（空の結果にならない）
-    assert result.optimization_result.route_importance
+    assert result.optimization_result.solver_status == SolverStatus.TIMEOUT
+    assert not result.optimization_result.route_importance
 
 
 def test_congestion_increment_spreads_across_equal_cost_parallel_routes():

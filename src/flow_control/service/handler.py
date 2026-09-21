@@ -31,9 +31,9 @@ BUFFER_SEC = 60.0
 MIN_OPT_BUDGET = 30.0
 
 
-def handle_request(req: Request) -> Response:
+def handle_request(req: Request, *, deadline: float | None = None) -> Response:
     """Run one stateless Detection → Forecasting → Detour → Optimization cycle."""
-    started = time.perf_counter()
+    started = time.monotonic()
     validation_errors = _validation_errors(req)
     if validation_errors:
         return _response(
@@ -54,7 +54,7 @@ def handle_request(req: Request) -> Response:
 
     mode = Mode.OPEN if req.graph.boundary_nodes() else Mode.CLOSED
     steps = [_step(StepKind.VALIDATION, started), _step(StepKind.MODE_DECISION, started)]
-    detection_started = time.perf_counter()
+    detection_started = time.monotonic()
     detection = detect(
         req.graph,
         req.observations,
@@ -89,8 +89,14 @@ def handle_request(req: Request) -> Response:
     )
     if final_retry:
         cycle_budget *= 2
+    service_deadline = started + cycle_budget
+    cycle_deadline = min(service_deadline, deadline) if deadline is not None else service_deadline
+    rpc_limited = deadline is not None and deadline < service_deadline
 
-    forecast_started = time.perf_counter()
+    if time.monotonic() >= cycle_deadline:
+        return _skipped_time_response(req, detection, mode, warnings, steps, started, final_retry)
+
+    forecast_started = time.monotonic()
     forecast_result = forecast(
         req.graph,
         detection.effective_snapshot,
@@ -101,15 +107,29 @@ def handle_request(req: Request) -> Response:
         mode,
     )
     steps.append(_step(StepKind.FORECASTING, forecast_started))
-    detour_started = time.perf_counter()
+    if time.monotonic() >= cycle_deadline:
+        return _skipped_time_response(req, detection, mode, warnings, steps, started, final_retry)
+
+    detour_started = time.monotonic()
     detour_result = route_detour(
         req.graph, detection.triggered_edges, forecast_result, _detour_config(req.config), mode
     )
     steps.append(_step(StepKind.DETOUR, detour_started))
+    if time.monotonic() >= cycle_deadline:
+        return _skipped_time_response(req, detection, mode, warnings, steps, started, final_retry)
 
-    remaining = cycle_budget - (time.perf_counter() - started) - BUFFER_SEC
-    opt_budget = min(max(MIN_OPT_BUDGET, remaining), opt_cap * (2 if final_retry else 1))
-    optimization_started = time.perf_counter()
+    remaining = cycle_deadline - time.monotonic() - BUFFER_SEC
+    if remaining <= 0.0:
+        return _skipped_time_response(req, detection, mode, warnings, steps, started, final_retry)
+    opt_cap_limit = opt_cap * (2 if final_retry else 1)
+    if rpc_limited:
+        opt_budget = min(remaining, opt_cap_limit)
+    else:
+        opt_budget = min(max(MIN_OPT_BUDGET, remaining), opt_cap_limit)
+    if opt_budget <= 0.0:
+        return _skipped_time_response(req, detection, mode, warnings, steps, started, final_retry)
+
+    optimization_started = time.monotonic()
     optimize_result = optimize(
         req.graph,
         detection.effective_snapshot,
@@ -125,18 +145,13 @@ def handle_request(req: Request) -> Response:
         triggered_nodes=detection.triggered_nodes,
     )
     steps.append(_step(StepKind.OPTIMIZATION, optimization_started))
-    if optimize_result.optimization_result.solver_status is SolverStatus.TIMEOUT:
-        if final_retry:
-            warnings += (Warning(WarningCode.SOLVER_GIVEUP),)
-        return _response(
-            req,
-            Verdict.SKIPPED_TIME,
-            finalize_detection_state(detection, Verdict.SKIPPED_TIME, req),
-            started,
-            diagnostics=Diagnostics(mode=mode, warnings=warnings, steps_executed=tuple(steps)),
-        )
+    if (
+        optimize_result.optimization_result.solver_status is SolverStatus.TIMEOUT
+        or time.monotonic() >= cycle_deadline
+    ):
+        return _skipped_time_response(req, detection, mode, warnings, steps, started, final_retry)
 
-    feedback_started = time.perf_counter()
+    feedback_started = time.monotonic()
     feedback = extract_feedback(
         forecast_result,
         detour_result,
@@ -227,13 +242,33 @@ def _response(
         feedback_values=feedback or FeedbackValues(),
         diagnostics=diagnostics,
         optimization_result=optimization_result,
-        elapsed_ms=int((time.perf_counter() - started) * 1000),
+        elapsed_ms=int((time.monotonic() - started) * 1000),
+    )
+
+
+def _skipped_time_response(
+    req: Request,
+    detection: DetectionResult,
+    mode: Mode,
+    warnings: tuple[Warning, ...],
+    steps: list[StepRecord],
+    started: float,
+    final_retry: bool,
+) -> Response:
+    if final_retry:
+        warnings += (Warning(WarningCode.SOLVER_GIVEUP),)
+    return _response(
+        req,
+        Verdict.SKIPPED_TIME,
+        finalize_detection_state(detection, Verdict.SKIPPED_TIME, req),
+        started,
+        diagnostics=Diagnostics(mode=mode, warnings=warnings, steps_executed=tuple(steps)),
     )
 
 
 def _step(step: StepKind, started: float) -> StepRecord:
     return StepRecord(
-        step=step, elapsed_ms=int((time.perf_counter() - started) * 1000), status=StepStatus.OK
+        step=step, elapsed_ms=int((time.monotonic() - started) * 1000), status=StepStatus.OK
     )
 
 
