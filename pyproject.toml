@@ -5,9 +5,12 @@ description = "Add your description here"
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
+    "connectrpc==0.11.1",
     "highspy>=1.14.0",
+    "hypercorn>=0.17.3",
     "linopy>=0.8.0",
     "networkx>=3.6.1",
+    "protobuf==6.32.1",
 ]
 
 [dependency-groups]
@@ -31,6 +34,7 @@ packages = ["src/flow_control"]
 
 [tool.ruff]
 target-version = "py312"
+extend-exclude = ["src/flow_control/rpc/generated"]
 # 日本語コメントを含むため既定の 88 では折返しが過剰になる
 line-length = 100
 src = ["src", "."]
@@ -93,6 +97,7 @@ pythonpath = ["src", "."]
 
 [tool.basedpyright]
 include = ["src", "tests", "main.py", "devtools"]
+exclude = ["src/flow_control/rpc/generated"]
 
 extraPaths = ["src"]
 
