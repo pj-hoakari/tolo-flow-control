@@ -1,0 +1,776 @@
+syntax = "proto3";
+
+package tolo.flow.v1;
+
+import "google/protobuf/empty.proto";
+import "google/protobuf/timestamp.proto";
+
+service FlowControlService {
+  rpc Optimize(OptimizeRequest) returns (OptimizeResponse);
+}
+
+message OptimizeRequest {
+  optional string request_id = 1;
+  optional string schema_version = 2;
+  optional string event_id = 3;
+  TenantContext tenant_context = 4;
+  Graph graph = 5;
+  Observations observations = 6;
+  HistoryDigest history_digest = 7;
+  DetectionState detection_state = 8;
+  Reference references = 9;
+  optional OptimizationResult previous_result = 10;
+  repeated Event events = 11;
+  ResolvedConfig config = 12;
+  google.protobuf.Timestamp server_time = 13;
+}
+
+message OptimizeResponse {
+  optional string request_id = 1;
+  optional Verdict verdict = 2;
+  DetectionState updated_detection_state = 3;
+  FeedbackValues feedback_values = 4;
+  Diagnostics diagnostics = 5;
+  optional OptimizationResult optimization_result = 6;
+  int64 elapsed_ms = 7;
+}
+
+message TenantContext {
+  optional string tenant_id = 1;
+  optional TenantCategory tenant_category = 2;
+  optional double available_history_hours = 3;
+}
+
+message Graph {
+  repeated Node nodes = 1;
+  repeated Edge edges = 2;
+}
+
+message Node {
+  optional string node_id = 1;
+  optional NodeKind kind = 2;
+  optional bool is_boundary = 3;
+  optional bool enabled = 4;
+  repeated string attribute_tags = 5;
+  optional int32 time_resolution_s = 6;
+  optional bool danger_flag = 7;
+  optional double danger_capacity = 8;
+}
+
+message Edge {
+  optional string edge_id = 1;
+  optional string endpoint_a = 2;
+  optional string endpoint_b = 3;
+  optional DirectionConstraint direction_constraint = 4;
+  optional CurrentDirection current_direction = 5;
+  optional bool enabled = 6;
+  optional ObservationType observation_type = 7;
+  repeated string attribute_tags = 8;
+  optional int32 time_resolution_s = 9;
+  optional bool danger_flag = 10;
+  optional double danger_capacity = 11;
+  optional double capacity_hint = 12;
+}
+
+message Observations {
+  google.protobuf.Timestamp observed_at = 1;
+  optional string snapshot_ref = 2;
+  repeated ArcFlow arc_flows = 3;
+  repeated ArcStagnation arc_stagnations = 4;
+  repeated ArcScalarFlow arc_scalar_flows = 5;
+  repeated NodeOccupancy node_occupancies = 6;
+  repeated TurningObservation node_turning = 7;
+}
+
+message ArcFlow {
+  optional string edge_id = 1;
+  optional FlowDirection direction = 2;
+  optional double flow_rate = 3;
+  optional ConfidenceFlag confidence_flag = 4;
+}
+
+message ArcStagnation {
+  optional string edge_id = 1;
+  optional double stagnation = 2;
+  optional StagnationDerivation derivation = 3;
+  optional bool same_sensor_flow = 4;
+  optional ConfidenceFlag confidence_flag = 5;
+}
+
+message ArcScalarFlow {
+  optional string edge_id = 1;
+  optional double observed_count = 2;
+  optional ConfidenceFlag confidence_flag = 3;
+}
+
+message NodeOccupancy {
+  optional string node_id = 1;
+  optional double occupancy = 2;
+  optional double occupancy_delta = 3;
+  optional bool same_sensor_arrival = 4;
+  optional ConfidenceFlag confidence_flag = 5;
+}
+
+message TurningObservation {
+  optional string node_id = 1;
+  optional string from_edge_id = 2;
+  optional string to_edge_id = 3;
+  optional double ratio = 4;
+  optional ConfidenceFlag confidence_flag = 5;
+}
+
+message HistoryDigest {
+  repeated ArcHistoryStat arc_stats = 1;
+  repeated ArcWindowSeries window_series = 2;
+  double completeness = 3;
+}
+
+message ArcHistoryStat {
+  string edge_id = 1;
+  optional double p90_stagnation = 2;
+  optional double baseline_stagnation = 3;
+  optional double flow_sensitivity_eta = 4;
+  optional double available_span_hours = 5;
+}
+
+message ArcWindowSeries {
+  string edge_id = 1;
+  repeated TimedValue flow_samples = 2;
+  repeated TimedValue stagnation_samples = 3;
+  optional DirectionalFlowSamples directional_flow_samples = 4;
+}
+
+message DirectionalFlowSamples {
+  repeated DirectionalSeries series = 1;
+}
+
+message DirectionalSeries {
+  FlowDirection direction = 1;
+  repeated TimedValue samples = 2;
+}
+
+message TimedValue {
+  google.protobuf.Timestamp at = 1;
+  double value = 2;
+}
+
+message DetectionState {
+  optional google.protobuf.Timestamp cooldown_until = 1;
+  repeated QueuedTrigger trigger_queue = 2;
+  repeated ArcWatchState arc_watch_states = 3;
+  optional ArcDemandDigest arc_demand_digest = 4;
+  repeated WarmupState warmup_states = 5;
+  repeated RetriggerEntry arc_retrigger_counts = 6;
+  int32 consecutive_skip_count = 7;
+}
+
+message ArcDemandDigest {
+  repeated ArcDemandDigestEntry entries = 1;
+}
+
+message ArcDemandDigestEntry {
+  string edge_id = 1;
+  double demand = 2;
+}
+
+message QueuedTrigger {
+  QueuedTriggerKind kind = 1;
+  google.protobuf.Timestamp first_fired_at = 2;
+  google.protobuf.Timestamp last_fired_at = 3;
+  double accumulated_score = 4;
+  optional string origin_edge_id = 5;
+  optional string origin_node_id = 6;
+  optional string snapshot_ref = 7;
+}
+
+message ArcWatchState {
+  string edge_id = 1;
+  bool percentile_breached = 2;
+  bool delta_breached = 3;
+  optional google.protobuf.Timestamp stagnation_watch_since = 4;
+  bool surge_breached = 5;
+  bool demand_excess_breached = 6;
+  optional google.protobuf.Timestamp demand_watch_since = 7;
+}
+
+message WarmupState {
+  string target_key = 1;
+  google.protobuf.Timestamp until = 2;
+}
+
+message RetriggerEntry {
+  string edge_id = 1;
+  int32 count = 2;
+  int32 quiet_cycles = 3;
+  optional google.protobuf.Timestamp last_fired_at = 4;
+}
+
+message Event {
+  EventKind kind = 1;
+  string target_id = 2;
+  google.protobuf.Timestamp occurred_at = 3;
+  optional ParamList params = 4;
+}
+
+message ParamList {
+  repeated KeyValue values = 1;
+}
+
+message KeyValue {
+  string key = 1;
+  ScalarValue value = 2;
+}
+
+message ScalarValue {
+  oneof kind {
+    string string_value = 1;
+    double double_value = 2;
+    int64 int_value = 3;
+    bool bool_value = 4;
+    google.protobuf.Empty null_value = 5;
+  }
+}
+
+message Reference {
+  repeated TagReference by_attribute_tag = 1;
+  optional ThresholdDefaults default_thresholds = 2;
+  int32 source_k_anonymity = 3;
+}
+
+message TagReference {
+  string attribute_tag = 1;
+  optional double eta_typical = 2;
+  optional double baseline_stagnation = 3;
+  optional double capacity_typical = 4;
+  int32 sample_count = 5;
+}
+
+message ThresholdDefaults {
+  ThresholdSet short_term = 1;
+  ThresholdSet long_term = 2;
+}
+
+message ThresholdSet {
+  optional double surge_rate_threshold_percent_per_min = 1;
+  optional double high_stagnation_duration_min = 2;
+  optional double beta = 3;
+  optional double theta_demand = 4;
+  optional double warmup_duration_min = 5;
+}
+
+message ResolvedConfig {
+  optional double surge_rate_threshold_percent_per_min = 1;
+  optional double high_stagnation_duration_min = 2;
+  optional double beta = 3;
+  optional double theta_demand = 4;
+  optional int32 min_window_samples = 5;
+  optional double cooldown_duration_min = 6;
+  optional double warmup_duration_min = 7;
+  optional int32 retrigger_warning_threshold = 8;
+  optional int32 retrigger_reset_quiet_cycles = 9;
+  optional double queue_score_threshold = 10;
+  optional int32 queue_diversity_threshold = 11;
+  optional double queue_freshness_min = 12;
+  repeated string throughput_target_edges = 13;
+  optional OptimizationMode optimization_mode = 14;
+  optional int32 local_radius_hops = 15;
+  optional int32 max_trigger_zones = 16;
+  optional double greedy_improve_margin = 17;
+  optional bool restriction_proposal_enabled = 18;
+  optional double tau_danger_threshold = 19;
+  optional bool puncture_trigger_enabled = 20;
+  optional double puncture_ratio_threshold = 21;
+  optional double forecasting_budget_sec = 22;
+  optional double detour_budget_sec = 23;
+  optional double lightweight_opt_budget_sec = 24;
+  optional double milp_time_limit_sec = 25;
+  optional int32 max_consecutive_skips = 26;
+  optional int32 solver_seed = 27;
+  optional double epsilon = 28;
+  optional double epsilon_0 = 29;
+  optional double big_m_factor = 30;
+  optional double delta_min = 31;
+  optional double confidence_weight_floor = 32;
+  optional double mip_rel_gap = 33;
+  optional double gravity_alpha = 34;
+  optional int32 ipf_max_iter = 35;
+  optional double ipf_tolerance = 36;
+  optional double transit_time_prior_sec = 37;
+  optional double dwell_time_prior_sec = 38;
+  optional int32 min_reference_sample_count = 39;
+  optional int32 k_shortest_paths = 40;
+  optional double fallback_eta = 41;
+  optional double fallback_baseline_stagnation = 42;
+  optional bool scalar_direction_enabled = 43;
+  optional bool k_shortest_paths_auto = 44;
+  optional int32 k_shortest_paths_max = 45;
+  optional bool phase_feedback_enabled = 46;
+  optional int32 phase_feedback_candidates = 47;
+  repeated string attribute_tag_priority = 48;
+  optional double full_weight_hours = 49;
+  optional double eta_mixing_ratio = 50;
+  ThroughputWeights throughput_weights = 51;
+  repeated EdgeFloat throughput_max_per_edge = 52;
+  optional bool two_stage_optimization = 53;
+  optional bool backoff_enabled = 54;
+  optional double improvement_threshold = 55;
+  optional int32 backoff_max_factor = 56;
+  repeated string shadow_extensions = 57;
+  optional bool delta_objective_enabled = 58;
+  optional bool node_detour_enabled = 59;
+  optional bool milp_boundary_control_enabled = 60;
+  optional bool scheduled_inflow_prior_enabled = 61;
+  optional bool log_tenant_id = 62;
+}
+
+message ThroughputWeights {
+  double trigger_origin = 1;
+  double detour_path = 2;
+  double operator_set = 3;
+}
+
+message EdgeFloat {
+  string edge_id = 1;
+  double value = 2;
+}
+
+message OptimizationResult {
+  repeated RouteImportance route_importance = 1;
+  repeated DirectionProposal direction_proposal = 2;
+  repeated RestrictionProposal restriction_proposal = 3;
+  repeated DetourPathProposal detour_paths = 4;
+  repeated BoundaryControl boundary_control = 5;
+  OptimizationObjectiveValues objective_values = 6;
+  SolverStatus solver_status = 7;
+  optional google.protobuf.Timestamp solved_at = 8;
+  int32 seed = 9;
+}
+
+message RouteImportance {
+  string edge_id = 1;
+  ImportanceDirection direction = 2;
+  double importance = 3;
+  bool valid_until_next_trigger = 4;
+}
+
+message DirectionProposal {
+  string edge_id = 1;
+  ProposedDirection proposed_direction = 2;
+  double confidence = 3;
+  DirectionChangeType change_type = 4;
+}
+
+message RestrictionProposal {
+  string edge_id = 1;
+  RestrictionAction action = 2;
+  optional double limit_value = 3;
+  RestrictionReason reason = 4;
+  double confidence = 5;
+  string scope_note = 6;
+}
+
+message DetourPathProposal {
+  string origin_edge_id = 1;
+  repeated string edge_ids = 2;
+  double confidence = 3;
+}
+
+message BoundaryControl {
+  string node_id = 1;
+  BoundaryAction action = 2;
+  string reason = 3;
+}
+
+message OptimizationObjectiveValues {
+  double tau_star = 1;
+  optional double throughput = 2;
+}
+
+message FeedbackValues {
+  string schema_version = 1;
+  ComputeMeta compute_meta = 2;
+  FeedbackObjectiveValues objective_values = 3;
+  repeated TagObservation per_tag_observations = 4;
+  optional PredictionActualDiff prediction_actual_diff = 5;
+  ReferenceUsageReport reference_usage = 6;
+  QualityMetrics quality_metrics = 7;
+  optional DetourMetrics detour_metrics = 8;
+  optional RestrictionMetrics restriction_metrics = 9;
+  DirectionChangeSummary direction_change_summary = 10;
+  optional AbDiff ab_diff = 11;
+  optional ForecastSummary forecast_summary = 12;
+  repeated Warning warnings = 13;
+}
+
+message ComputeMeta {
+  Mode mode = 1;
+  OptimizationMode optimization_mode = 2;
+  int64 solver_phase1_ms = 3;
+  int64 solver_phase2_ms = 4;
+  string solver_phase1_status = 5;
+  string solver_phase2_status = 6;
+  ReachabilityConstraints reachability_constraints = 7;
+}
+
+message ReachabilityConstraints {
+  bool local = 1;
+  bool boundary = 2;
+}
+
+message FeedbackObjectiveValues {
+  double tau_star = 1;
+  optional double throughput = 2;
+}
+
+message TagObservation {
+  string attribute_tag = 1;
+  double eta_estimate = 2;
+  int32 edge_count = 3;
+  double observation_span_min = 4;
+}
+
+message PredictionActualDiff {
+  double expected_tau_star = 1;
+  double actual_tau_star = 2;
+  double delta = 3;
+}
+
+message ReferenceUsageReport {
+  repeated string used_tags = 1;
+  bool used_default = 2;
+  int32 used_edges_count = 3;
+}
+
+message QualityMetrics {
+  double vector_coverage_ratio = 1;
+  double low_confidence_arc_ratio = 2;
+  double history_completeness = 3;
+}
+
+message DetourMetrics {
+  int32 k_requested = 1;
+  int32 k_effective = 2;
+  double paths_actually_used_ratio = 3;
+}
+
+message RestrictionMetrics {
+  int32 proposed_count = 1;
+  repeated RestrictionCount by_reason = 2;
+  double estimated_inflow_cut = 3;
+  double undrainable_origin_ratio = 4;
+}
+
+message RestrictionCount {
+  RestrictionReason reason = 1;
+  int32 count = 2;
+}
+
+message DirectionChangeSummary {
+  int32 convert = 1;
+  int32 release = 2;
+  int32 flip = 3;
+}
+
+message AbDiff {
+  repeated string enabled_extensions = 1;
+  double shadow_tau_star = 2;
+  double actual_tau_star = 3;
+  double shadow_throughput = 4;
+  double actual_throughput = 5;
+  string diff_summary = 6;
+}
+
+message ForecastSummary {
+  repeated NodeDemand node_demand = 1;
+  double reproduction_error = 2;
+  repeated NodeResolution estimation_resolution = 3;
+}
+
+message NodeDemand {
+  string node_id = 1;
+  double gross_out = 2;
+  double gross_in = 3;
+  double production = 4;
+  double absorption = 5;
+  double transit = 6;
+  double staying = 7;
+}
+
+message NodeResolution {
+  string node_id = 1;
+  ODResolutionMode mode = 2;
+  ODResolutionReason reason = 3;
+  repeated string imputed_arcs = 4;
+}
+
+message Warning {
+  WarningCode code = 1;
+  repeated KeyValue context = 2;
+}
+
+message Diagnostics {
+  Mode mode = 1;
+  repeated Warning warnings = 2;
+  repeated TriggerEvidence trigger_evidences = 3;
+  repeated FallbackRecord fallbacks_applied = 4;
+  repeated StepRecord steps_executed = 5;
+  bool degraded_short_tenant = 6;
+  string schema_version = 7;
+}
+
+message TriggerEvidence {
+  TriggerEvidenceSource source = 1;
+  google.protobuf.Timestamp occurred_at = 2;
+  optional string edge_id = 3;
+  optional string node_id = 4;
+  optional double metric_value = 5;
+  optional double threshold_value = 6;
+  optional double duration_min = 7;
+}
+
+message FallbackRecord {
+  FallbackKind kind = 1;
+  string reason = 2;
+  repeated string affected_targets = 3;
+}
+
+message StepRecord {
+  StepKind step = 1;
+  int64 elapsed_ms = 2;
+  StepStatus status = 3;
+  optional string note = 4;
+}
+
+enum NodeKind {
+  NODE_KIND_UNSPECIFIED = 0;
+  NODE_KIND_GOAL = 1;
+  NODE_KIND_GOAL_TRANSIT_MIXED = 2;
+  NODE_KIND_TRANSIT_ONLY = 3;
+}
+
+enum DirectionConstraint {
+  DIRECTION_CONSTRAINT_UNSPECIFIED = 0;
+  DIRECTION_CONSTRAINT_BIDIRECTIONAL_PRIOR = 1;
+  DIRECTION_CONSTRAINT_ONEWAY_A_TO_B_PRIOR = 2;
+  DIRECTION_CONSTRAINT_ONEWAY_B_TO_A_PRIOR = 3;
+  DIRECTION_CONSTRAINT_LEGAL_FIXED_A_TO_B = 4;
+  DIRECTION_CONSTRAINT_LEGAL_FIXED_B_TO_A = 5;
+  DIRECTION_CONSTRAINT_LEGAL_FIXED_BIDIRECTIONAL = 6;
+}
+
+enum CurrentDirection {
+  CURRENT_DIRECTION_UNSPECIFIED = 0;
+  CURRENT_DIRECTION_A_TO_B = 1;
+  CURRENT_DIRECTION_B_TO_A = 2;
+  CURRENT_DIRECTION_BIDIRECTIONAL = 3;
+}
+
+enum ObservationType {
+  OBSERVATION_TYPE_UNSPECIFIED = 0;
+  OBSERVATION_TYPE_VECTOR = 1;
+  OBSERVATION_TYPE_SCALAR = 2;
+}
+
+enum FlowDirection {
+  FLOW_DIRECTION_UNSPECIFIED = 0;
+  FLOW_DIRECTION_A_TO_B = 1;
+  FLOW_DIRECTION_B_TO_A = 2;
+}
+
+enum ConfidenceFlag {
+  CONFIDENCE_FLAG_UNSPECIFIED = 0;
+  CONFIDENCE_FLAG_OK = 1;
+  CONFIDENCE_FLAG_HOLD = 2;
+  CONFIDENCE_FLAG_INVALID = 3;
+}
+
+enum StagnationDerivation {
+  STAGNATION_DERIVATION_UNSPECIFIED = 0;
+  STAGNATION_DERIVATION_BASIC = 1;
+  STAGNATION_DERIVATION_REFINED = 2;
+}
+
+enum TenantCategory {
+  TENANT_CATEGORY_UNSPECIFIED = 0;
+  TENANT_CATEGORY_SHORT_TERM = 1;
+  TENANT_CATEGORY_LONG_TERM = 2;
+}
+
+enum OptimizationMode {
+  OPTIMIZATION_MODE_UNSPECIFIED = 0;
+  OPTIMIZATION_MODE_LIGHTWEIGHT = 1;
+  OPTIMIZATION_MODE_STRICT = 2;
+}
+
+enum Verdict {
+  VERDICT_UNSPECIFIED = 0;
+  VERDICT_OPTIMIZED = 1;
+  VERDICT_QUEUED = 2;
+  VERDICT_SKIPPED_NO_TRIGGER = 3;
+  VERDICT_SKIPPED_COOLDOWN = 4;
+  VERDICT_SKIPPED_WARMUP = 5;
+  VERDICT_SKIPPED_TIME = 6;
+  VERDICT_ERROR_SIZE_EXCEEDED = 7;
+  VERDICT_ERROR_INVALID_INPUT = 8;
+}
+
+enum QueuedTriggerKind {
+  QUEUED_TRIGGER_KIND_UNSPECIFIED = 0;
+  QUEUED_TRIGGER_KIND_SURGE = 1;
+  QUEUED_TRIGGER_KIND_HIGH_STAGNATION = 2;
+  QUEUED_TRIGGER_KIND_PUNCTURE = 3;
+  QUEUED_TRIGGER_KIND_DANGER = 4;
+}
+
+enum EventKind {
+  EVENT_KIND_UNSPECIFIED = 0;
+  EVENT_KIND_DANGER_FLAG_UP = 1;
+  EVENT_KIND_DANGER_FLAG_DOWN = 2;
+  EVENT_KIND_DIRECTION_SWITCH = 3;
+  EVENT_KIND_ADD_EDGE = 4;
+  EVENT_KIND_ADD_NODE = 5;
+  EVENT_KIND_DISABLE = 6;
+  EVENT_KIND_ENABLE = 7;
+  EVENT_KIND_SCHEDULED_INFLOW = 8;
+  EVENT_KIND_SCHEDULED_ATTR_CHANGE = 9;
+  EVENT_KIND_SENSOR_SET_CHANGED = 10;
+}
+
+enum Mode {
+  MODE_UNSPECIFIED = 0;
+  MODE_OPEN = 1;
+  MODE_CLOSED = 2;
+}
+
+enum RestrictionReason {
+  RESTRICTION_REASON_UNSPECIFIED = 0;
+  RESTRICTION_REASON_UNDRAINABLE_STAGNATION = 1;
+  RESTRICTION_REASON_RESIDUAL_TAU = 2;
+  RESTRICTION_REASON_PUNCTURE = 3;
+  RESTRICTION_REASON_NODE_DANGER_UPSTREAM = 4;
+  RESTRICTION_REASON_OVERLOAD = 5;
+}
+
+enum SolverStatus {
+  SOLVER_STATUS_UNSPECIFIED = 0;
+  SOLVER_STATUS_OPTIMAL = 1;
+  SOLVER_STATUS_FEASIBLE = 2;
+  SOLVER_STATUS_INFEASIBLE = 3;
+  SOLVER_STATUS_TIMEOUT = 4;
+  SOLVER_STATUS_LIGHTWEIGHT = 5;
+}
+
+enum ImportanceDirection {
+  IMPORTANCE_DIRECTION_UNSPECIFIED = 0;
+  IMPORTANCE_DIRECTION_A_TO_B = 1;
+  IMPORTANCE_DIRECTION_B_TO_A = 2;
+  IMPORTANCE_DIRECTION_NONE = 3;
+}
+
+enum ProposedDirection {
+  PROPOSED_DIRECTION_UNSPECIFIED = 0;
+  PROPOSED_DIRECTION_A_TO_B = 1;
+  PROPOSED_DIRECTION_B_TO_A = 2;
+  PROPOSED_DIRECTION_BIDIRECTIONAL = 3;
+}
+
+enum DirectionChangeType {
+  DIRECTION_CHANGE_TYPE_UNSPECIFIED = 0;
+  DIRECTION_CHANGE_TYPE_CONVERT_ONEWAY = 1;
+  DIRECTION_CHANGE_TYPE_RELEASE_ONEWAY = 2;
+  DIRECTION_CHANGE_TYPE_FLIP_ONEWAY = 3;
+  DIRECTION_CHANGE_TYPE_KEEP = 4;
+}
+
+enum RestrictionAction {
+  RESTRICTION_ACTION_UNSPECIFIED = 0;
+  RESTRICTION_ACTION_CLOSE = 1;
+  RESTRICTION_ACTION_LIMIT = 2;
+  RESTRICTION_ACTION_RESUME = 3;
+}
+
+enum BoundaryAction {
+  BOUNDARY_ACTION_UNSPECIFIED = 0;
+  BOUNDARY_ACTION_PAUSE_INGRESS = 1;
+  BOUNDARY_ACTION_PAUSE_EGRESS = 2;
+  BOUNDARY_ACTION_RESUME = 3;
+}
+
+enum WarningCode {
+  WARNING_CODE_UNSPECIFIED = 0;
+  WARNING_CODE_RETRIGGER = 1;
+  WARNING_CODE_SIZE_NEAR_LIMIT = 2;
+  WARNING_CODE_CONSTRAINT_NEAR = 3;
+  WARNING_CODE_LOW_COVERAGE = 4;
+  WARNING_CODE_FALLBACK_APPLIED = 5;
+  WARNING_CODE_QUEUE_EXPIRED = 6;
+  WARNING_CODE_SOLVER_GIVEUP = 7;
+  WARNING_CODE_UNDRAINABLE_EDGE = 8;
+  WARNING_CODE_MANY_TRIGGER_ZONES = 9;
+  WARNING_CODE_LOW_CONFIDENCE_PROPOSAL = 10;
+  WARNING_CODE_INSUFFICIENT_WINDOW_SAMPLES = 11;
+  WARNING_CODE_SURGE_PROXY_FALLBACK = 12;
+  WARNING_CODE_DEGRADED_COMBINED_TRIGGER = 13;
+}
+
+enum TriggerEvidenceSource {
+  TRIGGER_EVIDENCE_SOURCE_UNSPECIFIED = 0;
+  TRIGGER_EVIDENCE_SOURCE_SURGE = 1;
+  TRIGGER_EVIDENCE_SOURCE_HIGH_STAGNATION = 2;
+  TRIGGER_EVIDENCE_SOURCE_PUNCTURE = 3;
+  TRIGGER_EVIDENCE_SOURCE_DANGER = 4;
+  TRIGGER_EVIDENCE_SOURCE_QUEUE_SCORE = 5;
+  TRIGGER_EVIDENCE_SOURCE_QUEUE_DIVERSITY = 6;
+}
+
+enum FallbackKind {
+  FALLBACK_KIND_UNSPECIFIED = 0;
+  FALLBACK_KIND_REFERENCE_USED = 1;
+  FALLBACK_KIND_DEFAULT_ETA_USED = 2;
+  FALLBACK_KIND_PERCENTILE_DEGRADED = 3;
+  FALLBACK_KIND_DIRECTION_PROPOSAL_HELD = 4;
+  FALLBACK_KIND_PHASE2_SKIPPED = 5;
+  FALLBACK_KIND_BUDGET_EXTENDED = 6;
+  FALLBACK_KIND_FORECAST_PRIOR_DEGRADED = 7;
+  FALLBACK_KIND_FORECAST_ARC_IMPUTED = 8;
+  FALLBACK_KIND_INFEASIBLE_LP_RELAXED = 9;
+  FALLBACK_KIND_DETOUR_TRUNCATED = 10;
+  FALLBACK_KIND_LP_INFEASIBLE_HELD = 11;
+  FALLBACK_KIND_GREEDY_NO_IMPROVEMENT = 12;
+  FALLBACK_KIND_LOCALIZATION_CAPPED = 13;
+  FALLBACK_KIND_RESTRICTION_PROPOSED = 14;
+}
+
+enum StepKind {
+  STEP_KIND_UNSPECIFIED = 0;
+  STEP_KIND_VALIDATION = 1;
+  STEP_KIND_MODE_DECISION = 2;
+  STEP_KIND_EVENTS_APPLY = 3;
+  STEP_KIND_DETECTION = 4;
+  STEP_KIND_FORECASTING = 5;
+  STEP_KIND_DETOUR = 6;
+  STEP_KIND_OPTIMIZATION = 7;
+  STEP_KIND_FEEDBACK = 8;
+}
+
+enum StepStatus {
+  STEP_STATUS_UNSPECIFIED = 0;
+  STEP_STATUS_OK = 1;
+  STEP_STATUS_SKIPPED = 2;
+  STEP_STATUS_FAILED = 3;
+}
+
+enum ODResolutionMode {
+  OD_RESOLUTION_MODE_UNSPECIFIED = 0;
+  OD_RESOLUTION_MODE_TURNING_EXACT = 1;
+  OD_RESOLUTION_MODE_DOUBLY_CONSTRAINED = 2;
+  OD_RESOLUTION_MODE_DISTANCE_PRIOR = 3;
+}
+
+enum ODResolutionReason {
+  OD_RESOLUTION_REASON_UNSPECIFIED = 0;
+  OD_RESOLUTION_REASON_DETERMINED = 1;
+  OD_RESOLUTION_REASON_MERGE_SPLIT_AMBIGUOUS = 2;
+  OD_RESOLUTION_REASON_SPARSE_OBSERVATION = 3;
+  OD_RESOLUTION_REASON_NODE_ONLY = 4;
+}

@@ -62,10 +62,6 @@ from .results import (
     SolverStatus,
 )
 
-# 予算枯渇後もベースライン配分・フォールバックには最低限渡す求解時間（秒）。
-# 空の結果よりは僅かに超過してでも解を返す方が安全側のため
-_MIN_SOLVE_SEC = 1.0
-
 
 def optimize(
     graph: Graph,
@@ -82,6 +78,7 @@ def optimize(
     triggered_edges: tuple[EdgeID, ...] = (),
     triggered_nodes: tuple[NodeID, ...] = (),
 ) -> OptimizeResult:
+    optimization_deadline = time.monotonic() + max(time_limit, 0.0)
     is_open = (mode == Mode.OPEN) if mode is not None else (len(graph.boundary_nodes()) > 0)
     arc_model = build_arc_model(graph)
     active_node_set = set(arc_model.active_nodes)
@@ -120,7 +117,7 @@ def optimize(
                 previous_result,
                 config,
                 seed,
-                min(time_limit, config.lightweight_opt_budget_sec),
+                time_limit,
                 solved_at,
                 is_open,
                 throughput_arcs,
@@ -130,6 +127,7 @@ def optimize(
                 _outflow_averages(history_digest, graph),
                 drain.undrainable,
                 observed_edge_flow,
+                deadline=optimization_deadline,
             ),
             od_pairs_input,
             commodities_used,
@@ -137,10 +135,24 @@ def optimize(
 
     built = build_model(arc_model, inputs, commodities, drain.drainable, is_open=is_open)
     t0 = time.perf_counter()
-    p1 = solve_phase1(built, time_limit, seed, config.mip_rel_gap)
+    p1_budget = max(0.0, optimization_deadline - time.monotonic())
+    if p1_budget <= 0.0:
+        return _with_demand_diagnostics(
+            _empty_result(SolverStatus.TIMEOUT, solved_at, seed, 0),
+            od_pairs_input,
+            commodities_used,
+        )
+    p1 = solve_phase1(built, p1_budget, seed, config.mip_rel_gap)
     phase1_ms = int((time.perf_counter() - t0) * 1000)
 
     if p1.status == SolverStatus.INFEASIBLE:
+        fallback_budget = optimization_deadline - time.monotonic()
+        if fallback_budget <= 0.0:
+            return _with_demand_diagnostics(
+                _empty_result(SolverStatus.TIMEOUT, solved_at, seed, phase1_ms),
+                od_pairs_input,
+                commodities_used,
+            )
         return _with_demand_diagnostics(
             _fallback(
                 arc_model,
@@ -151,11 +163,12 @@ def optimize(
                 previous_result,
                 config,
                 seed,
-                time_limit,
+                fallback_budget,
                 solved_at,
                 is_open,
                 throughput_arcs,
                 phase1_ms,
+                deadline=optimization_deadline,
             ),
             od_pairs_input,
             commodities_used,
@@ -183,30 +196,34 @@ def optimize(
         SolverStatus.FEASIBLE,
     )
     if run_phase2:
-        t1 = time.perf_counter()
-        p2 = solve_phase2(
-            built,
-            p1.objective,
-            throughput_arcs,
-            config.epsilon,
-            time_limit,
-            seed,
-            config.mip_rel_gap,
-        )
-        phase2_ms = int((time.perf_counter() - t1) * 1000)
-        if p2.solution is not None and p2.status in (
-            SolverStatus.OPTIMAL,
-            SolverStatus.FEASIBLE,
-        ):
-            final_solution = p2.solution
-            phase2_status = (
-                Phase2Status.OPTIMAL if p2.status == SolverStatus.OPTIMAL else Phase2Status.FEASIBLE
+        p2_budget = max(0.0, optimization_deadline - time.monotonic())
+        if p2_budget > 0.0:
+            t1 = time.perf_counter()
+            p2 = solve_phase2(
+                built,
+                p1.objective,
+                throughput_arcs,
+                config.epsilon,
+                p2_budget,
+                seed,
+                config.mip_rel_gap,
             )
-            throughput = p2.objective
-        elif p2.status == SolverStatus.TIMEOUT:
-            phase2_status = Phase2Status.SKIPPED
-        elif p2.status == SolverStatus.INFEASIBLE:
-            phase2_status = Phase2Status.INFEASIBLE
+            phase2_ms = int((time.perf_counter() - t1) * 1000)
+            if p2.solution is not None and p2.status in (
+                SolverStatus.OPTIMAL,
+                SolverStatus.FEASIBLE,
+            ):
+                final_solution = p2.solution
+                phase2_status = (
+                    Phase2Status.OPTIMAL
+                    if p2.status == SolverStatus.OPTIMAL
+                    else Phase2Status.FEASIBLE
+                )
+                throughput = p2.objective
+            elif p2.status == SolverStatus.TIMEOUT:
+                phase2_status = Phase2Status.SKIPPED
+            elif p2.status == SolverStatus.INFEASIBLE:
+                phase2_status = Phase2Status.INFEASIBLE
 
     emphasis = compute_detour_emphasis(
         arc_model,
@@ -289,6 +306,8 @@ def _optimize_lightweight(
     outflow_averages: dict[EdgeID, float],
     undrainable: frozenset[EdgeID],
     observed_edge_flow: dict[EdgeID, float],
+    *,
+    deadline: float | None = None,
 ) -> OptimizeResult:
     """基本モードの局所化つき配分。
 
@@ -304,17 +323,22 @@ def _optimize_lightweight(
 
     時間予算 ``time_limit`` はモデル構築込みの deadline として持ち回り、
     各求解には残時間のみを渡す。残時間が尽きたら貪欲探索を打ち切る
-    （``greedy_truncated``）。ベースライン配分だけは床値を保証して必ず試みる。
+    （``greedy_truncated``）。
     """
-    deadline = time.perf_counter() + time_limit
+    optimization_deadline = (
+        deadline if deadline is not None else time.monotonic() + max(time_limit, 0.0)
+    )
     fixed_x: dict[str, int] = {}
     for edge in arc_model.active_edges:
         fixed_x.update(fixed_directions(edge))
     t0 = time.perf_counter()
     built = build_assignment_lp(arc_model, inputs, commodities, fixed_x=fixed_x)
     build_sec = time.perf_counter() - t0
+    baseline_budget = max(0.0, optimization_deadline - time.monotonic())
+    if baseline_budget <= 0.0:
+        return _empty_result(SolverStatus.TIMEOUT, solved_at, seed, int(build_sec * 1000))
     t0 = time.perf_counter()
-    assignment = solve_assignment(built, max(_MIN_SOLVE_SEC, deadline - time.perf_counter()), seed)
+    assignment = solve_assignment(built, baseline_budget, seed)
     assign_sec = time.perf_counter() - t0
     assign_lp_ms = int(assign_sec * 1000)
 
@@ -356,7 +380,7 @@ def _optimize_lightweight(
                 break
             current_direction = solution.direction if solution is not None else fixed_x
             for candidate_x in _direction_candidates(arc_model, edge_id, current_direction):
-                remaining = deadline - time.perf_counter()
+                remaining = optimization_deadline - time.monotonic()
                 if remaining <= 0.0:
                     greedy_truncated = True
                     break
@@ -366,10 +390,14 @@ def _optimize_lightweight(
                     arc_model, inputs, commodities, fixed_x=candidate_x
                 )
                 build_sec += time.perf_counter() - t0
+                remaining = optimization_deadline - time.monotonic()
+                if remaining <= 0.0:
+                    greedy_truncated = True
+                    break
                 t0 = time.perf_counter()
                 candidate = solve_assignment(
                     candidate_built,
-                    max(_MIN_SOLVE_SEC, deadline - time.perf_counter()),
+                    remaining,
                     seed,
                 )
                 assign_sec += time.perf_counter() - t0
@@ -408,7 +436,7 @@ def _optimize_lightweight(
                 if greedy_truncated:
                     break
                 for candidate_x in _direction_candidates(arc_model, edge_id, adopted_x):
-                    remaining = deadline - time.perf_counter()
+                    remaining = optimization_deadline - time.monotonic()
                     if remaining <= 0.0:
                         greedy_truncated = True
                         break
@@ -423,10 +451,14 @@ def _optimize_lightweight(
                         net_supply=net_supply,
                     )
                     build_sec += time.perf_counter() - t0
+                    remaining = optimization_deadline - time.monotonic()
+                    if remaining <= 0.0:
+                        greedy_truncated = True
+                        break
                     t0 = time.perf_counter()
                     status, zone_flows = solve_zone_lp(
                         built_zone,
-                        max(_MIN_SOLVE_SEC, deadline - time.perf_counter()),
+                        remaining,
                         seed,
                     )
                     assign_sec += time.perf_counter() - t0
@@ -462,6 +494,11 @@ def _optimize_lightweight(
         or not _local_reachability_ok(arc_model, solution)
         or (is_open and not _boundary_reachability_ok(arc_model, solution))
     ):
+        fallback_budget = optimization_deadline - time.monotonic()
+        if fallback_budget <= 0.0:
+            return _empty_result(
+                SolverStatus.TIMEOUT, solved_at, seed, int((build_sec + assign_sec) * 1000)
+            )
         return _fallback(
             arc_model,
             inputs,
@@ -471,17 +508,18 @@ def _optimize_lightweight(
             previous_result,
             config,
             seed,
-            max(_MIN_SOLVE_SEC, deadline - time.perf_counter()),
+            fallback_budget,
             solved_at,
             is_open,
             throughput_arcs,
             int((build_sec + assign_sec) * 1000),
+            deadline=optimization_deadline,
         )
 
     # 分散段: τ を保ったまま等コストの並列ルートへ配分を散らす（混雑逓増）。
     # τ 最小化が第一目的なので、τ 維持制約を課したうえで事後検査して採用する
     spread_solution: ArcSolution | None = None
-    if config.congestion_increment > 0.0:
+    if config.congestion_increment > 0.0 and optimization_deadline > time.monotonic():
         t0 = time.perf_counter()
         built_spread = build_assignment_lp(
             arc_model,
@@ -493,18 +531,20 @@ def _optimize_lightweight(
             drainable=drainable,
         )
         build_sec += time.perf_counter() - t0
-        t0 = time.perf_counter()
-        spread = solve_assignment(
-            built_spread, max(_MIN_SOLVE_SEC, deadline - time.perf_counter()), seed
-        )
-        assign_sec += time.perf_counter() - t0
-        assign_lp_ms = int(assign_sec * 1000)
-        if spread.solution is not None and spread.status != SolverStatus.INFEASIBLE:
-            spread_tau = evaluate_residual_tau(arc_model, inputs, drainable, spread.solution.flow)
-            if spread_tau <= best_tau + config.epsilon:
-                spread_solution = replace(spread.solution, tau=spread_tau)
-                solution = spread_solution
-                best_tau = min(best_tau, spread_tau)
+        remaining = optimization_deadline - time.monotonic()
+        if remaining > 0.0:
+            t0 = time.perf_counter()
+            spread = solve_assignment(built_spread, remaining, seed)
+            assign_sec += time.perf_counter() - t0
+            assign_lp_ms = int(assign_sec * 1000)
+            if spread.solution is not None and spread.status != SolverStatus.INFEASIBLE:
+                spread_tau = evaluate_residual_tau(
+                    arc_model, inputs, drainable, spread.solution.flow
+                )
+                if spread_tau <= best_tau + config.epsilon:
+                    spread_solution = replace(spread.solution, tau=spread_tau)
+                    solution = spread_solution
+                    best_tau = min(best_tau, spread_tau)
 
     # 重要度は配分結果から出す。分散段が成立していればその解（並列路の利用が
     # 反映される）、なければ全体ベースライン配分（(i)）。救済時のみ救済解。
@@ -981,6 +1021,8 @@ def _fallback(
     is_open: bool,
     throughput_arcs: tuple[Arc, ...],
     phase1_ms: int,
+    *,
+    deadline: float | None = None,
 ) -> OptimizeResult:
     # 第 1 段: 方向を current_direction に固定した配分 LP（可達性制約は除外）。
     # 容量超過はスラック化し、需要が容量を構造的に超える過密局面でも
@@ -988,13 +1030,19 @@ def _fallback(
     fixed_x: dict[str, int] = {}
     for edge in arc_model.active_edges:
         fixed_x.update(fixed_directions(edge))
+    fallback_deadline = (
+        deadline if deadline is not None else time.monotonic() + max(time_limit, 0.0)
+    )
     t0 = time.perf_counter()
     built_lp = build_assignment_lp(
         arc_model, inputs, commodities, fixed_x=fixed_x, allow_capacity_slack=True
     )
     build_ms = int((time.perf_counter() - t0) * 1000)
+    remaining = fallback_deadline - time.monotonic()
+    if remaining <= 0.0:
+        return _empty_result(SolverStatus.TIMEOUT, solved_at, seed, phase1_ms + build_ms)
     t0 = time.perf_counter()
-    lp = solve_assignment(built_lp, time_limit, seed)
+    lp = solve_assignment(built_lp, remaining, seed)
     lp_ms = int((time.perf_counter() - t0) * 1000)
 
     boundary = compute_boundary_control(graph, is_open, previous_result, commodities)

@@ -1,6 +1,4 @@
-def main():
-    print("Hello from flow-control-service!")
-
+from flow_control.rpc.server import main
 
 if __name__ == "__main__":
     main()

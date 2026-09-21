@@ -1,0 +1,198 @@
+
+from __future__ import annotations
+
+from typing import Protocol, TYPE_CHECKING
+
+from connectrpc.client import ConnectClient, ConnectClientSync
+from connectrpc.code import Code
+from connectrpc.compat import google_protobuf_binary_codec, google_protobuf_codecs
+from connectrpc.compression.gzip import GzipCompression
+from connectrpc.errors import ConnectError
+from connectrpc.method import IdempotencyLevel, MethodInfo
+from connectrpc.protocol import ProtocolType
+from connectrpc.server import ConnectASGIApplication, ConnectWSGIApplication, Endpoint, EndpointSync
+from pyqwest import Client, SyncClient
+
+from .flow_pb2 import OptimizeRequest, OptimizeResponse
+
+if TYPE_CHECKING:
+    from collections.abc import AsyncGenerator, Iterable, Mapping
+
+    from connectrpc.codec import Codec
+    from connectrpc.compression import Compression
+    from connectrpc.interceptor import Interceptor, InterceptorSync
+    from connectrpc.request import Headers, RequestContext
+
+
+
+_DEFAULT_CODECS = google_protobuf_codecs()
+_PROTO_BINARY_CODEC = google_protobuf_binary_codec()
+_GZIP_COMPRESSION = GzipCompression()
+
+class FlowControlService(Protocol):
+    async def optimize(self, request: OptimizeRequest, ctx: RequestContext[OptimizeRequest, OptimizeResponse]) -> OptimizeResponse:
+        raise ConnectError(Code.UNIMPLEMENTED, 'Not implemented')
+
+
+class FlowControlServiceASGIApplication(ConnectASGIApplication[FlowControlService]):
+    def __init__(
+        self,
+        service: FlowControlService | AsyncGenerator[FlowControlService],
+        *,
+        interceptors: Iterable[Interceptor] = (),
+        read_max_bytes: int | None = None,
+        compressions: Iterable[Compression] | None = None,
+        codecs: Iterable[Codec] | None = _DEFAULT_CODECS,
+    ) -> None:
+        super().__init__(
+            service=service,
+            endpoints=lambda svc: {
+                "/tolo.flow.v1.FlowControlService/Optimize": Endpoint.unary(
+                    method=MethodInfo(
+                        name="Optimize",
+                        service_name="tolo.flow.v1.FlowControlService",
+                        input=OptimizeRequest,
+                        output=OptimizeResponse,
+                        idempotency_level=IdempotencyLevel.UNKNOWN,
+                    ),
+                    function=svc.optimize,
+                ),
+            },
+            interceptors=interceptors,
+            read_max_bytes=read_max_bytes,
+            compressions=compressions,
+            codecs=codecs,
+        )
+
+    @property
+    def path(self) -> str:
+        return "/tolo.flow.v1.FlowControlService"
+
+
+class FlowControlServiceClient(ConnectClient):
+    def __init__(
+        self,
+        address: str,
+        *,
+        codec: Codec | None = _PROTO_BINARY_CODEC,
+        protocol: ProtocolType = ProtocolType.CONNECT,
+        accept_compression: Iterable[Compression] | None = None,
+        send_compression: Compression | None = _GZIP_COMPRESSION,
+        timeout_ms: int | None = None,
+        read_max_bytes: int | None = None,
+        interceptors: Iterable[Interceptor] = (),
+        http_client: Client | None = None,
+    ) -> None:
+        super().__init__(
+            address=address,
+            codec=codec,
+            protocol=protocol,
+            accept_compression=accept_compression,
+            send_compression=send_compression,
+            timeout_ms=timeout_ms,
+            read_max_bytes=read_max_bytes,
+            interceptors=interceptors,
+            http_client=http_client,
+        )
+    async def optimize(
+        self,
+        request: OptimizeRequest,
+        *,
+        headers: Headers | Mapping[str, str] | None = None, 
+        timeout_ms: int | None = None,
+    ) -> OptimizeResponse:
+        return await self.execute_unary(
+            request=request,
+            method=MethodInfo(
+                name="Optimize",
+                service_name="tolo.flow.v1.FlowControlService",
+                input=OptimizeRequest,
+                output=OptimizeResponse,
+                idempotency_level=IdempotencyLevel.UNKNOWN,
+            ),
+            headers=headers,
+            timeout_ms=timeout_ms,
+        )
+
+class FlowControlServiceSync(Protocol):
+    def optimize(self, request: OptimizeRequest, ctx: RequestContext[OptimizeRequest, OptimizeResponse]) -> OptimizeResponse:
+        raise ConnectError(Code.UNIMPLEMENTED, 'Not implemented')
+
+
+class FlowControlServiceWSGIApplication(ConnectWSGIApplication):
+    def __init__(
+        self,
+        service: FlowControlServiceSync,
+        interceptors: Iterable[InterceptorSync] = (),
+        read_max_bytes: int | None = None,
+        compressions: Iterable[Compression] | None = None,
+        codecs: Iterable[Codec] | None = _DEFAULT_CODECS,
+    ) -> None:
+        super().__init__(
+            endpoints={
+                "/tolo.flow.v1.FlowControlService/Optimize": EndpointSync.unary(
+                    method=MethodInfo(
+                        name="Optimize",
+                        service_name="tolo.flow.v1.FlowControlService",
+                        input=OptimizeRequest,
+                        output=OptimizeResponse,
+                        idempotency_level=IdempotencyLevel.UNKNOWN,
+                    ),
+                    function=service.optimize,
+                ),
+            },
+            interceptors=interceptors,
+            read_max_bytes=read_max_bytes,
+            compressions=compressions,
+            codecs=codecs,
+        )
+
+    @property
+    def path(self) -> str:
+        return "/tolo.flow.v1.FlowControlService"
+
+
+class FlowControlServiceClientSync(ConnectClientSync):
+    def __init__(
+        self,
+        address: str,
+        *,
+        codec: Codec | None = _PROTO_BINARY_CODEC,
+        protocol: ProtocolType = ProtocolType.CONNECT,
+        accept_compression: Iterable[Compression] | None = None,
+        send_compression: Compression | None = _GZIP_COMPRESSION,
+        timeout_ms: int | None = None,
+        read_max_bytes: int | None = None,
+        interceptors: Iterable[InterceptorSync] = (),
+        http_client: SyncClient | None = None,
+    ) -> None:
+        super().__init__(
+            address=address,
+            codec=codec,
+            protocol=protocol,
+            accept_compression=accept_compression,
+            send_compression=send_compression,
+            timeout_ms=timeout_ms,
+            read_max_bytes=read_max_bytes,
+            interceptors=interceptors,
+            http_client=http_client,
+        )
+    def optimize(
+        self,
+        request: OptimizeRequest,
+        *,
+        headers: Headers | Mapping[str, str] | None = None, 
+        timeout_ms: int | None = None,
+    ) -> OptimizeResponse:
+        return self.execute_unary(
+            request=request,
+            method=MethodInfo(
+                name="Optimize",
+                service_name="tolo.flow.v1.FlowControlService",
+                input=OptimizeRequest,
+                output=OptimizeResponse,
+                idempotency_level=IdempotencyLevel.UNKNOWN,
+            ),
+            headers=headers,
+            timeout_ms=timeout_ms,
+        )
