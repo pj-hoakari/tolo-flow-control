@@ -1,0 +1,170 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [develop]
+  workflow_call:
+    inputs:
+      ref:
+        description: "検証対象の ref（空なら既定の checkout）"
+        required: false
+        type: string
+        default: ""
+
+permissions:
+  contents: read
+
+env:
+  BUF_VERSION: 1.73.0
+
+jobs:
+  checks:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ inputs.ref }}
+
+      - name: Set up Buf
+        uses: bufbuild/buf-action@8c6a16e16f12ba20b6470afa9c2ba9b5ba8c97c3 # v1.5.0
+        with:
+          version: ${{ env.BUF_VERSION }}
+          setup_only: true
+
+      - name: Buf lint
+        run: buf lint
+
+      - name: Buf build
+        run: buf build
+
+      - name: Check generated code is up to date
+        run: |
+          buf generate --template buf.gen.python.yaml
+          if [ -n "$(git status --porcelain)" ]; then
+            echo "::error::buf generate の出力がコミット済みの生成コードと一致しません"
+            git status --porcelain
+            git diff
+            exit 1
+          fi
+
+      - name: Verify distributable proto file set
+        run: |
+          WORK="$(mktemp -d)"
+          COUNT=0
+          cd proto
+          while IFS= read -r f; do
+            mkdir -p "$WORK/proto/$(dirname "$f")"
+            cp "$f" "$WORK/proto/$f"
+            COUNT=$((COUNT + 1))
+          done < <(find . -type f -name '*.proto' | sed 's|^\./||' | sort)
+          if [ "$COUNT" -eq 0 ]; then
+            echo "::error::配布対象の .proto ファイルが見つかりません"
+            exit 1
+          fi
+          echo "配布用ファイル集合: ${COUNT} file(s)"
+          printf 'version: v2\nmodules:\n  - path: proto\n' >"$WORK/buf.yaml"
+          cd "$WORK"
+          buf build
+
+      - name: Set up uv
+        uses: astral-sh/setup-uv@bec219d24cd3e171d82865faccec33120bb574f4 # v10.1.0
+        with:
+          enable-cache: true
+
+      - name: Install dependencies
+        run: uv sync --locked
+
+      - name: Ruff check
+        run: uv run ruff check
+
+      - name: Ruff format check
+        run: uv run ruff format --check
+
+      - name: basedpyright
+        run: uv run basedpyright
+
+      - name: pytest
+        run: uv run pytest
+
+      - name: Test release tag script
+        run: bash .github/scripts/release_tags_test.sh
+
+  actionlint:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ inputs.ref }}
+
+      - name: Lint workflows
+        uses: docker://rhysd/actionlint:1.7.12@sha256:b1934ee5f1c509618f2508e6eb47ee0d3520686341fec936f3b79331f9315667
+
+  container:
+    runs-on: ${{ matrix.runner }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - platform: linux/amd64
+            runner: ubuntu-24.04
+            scope: image-amd64
+          - platform: linux/arm64
+            runner: ubuntu-24.04-arm
+            scope: image-arm64
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ inputs.ref }}
+
+      - name: Set up uv
+        uses: astral-sh/setup-uv@bec219d24cd3e171d82865faccec33120bb574f4 # v10.1.0
+        with:
+          enable-cache: true
+
+      - name: Install dependencies
+        run: uv sync --locked
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@37fe631027851001ddb9b187196cc803df7f5f0e # v4.3.0
+
+      - name: Build image
+        uses: docker/build-push-action@53b7df96c91f9c12dcc8a07bcb9ccacbed38856a # v7.3.0
+        with:
+          context: .
+          platforms: ${{ matrix.platform }}
+          load: true
+          tags: tolo-flow-control:ci
+          cache-from: type=gha,scope=${{ matrix.scope }}
+          cache-to: type=gha,mode=max,scope=${{ matrix.scope }}
+
+      - name: Start container
+        run: |
+          docker run -d --name flow-control-smoke \
+            --read-only --tmpfs /tmp \
+            -p 18080:8080 \
+            tolo-flow-control:ci
+
+      - name: Wait for readiness
+        run: |
+          for _ in $(seq 1 60); do
+            if curl -fsS http://127.0.0.1:18080/readyz >/dev/null; then
+              echo "ready"
+              exit 0
+            fi
+            sleep 1
+          done
+          echo "::error::コンテナが /readyz に応答しません"
+          exit 1
+
+      - name: Run container smoke test
+        env:
+          TOLO_SMOKE_BASE_URL: http://127.0.0.1:18080
+        run: uv run pytest tests/rpc/test_container_smoke.py
+
+      - name: Dump container logs
+        if: failure()
+        run: docker logs flow-control-smoke
