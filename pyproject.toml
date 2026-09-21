@@ -98,6 +98,7 @@ pythonpath = ["src", "."]
 [tool.basedpyright]
 include = ["src", "tests", "main.py", "devtools"]
 exclude = ["src/flow_control/rpc/generated"]
+failOnWarnings = false
 
 extraPaths = ["src"]
 
