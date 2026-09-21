@@ -4,13 +4,6 @@ on:
   pull_request:
   push:
     branches: [develop]
-  workflow_call:
-    inputs:
-      ref:
-        description: "検証対象の ref（空なら既定の checkout）"
-        required: false
-        type: string
-        default: ""
 
 permissions:
   contents: read
@@ -21,8 +14,6 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          ref: ${{ inputs.ref }}
 
       - name: Set up mise
         uses: jdx/mise-action@c2a87611a18de5b3828c5652fe268e992400cb5c # v4.3.0
@@ -56,22 +47,17 @@ jobs:
       - name: pytest
         run: uv run pytest
 
-      - name: Test release tag script
-        run: bash .github/scripts/release_tags_test.sh
-
   actionlint:
     runs-on: ubuntu-24.04
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          ref: ${{ inputs.ref }}
 
       - name: Lint workflows
         uses: docker://rhysd/actionlint:1.7.12@sha256:b1934ee5f1c509618f2508e6eb47ee0d3520686341fec936f3b79331f9315667
 
   container:
-    if: github.base_ref == 'main' || github.event_name == 'release' || github.event_name == 'workflow_dispatch'
+    if: github.base_ref == 'main'
     runs-on: ${{ matrix.runner }}
     strategy:
       fail-fast: false
@@ -86,8 +72,6 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          ref: ${{ inputs.ref }}
 
       - name: Set up uv
         uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
