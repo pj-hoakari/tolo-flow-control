@@ -10,7 +10,7 @@ dependencies = [
     "hypercorn>=0.17.3",
     "linopy>=0.8.0",
     "networkx>=3.6.1",
-    "protobuf==6.32.1",
+    "protobuf==6.33.6",
 ]
 
 [dependency-groups]
