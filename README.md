@@ -50,7 +50,7 @@ TOLO_SMOKE_BASE_URL=http://127.0.0.1:8080 uv run pytest tests/rpc/test_container
 ## publish
 
 GitHub Release の公開、または `publish` workflow の手動実行（`version` 必須、`vX.Y.Z` / `vX.Y.Z-suffix`）で publish する。
-手動実行でも対象は入力 version に対応する既存 release タグの commit であり、任意の branch の内容を publish することはできない。
+対象は入力 version と同名のタグがあればその commit、タグが無い場合は `vX.Y.Z-suffix` に限り手動実行で選んだ ref の commit である。安定版 `vX.Y.Z` は `latest` 等の可動タグを付けるため、既存 release タグの commit に限る。
 共通検証（`ci` workflow）を通してから、実行イメージ `ghcr.io/pj-hoakari/tolo-flow-control` と proto の OCI アーティファクト `ghcr.io/pj-hoakari/tolo-flow-control-proto` を同一 version で公開する。
 
 タグは先頭 `v` を外した `<version>` を必ず付け、安定版のうちリポジトリで最大の version のときだけ `<major>.<minor>`・`latest`（major が 0 以外なら `<major>` も）を追加する。

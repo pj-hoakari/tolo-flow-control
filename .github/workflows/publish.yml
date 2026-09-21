@@ -6,7 +6,7 @@ on:
   workflow_dispatch:
     inputs:
       version:
-        description: "公開するバージョン（先頭 v 必須。vX.Y.Z または vX.Y.Z-suffix）"
+        description: "公開するバージョン（先頭 v 必須。vX.Y.Z または vX.Y.Z-suffix。同名タグがあればその commit、無い場合は vX.Y.Z-suffix に限り実行時に選んだ ref の commit を公開する）"
         required: true
         type: string
 
@@ -30,7 +30,6 @@ jobs:
     runs-on: ubuntu-24.04
     outputs:
       version: ${{ steps.resolve.outputs.version }}
-      tag: ${{ steps.resolve.outputs.tag }}
       sha: ${{ steps.resolve.outputs.sha }}
       tags: ${{ steps.resolve.outputs.tags }}
     steps:
@@ -52,26 +51,31 @@ jobs:
 
           VERSION="${RAW_VERSION#v}"
           TAG="$RAW_VERSION"
-          SHA="$(git rev-list -n 1 "refs/tags/${TAG}" 2>/dev/null || true)"
-          if [ -z "$SHA" ]; then
-            echo "::error::タグ ${TAG} がリポジトリに存在しません。公開対象は既存 release タグの commit に限ります"
-            exit 1
-          fi
 
           case "$VERSION" in
           *-*) IS_PRERELEASE=true ;;
           *) IS_PRERELEASE=false ;;
           esac
+
+          SHA="$(git rev-list -n 1 "refs/tags/${TAG}" 2>/dev/null || true)"
+          if [ -z "$SHA" ]; then
+            if [ "$GITHUB_EVENT_NAME" = "workflow_dispatch" ] && [ "$IS_PRERELEASE" = true ]; then
+              SHA="$GITHUB_SHA"
+            else
+              echo "::error::タグ ${TAG} がリポジトリに存在しません。タグ無しで公開できるのは手動実行かつ vX.Y.Z-suffix のときだけで、安定版 vX.Y.Z は既存 release タグの commit に限ります"
+              exit 1
+            fi
+          fi
+
           if [ "$GITHUB_EVENT_NAME" = "release" ] && [ "$RELEASE_PRERELEASE" != "$IS_PRERELEASE" ]; then
             echo "::error::release の prerelease 設定 (${RELEASE_PRERELEASE}) と version '${VERSION}' の表記が矛盾します"
             exit 1
           fi
 
-          TAGS="$(git tag -l 'v*' | bash .github/scripts/release_tags.sh "$VERSION" | paste -sd, -)"
+          TAGS="$(bash .github/scripts/release_tags.sh "$VERSION" <<<"$(git tag -l 'v*')" | paste -sd, -)"
 
           {
             echo "version=${VERSION}"
-            echo "tag=${TAG}"
             echo "sha=${SHA}"
             echo "tags=${TAGS}"
           } >>"$GITHUB_OUTPUT"
@@ -81,7 +85,7 @@ jobs:
     needs: resolve
     uses: ./.github/workflows/ci.yml
     with:
-      ref: ${{ needs.resolve.outputs.tag }}
+      ref: ${{ needs.resolve.outputs.sha }}
 
   image:
     needs: [resolve, verify]
@@ -95,7 +99,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          ref: ${{ needs.resolve.outputs.tag }}
+          ref: ${{ needs.resolve.outputs.sha }}
 
       - name: Set up QEMU
         uses: docker/setup-qemu-action@1f40c72289eff860ee54a304f1438e3cff362e0a # v4.3.0
@@ -177,7 +181,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          ref: ${{ needs.resolve.outputs.tag }}
+          ref: ${{ needs.resolve.outputs.sha }}
 
       - name: Set up ORAS
         uses: oras-project/setup-oras@1d808f7d7f6995cc68b7bf507bfe5c5446e1dc9d # v2.0.1
