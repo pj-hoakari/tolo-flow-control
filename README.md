@@ -3,6 +3,21 @@
 人流グラフの観測値から迂回・方向制御を導くステートレスな最適化エンジン。
 `tolo.flow.v1.FlowControlService/Optimize` を ConnectRPC（HTTP/1.1）で公開する。
 
+## 開発ツール
+
+buf と task のバージョンは `mise.toml` で管理する。初回は `mise trust` が必要である。
+
+```sh
+mise install
+```
+
+proto 関連の作業は task にまとめてあり、CI も同じタスクを実行する。
+
+```sh
+task proto           # lint と生成をまとめて実行する
+task proto:gen:check # 生成コードがコミット済みの内容と一致するか検査する
+```
+
 ## ローカル起動
 
 ```sh
