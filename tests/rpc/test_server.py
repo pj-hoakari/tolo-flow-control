@@ -15,7 +15,6 @@ from connectrpc.request import Headers, RequestContext
 from google.protobuf import json_format
 from hypercorn.asyncio import serve
 from hypercorn.config import Config
-from hypercorn.typing import ASGIFramework
 from pyqwest import Client, HTTPTransport, HTTPVersion
 
 import flow_control.rpc.server as server
@@ -187,6 +186,14 @@ def test_connect_timeout_covers_body_read() -> None:
     asyncio.run(run())
 
 
+def _fake_decode(_: pb.OptimizeRequest) -> object:
+    return object()
+
+
+def _fake_encode(_: Response) -> pb.OptimizeResponse:
+    return pb.OptimizeResponse(request_id="r1")
+
+
 def _blocked_service(monkeypatch: pytest.MonkeyPatch, max_execution_sec: float):
     started = threading.Event()
     released = threading.Event()
@@ -197,20 +204,18 @@ def _blocked_service(monkeypatch: pytest.MonkeyPatch, max_execution_sec: float):
         updated_detection_state=DetectionState(),
     )
 
-    def decode(_: pb.OptimizeRequest) -> object:
-        return object()
-
     def handle(_: object, *, deadline: float | None = None) -> Response:
+        del deadline
         started.set()
         try:
-            released.wait(1)
+            _ = released.wait(1)
             return response
         finally:
             finished.set()
 
-    monkeypatch.setattr(server, "decode_request", decode)
+    monkeypatch.setattr(server, "decode_request", _fake_decode)
     monkeypatch.setattr(server, "handle_request", handle)
-    monkeypatch.setattr(server, "encode_response", lambda _: pb.OptimizeResponse(request_id="r1"))
+    monkeypatch.setattr(server, "encode_response", _fake_encode)
     return (
         server.FlowControlService(server._ExecutionPool(), max_execution_sec),
         started,
@@ -232,7 +237,7 @@ def test_timeout_keeps_single_executor_slot_until_worker_finishes(
             assert first_error.value.code == Code.DEADLINE_EXCEEDED
 
             with pytest.raises(ConnectError) as second_error:
-                await service.optimize(pb.OptimizeRequest(), _ctx())
+                _ = await service.optimize(pb.OptimizeRequest(), _ctx())
             assert second_error.value.code == Code.RESOURCE_EXHAUSTED
 
             released.set()
@@ -254,13 +259,13 @@ def test_cancel_keeps_single_executor_slot_until_worker_finishes(
         try:
             task = asyncio.create_task(service.optimize(pb.OptimizeRequest(), _ctx()))
             assert await asyncio.to_thread(started.wait, 1)
-            task.cancel()
+            _ = task.cancel()
             with pytest.raises(ConnectError) as canceled:
                 await task
             assert canceled.value.code == Code.CANCELED
 
             with pytest.raises(ConnectError) as second_error:
-                await service.optimize(pb.OptimizeRequest(), _ctx())
+                _ = await service.optimize(pb.OptimizeRequest(), _ctx())
             assert second_error.value.code == Code.RESOURCE_EXHAUSTED
 
             released.set()
@@ -274,9 +279,10 @@ def test_cancel_keeps_single_executor_slot_until_worker_finishes(
 
 def test_body_limit_stops_before_generated_decode(monkeypatch: pytest.MonkeyPatch) -> None:
     async def run() -> None:
-        monkeypatch.setattr(
-            server, "decode_request", lambda _: pytest.fail("decoded oversized body")
-        )
+        def decode(_: pb.OptimizeRequest) -> object:
+            pytest.fail("decoded oversized body")
+
+        monkeypatch.setattr(server, "decode_request", decode)
         app = _create_app(server.ServerSettings(max_request_bytes=1))
         sent, received = await _invoke(
             app,
@@ -343,16 +349,14 @@ def test_disconnect_cancels_generated_task_and_keeps_worker_slot(
             del deadline
             started.set()
             try:
-                released.wait(5)
+                _ = released.wait(5)
                 return response
             finally:
                 finished.set()
 
-        monkeypatch.setattr(server, "decode_request", lambda _: object())
+        monkeypatch.setattr(server, "decode_request", _fake_decode)
         monkeypatch.setattr(server, "handle_request", handle)
-        monkeypatch.setattr(
-            server, "encode_response", lambda _: pb.OptimizeResponse(request_id="r1")
-        )
+        monkeypatch.setattr(server, "encode_response", _fake_encode)
         app = _create_app()
 
         async def disconnect_once_started() -> dict[str, object]:
@@ -393,7 +397,7 @@ def test_generated_client_binary_and_protojson_over_hypercorn() -> None:
         app = server.create_app(settings=server.ServerSettings())
         port_socket = socket.socket()
         port_socket.bind(("127.0.0.1", 0))
-        port = port_socket.getsockname()[1]
+        port = cast(int, port_socket.getsockname()[1])
         port_socket.close()
         config = Config()
         config.bind = [f"127.0.0.1:{port}"]
@@ -402,11 +406,9 @@ def test_generated_client_binary_and_protojson_over_hypercorn() -> None:
         stopped = asyncio.Event()
 
         async def shutdown_trigger() -> None:
-            await stopped.wait()
+            _ = await stopped.wait()
 
-        server_task = asyncio.create_task(
-            serve(cast(ASGIFramework, app), config, shutdown_trigger=shutdown_trigger)
-        )
+        server_task = asyncio.create_task(serve(app, config, shutdown_trigger=shutdown_trigger))
         try:
             for _ in range(100):
                 try:
@@ -444,7 +446,7 @@ def test_generated_client_binary_and_protojson_over_hypercorn() -> None:
                 )
                 assert json_response.status == 200
                 wire_response = pb.OptimizeResponse()
-                json_format.Parse(json_response.content.decode(), wire_response)
+                _ = json_format.Parse(json_response.content.decode(), wire_response)
                 assert wire_response.SerializeToString() == binary_response.SerializeToString()
         finally:
             stopped.set()
