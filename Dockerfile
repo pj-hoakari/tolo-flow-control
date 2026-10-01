@@ -1,4 +1,4 @@
-# syntax=docker/dockerfile:1.27@sha256:bde3983e9c939224420ddaf6b784cc30e09b035a4dea01f581230c50809f372e
+# syntax=docker/dockerfile:1.27@sha256:4edf897a3ffa55b89f906fc8cc78afdb3f1834cc9c7083565e611a8a7d5fe99e
 FROM ghcr.io/astral-sh/uv:0.12.21-trixie-slim@sha256:0b4686f3d71340b38a02d2b73b17620fe18d5c82c0f1c3c3a59996ed6e8e5b98 AS builder
 
 ENV UV_PYTHON_INSTALL_DIR=/python \
