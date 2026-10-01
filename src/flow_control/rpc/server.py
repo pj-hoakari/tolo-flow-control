@@ -11,9 +11,8 @@ import time
 from collections.abc import Callable, Mapping
 from contextlib import suppress
 from dataclasses import dataclass
-from typing import Any, TypeVar, cast
+from typing import TypeVar, cast
 
-from connectrpc._protocol import _error_to_http_status
 from connectrpc.code import Code
 from connectrpc.errors import ConnectError
 from connectrpc.request import RequestContext
@@ -65,11 +64,11 @@ class ServerSettings:
 
 class _ExecutionPool:
     def __init__(self) -> None:
-        self._executor = concurrent.futures.ThreadPoolExecutor(
-            max_workers=1, thread_name_prefix="flow-control"
+        self._executor: concurrent.futures.ThreadPoolExecutor = (
+            concurrent.futures.ThreadPoolExecutor(max_workers=1, thread_name_prefix="flow-control")
         )
-        self._slot = threading.Lock()
-        self._closed = False
+        self._slot: threading.Lock = threading.Lock()
+        self._closed: bool = False
 
     def submit(self, function: Callable[[], T]) -> concurrent.futures.Future[T]:
         if self._closed or not self._slot.acquire(blocking=False):
@@ -98,8 +97,8 @@ class FlowControlService:
         pool: _ExecutionPool,
         max_execution_sec: float,
     ) -> None:
-        self._pool = pool
-        self._max_execution_sec = max_execution_sec
+        self._pool: _ExecutionPool = pool
+        self._max_execution_sec: float = max_execution_sec
 
     async def optimize(
         self, request: OptimizeRequest, ctx: RequestContext[OptimizeRequest, OptimizeResponse]
@@ -298,13 +297,13 @@ async def _dispatch(
             if disconnect_error is not None:
                 raise disconnect_error
             if disconnect_task.result():
-                generated_task.cancel()
+                _ = generated_task.cancel()
                 with suppress(asyncio.CancelledError):
                     await generated_task
     finally:
         for task in (generated_task, disconnect_task):
             if not task.done():
-                task.cancel()
+                _ = task.cancel()
         _ = await asyncio.gather(generated_task, disconnect_task, return_exceptions=True)
 
 
@@ -337,7 +336,7 @@ def _load_generated_app(service: FlowControlService, max_request_bytes: int) -> 
 
 
 def main() -> None:
-    from hypercorn.asyncio import serve
+    from hypercorn.asyncio import serve  # pyright: ignore[reportUnknownVariableType]
     from hypercorn.config import Config
 
     settings = ServerSettings.from_env()
@@ -413,14 +412,14 @@ async def _wait_for_disconnect(receive: ASGIReceiveCallable, receive_lock: async
             return True
 
 
-def _consume_future_exception(future: concurrent.futures.Future[Any]) -> None:
+def _consume_future_exception[R](future: concurrent.futures.Future[R]) -> None:
     with suppress(concurrent.futures.CancelledError):
-        future.exception()
+        _ = future.exception()
 
 
-def _consume_asyncio_exception(future: asyncio.Future[Any]) -> None:
+def _consume_asyncio_exception[R](future: asyncio.Future[R]) -> None:
     with suppress(asyncio.CancelledError):
-        future.exception()
+        _ = future.exception()
 
 
 async def _send_json(send: ASGISendCallable, status: int, value: object) -> None:
@@ -451,8 +450,16 @@ async def _send_json(send: ASGISendCallable, status: int, value: object) -> None
 
 
 async def _send_connect_error(send: ASGISendCallable, code: str, message: str) -> None:
-    status = _error_to_http_status[Code[code.upper()]].code
+    status = _CONNECT_ERROR_HTTP_STATUS[code]
     await _send_json(send, status, {"code": code, "message": message})
+
+
+_CONNECT_ERROR_HTTP_STATUS = {
+    "invalid_argument": 400,
+    "not_found": 404,
+    "resource_exhausted": 429,
+    "deadline_exceeded": 504,
+}
 
 
 def _connect_error(code: str, message: str) -> Exception:
