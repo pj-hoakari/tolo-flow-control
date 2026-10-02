@@ -15,14 +15,11 @@ jobs:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
-      - name: Set up mise
-        uses: jdx/mise-action@7a4e45a543138629540c9a1616d08632b893e492 # v5.0.1
-
-      - name: Buf lint and build
-        run: task proto:lint
-
-      - name: Check generated code is up to date
-        run: task proto:gen:check
+      - name: Check generated code
+        uses: pj-hoakari/actions/proto-check@3cf99dacd5f2b5135f15ce80118d9647dbae6a2d # v20261002
+        with:
+          generate-task: proto:gen
+          generated-path: src/flow_control/rpc/generated
 
       - name: Verify distributable proto file set
         run: task proto:dist:check
@@ -35,17 +32,8 @@ jobs:
       - name: Install dependencies
         run: uv sync --locked
 
-      - name: Ruff check
-        run: uv run ruff check
-
-      - name: Ruff format check
-        run: uv run ruff format --check
-
-      - name: basedpyright
-        run: uv run basedpyright
-
-      - name: pytest
-        run: uv run pytest
+      - name: Check Python code
+        uses: pj-hoakari/actions/python/check@3cf99dacd5f2b5135f15ce80118d9647dbae6a2d # v20261002
 
   actionlint:
     runs-on: ubuntu-24.04
