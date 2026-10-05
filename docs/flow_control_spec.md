@@ -10,7 +10,7 @@ package: `tolo.flow.v1`
 
 | RPC | 説明（ユビキタス言語） | 呼び出し元 | 認可 | 関連ドメインイベント |
 |---|---|---|---|---|
-| Optimize | 共有カーネルのグラフ・観測スコアと検知状態・手動介入を受け取り、トリガー評価と近似最適化を行い、提案（重要度付きルート・方向属性・境界制御・通行制限）と更新後の検知状態を返す | 観測のみ | ワークロード資格情報の直接検証（Service Gateway 非経由。補足参照） | SurgeTriggered／HighStagnationTriggered／PunctureTriggered／ScheduleTriggered／DangerFlagRaised・Lowered／WatchStateEntered／TriggerEnqueued／QueueMergedFired・QueueDiscarded／Optimized／WeightedRoutesComputed／DirectionProposed／BoundaryControlProposed／RestrictionProposed／OptimizationSkipped／FeedbackEmitted |
+| Optimize | 共有カーネルのグラフ・観測スコアと検知状態・手動介入を受け取り、トリガー評価と近似最適化を行い、提案（重要度付きルート・方向属性・境界制御・通行制限）と更新後の検知状態を返す | 観測のみ | インフラ層の到達制御（Service Gateway 非経由。補足参照） | SurgeTriggered／HighStagnationTriggered／PunctureTriggered／ScheduleTriggered／DangerFlagRaised・Lowered／WatchStateEntered／TriggerEnqueued／QueueMergedFired・QueueDiscarded／Optimized／WeightedRoutesComputed／DirectionProposed／BoundaryControlProposed／RestrictionProposed／OptimizationSkipped／FeedbackEmitted |
 
 ステートレスのため RPC は 1 つ
 発生したドメインイベントは応答（`fired_triggers`・`verdict`）として表現し、永続化は観測が行う
@@ -217,8 +217,7 @@ message ReferenceValue {
 
 - 呼び出し経路と認可: 本サービスへの呼び出しは Service Gateway を経由しない（service_gateway.md の例外。Auth・Edge Bridge Service に並ぶ）
   リクエストとレスポンスがグラフと履歴を同梱する最重量のペイロードであり、Service Gateway は認証・認可以外の処理をこのペイロードに加えないため、型付き委譲によるデコードと再シリアライズを毎サイクル往復させない
-  呼び出し元の真正性は workload_auth.md の環境別方式で本サービスが直接検証し、論理Observationのみを許可する。SPIREは期待するSPIFFE ID、Cloud Runは本サービス宛のGoogle tokenとObservation SAを検証する。内部JWTは要求しない
-  Observation 以外から到達できないことはインフラ層で保証する（Compose 環境はネットワーク構成、Cloud Run 環境は ingress 制限と IAM。環境の選択は workload_auth.md に従う）
+  Observation 以外から到達できないことはインフラ層で保証する（Compose 環境はネットワーク構成、Cloud Run 環境は ingress 制限と Observation の実行 SA への Invoker IAM。service_transport.md）。本サービスはワークロード資格情報と内部JWTを要求しない
   テナント境界は `tenant_id`／`event_id` の必須受領（下記の検証点）と、強制点を観測に集約する現行の分担で維持する
   監査相関のため、呼び出し元は W3C Trace Context（`traceparent`）をリクエストメタデータで伝搬する
 - 不変条件の検証点: tenant_id と event_id の両方必須（欠落は `invalid_argument`）、グラフ・検知状態・履歴は毎回受領（保持しない）
