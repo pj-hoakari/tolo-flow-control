@@ -6,6 +6,7 @@ from datetime import UTC, datetime
 
 import grpc
 import pytest
+from grpc_health.v1 import health_pb2
 
 import flow_control.rpc.server as server
 from flow_control.detection.state import DetectionState
@@ -30,17 +31,22 @@ type _Optimize = grpc.aio.UnaryUnaryMultiCallable[pb.OptimizeRequest, pb.Optimiz
 
 
 @asynccontextmanager
-async def _serve(settings: server.ServerSettings) -> AsyncGenerator[_Optimize]:
+async def _serve(
+    settings: server.ServerSettings,
+) -> AsyncGenerator[tuple[_Optimize, grpc.aio.Channel]]:
     pool = server._ExecutionPool()
     grpc_server = server.create_server(settings, pool)
     port = grpc_server.add_insecure_port("127.0.0.1:0")
     await grpc_server.start()
     try:
         async with grpc.aio.insecure_channel(f"127.0.0.1:{port}") as channel:
-            yield channel.unary_unary(
-                f"/{server.SERVICE_NAME}/Optimize",
-                request_serializer=pb.OptimizeRequest.SerializeToString,
-                response_deserializer=pb.OptimizeResponse.FromString,
+            yield (
+                channel.unary_unary(
+                    f"/{server.SERVICE_NAME}/Optimize",
+                    request_serializer=pb.OptimizeRequest.SerializeToString,
+                    response_deserializer=pb.OptimizeResponse.FromString,
+                ),
+                channel,
             )
     finally:
         await grpc_server.stop(None)
@@ -125,7 +131,7 @@ def test_timeout_keeps_single_executor_slot_until_worker_finishes(
     async def run() -> None:
         settings, released, started, finished = _blocked_settings(monkeypatch, 0.05)
         try:
-            async with _serve(settings) as optimize:
+            async with _serve(settings) as (optimize, _):
                 assert await _status(optimize(pb.OptimizeRequest())) == (
                     grpc.StatusCode.DEADLINE_EXCEEDED
                 )
@@ -148,7 +154,7 @@ def test_client_deadline_bounds_execution(monkeypatch: pytest.MonkeyPatch) -> No
     async def run() -> None:
         settings, released, _, _ = _blocked_settings(monkeypatch, 60.0)
         try:
-            async with _serve(settings) as optimize:
+            async with _serve(settings) as (optimize, _):
                 status = await asyncio.wait_for(
                     _status(optimize(pb.OptimizeRequest(), timeout=0.05)), 2
                 )
@@ -165,7 +171,7 @@ def test_cancel_keeps_single_executor_slot_until_worker_finishes(
     async def run() -> None:
         settings, released, started, finished = _blocked_settings(monkeypatch, 5.0)
         try:
-            async with _serve(settings) as optimize:
+            async with _serve(settings) as (optimize, _):
                 call = optimize(pb.OptimizeRequest())
                 assert await asyncio.to_thread(started.wait, 1)
                 _ = call.cancel()
@@ -189,7 +195,7 @@ def test_message_limit_stops_before_decode(monkeypatch: pytest.MonkeyPatch) -> N
             pytest.fail("decoded oversized message")
 
         monkeypatch.setattr(server, "decode_request", decode)
-        async with _serve(server.ServerSettings(max_request_bytes=1)) as optimize:
+        async with _serve(server.ServerSettings(max_request_bytes=1)) as (optimize, _):
             status = await _status(optimize(pb.OptimizeRequest(request_id="12")))
         assert status == grpc.StatusCode.RESOURCE_EXHAUSTED
 
@@ -199,8 +205,22 @@ def test_message_limit_stops_before_decode(monkeypatch: pytest.MonkeyPatch) -> N
 def test_optimize_over_grpc() -> None:
     async def run() -> None:
         request = codec.encode_request(_request(), event_id="event-1")
-        async with _serve(server.ServerSettings()) as optimize:
+        async with _serve(server.ServerSettings()) as (optimize, _):
             response = await optimize(request)
         assert response.request_id == "r1"
+
+    asyncio.run(run())
+
+
+def test_health_reports_serving() -> None:
+    async def run() -> None:
+        async with _serve(server.ServerSettings()) as (_, channel):
+            check = channel.unary_unary(
+                "/grpc.health.v1.Health/Check",
+                request_serializer=health_pb2.HealthCheckRequest.SerializeToString,
+                response_deserializer=health_pb2.HealthCheckResponse.FromString,
+            )
+            response = await check(health_pb2.HealthCheckRequest())
+        assert response == health_pb2.HealthCheckResponse(status="SERVING")
 
     asyncio.run(run())

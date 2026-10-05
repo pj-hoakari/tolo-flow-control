@@ -6,6 +6,7 @@ readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
     "grpcio==1.84.0",
+    "grpcio-health-checking==1.84.0",
     "highspy>=1.14.0",
     "linopy>=0.8.0",
     "networkx>=3.6.1",

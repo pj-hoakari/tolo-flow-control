@@ -52,7 +52,7 @@ docker run -d --read-only --tmpfs /tmp -p 8080:8080 tolo-flow-control:arm64
 
 ## smoke テスト
 
-起動中のコンテナに対して Optimize（基本・厳密の両モード）を検証する。
+起動中のコンテナに対して `grpc.health.v1.Health/Check` と Optimize（基本・厳密の両モード）を検証する。
 
 ```sh
 TOLO_SMOKE_ADDRESS=127.0.0.1:8080 uv run pytest tests/rpc/test_container_smoke.py

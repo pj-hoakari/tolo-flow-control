@@ -10,6 +10,7 @@ from datetime import UTC, datetime
 
 import grpc
 import pytest
+from grpc_health.v1 import health_pb2
 
 from flow_control.detection.state import DetectionState
 from flow_control.detection.triggers import Event, EventKind
@@ -71,6 +72,20 @@ def _danger_request(mode: OptimizationMode) -> Request:
         server_time=NOW,
         events=(Event(EventKind.DANGER_FLAG_UP, "edge:e", NOW),),
     )
+
+
+def test_health_reports_serving() -> None:
+    async def run() -> None:
+        async with grpc.aio.insecure_channel(ADDRESS) as channel:
+            check = channel.unary_unary(
+                "/grpc.health.v1.Health/Check",
+                request_serializer=health_pb2.HealthCheckRequest.SerializeToString,
+                response_deserializer=health_pb2.HealthCheckResponse.FromString,
+            )
+            response = await check(health_pb2.HealthCheckRequest(), wait_for_ready=True, timeout=60)
+        assert response == health_pb2.HealthCheckResponse(status="SERVING")
+
+    asyncio.run(run())
 
 
 @pytest.mark.parametrize("mode", [OptimizationMode.LIGHTWEIGHT, OptimizationMode.STRICT])

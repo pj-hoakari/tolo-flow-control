@@ -14,6 +14,7 @@ from dataclasses import dataclass
 from typing import TypeVar, cast
 
 import grpc
+from grpc_health.v1 import health, health_pb2_grpc
 
 from ..service.handler import handle_request
 from ..service.messages import Response
@@ -175,6 +176,7 @@ def create_server(settings: ServerSettings, pool: _ExecutionPool) -> grpc.aio.Se
             ),
         )
     )
+    health_pb2_grpc.add_HealthServicer_to_server(health.aio.HealthServicer(), server)  # pyright: ignore[reportAttributeAccessIssue, reportUnknownMemberType, reportUnknownArgumentType]
     return server
 
 
