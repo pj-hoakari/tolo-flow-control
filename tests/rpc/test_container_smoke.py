@@ -1,6 +1,6 @@
 """実コンテナに対する smoke テスト
 
-``TOLO_SMOKE_BASE_URL``（例 ``http://127.0.0.1:18080``）が設定されたときだけ実行する。
+``TOLO_SMOKE_ADDRESS``（例 ``127.0.0.1:18080``）が設定されたときだけ実行する。
 """
 
 import asyncio
@@ -8,9 +8,9 @@ import os
 from dataclasses import replace
 from datetime import UTC, datetime
 
+import grpc
 import pytest
-from connectrpc.protocol import ProtocolType
-from pyqwest import Client, HTTPTransport, HTTPVersion
+from grpc_health.v1 import health_pb2
 
 from flow_control.detection.state import DetectionState
 from flow_control.detection.triggers import Event, EventKind
@@ -25,16 +25,16 @@ from flow_control.domain.history import HistoryDigest
 from flow_control.domain.observations import Observations
 from flow_control.domain.references import Reference
 from flow_control.rpc import codec
-from flow_control.rpc.generated.tolo.flow.v1.flow_connect import FlowControlServiceClient
+from flow_control.rpc.generated.tolo.flow.v1 import flow_pb2 as pb
 from flow_control.service.config import OptimizationMode, ResolvedConfig
 from flow_control.service.context import TenantContext
 from flow_control.service.messages import Request
 from flow_control.service.verdict import Verdict
 
-BASE_URL = os.environ.get("TOLO_SMOKE_BASE_URL", "")
+ADDRESS = os.environ.get("TOLO_SMOKE_ADDRESS", "")
 
 pytestmark = pytest.mark.skipif(
-    not BASE_URL, reason="TOLO_SMOKE_BASE_URL is not set; container smoke test is skipped"
+    not ADDRESS, reason="TOLO_SMOKE_ADDRESS is not set; container smoke test is skipped"
 )
 
 NOW = datetime(2026, 7, 20, tzinfo=UTC)
@@ -74,13 +74,16 @@ def _danger_request(mode: OptimizationMode) -> Request:
     )
 
 
-def test_probes_report_healthy() -> None:
+def test_health_reports_serving() -> None:
     async def run() -> None:
-        async with HTTPTransport(http_version=HTTPVersion.HTTP1) as transport:
-            client = Client(transport=transport)
-            for path in ("/livez", "/readyz"):
-                response = await client.get(f"{BASE_URL}{path}")
-                assert response.status == 200, path
+        async with grpc.aio.insecure_channel(ADDRESS) as channel:
+            check = channel.unary_unary(
+                "/grpc.health.v1.Health/Check",
+                request_serializer=health_pb2.HealthCheckRequest.SerializeToString,
+                response_deserializer=health_pb2.HealthCheckResponse.FromString,
+            )
+            response = await check(health_pb2.HealthCheckRequest(), wait_for_ready=True, timeout=60)
+        assert response == health_pb2.HealthCheckResponse(status="SERVING")
 
     asyncio.run(run())
 
@@ -89,14 +92,13 @@ def test_probes_report_healthy() -> None:
 def test_optimize_runs_solver_in_container(mode: OptimizationMode) -> None:
     async def run() -> None:
         request = codec.encode_request(_danger_request(mode), event_id=f"smoke-{mode.value}")
-        async with HTTPTransport(http_version=HTTPVersion.HTTP1) as transport:
-            client = FlowControlServiceClient(
-                BASE_URL,
-                protocol=ProtocolType.CONNECT,
-                send_compression=None,
-                http_client=Client(transport=transport),
+        async with grpc.aio.insecure_channel(ADDRESS) as channel:
+            optimize = channel.unary_unary(
+                "/tolo.flow.v1.FlowControlService/Optimize",
+                request_serializer=pb.OptimizeRequest.SerializeToString,
+                response_deserializer=pb.OptimizeResponse.FromString,
             )
-            wire = await client.optimize(request)
+            wire = await optimize(request, wait_for_ready=True, timeout=120)
         response = codec.decode_response(wire)
         assert response.request_id == request.request_id
         assert response.verdict is Verdict.OPTIMIZED

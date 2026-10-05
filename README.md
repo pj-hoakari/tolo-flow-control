@@ -1,7 +1,7 @@
 # flow_control_service
 
 人流グラフの観測値から迂回・方向制御を導くステートレスな最適化エンジン。
-`tolo.flow.v1.FlowControlService/Optimize` を ConnectRPC（HTTP/1.1）で公開する。
+`tolo.flow.v1.FlowControlService/Optimize` を gRPC（h2c）で公開する。
 
 ## 開発ツール
 
@@ -47,20 +47,20 @@ docker run -d --read-only --tmpfs /tmp -p 8080:8080 tolo-flow-control:arm64
 | 変数 | 既定値 | 内容 |
 |---|---|---|
 | `PORT` | `8080` | 待ち受けポート |
-| `TOLO_RPC_MAX_REQUEST_BYTES` | `8388608` | 受理する要求本文の上限バイト数 |
+| `TOLO_RPC_MAX_REQUEST_BYTES` | `8388608` | 受理する要求メッセージの上限バイト数 |
 | `TOLO_RPC_MAX_EXECUTION_SEC` | `720` | 1 要求あたりの最大実行時間（秒） |
 
 ## smoke テスト
 
-起動中のコンテナに対して `/livez`・`/readyz` と Optimize（基本・厳密の両モード）を検証する。
+起動中のコンテナに対して `grpc.health.v1.Health/Check` と Optimize（基本・厳密の両モード）を検証する。
 
 ```sh
-TOLO_SMOKE_BASE_URL=http://127.0.0.1:8080 uv run pytest tests/rpc/test_container_smoke.py
+TOLO_SMOKE_ADDRESS=127.0.0.1:8080 uv run pytest tests/rpc/test_container_smoke.py
 ```
 
-`docker compose up --build` で起動した場合も `TOLO_SMOKE_BASE_URL=http://127.0.0.1:8080` で検証できる。
+`docker compose up --build` で起動した場合も `TOLO_SMOKE_ADDRESS=127.0.0.1:8080` で検証できる。
 
-`TOLO_SMOKE_BASE_URL` を設定しない場合は skip される。
+`TOLO_SMOKE_ADDRESS` を設定しない場合は skip される。
 
 ## publish
 
