@@ -5,6 +5,3 @@ plugins:
     out: src/flow_control/rpc/generated
   - remote: buf.build/protocolbuffers/pyi:v31.1
     out: src/flow_control/rpc/generated
-  - remote: buf.build/connectrpc/py:v0.11.1
-    out: src/flow_control/rpc/generated
-    opt: protobuf=google

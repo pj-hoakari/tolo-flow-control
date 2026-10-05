@@ -89,21 +89,9 @@ jobs:
             -p 18080:8080 \
             tolo-flow-control:ci
 
-      - name: Wait for readiness
-        run: |
-          for _ in $(seq 1 60); do
-            if curl -fsS http://127.0.0.1:18080/readyz >/dev/null; then
-              echo "ready"
-              exit 0
-            fi
-            sleep 1
-          done
-          echo "::error::コンテナが /readyz に応答しません"
-          exit 1
-
       - name: Run container smoke test
         env:
-          TOLO_SMOKE_BASE_URL: http://127.0.0.1:18080
+          TOLO_SMOKE_ADDRESS: 127.0.0.1:18080
         run: uv run pytest tests/rpc/test_container_smoke.py
 
       - name: Dump container logs
