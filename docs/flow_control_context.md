@@ -2,7 +2,7 @@
 
 ドメイン定義: flow_control_domain.md
 デプロイ単位: flow_control_spec.md
-ステートレスのため RPC は Optimize の 1 つ。ドメインイベントは応答の中で表現され、永続化は観測が行う
+ステートレスのため、RPC は Optimize の1つだけである。ドメインイベントは応答の中で表現し、永続化は観測が行う
 
 ## ドメインイベント↔入出力 対応
 
@@ -18,12 +18,12 @@
 | DirectionProposed | `proposals.directions` |
 | BoundaryControlProposed | `proposals.boundary_controls` |
 | RestrictionProposed | `proposals.restrictions` |
-| OptimizationSkipped | verdict=SKIPPED（エラーはイベント上スキップに内包。verdict=ERROR） |
+| OptimizationSkipped | verdict=SKIPPED（エラーはイベントとしてはスキップに含める。verdict=ERROR） |
 | FeedbackEmitted | `feedback_values` |
 
 ## スタッフ→システム接点（現場誘導）
 
-DangerFlagToggledByOperator／ScheduleEventRegistered／CongestionManuallyReported は観測の ManualInterventionService が受け、`OptimizeRequest.interventions` に同梱される（観測コンテキスト）
+DangerFlagToggledByOperator／ScheduleEventRegistered／CongestionManuallyReported は観測の ManualInterventionService が受け付け、`OptimizeRequest.interventions` に同梱される（観測コンテキスト）
 
 ## 他コンテキストとの接点
 

@@ -216,7 +216,7 @@ message ReferenceValue {
 ## 補足
 
 - 呼び出し経路と認可: 本サービスへの呼び出しは Service Gateway を経由しない（service_gateway.md の例外。Auth・Edge Bridge Service に並ぶ）
-  リクエストとレスポンスがグラフと履歴を同梱する最重量のペイロードであり、Service Gateway は認証・認可以外の処理をこのペイロードに加えないため、型付き委譲によるデコードと再シリアライズを毎サイクル往復させない
+  リクエストとレスポンスがグラフと履歴を同梱する最重量のペイロードであり、Service Gateway は認証・認可以外の処理をこのペイロードに加えないため、型付き委譲によるデコードと再シリアライズを毎サイクル行わない
   Observation 以外から到達できないことはインフラ層で保証する（Compose 環境はネットワーク構成、Cloud Run 環境は ingress 制限と Observation の実行 SA への Invoker IAM。service_transport.md）。本サービスはワークロード資格情報と内部JWTを要求しない
   テナント境界は `tenant_id`／`event_id` の必須受領（下記の検証点）と、強制点を観測に集約する現行の分担で維持する
   監査相関のため、呼び出し元は W3C Trace Context（`traceparent`）をリクエストメタデータで伝搬する
@@ -229,4 +229,4 @@ message ReferenceValue {
 - 改善データは同一テナント内または匿名化済み参照値のみ（`reference_values` にテナント識別子は含まれない）
 - 提案の宛先はスタッフのみ（Operation の配送で開＝Realtime／閉＝Notification）。ゲストへ直接配信されない
 - 危険度（Risk Level）は内部概念のため応答に含めない
-- 数理定式化は残課題（本仕様は入出力の型のみ確定させる）
+- 数理定式化は実装フェーズで確定する（本仕様は入出力の型のみ確定させる）
