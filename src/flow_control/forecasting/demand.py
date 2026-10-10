@@ -239,7 +239,7 @@ def _impute_unobserved_arcs(
     imputed_flow_by_edge: dict[str, ImputedArcFlow] = {}
 
     def can_anchor(node: Node) -> bool:
-        if node.is_boundary:
+        if node.has_active_boundary:
             return False
         if node.kind == NodeKind.TRANSIT_ONLY:
             return True

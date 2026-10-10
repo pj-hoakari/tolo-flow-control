@@ -1,6 +1,8 @@
 """境界制御提案の生成規則ユニットテスト（需要方向ベース）"""
 
 from flow_control.domain import (
+    Boundary,
+    BoundaryDirection,
     CurrentDirection,
     DirectionConstraint,
     Edge,
@@ -42,15 +44,22 @@ def _graph(*, danger_edge=False, danger_node=False, second_boundary=False):
         Node(
             _N1,
             NodeKind.GOAL,
-            is_boundary=True,
+            boundary=Boundary(BoundaryDirection.ENTRY_AND_EXIT, active=True),
             enabled=True,
             danger_flag=danger_node,
         ),
-        Node(_N2, NodeKind.GOAL_TRANSIT_MIXED, is_boundary=False, enabled=True),
+        Node(_N2, NodeKind.GOAL_TRANSIT_MIXED, enabled=True),
     ]
     edges = [_edge(_E1, _N1, _N2, danger=danger_edge)]
     if second_boundary:
-        nodes.append(Node(_N3, NodeKind.GOAL, is_boundary=True, enabled=True))
+        nodes.append(
+            Node(
+                _N3,
+                NodeKind.GOAL,
+                boundary=Boundary(BoundaryDirection.ENTRY_AND_EXIT, active=True),
+                enabled=True,
+            )
+        )
         edges.append(_edge(_E2, _N3, _N2))
     return Graph(nodes=tuple(nodes), edges=tuple(edges))
 

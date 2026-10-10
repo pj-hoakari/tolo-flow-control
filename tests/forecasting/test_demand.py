@@ -42,7 +42,6 @@ def _node(
     return Node(
         node_id=NodeID(node_id),
         kind=kind,
-        is_boundary=False,
         enabled=enabled,
     )
 

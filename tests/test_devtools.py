@@ -114,7 +114,7 @@ def test_school_matches_six_floor_observation_layout() -> None:
     assert len(graph.nodes) == 20  # 6階×（ホール・北・南踊り場）+ 唯一の入口 + 6階ゴール
     entrance = graph.node_of(NodeID("entrance"))
     assert entrance is not None
-    assert entrance.is_boundary
+    assert entrance.has_active_boundary
     goal = graph.node_of(NodeID("floor6_goal"))
     assert goal is not None
     assert goal.kind == NodeKind.GOAL_TRANSIT_MIXED

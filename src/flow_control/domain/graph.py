@@ -2,7 +2,13 @@
 
 from dataclasses import dataclass, field
 
-from .enums import CurrentDirection, DirectionConstraint, NodeKind, ObservationType
+from .enums import (
+    BoundaryDirection,
+    CurrentDirection,
+    DirectionConstraint,
+    NodeKind,
+    ObservationType,
+)
 
 
 @dataclass(frozen=True)
@@ -16,15 +22,41 @@ class EdgeID:
 
 
 @dataclass(frozen=True)
+class Boundary:
+    direction: BoundaryDirection
+    active: bool
+
+
+@dataclass(frozen=True)
 class Node:
     node_id: NodeID
     kind: NodeKind
-    is_boundary: bool
     enabled: bool
+    boundary: Boundary | None = None
     attribute_tags: tuple[str, ...] = ()
     time_resolution_s: int = 60
     danger_flag: bool = False
     danger_capacity: float | None = None
+
+    @property
+    def has_active_boundary(self) -> bool:
+        return self.boundary is not None and self.boundary.active
+
+    @property
+    def admits_entry(self) -> bool:
+        return (
+            self.boundary is not None
+            and self.boundary.active
+            and self.boundary.direction.admits_entry
+        )
+
+    @property
+    def admits_exit(self) -> bool:
+        return (
+            self.boundary is not None
+            and self.boundary.active
+            and self.boundary.direction.admits_exit
+        )
 
 
 @dataclass(frozen=True)
@@ -68,6 +100,12 @@ class Graph:
 
     def boundary_nodes(self) -> tuple[Node, ...]:
         """
-        Only nodes that satisfy both ``is_boundary`` and ``enabled`` are included in the set of entry/exit points
+        Only enabled nodes with an active ``boundary`` are included in the set of entry/exit points
         """
-        return tuple(n for n in self.nodes if n.is_boundary and n.enabled)
+        return tuple(n for n in self.nodes if n.has_active_boundary and n.enabled)
+
+    def entry_nodes(self) -> tuple[Node, ...]:
+        return tuple(n for n in self.nodes if n.admits_entry and n.enabled)
+
+    def exit_nodes(self) -> tuple[Node, ...]:
+        return tuple(n for n in self.nodes if n.admits_exit and n.enabled)

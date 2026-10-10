@@ -18,6 +18,13 @@ class NodeKind(int, metaclass=_enum_type_wrapper.EnumTypeWrapper):
     NODE_KIND_GOAL_TRANSIT_MIXED: _ClassVar[NodeKind]
     NODE_KIND_TRANSIT_ONLY: _ClassVar[NodeKind]
 
+class BoundaryDirection(int, metaclass=_enum_type_wrapper.EnumTypeWrapper):
+    __slots__ = ()
+    BOUNDARY_DIRECTION_UNSPECIFIED: _ClassVar[BoundaryDirection]
+    BOUNDARY_DIRECTION_ENTRY: _ClassVar[BoundaryDirection]
+    BOUNDARY_DIRECTION_EXIT: _ClassVar[BoundaryDirection]
+    BOUNDARY_DIRECTION_ENTRY_AND_EXIT: _ClassVar[BoundaryDirection]
+
 class DirectionConstraint(int, metaclass=_enum_type_wrapper.EnumTypeWrapper):
     __slots__ = ()
     DIRECTION_CONSTRAINT_UNSPECIFIED: _ClassVar[DirectionConstraint]
@@ -248,6 +255,10 @@ NODE_KIND_UNSPECIFIED: NodeKind
 NODE_KIND_GOAL: NodeKind
 NODE_KIND_GOAL_TRANSIT_MIXED: NodeKind
 NODE_KIND_TRANSIT_ONLY: NodeKind
+BOUNDARY_DIRECTION_UNSPECIFIED: BoundaryDirection
+BOUNDARY_DIRECTION_ENTRY: BoundaryDirection
+BOUNDARY_DIRECTION_EXIT: BoundaryDirection
+BOUNDARY_DIRECTION_ENTRY_AND_EXIT: BoundaryDirection
 DIRECTION_CONSTRAINT_UNSPECIFIED: DirectionConstraint
 DIRECTION_CONSTRAINT_BIDIRECTIONAL_PRIOR: DirectionConstraint
 DIRECTION_CONSTRAINT_ONEWAY_A_TO_B_PRIOR: DirectionConstraint
@@ -465,24 +476,32 @@ class Graph(_message.Message):
     def __init__(self, nodes: _Optional[_Iterable[_Union[Node, _Mapping]]] = ..., edges: _Optional[_Iterable[_Union[Edge, _Mapping]]] = ...) -> None: ...
 
 class Node(_message.Message):
-    __slots__ = ("node_id", "kind", "is_boundary", "enabled", "attribute_tags", "time_resolution_s", "danger_flag", "danger_capacity")
+    __slots__ = ("node_id", "kind", "enabled", "attribute_tags", "time_resolution_s", "danger_flag", "danger_capacity", "boundary")
     NODE_ID_FIELD_NUMBER: _ClassVar[int]
     KIND_FIELD_NUMBER: _ClassVar[int]
-    IS_BOUNDARY_FIELD_NUMBER: _ClassVar[int]
     ENABLED_FIELD_NUMBER: _ClassVar[int]
     ATTRIBUTE_TAGS_FIELD_NUMBER: _ClassVar[int]
     TIME_RESOLUTION_S_FIELD_NUMBER: _ClassVar[int]
     DANGER_FLAG_FIELD_NUMBER: _ClassVar[int]
     DANGER_CAPACITY_FIELD_NUMBER: _ClassVar[int]
+    BOUNDARY_FIELD_NUMBER: _ClassVar[int]
     node_id: str
     kind: NodeKind
-    is_boundary: bool
     enabled: bool
     attribute_tags: _containers.RepeatedScalarFieldContainer[str]
     time_resolution_s: int
     danger_flag: bool
     danger_capacity: float
-    def __init__(self, node_id: _Optional[str] = ..., kind: _Optional[_Union[NodeKind, str]] = ..., is_boundary: bool = ..., enabled: bool = ..., attribute_tags: _Optional[_Iterable[str]] = ..., time_resolution_s: _Optional[int] = ..., danger_flag: bool = ..., danger_capacity: _Optional[float] = ...) -> None: ...
+    boundary: Boundary
+    def __init__(self, node_id: _Optional[str] = ..., kind: _Optional[_Union[NodeKind, str]] = ..., enabled: bool = ..., attribute_tags: _Optional[_Iterable[str]] = ..., time_resolution_s: _Optional[int] = ..., danger_flag: bool = ..., danger_capacity: _Optional[float] = ..., boundary: _Optional[_Union[Boundary, _Mapping]] = ...) -> None: ...
+
+class Boundary(_message.Message):
+    __slots__ = ("direction", "active")
+    DIRECTION_FIELD_NUMBER: _ClassVar[int]
+    ACTIVE_FIELD_NUMBER: _ClassVar[int]
+    direction: BoundaryDirection
+    active: bool
+    def __init__(self, direction: _Optional[_Union[BoundaryDirection, str]] = ..., active: bool = ...) -> None: ...
 
 class Edge(_message.Message):
     __slots__ = ("edge_id", "endpoint_a", "endpoint_b", "direction_constraint", "current_direction", "enabled", "observation_type", "attribute_tags", "time_resolution_s", "danger_flag", "danger_capacity", "capacity_hint")

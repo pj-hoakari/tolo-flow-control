@@ -16,13 +16,14 @@ from flow_control.detection.state import (
 )
 from flow_control.detection.triggers import Event, EventKind
 from flow_control.domain.enums import (
+    BoundaryDirection,
     CurrentDirection,
     DirectionConstraint,
     FlowDirection,
     NodeKind,
     ObservationType,
 )
-from flow_control.domain.graph import Edge, EdgeID, Graph, Node, NodeID
+from flow_control.domain.graph import Boundary, Edge, EdgeID, Graph, Node, NodeID
 from flow_control.domain.history import HistoryDigest
 from flow_control.domain.observations import ArcFlow, Observations
 from flow_control.domain.references import Reference
@@ -64,11 +65,12 @@ def test_graph_round_trip_preserves_optional_values() -> None:
             Node(
                 node_id=NodeID("n1"),
                 kind=NodeKind.GOAL,
-                is_boundary=True,
                 enabled=True,
+                boundary=Boundary(BoundaryDirection.ENTRY, active=False),
                 attribute_tags=("main",),
                 danger_capacity=12.5,
             ),
+            Node(node_id=NodeID("n2"), kind=NodeKind.TRANSIT_ONLY, enabled=True),
         ),
         edges=(
             Edge(
@@ -87,6 +89,8 @@ def test_graph_round_trip_preserves_optional_values() -> None:
     encoded = codec._encode_graph(graph)
 
     assert encoded.nodes[0].HasField("danger_capacity")
+    assert encoded.nodes[0].boundary.direction == pb.BOUNDARY_DIRECTION_ENTRY
+    assert not encoded.nodes[1].HasField("boundary")
     assert encoded.edges[0].HasField("capacity_hint")
     assert codec._decode_graph(encoded) == graph
 
@@ -125,8 +129,13 @@ def test_request_round_trip_uses_explicit_event_id() -> None:
     now = datetime(2026, 9, 21, 12, tzinfo=UTC)
     graph = Graph(
         nodes=(
-            Node(NodeID("n1"), NodeKind.GOAL, True, True),
-            Node(NodeID("n2"), NodeKind.TRANSIT_ONLY, False, True),
+            Node(
+                NodeID("n1"),
+                NodeKind.GOAL,
+                True,
+                boundary=Boundary(BoundaryDirection.ENTRY_AND_EXIT, active=True),
+            ),
+            Node(NodeID("n2"), NodeKind.TRANSIT_ONLY, True),
         ),
         edges=(
             Edge(
@@ -351,8 +360,13 @@ def test_request_round_trip_keeps_detection_state_of_removed_edges() -> None:
     now = datetime(2026, 9, 21, 12, tzinfo=UTC)
     graph = Graph(
         nodes=(
-            Node(NodeID("n1"), NodeKind.GOAL, True, True),
-            Node(NodeID("n2"), NodeKind.TRANSIT_ONLY, False, True),
+            Node(
+                NodeID("n1"),
+                NodeKind.GOAL,
+                True,
+                boundary=Boundary(BoundaryDirection.ENTRY_AND_EXIT, active=True),
+            ),
+            Node(NodeID("n2"), NodeKind.TRANSIT_ONLY, True),
         ),
         edges=(
             Edge(
@@ -402,6 +416,31 @@ def test_timestamps_normalize_to_utc_and_reject_naive() -> None:
     naive = replace(aware, occurred_at=datetime(2026, 9, 21, 12))  # noqa: DTZ001
     with pytest.raises(ValueError, match=r"naive event\.occurred_at"):
         _ = codec._encode_event(naive)
+
+
+def test_decode_boundary_requires_direction_and_active() -> None:
+    def node(boundary: pb.Boundary) -> pb.Node:
+        return pb.Node(
+            node_id="n1",
+            kind=pb.NODE_KIND_GOAL,
+            enabled=True,
+            time_resolution_s=60,
+            danger_flag=False,
+            boundary=boundary,
+        )
+
+    with pytest.raises(ValueError, match="missing direction"):
+        _ = codec._decode_node(node(pb.Boundary(active=True)))
+    with pytest.raises(ValueError, match="unknown boundary direction"):
+        _ = codec._decode_node(
+            node(pb.Boundary(direction=pb.BOUNDARY_DIRECTION_UNSPECIFIED, active=True))
+        )
+    with pytest.raises(ValueError, match="missing active"):
+        _ = codec._decode_node(node(pb.Boundary(direction=pb.BOUNDARY_DIRECTION_EXIT)))
+    decoded = codec._decode_node(
+        node(pb.Boundary(direction=pb.BOUNDARY_DIRECTION_EXIT, active=False))
+    )
+    assert decoded.boundary == Boundary(BoundaryDirection.EXIT, active=False)
 
 
 def test_decode_rejects_unspecified_enum_values() -> None:

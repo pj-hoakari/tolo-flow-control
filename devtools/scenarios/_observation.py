@@ -6,7 +6,7 @@ from datetime import datetime, timedelta
 
 from google.protobuf.timestamp_pb2 import Timestamp
 
-from flow_control.domain import Graph, NodeKind
+from flow_control.domain import Boundary, BoundaryDirection, Graph, NodeKind
 from flow_control.rpc.codec import decode_request, encode_response
 from flow_control.rpc.generated.tolo.flow.v1 import flow_pb2 as pb
 from flow_control.service.handler import (
@@ -32,6 +32,17 @@ _NODE_KINDS = {
     NodeKind.GOAL_TRANSIT_MIXED: pb.NODE_KIND_GOAL_TRANSIT_MIXED,
     NodeKind.TRANSIT_ONLY: pb.NODE_KIND_TRANSIT_ONLY,
 }
+_BOUNDARY_DIRECTIONS = {
+    BoundaryDirection.ENTRY: pb.BOUNDARY_DIRECTION_ENTRY,
+    BoundaryDirection.EXIT: pb.BOUNDARY_DIRECTION_EXIT,
+    BoundaryDirection.ENTRY_AND_EXIT: pb.BOUNDARY_DIRECTION_ENTRY_AND_EXIT,
+}
+
+
+def _boundary(boundary: Boundary | None) -> pb.Boundary | None:
+    if boundary is None:
+        return None
+    return pb.Boundary(direction=_BOUNDARY_DIRECTIONS[boundary.direction], active=boundary.active)
 
 
 @dataclass(frozen=True)
@@ -61,8 +72,8 @@ def _graph(graph: Graph) -> pb.Graph:
             pb.Node(
                 node_id=node.node_id.value,
                 kind=_NODE_KINDS[node.kind],
-                is_boundary=node.is_boundary,
                 enabled=True,
+                boundary=_boundary(node.boundary),
                 time_resolution_s=resolution,
                 danger_flag=False,
             )

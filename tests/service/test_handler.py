@@ -7,12 +7,13 @@ import flow_control.service.handler as handler_module
 from flow_control.detection.state import DetectionState
 from flow_control.detection.triggers import Event, EventKind
 from flow_control.domain.enums import (
+    BoundaryDirection,
     CurrentDirection,
     DirectionConstraint,
     NodeKind,
     ObservationType,
 )
-from flow_control.domain.graph import Edge, EdgeID, Graph, Node, NodeID
+from flow_control.domain.graph import Boundary, Edge, EdgeID, Graph, Node, NodeID
 from flow_control.domain.history import HistoryDigest
 from flow_control.domain.observations import Observations
 from flow_control.domain.references import Reference
@@ -49,8 +50,18 @@ def _danger_request() -> Request:
     a, b, edge_id = NodeID("a"), NodeID("b"), EdgeID("e")
     graph = Graph(
         nodes=(
-            Node(a, NodeKind.GOAL, True, True),
-            Node(b, NodeKind.GOAL, True, True),
+            Node(
+                a,
+                NodeKind.GOAL,
+                True,
+                boundary=Boundary(BoundaryDirection.ENTRY_AND_EXIT, active=True),
+            ),
+            Node(
+                b,
+                NodeKind.GOAL,
+                True,
+                boundary=Boundary(BoundaryDirection.ENTRY_AND_EXIT, active=True),
+            ),
         ),
         edges=(
             Edge(
@@ -95,7 +106,7 @@ def test_handle_request_rejects_graph_over_fixed_limit() -> None:
     from flow_control.domain.enums import NodeKind
     from flow_control.domain.graph import Node, NodeID
 
-    graph = Graph(nodes=tuple(Node(NodeID(str(i)), NodeKind.GOAL, False, True) for i in range(11)))
+    graph = Graph(nodes=tuple(Node(NodeID(str(i)), NodeKind.GOAL, True) for i in range(11)))
     response = handle_request(_request(graph))
 
     assert response.verdict is Verdict.ERROR_SIZE_EXCEEDED

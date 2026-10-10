@@ -43,7 +43,7 @@ class ArcModel:
     in_arcs: dict[NodeID, tuple[Arc, ...]]  # δ⁻(v): head=v のアーク
     active_nodes: tuple[NodeID, ...]
     active_edges: tuple[Edge, ...]
-    entry_nodes: tuple[NodeID, ...]  # is_boundary かつ enabled
+    entry_nodes: tuple[NodeID, ...]  # active な boundary を持つ enabled ノード
 
     def arcs_in(self, node: NodeID) -> tuple[Arc, ...]:
         return self.in_arcs.get(node, ())
