@@ -147,6 +147,10 @@ uv run python -m devtools graph ./_devout/venue.yaml --out ./_devout   # 読み�
       `school-north-stair-maintenance`（各階から6階へ集まる時間帯の北階段保守による容量低下を迂回）/
       `stadium-egress-concourse`（退場ピークで可変コンコースを**双方向へ解除**）/
       `museum-special-exhibit-limit`（特別展待ち列→**上流へ整理入場の LIMIT**）
+  - **C. 外部サービスのリクエスト再現**
+    - tolo-observation: `observation-as-sent`（今送っている形。**NO_TRIGGER**）/
+      `observation-with-history`（停滞量と履歴を足した形。**OPTIMIZED**）。
+      提案が出る条件と Observation 側で埋める値は `devtools/observation_shaped_request.md` を参照
 
 > `expo-*` はホール 4 つ・一方通行ループ・センサ無し区間を含む現実的ケース。
 > STRICT で基準系を回す場合に備え MILP 時間上限を 8 秒に短縮している。

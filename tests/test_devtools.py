@@ -462,3 +462,24 @@ def test_report_writes_images_in_module_directories(tmp_path: Path) -> None:
     assert (tmp_path / "01_detection" / "trigger_legend.png").is_file()
     assert (tmp_path / "00_summary" / "summary.png").is_file()
     assert not (tmp_path / "01_detection.png").exists()
+
+
+def test_observation_shaped_requests_optimize_only_with_stagnation_history() -> None:
+    from devtools.scenarios._observation import HOT_EDGE, as_sent_run, with_history_run
+    from flow_control.rpc.generated.tolo.flow.v1 import flow_pb2 as pb
+
+    graph = graph_builder.venue().graph
+
+    as_sent = as_sent_run(graph).responses(graph)
+    assert {response.verdict for response in as_sent} == {pb.VERDICT_SKIPPED_NO_TRIGGER}
+
+    surge_50 = with_history_run(graph, surge_threshold=50.0).responses(graph)
+    assert {response.verdict for response in surge_50} == {pb.VERDICT_SKIPPED_NO_TRIGGER}
+
+    with_history = with_history_run(graph).responses(graph)
+    assert [response.verdict for response in with_history[:-1]] == [
+        pb.VERDICT_SKIPPED_NO_TRIGGER
+    ] * (len(with_history) - 1)
+    result = with_history[-1].optimization_result
+    assert with_history[-1].verdict == pb.VERDICT_OPTIMIZED
+    assert any(item.edge_id == HOT_EDGE and item.importance > 0 for item in result.route_importance)
