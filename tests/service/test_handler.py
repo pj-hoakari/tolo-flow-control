@@ -130,7 +130,7 @@ def test_handle_request_does_not_extend_short_deadline_to_minimum(monkeypatch) -
         )
 
     monkeypatch.setattr(handler_module, "optimize", fake_optimize)
-    response = handle_request(_danger_request(), deadline=time.monotonic() + 70.0)
+    response = handle_request(_danger_request(), deadline=time.monotonic() + 20.0)
 
     assert response.verdict is Verdict.SKIPPED_TIME
     assert budgets
@@ -154,8 +154,26 @@ def test_handle_request_reserves_buffer_so_a_solution_under_rpc_deadline_survive
     monkeypatch.setattr(handler_module, "optimize", budget_consuming_optimize)
     response = handle_request(_danger_request(), deadline=170.0)
 
-    assert budgets == [10.0]
+    assert budgets == [65.0]
     assert response.verdict is Verdict.OPTIMIZED
+
+
+def test_handle_request_runs_optimization_under_a_short_rpc_deadline(monkeypatch) -> None:
+    budgets = []
+    clock = [100.0]
+
+    def recording_optimize(*args, **kwargs):
+        budgets.append(args[8])
+        return optimization_optimize(*args, **kwargs)
+
+    monkeypatch.setattr(time, "monotonic", lambda: clock[0])
+    monkeypatch.setattr(handler_module, "optimize", recording_optimize)
+    response = handle_request(_danger_request(), deadline=130.0)
+
+    assert response.verdict is Verdict.OPTIMIZED
+    assert response.optimization_result is not None
+    assert budgets
+    assert 0.0 < budgets[0] < 30.0
 
 
 def test_handle_request_keeps_final_retry_budget_extension(monkeypatch) -> None:

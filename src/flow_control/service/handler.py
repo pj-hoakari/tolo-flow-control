@@ -28,6 +28,7 @@ from .verdict import Verdict
 GRAPH_NODE_LIMIT = 10
 GRAPH_EDGE_LIMIT = 50
 BUFFER_SEC = 60.0
+RPC_MARGIN_SEC = 5.0
 MIN_OPT_BUDGET = 30.0
 
 
@@ -118,7 +119,10 @@ def handle_request(req: Request, *, deadline: float | None = None) -> Response:
     if time.monotonic() >= cycle_deadline:
         return _skipped_time_response(req, detection, mode, warnings, steps, started, final_retry)
 
-    remaining = cycle_deadline - time.monotonic() - BUFFER_SEC
+    now = time.monotonic()
+    remaining = service_deadline - now - BUFFER_SEC
+    if deadline is not None:
+        remaining = min(remaining, deadline - now - RPC_MARGIN_SEC)
     if remaining <= 0.0:
         return _skipped_time_response(req, detection, mode, warnings, steps, started, final_retry)
     opt_cap_limit = opt_cap * (2 if final_retry else 1)
