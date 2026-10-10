@@ -15,13 +15,21 @@ from __future__ import annotations
 
 import math
 import random
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from datetime import timedelta
 from pathlib import Path
 
 from flow_control.detection.state import ArcWatchState, DetectionState
 from flow_control.detection.triggers import Event, EventKind
-from flow_control.domain import EdgeID, Graph, Mode, NodeID, NodeKind
+from flow_control.domain import (
+    Boundary,
+    BoundaryDirection,
+    EdgeID,
+    Graph,
+    Mode,
+    NodeID,
+    NodeKind,
+)
 
 from . import graph_builder, report
 from .graph_builder import BuiltGraph
@@ -48,10 +56,11 @@ def _random_od_flows(
     到達不能な組は生成器が例外を投げるため、実際に経路がある組だけを残す。
     """
     nodes = graph.enabled_nodes()
-    boundaries = [n.node_id for n in nodes if n.has_active_boundary]
+    entries = [n.node_id for n in nodes if n.admits_entry]
+    exits = [n.node_id for n in nodes if n.admits_exit]
     mixed = [n.node_id for n in nodes if n.kind == NodeKind.GOAL_TRANSIT_MIXED]
-    origins = boundaries or mixed
-    targets = mixed + boundaries
+    origins = entries or mixed
+    targets = mixed + exits
     if not origins or not targets:
         return ()
 
@@ -74,9 +83,28 @@ def _random_od_flows(
     return tuple(candidates)
 
 
+def _random_boundary_directions(rng: random.Random, built: BuiltGraph) -> BuiltGraph:
+    boundary_ids = [n.node_id for n in built.graph.nodes if n.boundary is not None]
+    if len(boundary_ids) < 2 or rng.random() < 0.5:
+        return built
+    while True:
+        directions = {nid: rng.choice(tuple(BoundaryDirection)) for nid in boundary_ids}
+        if any(d.admits_entry for d in directions.values()) and any(
+            d.admits_exit for d in directions.values()
+        ):
+            break
+    nodes = tuple(
+        replace(n, boundary=Boundary(directions[n.node_id], active=True))
+        if n.node_id in directions
+        else n
+        for n in built.graph.nodes
+    )
+    return replace(built, graph=replace(built.graph, nodes=nodes))
+
+
 def random_scenario(rng: random.Random, base: BuiltGraph, label: str, index: int) -> Scenario:
     """ランダムな観測・履歴・イベントを持つシナリオを 1 件生成する"""
-    built = base
+    built = _random_boundary_directions(rng, base)
     edge_ids = [e.edge_id for e in built.graph.enabled_edges()]
     server_time = DEFAULT_TIME
 
