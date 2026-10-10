@@ -62,6 +62,9 @@ class _DirectedFlow:
     rate: float
 
 
+_DirectedFlows = dict[tuple[str, NodeID], _DirectedFlow]
+
+
 def _od_marginals(
     graph: Graph,
     observations: Observations,
@@ -229,9 +232,10 @@ def reproduce_link_flows(
     if not od_matrix:
         return {}
     flows = _directed_flows(graph, observations)
+    observed_edges = {edge_id for edge_id, _ in flows}
     for imputed in imputed_flows:
-        if imputed.edge_id.value not in flows and imputed.rate > 0.0:
-            flows[imputed.edge_id.value] = _DirectedFlow(
+        if imputed.edge_id.value not in observed_edges and imputed.rate > 0.0:
+            flows[(imputed.edge_id.value, imputed.from_node)] = _DirectedFlow(
                 imputed.from_node, imputed.to_node, imputed.rate
             )
     if not flows:
@@ -261,9 +265,9 @@ def reproduce_link_flows(
     return arc_load
 
 
-def _directed_flows(graph: Graph, observations: Observations) -> dict[str, _DirectedFlow]:
+def _directed_flows(graph: Graph, observations: Observations) -> _DirectedFlows:
     """有効ベクトルアークの観測流量を有向（source→destination）で取り出す"""
-    flows: dict[str, _DirectedFlow] = {}
+    flows: _DirectedFlows = {}
     for arc_flow in observations.arc_flows:
         if arc_flow.confidence_flag == ConfidenceFlag.INVALID:
             continue
@@ -276,18 +280,27 @@ def _directed_flows(graph: Graph, observations: Observations) -> dict[str, _Dire
             source, destination = edge.endpoint_a, edge.endpoint_b
         else:
             source, destination = edge.endpoint_b, edge.endpoint_a
-        flows[edge.edge_id.value] = _DirectedFlow(source, destination, arc_flow.flow_rate)
+        flows[(edge.edge_id.value, source)] = _DirectedFlow(source, destination, arc_flow.flow_rate)
     return flows
+
+
+def _incoming_flow(flows: _DirectedFlows, edge_id: str, node_id: NodeID) -> _DirectedFlow | None:
+    for (flow_edge_id, _), flow in flows.items():
+        if flow_edge_id == edge_id and flow.destination == node_id:
+            return flow
+    return None
 
 
 def _io_counts(
     active_nodes: tuple[Node, ...],
-    flows: dict[str, _DirectedFlow],
+    flows: _DirectedFlows,
 ) -> tuple[dict[NodeID, int], dict[NodeID, int]]:
     """各ノードの観測入口エッジ数 d_in・出口エッジ数 d_out を数える"""
     in_count: dict[NodeID, int] = {node.node_id: 0 for node in active_nodes}
     out_count: dict[NodeID, int] = {node.node_id: 0 for node in active_nodes}
     for flow in flows.values():
+        if flow.rate <= 0.0:
+            continue
         if flow.source in out_count:
             out_count[flow.source] += 1
         if flow.destination in in_count:
@@ -295,15 +308,14 @@ def _io_counts(
     return in_count, out_count
 
 
-def _missing_observation_by_node(
-    graph: Graph, flows: dict[str, _DirectedFlow]
-) -> dict[NodeID, bool]:
+def _missing_observation_by_node(graph: Graph, flows: _DirectedFlows) -> dict[NodeID, bool]:
     """各ノードに観測欠落の有効ベクトルアークが接続しているか"""
     missing: dict[NodeID, bool] = {node.node_id: False for node in graph.enabled_nodes()}
+    observed_edges = {edge_id for edge_id, _ in flows}
     for edge in graph.enabled_edges():
         if edge.observation_type != ObservationType.VECTOR:
             continue
-        if edge.edge_id.value in flows:
+        if edge.edge_id.value in observed_edges:
             continue
         if edge.endpoint_a in missing:
             missing[edge.endpoint_a] = True
@@ -328,28 +340,34 @@ def _is_decidable(node: Node, in_degree: int, out_degree: int) -> bool:
 
 
 def _complete_turning_nodes(
-    graph: Graph, observations: Observations, flows: dict[str, _DirectedFlow]
+    graph: Graph, observations: Observations, flows: _DirectedFlows
 ) -> set[NodeID]:
     """全入口の配分が有効な TurningObservation で与えられた不定ノード。"""
     by_node_and_entry: dict[tuple[NodeID, str], float] = defaultdict(float)
     for turning in observations.node_turning:
         if turning.confidence_flag == ConfidenceFlag.INVALID:
             continue
-        flow = flows.get(turning.from_edge_id.value)
-        if flow is None or flow.destination != turning.node_id:
+        if _incoming_flow(flows, turning.from_edge_id.value, turning.node_id) is None:
             continue
-        if turning.to_edge_id is not None:
-            outgoing = flows.get(turning.to_edge_id.value)
-            if outgoing is None or outgoing.source != turning.node_id:
-                continue
+        if (
+            turning.to_edge_id is not None
+            and (turning.to_edge_id.value, turning.node_id) not in flows
+        ):
+            continue
         if turning.ratio < 0.0:
             continue
         by_node_and_entry[(turning.node_id, turning.from_edge_id.value)] += turning.ratio
 
     result: set[NodeID] = set()
     for node in graph.enabled_nodes():
-        incoming = [edge_id for edge_id, flow in flows.items() if flow.destination == node.node_id]
-        outgoing = sum(1 for flow in flows.values() if flow.source == node.node_id)
+        incoming = [
+            edge_id
+            for (edge_id, _), flow in flows.items()
+            if flow.destination == node.node_id and flow.rate > 0.0
+        ]
+        outgoing = sum(
+            1 for flow in flows.values() if flow.source == node.node_id and flow.rate > 0.0
+        )
         if _is_decidable(node, len(incoming), outgoing) or not incoming:
             continue
         if all(
@@ -423,7 +441,7 @@ def _imputed_arcs_by_node(
 def _forward_propagate(
     node_demands: tuple[NodeDemand, ...],
     production: dict[NodeID, float],
-    flows: dict[str, _DirectedFlow],
+    flows: _DirectedFlows,
     config: ResolvedConfig,
     *,
     observations: Observations,
@@ -484,7 +502,7 @@ def _forward_propagate(
                     if out_edge is None:
                         absorbed[node_id] += allocated
                     else:
-                        flow = flows[out_edge]
+                        flow = flows[(out_edge, node_id)]
                         nxt[(flow.destination, out_edge)] += allocated
                         arc_load[(out_edge, node_id)] += allocated
                         moving += allocated
@@ -500,20 +518,20 @@ def _forward_propagate(
 
 
 def _turning_split(
-    observations: Observations, flows: dict[str, _DirectedFlow]
+    observations: Observations, flows: _DirectedFlows
 ) -> dict[tuple[NodeID, str], tuple[tuple[str | None, float], ...]]:
     """不定ノードで使う入口別の終端・出口配分。"""
     result: dict[tuple[NodeID, str], list[tuple[str | None, float]]] = defaultdict(list)
     for turning in observations.node_turning:
         if turning.confidence_flag == ConfidenceFlag.INVALID:
             continue
-        incoming = flows.get(turning.from_edge_id.value)
-        if incoming is None or incoming.destination != turning.node_id:
+        if _incoming_flow(flows, turning.from_edge_id.value, turning.node_id) is None:
             continue
-        if turning.to_edge_id is not None:
-            outgoing = flows.get(turning.to_edge_id.value)
-            if outgoing is None or outgoing.source != turning.node_id:
-                continue
+        if (
+            turning.to_edge_id is not None
+            and (turning.to_edge_id.value, turning.node_id) not in flows
+        ):
+            continue
         result[(turning.node_id, turning.from_edge_id.value)].append(
             (
                 turning.to_edge_id.value if turning.to_edge_id is not None else None,
@@ -528,12 +546,12 @@ def _turning_split(
 
 
 def _out_split_with_edge(
-    flows: dict[str, _DirectedFlow],
+    flows: _DirectedFlows,
 ) -> dict[NodeID, tuple[tuple[str, NodeID, float], ...]]:
     """出口流量比を edge_id 付きで返す。"""
     out_edges: dict[NodeID, list[tuple[str, NodeID, float]]] = defaultdict(list)
     totals: dict[NodeID, float] = defaultdict(float)
-    for edge_id, flow in flows.items():
+    for (edge_id, _), flow in flows.items():
         out_edges[flow.source].append((edge_id, flow.destination, flow.rate))
         totals[flow.source] += flow.rate
     return {

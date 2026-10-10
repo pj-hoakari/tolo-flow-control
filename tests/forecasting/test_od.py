@@ -547,3 +547,50 @@ def test_output_is_deterministic_in_node_order() -> None:
             ["s", "m", "t1", "t2"].index(p[1]),
         ),
     )
+
+
+def _reverse_flow(edge_id: str, rate: float) -> ArcFlow:
+    return ArcFlow(edge_id=EdgeID(edge_id), direction=FlowDirection.B_TO_A, flow_rate=rate)
+
+
+def test_both_directions_of_one_edge_feed_od() -> None:
+    graph = Graph(
+        nodes=(_node("P", NodeKind.GOAL), _node("Q", NodeKind.GOAL)),
+        edges=(_edge("e1", "P", "Q"),),
+    )
+    observations = Observations(
+        observed_at=_OBSERVED_AT,
+        arc_flows=(_flow("e1", 10.0), _reverse_flow("e1", 4.0)),
+    )
+
+    result = _run(graph, observations, _config(), is_open_mode=False)
+
+    assert _require(result.od_matrix, "P", "Q").demand == pytest.approx(10.0)
+    assert _require(result.od_matrix, "Q", "P").demand == pytest.approx(4.0)
+
+
+def test_zero_reverse_flow_does_not_erase_forward_flow() -> None:
+    graph = Graph(
+        nodes=(
+            _node("s", NodeKind.TRANSIT_ONLY, boundary=True),
+            _node("B", NodeKind.GOAL_TRANSIT_MIXED),
+            _node("C", NodeKind.GOAL),
+        ),
+        edges=(_edge("e1", "s", "B"), _edge("e2", "B", "C")),
+    )
+    observations = Observations(
+        observed_at=_OBSERVED_AT,
+        arc_flows=(
+            _flow("e1", 10.0),
+            _reverse_flow("e1", 0.0),
+            _flow("e2", 4.0),
+            _reverse_flow("e2", 0.0),
+        ),
+        node_occupancies=(_occ("B", occupancy=20.0, delta=6.0),),
+    )
+
+    result = _run(graph, observations, _config(), is_open_mode=True)
+
+    assert _require(result.od_matrix, "s", "B").demand == pytest.approx(6.0)
+    assert _require(result.od_matrix, "s", "C").demand == pytest.approx(4.0)
+    assert _resolution(result, "B").mode == ODResolutionMode.TURNING_EXACT
