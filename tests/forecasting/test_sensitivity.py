@@ -25,7 +25,6 @@ def _node(node_id: str) -> Node:
     return Node(
         node_id=NodeID(node_id),
         kind=NodeKind.GOAL,
-        is_boundary=False,
         enabled=True,
     )
 

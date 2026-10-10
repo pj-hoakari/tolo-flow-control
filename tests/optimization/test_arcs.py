@@ -27,7 +27,7 @@ def _edge(eid, a, b, constraint, current=CurrentDirection.BIDIRECTIONAL):
 
 
 def _node(nid, enabled=True):
-    return Node(NodeID(nid), NodeKind.GOAL, is_boundary=False, enabled=enabled)
+    return Node(NodeID(nid), NodeKind.GOAL, enabled=enabled)
 
 
 def test_prior_allows_both_directions_no_legal_fix():

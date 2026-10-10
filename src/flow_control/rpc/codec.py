@@ -20,6 +20,7 @@ from flow_control.detection.state import (
 )
 from flow_control.detection.triggers import Event, EventKind
 from flow_control.domain.enums import (
+    BoundaryDirection,
     CurrentDirection,
     DirectionConstraint,
     FlowDirection,
@@ -27,7 +28,7 @@ from flow_control.domain.enums import (
     NodeKind,
     ObservationType,
 )
-from flow_control.domain.graph import Edge, EdgeID, Graph, Node, NodeID
+from flow_control.domain.graph import Boundary, Edge, EdgeID, Graph, Node, NodeID
 from flow_control.domain.history import ArcHistoryStat, ArcWindowSeries, HistoryDigest
 from flow_control.domain.observations import (
     ArcFlow,
@@ -176,6 +177,12 @@ _NODE_KIND_TO_WIRE = {
     NodeKind.TRANSIT_ONLY: pb.NODE_KIND_TRANSIT_ONLY,
 }
 _NODE_KIND_FROM_WIRE = {v: k for k, v in _NODE_KIND_TO_WIRE.items()}
+_BOUNDARY_DIRECTION_TO_WIRE = {
+    BoundaryDirection.ENTRY: pb.BOUNDARY_DIRECTION_ENTRY,
+    BoundaryDirection.EXIT: pb.BOUNDARY_DIRECTION_EXIT,
+    BoundaryDirection.ENTRY_AND_EXIT: pb.BOUNDARY_DIRECTION_ENTRY_AND_EXIT,
+}
+_BOUNDARY_DIRECTION_FROM_WIRE = {v: k for k, v in _BOUNDARY_DIRECTION_TO_WIRE.items()}
 _DIRECTION_CONSTRAINT_TO_WIRE = {
     DirectionConstraint.BIDIRECTIONAL_PRIOR: pb.DIRECTION_CONSTRAINT_BIDIRECTIONAL_PRIOR,
     DirectionConstraint.ONEWAY_A_TO_B_PRIOR: pb.DIRECTION_CONSTRAINT_ONEWAY_A_TO_B_PRIOR,
@@ -459,7 +466,6 @@ def _encode_node(value: Node) -> pb.Node:
     result = pb.Node(
         node_id=_required_id(value.node_id.value, "node_id"),
         kind=_enum_to_wire(value.kind, _NODE_KIND_TO_WIRE, "node kind"),
-        is_boundary=value.is_boundary,
         enabled=value.enabled,
         attribute_tags=value.attribute_tags,
         time_resolution_s=value.time_resolution_s,
@@ -467,7 +473,21 @@ def _encode_node(value: Node) -> pb.Node:
     )
     if value.danger_capacity is not None:
         result.danger_capacity = _finite(value.danger_capacity, "node.danger_capacity")
+    if value.boundary is not None:
+        result.boundary.direction = _enum_to_wire(
+            value.boundary.direction, _BOUNDARY_DIRECTION_TO_WIRE, "boundary direction"
+        )
+        result.boundary.active = value.boundary.active
     return result
+
+
+def _decode_boundary(value: pb.Boundary) -> Boundary:
+    return Boundary(
+        direction=_required_enum(
+            value, "direction", _BOUNDARY_DIRECTION_FROM_WIRE, "boundary direction"
+        ),
+        active=_required_bool(value, "active"),
+    )
 
 
 def _decode_node(value: pb.Node) -> Node:
@@ -475,8 +495,8 @@ def _decode_node(value: pb.Node) -> Node:
     return Node(
         node_id=NodeID(_required_string(value, "node_id")),
         kind=_required_enum(value, "kind", _NODE_KIND_FROM_WIRE, "node kind"),
-        is_boundary=_required_bool(value, "is_boundary"),
         enabled=_required_bool(value, "enabled"),
+        boundary=_decode_boundary(value.boundary) if value.HasField("boundary") else None,
         attribute_tags=tuple(value.attribute_tags),
         time_resolution_s=_required_int(value, "time_resolution_s"),
         danger_flag=_required_bool(value, "danger_flag"),

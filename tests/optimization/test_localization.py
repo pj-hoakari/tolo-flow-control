@@ -4,6 +4,8 @@
 """
 
 from flow_control.domain import (
+    Boundary,
+    BoundaryDirection,
     CurrentDirection,
     DirectionConstraint,
     Edge,
@@ -22,7 +24,7 @@ def _node(name: str, *, boundary: bool = False) -> Node:
     return Node(
         node_id=NodeID(name),
         kind=NodeKind.GOAL if boundary else NodeKind.TRANSIT_ONLY,
-        is_boundary=boundary,
+        boundary=Boundary(BoundaryDirection.ENTRY_AND_EXIT, active=True) if boundary else None,
         enabled=True,
     )
 

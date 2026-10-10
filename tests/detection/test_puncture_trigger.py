@@ -21,6 +21,8 @@ from flow_control.detection.diagnostics import PunctureEvidence
 from flow_control.detection.state import DetectionState, QueuedTriggerKind
 from flow_control.detection.triggers import detect_metric_triggers
 from flow_control.domain import (
+    Boundary,
+    BoundaryDirection,
     CurrentDirection,
     DirectionConstraint,
     Edge,
@@ -39,8 +41,13 @@ def _scalar_graph(edge_id: EdgeID, *, capacity_hint: float | None) -> Graph:
     n1, n2 = NodeID("n1"), NodeID("n2")
     return Graph(
         nodes=(
-            Node(node_id=n1, kind=NodeKind.GOAL, is_boundary=True, enabled=True),
-            Node(node_id=n2, kind=NodeKind.GOAL, is_boundary=False, enabled=True),
+            Node(
+                node_id=n1,
+                kind=NodeKind.GOAL,
+                boundary=Boundary(BoundaryDirection.ENTRY_AND_EXIT, active=True),
+                enabled=True,
+            ),
+            Node(node_id=n2, kind=NodeKind.GOAL, enabled=True),
         ),
         edges=(
             Edge(

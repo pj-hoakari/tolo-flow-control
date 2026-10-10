@@ -18,6 +18,8 @@ import networkx as nx
 import yaml
 
 from flow_control.domain import (
+    Boundary,
+    BoundaryDirection,
     CurrentDirection,
     DirectionConstraint,
     Edge,
@@ -40,6 +42,20 @@ class BuiltGraph:
     positions: dict[str, Position] = field(default_factory=dict)
 
 
+def _boundary(value: bool | Boundary) -> Boundary | None:
+    if isinstance(value, Boundary):
+        return value
+    return Boundary(BoundaryDirection.ENTRY_AND_EXIT, active=True) if value else None
+
+
+def _boundary_from_dict(value: Any) -> bool | Boundary:
+    if not value:
+        return False
+    if value is True:
+        return Boundary(BoundaryDirection.ENTRY_AND_EXIT, active=True)
+    return Boundary(BoundaryDirection(value["direction"]), active=bool(value.get("active", True)))
+
+
 class GraphBuilder:
     """ノード・エッジを宣言的に積み上げて ``BuiltGraph`` を組み立てる"""
 
@@ -53,7 +69,7 @@ class GraphBuilder:
         node_id: str,
         *,
         kind: NodeKind = NodeKind.GOAL,
-        boundary: bool = False,
+        boundary: bool | Boundary = False,
         enabled: bool = True,
         tags: tuple[str, ...] = (),
         time_resolution_s: int = 60,
@@ -65,7 +81,7 @@ class GraphBuilder:
             Node(
                 node_id=NodeID(node_id),
                 kind=kind,
-                is_boundary=boundary,
+                boundary=_boundary(boundary),
                 enabled=enabled,
                 attribute_tags=tags,
                 time_resolution_s=time_resolution_s,
@@ -144,7 +160,9 @@ def to_dict(built: BuiltGraph) -> dict[str, Any]:
             {
                 "id": n.node_id.value,
                 "kind": n.kind.value,
-                "boundary": n.is_boundary,
+                "boundary": {"direction": n.boundary.direction.value, "active": n.boundary.active}
+                if n.boundary is not None
+                else None,
                 "enabled": n.enabled,
                 "tags": list(n.attribute_tags),
                 "time_resolution_s": n.time_resolution_s,
@@ -183,7 +201,7 @@ def from_dict(data: dict[str, Any]) -> BuiltGraph:
         builder.node(
             n["id"],
             kind=NodeKind(n.get("kind", NodeKind.GOAL.value)),
-            boundary=bool(n.get("boundary", False)),
+            boundary=_boundary_from_dict(n.get("boundary")),
             enabled=bool(n.get("enabled", True)),
             tags=tuple(n.get("tags", []) or ()),
             time_resolution_s=int(n.get("time_resolution_s", 60)),

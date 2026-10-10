@@ -6,6 +6,8 @@ import pytest
 
 from flow_control.domain import (
     ArcFlow,
+    Boundary,
+    BoundaryDirection,
     ConfidenceFlag,
     CurrentDirection,
     DirectionConstraint,
@@ -31,7 +33,12 @@ _OBSERVED_AT = datetime(2026, 6, 1, tzinfo=UTC)
 
 
 def _node(node_id: str, kind: NodeKind = NodeKind.GOAL, *, boundary: bool = False) -> Node:
-    return Node(node_id=NodeID(node_id), kind=kind, is_boundary=boundary, enabled=True)
+    return Node(
+        node_id=NodeID(node_id),
+        kind=kind,
+        boundary=Boundary(BoundaryDirection.ENTRY_AND_EXIT, active=True) if boundary else None,
+        enabled=True,
+    )
 
 
 def _edge(edge_id: str, a: str, b: str) -> Edge:

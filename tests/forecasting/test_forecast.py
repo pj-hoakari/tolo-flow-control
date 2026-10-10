@@ -7,6 +7,8 @@ import pytest
 from flow_control.domain import (
     ArcFlow,
     ArcHistoryStat,
+    Boundary,
+    BoundaryDirection,
     CurrentDirection,
     DirectionConstraint,
     Edge,
@@ -28,7 +30,12 @@ from flow_control.forecasting.demand import NodeDemand
 
 
 def _node(node_id: str, kind: NodeKind, *, boundary: bool = False) -> Node:
-    return Node(node_id=NodeID(node_id), kind=kind, is_boundary=boundary, enabled=True)
+    return Node(
+        node_id=NodeID(node_id),
+        kind=kind,
+        boundary=Boundary(BoundaryDirection.ENTRY_AND_EXIT, active=True) if boundary else None,
+        enabled=True,
+    )
 
 
 def _vector_edge(edge_id: str, a: str, b: str) -> Edge:

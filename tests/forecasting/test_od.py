@@ -11,6 +11,8 @@ import pytest
 
 from flow_control.domain import (
     ArcFlow,
+    Boundary,
+    BoundaryDirection,
     CurrentDirection,
     DirectionConstraint,
     Edge,
@@ -43,7 +45,12 @@ def _node(
     *,
     boundary: bool = False,
 ) -> Node:
-    return Node(node_id=NodeID(node_id), kind=kind, is_boundary=boundary, enabled=True)
+    return Node(
+        node_id=NodeID(node_id),
+        kind=kind,
+        boundary=Boundary(BoundaryDirection.ENTRY_AND_EXIT, active=True) if boundary else None,
+        enabled=True,
+    )
 
 
 def _edge(edge_id: str, a: str, b: str) -> Edge:

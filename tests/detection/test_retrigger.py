@@ -25,6 +25,8 @@ from flow_control.detection.triggers import (
     update_retrigger_counts,
 )
 from flow_control.domain import (
+    Boundary,
+    BoundaryDirection,
     CurrentDirection,
     DirectionConstraint,
     Edge,
@@ -59,8 +61,18 @@ def _edge(edge_id: EdgeID, *, enabled: bool = True) -> Edge:
 
 def _graph(*edges: Edge) -> Graph:
     nodes = (
-        Node(node_id=NodeID("a"), kind=NodeKind.GOAL, is_boundary=True, enabled=True),
-        Node(node_id=NodeID("b"), kind=NodeKind.GOAL, is_boundary=True, enabled=True),
+        Node(
+            node_id=NodeID("a"),
+            kind=NodeKind.GOAL,
+            boundary=Boundary(BoundaryDirection.ENTRY_AND_EXIT, active=True),
+            enabled=True,
+        ),
+        Node(
+            node_id=NodeID("b"),
+            kind=NodeKind.GOAL,
+            boundary=Boundary(BoundaryDirection.ENTRY_AND_EXIT, active=True),
+            enabled=True,
+        ),
     )
     return Graph(nodes=nodes, edges=edges)
 

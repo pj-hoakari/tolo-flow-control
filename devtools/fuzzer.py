@@ -48,7 +48,7 @@ def _random_od_flows(
     到達不能な組は生成器が例外を投げるため、実際に経路がある組だけを残す。
     """
     nodes = graph.enabled_nodes()
-    boundaries = [n.node_id for n in nodes if n.is_boundary]
+    boundaries = [n.node_id for n in nodes if n.has_active_boundary]
     mixed = [n.node_id for n in nodes if n.kind == NodeKind.GOAL_TRANSIT_MIXED]
     origins = boundaries or mixed
     targets = mixed + boundaries

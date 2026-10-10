@@ -47,14 +47,21 @@ message Graph {
 }
 
 message Node {
+  reserved 3;
+  reserved "is_boundary";
   optional string node_id = 1;
   optional NodeKind kind = 2;
-  optional bool is_boundary = 3;
   optional bool enabled = 4;
   repeated string attribute_tags = 5;
   optional int32 time_resolution_s = 6;
   optional bool danger_flag = 7;
   optional double danger_capacity = 8;
+  Boundary boundary = 9;
+}
+
+message Boundary {
+  optional BoundaryDirection direction = 1;
+  optional bool active = 2;
 }
 
 message Edge {
@@ -546,6 +553,13 @@ enum NodeKind {
   NODE_KIND_GOAL = 1;
   NODE_KIND_GOAL_TRANSIT_MIXED = 2;
   NODE_KIND_TRANSIT_ONLY = 3;
+}
+
+enum BoundaryDirection {
+  BOUNDARY_DIRECTION_UNSPECIFIED = 0;
+  BOUNDARY_DIRECTION_ENTRY = 1;
+  BOUNDARY_DIRECTION_EXIT = 2;
+  BOUNDARY_DIRECTION_ENTRY_AND_EXIT = 3;
 }
 
 enum DirectionConstraint {

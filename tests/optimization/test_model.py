@@ -8,6 +8,8 @@ from flow_control.domain import (
     ArcHistoryStat,
     ArcScalarFlow,
     ArcStagnation,
+    Boundary,
+    BoundaryDirection,
     CurrentDirection,
     DirectionConstraint,
     Edge,
@@ -69,12 +71,21 @@ def _diamond(direct_edge: Edge, *, n3_danger_cap=None):
     n1, n2, n3 = NodeID("n1"), NodeID("n2"), NodeID("n3")
     return Graph(
         nodes=(
-            Node(n1, NodeKind.GOAL, is_boundary=True, enabled=True),
-            Node(n2, NodeKind.GOAL, is_boundary=True, enabled=True),
+            Node(
+                n1,
+                NodeKind.GOAL,
+                boundary=Boundary(BoundaryDirection.ENTRY_AND_EXIT, active=True),
+                enabled=True,
+            ),
+            Node(
+                n2,
+                NodeKind.GOAL,
+                boundary=Boundary(BoundaryDirection.ENTRY_AND_EXIT, active=True),
+                enabled=True,
+            ),
             Node(
                 n3,
                 NodeKind.TRANSIT_ONLY,
-                is_boundary=False,
                 enabled=True,
                 danger_flag=n3_danger_cap is not None,
                 danger_capacity=n3_danger_cap,
@@ -177,8 +188,13 @@ def test_confidence_weight_floor_scales_tau(confidence, expected_tau):
     n1, n2 = NodeID("n1"), NodeID("n2")
     graph = Graph(
         nodes=(
-            Node(n1, NodeKind.GOAL, is_boundary=True, enabled=True),
-            Node(n2, NodeKind.GOAL, is_boundary=False, enabled=True),
+            Node(
+                n1,
+                NodeKind.GOAL,
+                boundary=Boundary(BoundaryDirection.ENTRY_AND_EXIT, active=True),
+                enabled=True,
+            ),
+            Node(n2, NodeKind.GOAL, enabled=True),
         ),
         edges=(_mk("e1", n1, n2),),
     )

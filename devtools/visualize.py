@@ -221,7 +221,7 @@ def draw_base(
         face = _KIND_COLOR.get(node.kind, "#cccccc") if node.enabled else "#dddddd"
         if node.danger_flag:
             edgecolor, lw = _TRIGGER_COLOR, 3.0
-        elif node.is_boundary:
+        elif node.has_active_boundary:
             edgecolor, lw = "#111111", 2.6
         else:
             edgecolor, lw = "#555555", 1.0

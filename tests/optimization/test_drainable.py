@@ -28,7 +28,7 @@ def _edge(eid, a, b, constraint=DirectionConstraint.BIDIRECTIONAL_PRIOR):
 
 
 def _node(nid):
-    return Node(NodeID(nid), NodeKind.GOAL, is_boundary=False, enabled=True)
+    return Node(NodeID(nid), NodeKind.GOAL, enabled=True)
 
 
 def test_edge_on_od_path_is_drainable_and_disconnected_is_not():

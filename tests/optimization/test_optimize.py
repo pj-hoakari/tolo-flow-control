@@ -347,9 +347,9 @@ def test_closed_mode_has_no_boundary_control(
 
     closed_graph = Graph(
         nodes=(
-            Node(n1, NodeKind.GOAL, is_boundary=False, enabled=True),
-            Node(n2, NodeKind.TRANSIT_ONLY, is_boundary=False, enabled=True),
-            Node(n3, NodeKind.GOAL, is_boundary=False, enabled=True),
+            Node(n1, NodeKind.GOAL, enabled=True),
+            Node(n2, NodeKind.TRANSIT_ONLY, enabled=True),
+            Node(n3, NodeKind.GOAL, enabled=True),
         ),
         edges=(mk("e12", n1, n2), mk("e23", n2, n3), mk("e13", n1, n3)),
     )
@@ -441,6 +441,8 @@ def test_lightweight_zone_greedy_processes_trigger_zone(
 def test_zone_net_supply_folds_crossing_flows():
     """横断アークの固定フローが純供給へ正しい符号で畳み込まれる。"""
     from flow_control.domain import (
+        Boundary,
+        BoundaryDirection,
         CurrentDirection,
         DirectionConstraint,
         Edge,
@@ -459,7 +461,7 @@ def test_zone_net_supply_folds_crossing_flows():
         return Node(
             node_id=NodeID(name),
             kind=NodeKind.GOAL if boundary else NodeKind.TRANSIT_ONLY,
-            is_boundary=boundary,
+            boundary=Boundary(BoundaryDirection.ENTRY_AND_EXIT, active=True) if boundary else None,
             enabled=True,
         )
 
@@ -584,6 +586,8 @@ def test_congestion_increment_spreads_across_equal_cost_parallel_routes():
     from datetime import datetime
 
     from flow_control.domain import (
+        Boundary,
+        BoundaryDirection,
         CurrentDirection,
         DirectionConstraint,
         Edge,
@@ -599,7 +603,12 @@ def test_congestion_increment_spreads_across_equal_cost_parallel_routes():
     from flow_control.forecasting import ForecastResult, ODDemand
 
     def node(name, kind=NodeKind.TRANSIT_ONLY, boundary=False):
-        return Node(NodeID(name), kind, is_boundary=boundary, enabled=True)
+        return Node(
+            NodeID(name),
+            kind,
+            boundary=Boundary(BoundaryDirection.ENTRY_AND_EXIT, active=True) if boundary else None,
+            enabled=True,
+        )
 
     def edge(eid, a, b):
         return Edge(
@@ -707,6 +716,8 @@ def test_lightweight_residual_tau_clips_overdrained_edge_to_zero(observed_at):
     from flow_control.domain import (
         ArcHistoryStat,
         ArcStagnation,
+        Boundary,
+        BoundaryDirection,
         CurrentDirection,
         DirectionConstraint,
         Edge,
@@ -725,8 +736,13 @@ def test_lightweight_residual_tau_clips_overdrained_edge_to_zero(observed_at):
     n1, n2, e1 = NodeID("n1"), NodeID("n2"), EdgeID("e1")
     graph = Graph(
         nodes=(
-            Node(n1, NodeKind.GOAL, is_boundary=True, enabled=True),
-            Node(n2, NodeKind.GOAL, is_boundary=False, enabled=True),
+            Node(
+                n1,
+                NodeKind.GOAL,
+                boundary=Boundary(BoundaryDirection.ENTRY_AND_EXIT, active=True),
+                enabled=True,
+            ),
+            Node(n2, NodeKind.GOAL, enabled=True),
         ),
         edges=(
             Edge(

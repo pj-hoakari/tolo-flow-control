@@ -27,7 +27,7 @@ _E_ALT2 = EdgeID("e_alt2")  # n4-n2
 
 
 def _node(nid: NodeID) -> Node:
-    return Node(node_id=nid, kind=NodeKind.TRANSIT_ONLY, is_boundary=False, enabled=True)
+    return Node(node_id=nid, kind=NodeKind.TRANSIT_ONLY, enabled=True)
 
 
 def _edge(eid: EdgeID, a: NodeID, b: NodeID, capacity_hint: float | None = None) -> Edge:

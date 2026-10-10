@@ -15,12 +15,13 @@ from grpc_health.v1 import health_pb2
 from flow_control.detection.state import DetectionState
 from flow_control.detection.triggers import Event, EventKind
 from flow_control.domain.enums import (
+    BoundaryDirection,
     CurrentDirection,
     DirectionConstraint,
     NodeKind,
     ObservationType,
 )
-from flow_control.domain.graph import Edge, EdgeID, Graph, Node, NodeID
+from flow_control.domain.graph import Boundary, Edge, EdgeID, Graph, Node, NodeID
 from flow_control.domain.history import HistoryDigest
 from flow_control.domain.observations import Observations
 from flow_control.domain.references import Reference
@@ -45,8 +46,18 @@ def _danger_request(mode: OptimizationMode) -> Request:
     a, b, edge_id = NodeID("a"), NodeID("b"), EdgeID("e")
     graph = Graph(
         nodes=(
-            Node(a, NodeKind.GOAL, True, True),
-            Node(b, NodeKind.GOAL, True, True),
+            Node(
+                a,
+                NodeKind.GOAL,
+                True,
+                boundary=Boundary(BoundaryDirection.ENTRY_AND_EXIT, active=True),
+            ),
+            Node(
+                b,
+                NodeKind.GOAL,
+                True,
+                boundary=Boundary(BoundaryDirection.ENTRY_AND_EXIT, active=True),
+            ),
         ),
         edges=(
             Edge(

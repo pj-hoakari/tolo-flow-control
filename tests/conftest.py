@@ -23,6 +23,8 @@ import pytest
 from flow_control.detection.config import ResolvedConfig
 from flow_control.detection.state import ArcWatchState, DetectionState
 from flow_control.domain import (
+    Boundary,
+    BoundaryDirection,
     CurrentDirection,
     DirectionConstraint,
     Edge,
@@ -60,8 +62,13 @@ def basic_graph(edge_id: EdgeID) -> Graph:
     n1, n2 = NodeID("n1"), NodeID("n2")
     return Graph(
         nodes=(
-            Node(node_id=n1, kind=NodeKind.GOAL, is_boundary=True, enabled=True),
-            Node(node_id=n2, kind=NodeKind.GOAL, is_boundary=False, enabled=True),
+            Node(
+                node_id=n1,
+                kind=NodeKind.GOAL,
+                boundary=Boundary(BoundaryDirection.ENTRY_AND_EXIT, active=True),
+                enabled=True,
+            ),
+            Node(node_id=n2, kind=NodeKind.GOAL, enabled=True),
         ),
         edges=(
             Edge(
@@ -111,10 +118,25 @@ def y_graph(y_graph_edge_ids: tuple[EdgeID, EdgeID, EdgeID]) -> Graph:
 
     return Graph(
         nodes=(
-            Node(node_id=nc, kind=NodeKind.GOAL, is_boundary=False, enabled=True),
-            Node(node_id=n1, kind=NodeKind.GOAL, is_boundary=True, enabled=True),
-            Node(node_id=n2, kind=NodeKind.GOAL, is_boundary=True, enabled=True),
-            Node(node_id=n3, kind=NodeKind.GOAL, is_boundary=True, enabled=True),
+            Node(node_id=nc, kind=NodeKind.GOAL, enabled=True),
+            Node(
+                node_id=n1,
+                kind=NodeKind.GOAL,
+                boundary=Boundary(BoundaryDirection.ENTRY_AND_EXIT, active=True),
+                enabled=True,
+            ),
+            Node(
+                node_id=n2,
+                kind=NodeKind.GOAL,
+                boundary=Boundary(BoundaryDirection.ENTRY_AND_EXIT, active=True),
+                enabled=True,
+            ),
+            Node(
+                node_id=n3,
+                kind=NodeKind.GOAL,
+                boundary=Boundary(BoundaryDirection.ENTRY_AND_EXIT, active=True),
+                enabled=True,
+            ),
         ),
         edges=(_branch(e1, n1), _branch(e2, n2), _branch(e3, n3)),
     )

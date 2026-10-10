@@ -1,4 +1,5 @@
 from .enums import (
+    BoundaryDirection,
     CurrentDirection,
     DirectionConstraint,
     FlowDirection,
@@ -6,7 +7,7 @@ from .enums import (
     NodeKind,
     ObservationType,
 )
-from .graph import Edge, EdgeID, Graph, Node, NodeID
+from .graph import Boundary, Edge, EdgeID, Graph, Node, NodeID
 from .history import ArcHistoryStat, ArcWindowSeries, HistoryDigest
 from .observations import (
     ArcFlow,
@@ -26,6 +27,8 @@ __all__ = [
     "ArcScalarFlow",
     "ArcStagnation",
     "ArcWindowSeries",
+    "Boundary",
+    "BoundaryDirection",
     "ConfidenceFlag",
     "CurrentDirection",
     "DirectionConstraint",

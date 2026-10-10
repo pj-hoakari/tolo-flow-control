@@ -11,6 +11,20 @@ class NodeKind(str, Enum):
     TRANSIT_ONLY = "TRANSIT_ONLY"
 
 
+class BoundaryDirection(str, Enum):
+    ENTRY = "ENTRY"
+    EXIT = "EXIT"
+    ENTRY_AND_EXIT = "ENTRY_AND_EXIT"
+
+    @property
+    def admits_entry(self) -> bool:
+        return self in (BoundaryDirection.ENTRY, BoundaryDirection.ENTRY_AND_EXIT)
+
+    @property
+    def admits_exit(self) -> bool:
+        return self in (BoundaryDirection.EXIT, BoundaryDirection.ENTRY_AND_EXIT)
+
+
 class DirectionConstraint(str, Enum):
     BIDIRECTIONAL_PRIOR = "BIDIRECTIONAL_PRIOR"
     ONEWAY_A_TO_B_PRIOR = "ONEWAY_A_TO_B_PRIOR"
@@ -37,7 +51,7 @@ class FlowDirection(str, Enum):
 
 
 class Mode(str, Enum):
-    # 入退出点（is_boundary かつ enabled）が 1 つ以上あれば OPEN、無ければ CLOSED
+    # 入退出点（active な boundary を持つ enabled ノード）が 1 つ以上あれば OPEN、無ければ CLOSED
     # 各 Step（Forecasting / DetourRouting / Optimization / FeedbackExtractor）に伝播
     OPEN = "OPEN"
     CLOSED = "CLOSED"

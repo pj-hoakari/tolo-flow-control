@@ -11,12 +11,13 @@ from grpc_health.v1 import health_pb2
 import flow_control.rpc.server as server
 from flow_control.detection.state import DetectionState
 from flow_control.domain.enums import (
+    BoundaryDirection,
     CurrentDirection,
     DirectionConstraint,
     NodeKind,
     ObservationType,
 )
-from flow_control.domain.graph import Edge, EdgeID, Graph, Node, NodeID
+from flow_control.domain.graph import Boundary, Edge, EdgeID, Graph, Node, NodeID
 from flow_control.domain.history import HistoryDigest
 from flow_control.domain.observations import Observations
 from flow_control.domain.references import Reference
@@ -68,8 +69,13 @@ def _request() -> Request:
         tenant_context=TenantContext(tenant_id="t1"),
         graph=Graph(
             nodes=(
-                Node(NodeID("n1"), NodeKind.GOAL, True, True),
-                Node(NodeID("n2"), NodeKind.TRANSIT_ONLY, False, True),
+                Node(
+                    NodeID("n1"),
+                    NodeKind.GOAL,
+                    True,
+                    boundary=Boundary(BoundaryDirection.ENTRY_AND_EXIT, active=True),
+                ),
+                Node(NodeID("n2"), NodeKind.TRANSIT_ONLY, True),
             ),
             edges=(
                 Edge(

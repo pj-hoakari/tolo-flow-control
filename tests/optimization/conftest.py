@@ -8,6 +8,8 @@ from flow_control.detour_routing import DetourPath, DetourResult, DetourSet
 from flow_control.domain import (
     ArcHistoryStat,
     ArcStagnation,
+    Boundary,
+    BoundaryDirection,
     CurrentDirection,
     DirectionConstraint,
     Edge,
@@ -58,9 +60,14 @@ def _edge(eid: EdgeID, a: NodeID, b: NodeID, obs=ObservationType.VECTOR) -> Edge
 def worked_example_graph() -> Graph:
     return Graph(
         nodes=(
-            Node(_N1, NodeKind.GOAL, is_boundary=True, enabled=True),
-            Node(_N2, NodeKind.TRANSIT_ONLY, is_boundary=False, enabled=True),
-            Node(_N3, NodeKind.GOAL, is_boundary=False, enabled=True),
+            Node(
+                _N1,
+                NodeKind.GOAL,
+                boundary=Boundary(BoundaryDirection.ENTRY_AND_EXIT, active=True),
+                enabled=True,
+            ),
+            Node(_N2, NodeKind.TRANSIT_ONLY, enabled=True),
+            Node(_N3, NodeKind.GOAL, enabled=True),
         ),
         edges=(
             _edge(_E12, _N1, _N2),

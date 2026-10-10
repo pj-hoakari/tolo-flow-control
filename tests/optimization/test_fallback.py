@@ -6,6 +6,8 @@ from flow_control.detour_routing import DetourResult
 from flow_control.domain import (
     ArcHistoryStat,
     ArcStagnation,
+    Boundary,
+    BoundaryDirection,
     CurrentDirection,
     DirectionConstraint,
     Edge,
@@ -43,8 +45,18 @@ def _graph_oneway() -> Graph:
     # 2 境界ノードを一方通行で結ぶ。n2→n1 が存在せず境界連結性を満たせない
     return Graph(
         nodes=(
-            Node(_N1, NodeKind.GOAL, is_boundary=True, enabled=True),
-            Node(_N2, NodeKind.GOAL, is_boundary=True, enabled=True),
+            Node(
+                _N1,
+                NodeKind.GOAL,
+                boundary=Boundary(BoundaryDirection.ENTRY_AND_EXIT, active=True),
+                enabled=True,
+            ),
+            Node(
+                _N2,
+                NodeKind.GOAL,
+                boundary=Boundary(BoundaryDirection.ENTRY_AND_EXIT, active=True),
+                enabled=True,
+            ),
         ),
         edges=(
             Edge(
@@ -153,8 +165,18 @@ def _graph_narrow_corridor(capacity: float) -> Graph:
     # n1(境界) --e1(低容量)--> n2(境界)。双方向だが e1 の容量が需要に足りない
     return Graph(
         nodes=(
-            Node(_N1, NodeKind.GOAL, is_boundary=True, enabled=True),
-            Node(_N2, NodeKind.GOAL, is_boundary=True, enabled=True),
+            Node(
+                _N1,
+                NodeKind.GOAL,
+                boundary=Boundary(BoundaryDirection.ENTRY_AND_EXIT, active=True),
+                enabled=True,
+            ),
+            Node(
+                _N2,
+                NodeKind.GOAL,
+                boundary=Boundary(BoundaryDirection.ENTRY_AND_EXIT, active=True),
+                enabled=True,
+            ),
         ),
         edges=(
             Edge(

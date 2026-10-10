@@ -223,6 +223,8 @@ def test_gate_skips_stagnation_term_without_observation():
 def _chain_arc_model(*, oneway_middle: bool = False, boundaries: bool = True):
     """b0 - n1 - n2 - b3 の鎖（両端が入退出点）"""
     from flow_control.domain import (
+        Boundary,
+        BoundaryDirection,
         CurrentDirection,
         DirectionConstraint,
         Edge,
@@ -239,7 +241,9 @@ def _chain_arc_model(*, oneway_middle: bool = False, boundaries: bool = True):
         Node(
             node_id=NID(n),
             kind=NodeKind.GOAL if (boundaries and n in ("b0", "b3")) else NodeKind.TRANSIT_ONLY,
-            is_boundary=boundaries and n in ("b0", "b3"),
+            boundary=Boundary(BoundaryDirection.ENTRY_AND_EXIT, active=True)
+            if boundaries and n in ("b0", "b3")
+            else None,
             enabled=True,
         )
         for n in names
@@ -332,6 +336,8 @@ def test_close_rejected_in_closed_mode_when_component_splits():
 def test_close_allowed_when_parallel_route_remains():
     """並行ルートがあり、閉鎖してもどのノードも孤立しないなら CLOSE 可。"""
     from flow_control.domain import (
+        Boundary,
+        BoundaryDirection,
         CurrentDirection,
         DirectionConstraint,
         Edge,
@@ -345,8 +351,18 @@ def test_close_allowed_when_parallel_route_remains():
 
     # b0 と b2 を結ぶ 2 本の並行エッジ（多重辺）
     nodes = (
-        Node(NID("b0"), NodeKind.GOAL, is_boundary=True, enabled=True),
-        Node(NID("b2"), NodeKind.GOAL, is_boundary=True, enabled=True),
+        Node(
+            NID("b0"),
+            NodeKind.GOAL,
+            boundary=Boundary(BoundaryDirection.ENTRY_AND_EXIT, active=True),
+            enabled=True,
+        ),
+        Node(
+            NID("b2"),
+            NodeKind.GOAL,
+            boundary=Boundary(BoundaryDirection.ENTRY_AND_EXIT, active=True),
+            enabled=True,
+        ),
     )
 
     def edge(eid, a, b):
