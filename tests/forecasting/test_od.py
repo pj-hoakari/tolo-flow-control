@@ -44,11 +44,12 @@ def _node(
     kind: NodeKind = NodeKind.GOAL,
     *,
     boundary: bool = False,
+    direction: BoundaryDirection = BoundaryDirection.ENTRY_AND_EXIT,
 ) -> Node:
     return Node(
         node_id=NodeID(node_id),
         kind=kind,
-        boundary=Boundary(BoundaryDirection.ENTRY_AND_EXIT, active=True) if boundary else None,
+        boundary=Boundary(direction, active=True) if boundary else None,
         enabled=True,
     )
 
@@ -601,3 +602,50 @@ def test_zero_reverse_flow_does_not_erase_forward_flow() -> None:
     assert _require(result.od_matrix, "s", "B").demand == pytest.approx(6.0)
     assert _require(result.od_matrix, "s", "C").demand == pytest.approx(4.0)
     assert _resolution(result, "B").mode == ODResolutionMode.TURNING_EXACT
+
+
+def test_exit_only_boundary_is_not_an_external_origin() -> None:
+    graph = Graph(
+        nodes=(
+            _node("s", NodeKind.TRANSIT_ONLY, boundary=True, direction=BoundaryDirection.EXIT),
+            _node("C", NodeKind.GOAL),
+        ),
+        edges=(_edge("e1", "s", "C"),),
+    )
+    observations = Observations(observed_at=_OBSERVED_AT, arc_flows=(_flow("e1", 10.0),))
+
+    assert _run(graph, observations, _config(), is_open_mode=True).od_matrix == ()
+
+    entry = Graph(
+        nodes=(
+            _node("s", NodeKind.TRANSIT_ONLY, boundary=True, direction=BoundaryDirection.ENTRY),
+            _node("C", NodeKind.GOAL),
+        ),
+        edges=(_edge("e1", "s", "C"),),
+    )
+    result = _run(entry, observations, _config(), is_open_mode=True)
+    assert _require(result.od_matrix, "s", "C").demand == pytest.approx(10.0)
+
+
+def test_entry_only_boundary_takes_no_external_exit() -> None:
+    observations = Observations(
+        observed_at=_OBSERVED_AT,
+        arc_flows=(_flow("e1", 10.0),),
+        node_occupancies=(_occ("H", occupancy=30.0, delta=-10.0),),
+    )
+    for direction, expected in (
+        (BoundaryDirection.ENTRY, []),
+        (BoundaryDirection.EXIT, [("H", "x", pytest.approx(10.0))]),
+    ):
+        graph = Graph(
+            nodes=(
+                _node("H", NodeKind.GOAL_TRANSIT_MIXED),
+                _node("x", NodeKind.TRANSIT_ONLY, boundary=True, direction=direction),
+                _node("k", NodeKind.TRANSIT_ONLY),
+            ),
+            edges=(_edge("e1", "H", "x"), _edge("e2", "H", "k")),
+        )
+        result = _run(graph, observations, _config(), is_open_mode=True)
+        assert [
+            (od.origin.value, od.destination.value, od.demand) for od in result.od_matrix
+        ] == expected

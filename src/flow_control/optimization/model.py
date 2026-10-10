@@ -750,19 +750,21 @@ def _add_direction_and_reachability(built: _Built, *, is_open: bool) -> None:
         if in_expr is not None:
             model.add_constraints(in_expr >= 1)
 
-    # 入退出点ペア間可達性（Open モードのみ）
-    if not is_open or not arc_model.entry_nodes:
+    # 境界連結性（Open モードのみ）: r_in → 全ノード、全ノード → r_out
+    if not is_open:
         return
-    r = arc_model.entry_nodes[0]
     n = len(arc_model.active_nodes)
+    roots: list[tuple[str, NodeID, int]] = []
+    if arc_model.entry_nodes:
+        roots.append(("yo", arc_model.entry_nodes[0], 1))
+    if arc_model.exit_nodes:
+        roots.append(("yi", arc_model.exit_nodes[0], -1))
 
-    y_out: dict[str, Any] = {}
-    y_in: dict[str, Any] = {}
-    for i, arc in enumerate(arc_model.arcs):
-        y_out[arc.key] = model.add_variables(lower=0, name=f"yo{i}")
-        y_in[arc.key] = model.add_variables(lower=0, name=f"yi{i}")
-
-    for aux, sign in ((y_out, 1), (y_in, -1)):
+    for prefix, r, sign in roots:
+        aux: dict[str, Any] = {
+            arc.key: model.add_variables(lower=0, name=f"{prefix}{i}")
+            for i, arc in enumerate(arc_model.arcs)
+        }
         for v in arc_model.active_nodes:
             out_expr = _vsum([aux[a.key] for a in arc_model.arcs_out(v)])
             in_expr = _vsum([aux[a.key] for a in arc_model.arcs_in(v)])

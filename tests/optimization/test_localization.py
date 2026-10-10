@@ -20,11 +20,16 @@ from flow_control.optimization.arcs import build_arc_model
 from flow_control.optimization.localization import build_trigger_zones
 
 
-def _node(name: str, *, boundary: bool = False) -> Node:
+def _node(
+    name: str,
+    *,
+    boundary: bool = False,
+    direction: BoundaryDirection = BoundaryDirection.ENTRY_AND_EXIT,
+) -> Node:
     return Node(
         node_id=NodeID(name),
         kind=NodeKind.GOAL if boundary else NodeKind.TRANSIT_ONLY,
-        boundary=Boundary(BoundaryDirection.ENTRY_AND_EXIT, active=True) if boundary else None,
+        boundary=Boundary(direction, active=True) if boundary else None,
         enabled=True,
     )
 
@@ -189,3 +194,24 @@ def test_disabled_or_unknown_triggers_are_ignored():
     )
     assert result.zones == ()
     assert not result.capped
+
+
+def test_zone_paths_reach_boundaries_of_every_direction():
+    names = ["b0", "n1", "n2", "n3", "n4", "n5", "b6"]
+    directions = {"b0": BoundaryDirection.ENTRY, "b6": BoundaryDirection.EXIT}
+    nodes = tuple(
+        _node(n, boundary=n in directions, direction=directions.get(n, BoundaryDirection.ENTRY))
+        for n in names
+    )
+    edges = tuple(
+        _edge(f"e{names[i][1]}{names[i + 1][1]}", names[i], names[i + 1])
+        for i in range(len(names) - 1)
+    )
+    result = build_trigger_zones(
+        build_arc_model(Graph(nodes=nodes, edges=edges)),
+        (EdgeID("e23"),),
+        (),
+        local_radius_hops=1,
+        max_trigger_zones=4,
+    )
+    assert _ids(result.zones[0].nodes) == ["b0", "b6", "n1", "n2", "n3", "n4", "n5"]

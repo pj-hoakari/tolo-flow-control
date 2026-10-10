@@ -160,3 +160,80 @@ def test_closed_mode_emits_nothing():
         commodities=(_k(0, _N1, _N2),),
     )
     assert controls == ()
+
+
+def _directed_graph(n1_direction, n3_direction=BoundaryDirection.ENTRY_AND_EXIT):
+    return Graph(
+        nodes=(
+            Node(_N1, NodeKind.GOAL, enabled=True, boundary=Boundary(n1_direction, active=True)),
+            Node(_N2, NodeKind.GOAL_TRANSIT_MIXED, enabled=True),
+            Node(_N3, NodeKind.GOAL, enabled=True, boundary=Boundary(n3_direction, active=True)),
+        ),
+        edges=(_edge(_E1, _N1, _N2, danger=True), _edge(_E2, _N3, _N2)),
+    )
+
+
+def test_entry_only_boundary_never_pauses_egress():
+    controls = compute_boundary_control(
+        _directed_graph(BoundaryDirection.ENTRY),
+        is_open=True,
+        previous_result=None,
+        commodities=(_k(0, _N2, _N1),),
+    )
+    assert _actions(controls) == {(_N1, BoundaryAction.PAUSE_INGRESS)}
+
+
+def test_exit_only_boundary_never_pauses_ingress():
+    with_demand = compute_boundary_control(
+        _directed_graph(BoundaryDirection.EXIT),
+        is_open=True,
+        previous_result=None,
+        commodities=(_k(0, _N1, _N2), _k(1, _N2, _N1)),
+    )
+    assert _actions(with_demand) == {(_N1, BoundaryAction.PAUSE_EGRESS)}
+    without_demand = compute_boundary_control(
+        _directed_graph(BoundaryDirection.EXIT), is_open=True, previous_result=None
+    )
+    assert without_demand == ()
+
+
+def test_alternate_exit_must_admit_exit():
+    controls = compute_boundary_control(
+        _directed_graph(BoundaryDirection.ENTRY_AND_EXIT, n3_direction=BoundaryDirection.ENTRY),
+        is_open=True,
+        previous_result=None,
+        commodities=(_k(0, _N2, _N1),),
+    )
+    assert controls == ()
+
+
+def test_resume_follows_the_paused_direction():
+    previous = OptimizationResult(
+        boundary_control=(
+            BoundaryControl(_N1, BoundaryAction.PAUSE_EGRESS, "prev"),
+            BoundaryControl(_N3, BoundaryAction.PAUSE_INGRESS, "prev"),
+        )
+    )
+    controls = compute_boundary_control(
+        Graph(
+            nodes=(
+                Node(
+                    _N1,
+                    NodeKind.GOAL,
+                    enabled=True,
+                    boundary=Boundary(BoundaryDirection.ENTRY, active=True),
+                ),
+                Node(_N2, NodeKind.GOAL_TRANSIT_MIXED, enabled=True),
+                Node(
+                    _N3,
+                    NodeKind.GOAL,
+                    enabled=True,
+                    boundary=Boundary(BoundaryDirection.ENTRY, active=True),
+                ),
+            ),
+            edges=(_edge(_E1, _N1, _N2), _edge(_E2, _N3, _N2)),
+        ),
+        is_open=True,
+        previous_result=previous,
+    )
+    assert _actions(controls) == {(_N3, BoundaryAction.RESUME)}

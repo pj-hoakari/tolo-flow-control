@@ -16,22 +16,23 @@
 
 from collections.abc import Sequence
 
-from ..domain.graph import Graph, Node, NodeID
+from ..domain.graph import Graph, NodeID
 from .model import Commodity
 from .results import BoundaryAction, BoundaryControl, OptimizationResult
 
 
 def _boundary_demands(
     commodities: Sequence[Commodity],
-    boundary_ids: set[NodeID],
+    entry_ids: set[NodeID],
+    exit_ids: set[NodeID],
 ) -> tuple[dict[NodeID, float], dict[NodeID, float]]:
-    """境界ノードごとの流入需要（起点）・流出需要（終点）を集計する"""
+    """入場点ごとの流入需要（起点）・退出点ごとの流出需要（終点）を集計する"""
     inflow: dict[NodeID, float] = {}
     outflow: dict[NodeID, float] = {}
     for k in commodities:
-        if k.origin in boundary_ids and k.demand > 0.0:
+        if k.origin in entry_ids and k.demand > 0.0:
             inflow[k.origin] = inflow.get(k.origin, 0.0) + k.demand
-        if k.destination in boundary_ids and k.demand > 0.0:
+        if k.destination in exit_ids and k.demand > 0.0:
             outflow[k.destination] = outflow.get(k.destination, 0.0) + k.demand
     return inflow, outflow
 
@@ -49,9 +50,10 @@ def compute_boundary_control(
     if not boundary_ids:
         return ()
 
-    node_by_id: dict[NodeID, Node] = {n.node_id: n for n in graph.nodes}
-    inflow, outflow = _boundary_demands(commodities, boundary_ids)
-    has_alternate_exit = len(boundary_ids) > 1
+    entry_ids = {n.node_id for n in graph.entry_nodes()}
+    exit_ids = {n.node_id for n in graph.exit_nodes()}
+    inflow, outflow = _boundary_demands(commodities, entry_ids, exit_ids)
+    has_alternate_exit = len(exit_ids) > 1
 
     # 危険要素に隣接・一致する境界ノードと、その危険要素の表示名を集める
     danger_near: dict[NodeID, str] = {}
@@ -112,7 +114,7 @@ def compute_boundary_control(
                 )
             )
             paused_now.add(node.node_id)
-        if node_in <= 0.0 and node_out <= 0.0:
+        if node_in <= 0.0 and node_out <= 0.0 and node.node_id in entry_ids:
             # 需要情報なし: 予防的な入場停止のみ（排出は塞がない）
             result.append(
                 BoundaryControl(
@@ -126,19 +128,20 @@ def compute_boundary_control(
             )
             paused_now.add(node.node_id)
 
-    # 危険フラグ解除後の再開提案: 前回 PAUSE した境界ノードのうち、今回 PAUSE がないもの
+    # 危険フラグ解除後の再開提案: 前回 PAUSE した境界ノードのうち、今回 PAUSE がなく、
+    # 停止した向きを今も担うもの
     if previous_result is not None:
+        resumable = {
+            BoundaryAction.PAUSE_INGRESS: entry_ids,
+            BoundaryAction.PAUSE_EGRESS: exit_ids,
+        }
         paused_before: set[NodeID] = {
             bc.node_id
             for bc in previous_result.boundary_control
-            if bc.action in (BoundaryAction.PAUSE_INGRESS, BoundaryAction.PAUSE_EGRESS)
+            if bc.action in resumable and bc.node_id in resumable[bc.action]
         }
-        for node_id in paused_before:
+        for node_id in sorted(paused_before, key=lambda n: n.value):
             if node_id in paused_now:
-                continue
-            if node_id not in boundary_ids:
-                continue
-            if node_id not in node_by_id:
                 continue
             result.append(
                 BoundaryControl(

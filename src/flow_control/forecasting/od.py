@@ -93,8 +93,8 @@ def _od_marginals(
     for demand in node_demands:
         node = nodes[demand.node_id]
         if is_open_mode:
-            # 境界は外部流入を origin、外部流出を destination として担う。
-            if node.has_active_boundary and demand.production > 0.0:
+            # 入場点は外部流入を origin、退出点は外部流出を destination として担う。
+            if node.admits_entry and demand.production > 0.0:
                 production[demand.node_id] = demand.production
             if node.kind == NodeKind.GOAL and demand.production > 0.0:
                 production[demand.node_id] = demand.production
@@ -108,7 +108,7 @@ def _od_marginals(
             ):
                 production[demand.node_id] = demand.production
             boundary_exit = max(0.0, demand.gross_in - demand.gross_out)
-            amount = max(demand.absorption, boundary_exit if node.has_active_boundary else 0.0)
+            amount = max(demand.absorption, boundary_exit if node.admits_exit else 0.0)
             if amount > 0.0:
                 absorption[demand.node_id] = amount
         else:

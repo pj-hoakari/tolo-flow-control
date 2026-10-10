@@ -43,7 +43,9 @@ class ArcModel:
     in_arcs: dict[NodeID, tuple[Arc, ...]]  # δ⁻(v): head=v のアーク
     active_nodes: tuple[NodeID, ...]
     active_edges: tuple[Edge, ...]
-    entry_nodes: tuple[NodeID, ...]  # active な boundary を持つ enabled ノード
+    boundary_nodes: tuple[NodeID, ...]  # active な boundary を持つ enabled ノード
+    entry_nodes: tuple[NodeID, ...]
+    exit_nodes: tuple[NodeID, ...]
 
     def arcs_in(self, node: NodeID) -> tuple[Arc, ...]:
         return self.in_arcs.get(node, ())
@@ -91,7 +93,9 @@ def build_arc_model(graph: Graph) -> ArcModel:
         in_arcs[a].append(arc_ba)
 
     active_nodes = tuple(n.node_id for n in graph.enabled_nodes())
-    entry_nodes = tuple(n.node_id for n in graph.boundary_nodes())
+    boundary_nodes = tuple(n.node_id for n in graph.boundary_nodes())
+    entry_nodes = tuple(n.node_id for n in graph.entry_nodes())
+    exit_nodes = tuple(n.node_id for n in graph.exit_nodes())
 
     return ArcModel(
         arcs=tuple(arcs),
@@ -102,7 +106,9 @@ def build_arc_model(graph: Graph) -> ArcModel:
         in_arcs={k: tuple(v) for k, v in in_arcs.items()},
         active_nodes=active_nodes,
         active_edges=tuple(active_edges),
+        boundary_nodes=boundary_nodes,
         entry_nodes=entry_nodes,
+        exit_nodes=exit_nodes,
     )
 
 

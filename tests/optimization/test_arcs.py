@@ -1,6 +1,8 @@
 """有向アークモデル構築のユニットテスト"""
 
 from flow_control.domain import (
+    Boundary,
+    BoundaryDirection,
     CurrentDirection,
     DirectionConstraint,
     Edge,
@@ -90,3 +92,25 @@ def test_fixed_directions_per_current_direction():
         "e1", n1, n2, DirectionConstraint.BIDIRECTIONAL_PRIOR, CurrentDirection.BIDIRECTIONAL
     )
     assert fixed_directions(e_bi) == {"e1|A_TO_B": 1, "e1|B_TO_A": 1}
+
+
+def test_boundary_sets_follow_direction_and_active():
+    def boundary(nid, direction, active=True):
+        return Node(
+            NodeID(nid), NodeKind.GOAL, enabled=True, boundary=Boundary(direction, active=active)
+        )
+
+    graph = Graph(
+        nodes=(
+            boundary("in", BoundaryDirection.ENTRY),
+            boundary("out", BoundaryDirection.EXIT),
+            boundary("both", BoundaryDirection.ENTRY_AND_EXIT),
+            boundary("closed", BoundaryDirection.ENTRY_AND_EXIT, active=False),
+            _node("plain"),
+        ),
+        edges=(),
+    )
+    arc_model = build_arc_model(graph)
+    assert [n.value for n in arc_model.boundary_nodes] == ["in", "out", "both"]
+    assert [n.value for n in arc_model.entry_nodes] == ["in", "both"]
+    assert [n.value for n in arc_model.exit_nodes] == ["out", "both"]

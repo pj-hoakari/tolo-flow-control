@@ -219,7 +219,7 @@ def _freeze(
     adjacency: dict[NodeID, tuple[NodeID, ...]],
 ) -> TriggerZone:
     nodes = set(zone.nodes)
-    for entry in arc_model.entry_nodes:
+    for entry in arc_model.boundary_nodes:
         nodes |= _shortest_path_nodes(zone.nodes, entry, adjacency)
     return TriggerZone(
         seed_edges=tuple(sorted(zone.seed_edges, key=lambda e: e.value)),
