@@ -15,7 +15,7 @@ from dataclasses import dataclass
 
 from ..domain.graph import EdgeID, NodeID
 from .arcs import ArcModel
-from .drainable import reachable_forward
+from .drainable import boundary_connected, reachable_forward
 from .model import MilpInputs
 from .results import (
     OptimizationResult,
@@ -254,7 +254,7 @@ def close_preserves_connectivity(
 ) -> bool:
     """当該エッジを閉鎖しても連結性を保てるか（CLOSE 可否の安全検査）
 
-    Open: 全有効ノードが代表入退出点と双方向に到達可能であること（境界連結性）。
+    Open: 全有効ノードがいずれかの退出点へ到達でき、いずれかの入場点から到達できること（境界連結性）。
     Closed: 弱連結成分を割らず、各ノードが出入り両方向のアークを持つこと
     （ローカル可達性）。いずれか破れる候補は CLOSE 不可＝LIMIT へ格下げする。
     """
@@ -282,12 +282,7 @@ def close_preserves_connectivity(
             return False
 
     if is_open:
-        if not arc_model.entry_nodes:
-            return True
-        root = arc_model.entry_nodes[0]
-        return active <= reachable_forward(forward, root) and active <= (
-            reachable_forward(backward, root)
-        )
+        return boundary_connected(arc_model, forward, backward)
     # Closed: 弱連結成分を割らない
     if not active:
         return True

@@ -1,4 +1,5 @@
 from collections import defaultdict, deque
+from collections.abc import Iterable
 from dataclasses import dataclass
 
 from ..domain.graph import EdgeID, NodeID
@@ -12,8 +13,12 @@ class DrainableResult:
 
 
 def reachable_forward(adjacency: dict[NodeID, list[NodeID]], source: NodeID) -> set[NodeID]:
-    seen: set[NodeID] = {source}
-    queue: deque[NodeID] = deque((source,))
+    return reachable_from(adjacency, (source,))
+
+
+def reachable_from(adjacency: dict[NodeID, list[NodeID]], sources: Iterable[NodeID]) -> set[NodeID]:
+    seen: set[NodeID] = set(sources)
+    queue: deque[NodeID] = deque(seen)
     while queue:
         node = queue.popleft()
         for nxt in adjacency.get(node, ()):
@@ -21,6 +26,17 @@ def reachable_forward(adjacency: dict[NodeID, list[NodeID]], source: NodeID) -> 
                 seen.add(nxt)
                 queue.append(nxt)
     return seen
+
+
+def boundary_connected(
+    arc_model: ArcModel,
+    forward: dict[NodeID, list[NodeID]],
+    backward: dict[NodeID, list[NodeID]],
+) -> bool:
+    active = set(arc_model.active_nodes)
+    if arc_model.exit_nodes and not active <= reachable_from(backward, arc_model.exit_nodes):
+        return False
+    return not arc_model.entry_nodes or active <= reachable_from(forward, arc_model.entry_nodes)
 
 
 def compute_drainable(

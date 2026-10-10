@@ -778,3 +778,68 @@ def test_lightweight_residual_tau_clips_overdrained_edge_to_zero(observed_at):
     opt = result.optimization_result
     assert opt.solver_status == SolverStatus.LIGHTWEIGHT
     assert opt.objective_values.tau_star == pytest.approx(0.0, abs=1e-6)
+
+
+def _two_cycles(entry: str | None, exit_: str | None):
+    from flow_control.domain import (
+        Boundary,
+        BoundaryDirection,
+        CurrentDirection,
+        DirectionConstraint,
+        Edge,
+        EdgeID,
+        Graph,
+        Node,
+        NodeID,
+        NodeKind,
+        ObservationType,
+    )
+    from flow_control.optimization.arcs import build_arc_model
+
+    def node(name):
+        boundary = None
+        if name == entry:
+            boundary = Boundary(BoundaryDirection.ENTRY, active=True)
+        if name == exit_:
+            boundary = Boundary(BoundaryDirection.EXIT, active=True)
+        return Node(NodeID(name), NodeKind.GOAL, enabled=True, boundary=boundary)
+
+    def edge(name, a, b, oneway=False):
+        return Edge(
+            edge_id=EdgeID(name),
+            endpoint_a=NodeID(a),
+            endpoint_b=NodeID(b),
+            direction_constraint=(
+                DirectionConstraint.LEGAL_FIXED_A_TO_B
+                if oneway
+                else DirectionConstraint.BIDIRECTIONAL_PRIOR
+            ),
+            current_direction=CurrentDirection.A_TO_B if oneway else CurrentDirection.BIDIRECTIONAL,
+            enabled=True,
+            observation_type=ObservationType.VECTOR,
+        )
+
+    graph = Graph(
+        nodes=tuple(node(n) for n in ("a", "b", "c", "d")),
+        edges=(edge("e_ab", "a", "b"), edge("e_bc", "b", "c", oneway=True), edge("e_cd", "c", "d")),
+    )
+    arc_model = build_arc_model(graph)
+    direction = {arc.key: 1 for arc in arc_model.arcs}
+    direction["e_bc|B_TO_A"] = 0
+    return arc_model, ArcSolution(direction=direction, flow={}, tau=0.0)
+
+
+def test_boundary_reachability_checks_exits_downstream_and_entries_upstream():
+    ok, solution = _two_cycles(entry="a", exit_="d")
+    assert optimizer_module._boundary_reachability_ok(ok, solution)
+    reversed_roles, solution = _two_cycles(entry="d", exit_="a")
+    assert not optimizer_module._boundary_reachability_ok(reversed_roles, solution)
+
+
+def test_boundary_reachability_skips_an_empty_side():
+    entry_only, solution = _two_cycles(entry="a", exit_=None)
+    assert optimizer_module._boundary_reachability_ok(entry_only, solution)
+    exit_only, solution = _two_cycles(entry=None, exit_="d")
+    assert optimizer_module._boundary_reachability_ok(exit_only, solution)
+    stranded_exit, solution = _two_cycles(entry=None, exit_="a")
+    assert not optimizer_module._boundary_reachability_ok(stranded_exit, solution)

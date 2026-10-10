@@ -208,3 +208,53 @@ def test_confidence_weight_floor_scales_tau(confidence, expected_tau):
     p1 = _solve(graph, obs, forecast, history, ResolvedConfig())
     assert p1.solution is not None
     assert p1.solution.tau == pytest.approx(expected_tau, abs=1e-3)
+
+
+def _two_cycles(entry: str, exit_: str):
+    def node(name):
+        boundary = None
+        if name == entry:
+            boundary = Boundary(BoundaryDirection.ENTRY, active=True)
+        if name == exit_:
+            boundary = Boundary(BoundaryDirection.EXIT, active=True)
+        return Node(NodeID(name), NodeKind.GOAL, enabled=True, boundary=boundary)
+
+    oneway = Edge(
+        edge_id=EdgeID("e_bc"),
+        endpoint_a=NodeID("b"),
+        endpoint_b=NodeID("c"),
+        direction_constraint=DirectionConstraint.LEGAL_FIXED_A_TO_B,
+        current_direction=CurrentDirection.A_TO_B,
+        enabled=True,
+        observation_type=ObservationType.VECTOR,
+    )
+    return Graph(
+        nodes=tuple(node(n) for n in ("a", "b", "c", "d")),
+        edges=(
+            _mk("e_ab", NodeID("a"), NodeID("b")),
+            oneway,
+            _mk("e_cd", NodeID("c"), NodeID("d")),
+        ),
+    )
+
+
+@pytest.mark.parametrize(
+    ("entry", "exit_", "expected"),
+    [("a", "d", SolverStatus.OPTIMAL), ("d", "a", SolverStatus.INFEASIBLE)],
+)
+def test_open_mode_connectivity_splits_entry_and_exit_roots(entry, exit_, expected):
+    forecast = ForecastResult(
+        od_matrix=(ODDemand(NodeID("a"), NodeID("d"), 5.0),),
+        node_confidence=tuple(NodeConfidence(NodeID(n), 1.0) for n in ("a", "b", "c", "d")),
+        arc_flow_sensitivity=tuple(
+            ArcFlowSensitivity(EdgeID(e), 1.0) for e in ("e_ab", "e_bc", "e_cd")
+        ),
+    )
+    p1 = _solve(
+        _two_cycles(entry, exit_),
+        Observations(observed_at=_OBS_AT),
+        forecast,
+        HistoryDigest(),
+        ResolvedConfig(),
+    )
+    assert p1.status == expected

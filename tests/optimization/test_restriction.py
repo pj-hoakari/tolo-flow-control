@@ -220,8 +220,10 @@ def test_gate_skips_stagnation_term_without_observation():
 # --- limit_value / 候補選定 / CLOSE 可否 -------------------------------------
 
 
-def _chain_arc_model(*, oneway_middle: bool = False, boundaries: bool = True):
-    """b0 - n1 - n2 - b3 の鎖（両端が入退出点）"""
+def _chain_arc_model(
+    *, oneway_middle: bool = False, boundaries: bool = True, entry_exit_split: bool = False
+):
+    """b0 - n1 - n2 - b3 の鎖（両端が入退出点。entry_exit_split で b0 を入場専用、b3 を退場専用に）"""
     from flow_control.domain import (
         Boundary,
         BoundaryDirection,
@@ -237,12 +239,16 @@ def _chain_arc_model(*, oneway_middle: bool = False, boundaries: bool = True):
     from flow_control.optimization.arcs import build_arc_model
 
     names = ["b0", "n1", "n2", "b3"]
+    directions = {
+        "b0": BoundaryDirection.ENTRY if entry_exit_split else BoundaryDirection.ENTRY_AND_EXIT,
+        "b3": BoundaryDirection.EXIT if entry_exit_split else BoundaryDirection.ENTRY_AND_EXIT,
+    }
     nodes = tuple(
         Node(
             node_id=NID(n),
-            kind=NodeKind.GOAL if (boundaries and n in ("b0", "b3")) else NodeKind.TRANSIT_ONLY,
-            boundary=Boundary(BoundaryDirection.ENTRY_AND_EXIT, active=True)
-            if boundaries and n in ("b0", "b3")
+            kind=NodeKind.GOAL if (boundaries and n in directions) else NodeKind.TRANSIT_ONLY,
+            boundary=Boundary(directions[n], active=True)
+            if boundaries and n in directions
             else None,
             enabled=True,
         )
@@ -313,13 +319,78 @@ def test_feeder_candidates_ranked_by_contribution_then_importance():
 
 
 def test_close_rejected_when_it_breaks_boundary_reachability():
-    arc_model = _chain_arc_model()
+    arc_model = _chain_arc_model(entry_exit_split=True)
     # 鎖の中央 e1 を閉じると b0 側と b3 側が分断される
     assert not close_preserves_connectivity(
         arc_model,
         closed_edge=EdgeID("e1"),
         direction=_all_directions(arc_model),
         is_open=True,
+    )
+
+
+def test_close_allowed_when_each_side_keeps_an_entry_and_an_exit():
+    arc_model = _chain_arc_model()
+    assert close_preserves_connectivity(
+        arc_model,
+        closed_edge=EdgeID("e1"),
+        direction=_all_directions(arc_model),
+        is_open=True,
+    )
+
+
+def _two_cycles_arc_model(entry: str, exit_: str):
+    from flow_control.domain import (
+        Boundary,
+        BoundaryDirection,
+        CurrentDirection,
+        DirectionConstraint,
+        Edge,
+        Graph,
+        Node,
+        NodeKind,
+        ObservationType,
+    )
+    from flow_control.domain import NodeID as NID
+    from flow_control.optimization.arcs import build_arc_model
+
+    def node(name):
+        boundary = None
+        if name == entry:
+            boundary = Boundary(BoundaryDirection.ENTRY, active=True)
+        if name == exit_:
+            boundary = Boundary(BoundaryDirection.EXIT, active=True)
+        return Node(NID(name), NodeKind.GOAL, enabled=True, boundary=boundary)
+
+    def edge(eid, a, b):
+        return Edge(
+            edge_id=EdgeID(eid),
+            endpoint_a=NID(a),
+            endpoint_b=NID(b),
+            direction_constraint=DirectionConstraint.BIDIRECTIONAL_PRIOR,
+            current_direction=CurrentDirection.BIDIRECTIONAL,
+            enabled=True,
+            observation_type=ObservationType.VECTOR,
+        )
+
+    graph = Graph(
+        nodes=tuple(node(n) for n in ("a", "b", "c", "d")),
+        edges=(edge("e_ab", "a", "b"), edge("e_bc", "b", "c"), edge("e_cd", "c", "d")),
+    )
+    arc_model = build_arc_model(graph)
+    direction = _all_directions(arc_model)
+    direction["e_bc|B_TO_A"] = 0
+    return arc_model, direction
+
+
+def test_close_checks_exit_downstream_and_entry_upstream():
+    arc_model, direction = _two_cycles_arc_model(entry="a", exit_="d")
+    assert close_preserves_connectivity(
+        arc_model, closed_edge=EdgeID("none"), direction=direction, is_open=True
+    )
+    swapped, direction = _two_cycles_arc_model(entry="d", exit_="a")
+    assert not close_preserves_connectivity(
+        swapped, closed_edge=EdgeID("none"), direction=direction, is_open=True
     )
 
 

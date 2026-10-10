@@ -21,7 +21,7 @@ from ..forecasting import ForecastResult
 from .arcs import Arc, ArcModel, build_arc_model, fixed_directions
 from .boundary import compute_boundary_control
 from .config import OptimizationMode, ResolvedConfig
-from .drainable import compute_drainable, reachable_forward
+from .drainable import boundary_connected, compute_drainable
 from .localization import TriggerZone, build_trigger_zones
 from .model import (
     ArcSolution,
@@ -945,9 +945,6 @@ def _local_reachability_ok(arc_model: ArcModel, solution: ArcSolution) -> bool:
 
 
 def _boundary_reachability_ok(arc_model: ArcModel, solution: ArcSolution) -> bool:
-    if not arc_model.entry_nodes:
-        return True
-    r = arc_model.entry_nodes[0]
     forward: dict[NodeID, list[NodeID]] = {}
     backward: dict[NodeID, list[NodeID]] = {}
     for arc in arc_model.arcs:
@@ -955,8 +952,7 @@ def _boundary_reachability_ok(arc_model: ArcModel, solution: ArcSolution) -> boo
             continue
         forward.setdefault(arc.tail, []).append(arc.head)
         backward.setdefault(arc.head, []).append(arc.tail)
-    active = set(arc_model.active_nodes)
-    return active <= reachable_forward(forward, r) and active <= reachable_forward(backward, r)
+    return boundary_connected(arc_model, forward, backward)
 
 
 def _legal_violations(arc_model: ArcModel, solution: ArcSolution) -> tuple[EdgeID, ...]:
