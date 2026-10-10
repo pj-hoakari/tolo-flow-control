@@ -657,3 +657,108 @@ def test_congestion_increment_spreads_across_equal_cost_parallel_routes():
     assert {"e_n_in", "e_n_out", "e_s_in", "e_s_out"} <= used(spread)
     # 逓増なしでは片系統のみ（min-cost はタイブレークで 1 本に寄せる）
     assert len(used(concentrated)) < 4
+
+
+def test_lightweight_solves_when_demand_exceeds_stagnation_on_every_edge(
+    worked_example_graph, worked_example_detour, observed_at
+):
+    from flow_control.domain import (
+        ArcHistoryStat,
+        ArcStagnation,
+        EdgeID,
+        HistoryDigest,
+        NodeID,
+        Observations,
+    )
+    from flow_control.forecasting import ForecastResult, ODDemand
+    from flow_control.forecasting.sensitivity import ArcFlowSensitivity
+
+    edges = tuple(EdgeID(e) for e in ("e12", "e23", "e13"))
+    observations = Observations(
+        observed_at=observed_at,
+        arc_stagnations=tuple(ArcStagnation(e, 1.0) for e in edges),
+    )
+    history = HistoryDigest(
+        arc_stats=tuple(ArcHistoryStat(e, baseline_stagnation=1.0) for e in edges)
+    )
+    forecast = ForecastResult(
+        od_matrix=(ODDemand(NodeID("n1"), NodeID("n3"), 12.0),),
+        arc_flow_sensitivity=tuple(ArcFlowSensitivity(e, 1.0) for e in edges),
+    )
+
+    result = optimize(
+        worked_example_graph,
+        observations,
+        forecast,
+        worked_example_detour,
+        history,
+        previous_result=None,
+        config=ResolvedConfig(),
+        seed=1,
+        time_limit=30.0,
+    )
+
+    opt = result.optimization_result
+    assert opt.solver_status == SolverStatus.LIGHTWEIGHT
+    assert opt.objective_values.throughput == pytest.approx(12.0, abs=1e-6)
+
+
+def test_lightweight_residual_tau_clips_overdrained_edge_to_zero(observed_at):
+    from flow_control.domain import (
+        ArcHistoryStat,
+        ArcStagnation,
+        CurrentDirection,
+        DirectionConstraint,
+        Edge,
+        EdgeID,
+        Graph,
+        HistoryDigest,
+        Node,
+        NodeID,
+        NodeKind,
+        Observations,
+        ObservationType,
+    )
+    from flow_control.forecasting import ForecastResult, ODDemand
+    from flow_control.forecasting.sensitivity import ArcFlowSensitivity
+
+    n1, n2, e1 = NodeID("n1"), NodeID("n2"), EdgeID("e1")
+    graph = Graph(
+        nodes=(
+            Node(n1, NodeKind.GOAL, is_boundary=True, enabled=True),
+            Node(n2, NodeKind.GOAL, is_boundary=False, enabled=True),
+        ),
+        edges=(
+            Edge(
+                edge_id=e1,
+                endpoint_a=n1,
+                endpoint_b=n2,
+                direction_constraint=DirectionConstraint.BIDIRECTIONAL_PRIOR,
+                current_direction=CurrentDirection.BIDIRECTIONAL,
+                enabled=True,
+                observation_type=ObservationType.VECTOR,
+            ),
+        ),
+    )
+    observations = Observations(observed_at=observed_at, arc_stagnations=(ArcStagnation(e1, 1.0),))
+    history = HistoryDigest(arc_stats=(ArcHistoryStat(e1, baseline_stagnation=1.0),))
+    forecast = ForecastResult(
+        od_matrix=(ODDemand(n1, n2, 12.0),),
+        arc_flow_sensitivity=(ArcFlowSensitivity(e1, 1.0),),
+    )
+
+    result = optimize(
+        graph,
+        observations,
+        forecast,
+        DetourResult(),
+        history,
+        previous_result=None,
+        config=ResolvedConfig(),
+        seed=1,
+        time_limit=30.0,
+    )
+
+    opt = result.optimization_result
+    assert opt.solver_status == SolverStatus.LIGHTWEIGHT
+    assert opt.objective_values.tau_star == pytest.approx(0.0, abs=1e-6)

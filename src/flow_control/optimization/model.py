@@ -326,7 +326,7 @@ def build_assignment_lp(
     τ は本 LP では扱わず、解のフローから ``evaluate_residual_tau`` で事後評価する。
 
     ``allow_capacity_slack=True`` では容量系上限（危険容量・容量ヒント・パンク・
-    ノード通過量・排出上限）に非負スラックを付け、目的へ大きな罰則で加算する
+    ノード通過量）に非負スラックを付け、目的へ大きな罰則で加算する
     （フォールバック用）。需要が容量を構造的に超える過密局面でも「最も違反の
     少ない配分」を返せる。フロー保存則は非緩和のまま。
 
@@ -412,16 +412,15 @@ def build_assignment_lp(
             lhs = lhs - sl
         model.add_constraints(lhs <= cap_da)
 
-    def edge_total(edge_ids: list[EdgeID], scale: dict[EdgeID, float] | None = None):
-        # エッジ集合ごとの総フロー Σ_a f_a（scale 指定時は係数 scale_e を掛ける）
+    def edge_total(edge_ids: list[EdgeID]):
+        # エッジ集合ごとの総フロー Σ_a f_a
         eidx = pd.Index([e.value for e in edge_ids], name="edge")
         mem = np.zeros((len(edge_ids), len(enabled)))
         for i, eid in enumerate(edge_ids):
-            coeff = scale.get(eid, 1.0) if scale is not None else 1.0
             for arc in arc_model.arcs_of_edge.get(eid, ()):
                 j = arc_pos.get(arc.key)
                 if j is not None:
-                    mem[i, j] = coeff
+                    mem[i, j] = 1.0
         return (xr.DataArray(mem, coords=[eidx, arc_idx]) * edge_flow).sum("arc")
 
     # 容量ヒント上限・スカラー型パンク制約（エッジ総フロー）
@@ -482,26 +481,6 @@ def build_assignment_lp(
             slacks.append(sl)
             lhs = lhs - sl
         model.add_constraints(lhs <= cap_da)
-
-    # 排出上限（線形近似の妥当域ガード）: η_e*f_e <= s_obs
-    drain_edges = [
-        edge.edge_id
-        for edge in arc_model.active_edges
-        if edge.edge_id in inputs.s_obs
-        and inputs.eta.get(edge.edge_id, 0.0) > 0.0
-        and any(a.key in arc_pos for a in arc_model.arcs_of_edge.get(edge.edge_id, ()))
-    ]
-    if drain_edges:
-        drain_idx = pd.Index([e.value for e in drain_edges], name="edge")
-        s_obs_da = xr.DataArray(
-            np.asarray([inputs.s_obs[e] for e in drain_edges]), coords=[drain_idx]
-        )
-        lhs = edge_total(drain_edges, scale=inputs.eta)
-        if allow_capacity_slack:
-            sl = model.add_variables(lower=0.0, coords=[drain_idx], name="sl_drain")
-            slacks.append(sl)
-            lhs = lhs - sl
-        model.add_constraints(lhs <= s_obs_da)
 
     # τ 維持制約: c_e(s_obs_e − η_e f_e)/(s̄_e + ε0) <= tau_cap の線形同値変形。
     # 分散段でフローを散らしても停滞抑制が悪化しないための上限として使う
@@ -590,7 +569,7 @@ def build_zone_lp(
     current・ベースライン値に固定し、その影響はゾーン横断アークの固定フローを畳み込んだ
     純供給 ``net_supply``（所与の流入出条件）として与えられる。設計が許すコモディティ
     縮約（単一品種）を用いるため変数はアーク次元のみ。制約族（危険容量・容量ヒント・
-    パンク・排出上限）はゾーン内エッジに限定して全体 LP と同一に張る。
+    パンク）はゾーン内エッジに限定して全体 LP と同一に張る。
     """
     model = linopy.Model()
     enabled = tuple(
@@ -646,15 +625,14 @@ def build_zone_lp(
         cap_da = xr.DataArray(np.asarray(danger_caps), coords=[pd.Index(danger_keys, name="arc")])
         model.add_constraints(f.sel(arc=danger_keys) <= cap_da)
 
-    def edge_total(edge_ids: list[EdgeID], scale: dict[EdgeID, float] | None = None):
+    def edge_total(edge_ids: list[EdgeID]):
         eidx = pd.Index([e.value for e in edge_ids], name="edge")
         mem = np.zeros((len(edge_ids), len(enabled)))
         for i, eid in enumerate(edge_ids):
-            coeff = scale.get(eid, 1.0) if scale is not None else 1.0
             for arc in arc_model.arcs_of_edge.get(eid, ()):
                 j = arc_pos.get(arc.key)
                 if j is not None:
-                    mem[i, j] = coeff
+                    mem[i, j] = 1.0
         return (xr.DataArray(mem, coords=[eidx, arc_idx]) * f).sum("arc")
 
     hint_edges = [
@@ -698,20 +676,6 @@ def build_zone_lp(
         cap_da = xr.DataArray(np.asarray([c for _, c in capped_nodes]), coords=[nidx])
         model.add_constraints((xr.DataArray(mem, coords=[nidx, arc_idx]) * f).sum("arc") <= cap_da)
 
-    drain_edges = [
-        eid
-        for eid in zone_edge_list
-        if eid in inputs.s_obs
-        and inputs.eta.get(eid, 0.0) > 0.0
-        and any(a.key in arc_pos for a in arc_model.arcs_of_edge.get(eid, ()))
-    ]
-    if drain_edges:
-        s_obs_da = xr.DataArray(
-            np.asarray([inputs.s_obs[e] for e in drain_edges]),
-            coords=[pd.Index([e.value for e in drain_edges], name="edge")],
-        )
-        model.add_constraints(edge_total(drain_edges, scale=inputs.eta) <= s_obs_da)
-
     model.add_objective(f.sum(), sense="min")
     return built
 
@@ -748,8 +712,8 @@ def evaluate_residual_tau(
 ) -> float:
     """配分解の近似残留 τ を事後評価する
 
-    τ = max_e c_e(s_obs_e − η_e f_e)/(s̄_e + ε0)（排出可能かつ停滞観測のあるエッジ）。
-    排出上限 η_e f_e ≤ s_obs_e を満たす解では各項は負にならない。対象がなければ 0。
+    τ = max_e c_e·max(0, s_obs_e − η_e f_e)/(s̄_e + ε0)（排出可能かつ停滞観測のあるエッジ）。
+    排出効果が観測停滞量を超える分は残留 0 として扱う。対象がなければ 0。
     """
     tau = 0.0
     for edge in arc_model.active_edges:
@@ -757,7 +721,7 @@ def evaluate_residual_tau(
         if eid not in drainable or eid not in inputs.s_obs:
             continue
         f_e = sum(flow.get(arc.key, 0.0) for arc in arc_model.arcs_of_edge.get(eid, ()))
-        residual = inputs.s_obs[eid] - inputs.eta.get(eid, 0.0) * f_e
+        residual = max(0.0, inputs.s_obs[eid] - inputs.eta.get(eid, 0.0) * f_e)
         value = (
             inputs.c_e.get(eid, 1.0) * residual / (inputs.s_bar.get(eid, 0.0) + inputs.epsilon_0)
         )
