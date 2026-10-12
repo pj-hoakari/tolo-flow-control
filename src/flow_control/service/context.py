@@ -14,5 +14,5 @@ class TenantContext:
     # tenant_id はデータ整合性検証のラベルとしてのみ使用する
     tenant_id: str
     # tenant_category と available_history_hours は縮退モード要否判定にのみ使用する
-    tenant_category: TenantCategory = TenantCategory.LONG_TERM
+    tenant_category: TenantCategory = TenantCategory.SHORT_TERM
     available_history_hours: float = 0.0
