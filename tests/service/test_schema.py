@@ -27,12 +27,13 @@ from flow_control.domain.observations import (
 from flow_control.domain.references import Reference, TagReference, ThresholdDefaults
 from flow_control.service import (
     Diagnostics,
+    EventContext,
+    EventTerm,
     FeedbackValues,
     OptimizationMode,
     Request,
     ResolvedConfig,
     Response,
-    TenantCategory,
     TenantContext,
     Verdict,
 )
@@ -80,7 +81,8 @@ def test_unified_config_defaults_are_noharm() -> None:
 def test_request_response_construct() -> None:
     req = Request(
         request_id="r1",
-        tenant_context=TenantContext(tenant_id="t1", tenant_category=TenantCategory.SHORT_TERM),
+        tenant_context=TenantContext(tenant_id="t1"),
+        event_context=EventContext(term=EventTerm.SHORT),
         graph=Graph(),
         observations=Observations(observed_at=_NOW),
         history_digest=HistoryDigest(),

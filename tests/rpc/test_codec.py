@@ -47,6 +47,8 @@ from flow_control.rpc import codec
 from flow_control.rpc.generated.tolo.flow.v1 import flow_pb2 as pb
 from flow_control.service import (
     Diagnostics,
+    EventContext,
+    EventTerm,
     FeedbackValues,
     QualityMetrics,
     Request,
@@ -159,6 +161,7 @@ def test_request_round_trip_uses_explicit_event_id() -> None:
     base = Request(
         request_id="r1",
         tenant_context=TenantContext(tenant_id="t1"),
+        event_context=EventContext(EventTerm.LONG, available_history_hours=6.5),
         graph=graph,
         observations=Observations(observed_at=now),
         history_digest=HistoryDigest(),
@@ -416,6 +419,41 @@ def test_timestamps_normalize_to_utc_and_reject_naive() -> None:
     naive = replace(aware, occurred_at=datetime(2026, 9, 21, 12))  # noqa: DTZ001
     with pytest.raises(ValueError, match=r"naive event\.occurred_at"):
         _ = codec._encode_event(naive)
+
+
+def test_decode_request_requires_event_context_and_term() -> None:
+    now = datetime(2026, 9, 21, 12, tzinfo=UTC)
+    request = Request(
+        request_id="r1",
+        tenant_context=TenantContext(tenant_id="t1"),
+        graph=Graph(),
+        observations=Observations(observed_at=now),
+        history_digest=HistoryDigest(),
+        detection_state=DetectionState(),
+        references=Reference(),
+        config=ResolvedConfig(),
+        server_time=now,
+    )
+    wire = codec.encode_request(request, event_id="ev1")
+    assert wire.event_context.term == pb.EVENT_TERM_SHORT
+
+    missing_context = pb.OptimizeRequest()
+    missing_context.CopyFrom(wire)
+    missing_context.ClearField("event_context")
+    with pytest.raises(ValueError, match="missing event_context"):
+        _ = codec.decode_request(missing_context)
+
+    missing_term = pb.OptimizeRequest()
+    missing_term.CopyFrom(wire)
+    missing_term.event_context.ClearField("term")
+    with pytest.raises(ValueError, match="missing term"):
+        _ = codec.decode_request(missing_term)
+
+    unspecified = pb.OptimizeRequest()
+    unspecified.CopyFrom(wire)
+    unspecified.event_context.term = pb.EVENT_TERM_UNSPECIFIED
+    with pytest.raises(ValueError, match="unknown event term"):
+        _ = codec.decode_request(unspecified)
 
 
 def test_decode_boundary_requires_direction_and_active() -> None:

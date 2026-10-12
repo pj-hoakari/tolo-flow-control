@@ -223,11 +223,8 @@ def observation_request(
         request_id=f"req-{cycle.server_time:%H%M}",
         schema_version="request/1",
         event_id="evt-observation",
-        tenant_context=pb.TenantContext(
-            tenant_id="tenant-observation",
-            tenant_category=pb.TENANT_CATEGORY_SHORT_TERM,
-            available_history_hours=0,
-        ),
+        tenant_context=pb.TenantContext(tenant_id="tenant-observation"),
+        event_context=pb.EventContext(term=pb.EVENT_TERM_SHORT, available_history_hours=0),
         graph=_graph(graph),
         observations=_observations(cycle, omit_zero_flows=omit_zero_flows),
         history_digest=history,

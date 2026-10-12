@@ -67,11 +67,11 @@ class StagnationDerivation(int, metaclass=_enum_type_wrapper.EnumTypeWrapper):
     STAGNATION_DERIVATION_BASIC: _ClassVar[StagnationDerivation]
     STAGNATION_DERIVATION_REFINED: _ClassVar[StagnationDerivation]
 
-class TenantCategory(int, metaclass=_enum_type_wrapper.EnumTypeWrapper):
+class EventTerm(int, metaclass=_enum_type_wrapper.EnumTypeWrapper):
     __slots__ = ()
-    TENANT_CATEGORY_UNSPECIFIED: _ClassVar[TenantCategory]
-    TENANT_CATEGORY_SHORT_TERM: _ClassVar[TenantCategory]
-    TENANT_CATEGORY_LONG_TERM: _ClassVar[TenantCategory]
+    EVENT_TERM_UNSPECIFIED: _ClassVar[EventTerm]
+    EVENT_TERM_SHORT: _ClassVar[EventTerm]
+    EVENT_TERM_LONG: _ClassVar[EventTerm]
 
 class OptimizationMode(int, metaclass=_enum_type_wrapper.EnumTypeWrapper):
     __slots__ = ()
@@ -283,9 +283,9 @@ CONFIDENCE_FLAG_INVALID: ConfidenceFlag
 STAGNATION_DERIVATION_UNSPECIFIED: StagnationDerivation
 STAGNATION_DERIVATION_BASIC: StagnationDerivation
 STAGNATION_DERIVATION_REFINED: StagnationDerivation
-TENANT_CATEGORY_UNSPECIFIED: TenantCategory
-TENANT_CATEGORY_SHORT_TERM: TenantCategory
-TENANT_CATEGORY_LONG_TERM: TenantCategory
+EVENT_TERM_UNSPECIFIED: EventTerm
+EVENT_TERM_SHORT: EventTerm
+EVENT_TERM_LONG: EventTerm
 OPTIMIZATION_MODE_UNSPECIFIED: OptimizationMode
 OPTIMIZATION_MODE_LIGHTWEIGHT: OptimizationMode
 OPTIMIZATION_MODE_STRICT: OptimizationMode
@@ -410,7 +410,7 @@ OD_RESOLUTION_REASON_SPARSE_OBSERVATION: ODResolutionReason
 OD_RESOLUTION_REASON_NODE_ONLY: ODResolutionReason
 
 class OptimizeRequest(_message.Message):
-    __slots__ = ("request_id", "schema_version", "event_id", "tenant_context", "graph", "observations", "history_digest", "detection_state", "references", "previous_result", "events", "config", "server_time")
+    __slots__ = ("request_id", "schema_version", "event_id", "tenant_context", "graph", "observations", "history_digest", "detection_state", "references", "previous_result", "events", "config", "server_time", "event_context")
     REQUEST_ID_FIELD_NUMBER: _ClassVar[int]
     SCHEMA_VERSION_FIELD_NUMBER: _ClassVar[int]
     EVENT_ID_FIELD_NUMBER: _ClassVar[int]
@@ -424,6 +424,7 @@ class OptimizeRequest(_message.Message):
     EVENTS_FIELD_NUMBER: _ClassVar[int]
     CONFIG_FIELD_NUMBER: _ClassVar[int]
     SERVER_TIME_FIELD_NUMBER: _ClassVar[int]
+    EVENT_CONTEXT_FIELD_NUMBER: _ClassVar[int]
     request_id: str
     schema_version: str
     event_id: str
@@ -437,7 +438,8 @@ class OptimizeRequest(_message.Message):
     events: _containers.RepeatedCompositeFieldContainer[Event]
     config: ResolvedConfig
     server_time: _timestamp_pb2.Timestamp
-    def __init__(self, request_id: _Optional[str] = ..., schema_version: _Optional[str] = ..., event_id: _Optional[str] = ..., tenant_context: _Optional[_Union[TenantContext, _Mapping]] = ..., graph: _Optional[_Union[Graph, _Mapping]] = ..., observations: _Optional[_Union[Observations, _Mapping]] = ..., history_digest: _Optional[_Union[HistoryDigest, _Mapping]] = ..., detection_state: _Optional[_Union[DetectionState, _Mapping]] = ..., references: _Optional[_Union[Reference, _Mapping]] = ..., previous_result: _Optional[_Union[OptimizationResult, _Mapping]] = ..., events: _Optional[_Iterable[_Union[Event, _Mapping]]] = ..., config: _Optional[_Union[ResolvedConfig, _Mapping]] = ..., server_time: _Optional[_Union[datetime.datetime, _timestamp_pb2.Timestamp, _Mapping]] = ...) -> None: ...
+    event_context: EventContext
+    def __init__(self, request_id: _Optional[str] = ..., schema_version: _Optional[str] = ..., event_id: _Optional[str] = ..., tenant_context: _Optional[_Union[TenantContext, _Mapping]] = ..., graph: _Optional[_Union[Graph, _Mapping]] = ..., observations: _Optional[_Union[Observations, _Mapping]] = ..., history_digest: _Optional[_Union[HistoryDigest, _Mapping]] = ..., detection_state: _Optional[_Union[DetectionState, _Mapping]] = ..., references: _Optional[_Union[Reference, _Mapping]] = ..., previous_result: _Optional[_Union[OptimizationResult, _Mapping]] = ..., events: _Optional[_Iterable[_Union[Event, _Mapping]]] = ..., config: _Optional[_Union[ResolvedConfig, _Mapping]] = ..., server_time: _Optional[_Union[datetime.datetime, _timestamp_pb2.Timestamp, _Mapping]] = ..., event_context: _Optional[_Union[EventContext, _Mapping]] = ...) -> None: ...
 
 class OptimizeResponse(_message.Message):
     __slots__ = ("request_id", "verdict", "updated_detection_state", "feedback_values", "diagnostics", "optimization_result", "elapsed_ms")
@@ -458,14 +460,18 @@ class OptimizeResponse(_message.Message):
     def __init__(self, request_id: _Optional[str] = ..., verdict: _Optional[_Union[Verdict, str]] = ..., updated_detection_state: _Optional[_Union[DetectionState, _Mapping]] = ..., feedback_values: _Optional[_Union[FeedbackValues, _Mapping]] = ..., diagnostics: _Optional[_Union[Diagnostics, _Mapping]] = ..., optimization_result: _Optional[_Union[OptimizationResult, _Mapping]] = ..., elapsed_ms: _Optional[int] = ...) -> None: ...
 
 class TenantContext(_message.Message):
-    __slots__ = ("tenant_id", "tenant_category", "available_history_hours")
+    __slots__ = ("tenant_id",)
     TENANT_ID_FIELD_NUMBER: _ClassVar[int]
-    TENANT_CATEGORY_FIELD_NUMBER: _ClassVar[int]
-    AVAILABLE_HISTORY_HOURS_FIELD_NUMBER: _ClassVar[int]
     tenant_id: str
-    tenant_category: TenantCategory
+    def __init__(self, tenant_id: _Optional[str] = ...) -> None: ...
+
+class EventContext(_message.Message):
+    __slots__ = ("term", "available_history_hours")
+    TERM_FIELD_NUMBER: _ClassVar[int]
+    AVAILABLE_HISTORY_HOURS_FIELD_NUMBER: _ClassVar[int]
+    term: EventTerm
     available_history_hours: float
-    def __init__(self, tenant_id: _Optional[str] = ..., tenant_category: _Optional[_Union[TenantCategory, str]] = ..., available_history_hours: _Optional[float] = ...) -> None: ...
+    def __init__(self, term: _Optional[_Union[EventTerm, str]] = ..., available_history_hours: _Optional[float] = ...) -> None: ...
 
 class Graph(_message.Message):
     __slots__ = ("nodes", "edges")

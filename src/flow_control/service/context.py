@@ -1,18 +1,22 @@
-"""TenantContext（テナント種別・履歴可用時間。縮退モード要否判定用）"""
+"""TenantContext と EventContext（イベント種別・履歴可用時間。縮退モード要否判定用）"""
 
 from dataclasses import dataclass
 from enum import Enum
 
 
-class TenantCategory(str, Enum):
-    SHORT_TERM = "SHORT_TERM"
-    LONG_TERM = "LONG_TERM"
+class EventTerm(str, Enum):
+    SHORT = "SHORT"
+    LONG = "LONG"
 
 
 @dataclass(frozen=True)
 class TenantContext:
     # tenant_id はデータ整合性検証のラベルとしてのみ使用する
     tenant_id: str
-    # tenant_category と available_history_hours は縮退モード要否判定にのみ使用する
-    tenant_category: TenantCategory = TenantCategory.SHORT_TERM
+
+
+@dataclass(frozen=True)
+class EventContext:
+    # term と available_history_hours は縮退モード要否判定にのみ使用する
+    term: EventTerm = EventTerm.SHORT
     available_history_hours: float = 0.0

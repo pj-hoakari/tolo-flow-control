@@ -21,9 +21,10 @@ from flow_control.forecasting import forecast as forecasting_forecast
 from flow_control.optimization import SolverStatus
 from flow_control.optimization import optimize as optimization_optimize
 from flow_control.service import (
+    EventContext,
+    EventTerm,
     Request,
     ResolvedConfig,
-    TenantCategory,
     TenantContext,
     Verdict,
     handle_request,
@@ -35,7 +36,8 @@ NOW = datetime(2026, 7, 20, tzinfo=UTC)
 def _request(graph: Graph | None = None) -> Request:
     return Request(
         request_id="request-1",
-        tenant_context=TenantContext("tenant-1", TenantCategory.LONG_TERM),
+        tenant_context=TenantContext("tenant-1"),
+        event_context=EventContext(EventTerm.LONG),
         graph=graph or Graph(),
         observations=Observations(observed_at=NOW),
         history_digest=HistoryDigest(),
