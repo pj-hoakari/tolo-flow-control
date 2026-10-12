@@ -66,7 +66,7 @@ from flow_control.optimization.results import ObjectiveValues as OptimizationObj
 from flow_control.optimization.results import RestrictionReason as OptimizationRestrictionReason
 from flow_control.rpc.generated.tolo.flow.v1 import flow_pb2 as pb
 from flow_control.service.config import OptimizationMode, ResolvedConfig, ThroughputWeights
-from flow_control.service.context import TenantCategory, TenantContext
+from flow_control.service.context import EventContext, EventTerm, TenantContext
 from flow_control.service.diagnostics import (
     Diagnostics,
     FallbackKind,
@@ -219,11 +219,11 @@ _STAGNATION_DERIVATION_TO_WIRE = {
     StagnationDerivation.REFINED: pb.STAGNATION_DERIVATION_REFINED,
 }
 _STAGNATION_DERIVATION_FROM_WIRE = {v: k for k, v in _STAGNATION_DERIVATION_TO_WIRE.items()}
-_TENANT_CATEGORY_TO_WIRE = {
-    TenantCategory.SHORT_TERM: pb.TENANT_CATEGORY_SHORT_TERM,
-    TenantCategory.LONG_TERM: pb.TENANT_CATEGORY_LONG_TERM,
+_EVENT_TERM_TO_WIRE = {
+    EventTerm.SHORT: pb.EVENT_TERM_SHORT,
+    EventTerm.LONG: pb.EVENT_TERM_LONG,
 }
-_TENANT_CATEGORY_FROM_WIRE = {v: k for k, v in _TENANT_CATEGORY_TO_WIRE.items()}
+_EVENT_TERM_FROM_WIRE = {v: k for k, v in _EVENT_TERM_TO_WIRE.items()}
 _OPTIMIZATION_MODE_TO_WIRE = {
     OptimizationMode.LIGHTWEIGHT: pb.OPTIMIZATION_MODE_LIGHTWEIGHT,
     OptimizationMode.STRICT: pb.OPTIMIZATION_MODE_STRICT,
@@ -1070,21 +1070,23 @@ def _decode_references(value: pb.Reference) -> Reference:
 
 
 def _encode_tenant_context(value: TenantContext) -> pb.TenantContext:
-    return pb.TenantContext(
-        tenant_id=_required_id(value.tenant_id, "tenant_id"),
-        tenant_category=_enum_to_wire(
-            value.tenant_category, _TENANT_CATEGORY_TO_WIRE, "tenant category"
-        ),
+    return pb.TenantContext(tenant_id=_required_id(value.tenant_id, "tenant_id"))
+
+
+def _decode_tenant_context(value: pb.TenantContext) -> TenantContext:
+    return TenantContext(tenant_id=_required_string(value, "tenant_id"))
+
+
+def _encode_event_context(value: EventContext) -> pb.EventContext:
+    return pb.EventContext(
+        term=_enum_to_wire(value.term, _EVENT_TERM_TO_WIRE, "event term"),
         available_history_hours=_finite(value.available_history_hours, "available_history_hours"),
     )
 
 
-def _decode_tenant_context(value: pb.TenantContext) -> TenantContext:
-    return TenantContext(
-        tenant_id=_required_string(value, "tenant_id"),
-        tenant_category=_required_enum(
-            value, "tenant_category", _TENANT_CATEGORY_FROM_WIRE, "tenant category"
-        ),
+def _decode_event_context(value: pb.EventContext) -> EventContext:
+    return EventContext(
+        term=_required_enum(value, "term", _EVENT_TERM_FROM_WIRE, "event term"),
         available_history_hours=_required_float(value, "available_history_hours"),
     )
 
@@ -1919,6 +1921,8 @@ def _decode_request_message(wire: pb.OptimizeRequest) -> Request:
     _ = _required_string(wire, "event_id")
     if not wire.HasField("tenant_context"):
         raise ValueError("missing tenant_context")
+    if not wire.HasField("event_context"):
+        raise ValueError("missing event_context")
     if not wire.HasField("graph"):
         raise ValueError("missing graph")
     if not wire.HasField("observations"):
@@ -1934,6 +1938,7 @@ def _decode_request_message(wire: pb.OptimizeRequest) -> Request:
     request = Request(
         request_id=_required_string(wire, "request_id"),
         tenant_context=_decode_tenant_context(wire.tenant_context),
+        event_context=_decode_event_context(wire.event_context),
         graph=_decode_graph(wire.graph),
         observations=_decode_observations(wire.observations),
         history_digest=_decode_history(wire.history_digest),
@@ -1963,6 +1968,7 @@ def encode_request(request: Request, *, event_id: str) -> pb.OptimizeRequest:
         event_id=event_id,
     )
     result.tenant_context.CopyFrom(_encode_tenant_context(request.tenant_context))
+    result.event_context.CopyFrom(_encode_event_context(request.event_context))
     result.graph.CopyFrom(_encode_graph(request.graph))
     result.observations.CopyFrom(_encode_observations(request.observations))
     result.history_digest.CopyFrom(_encode_history(request.history_digest))

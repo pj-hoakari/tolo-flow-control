@@ -1,11 +1,11 @@
 """サービス境界層
 
-外部と交換する I/O 契約（Request / Response / TenantContext / Verdict /
+外部と交換する I/O 契約（Request / Response / TenantContext / EventContext / Verdict /
 Diagnostics / FeedbackValues）と、マージ済み設定の統一 ResolvedConfig を定義する。
 """
 
 from .config import OptimizationMode, ResolvedConfig, ThroughputWeights
-from .context import TenantCategory, TenantContext
+from .context import EventContext, EventTerm, TenantContext
 from .diagnostics import (
     DIAGNOSTICS_SCHEMA_VERSION,
     Diagnostics,
@@ -49,6 +49,8 @@ __all__ = [
     "DetourMetrics",
     "Diagnostics",
     "DirectionChangeSummary",
+    "EventContext",
+    "EventTerm",
     "FallbackKind",
     "FallbackRecord",
     "FeedbackValues",
@@ -68,7 +70,6 @@ __all__ = [
     "StepRecord",
     "StepStatus",
     "TagObservation",
-    "TenantCategory",
     "TenantContext",
     "ThroughputWeights",
     "TriggerEvidence",

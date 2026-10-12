@@ -16,7 +16,7 @@ from ..domain.history import HistoryDigest
 from ..domain.observations import Observations
 from ..domain.references import Reference
 from .config import ResolvedConfig
-from .context import TenantContext
+from .context import EventContext, TenantContext
 from .diagnostics import Diagnostics
 from .feedback import FeedbackValues
 from .verdict import Verdict
@@ -33,6 +33,7 @@ REQUEST_SCHEMA_VERSION = "request/1"
 class Request:
     request_id: str  # 外部が発行する冪等キー
     tenant_context: TenantContext
+    event_context: EventContext = field(default_factory=EventContext)
     graph: Graph
     observations: Observations
     history_digest: HistoryDigest

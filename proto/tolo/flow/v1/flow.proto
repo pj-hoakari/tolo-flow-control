@@ -23,6 +23,7 @@ message OptimizeRequest {
   repeated Event events = 11;
   ResolvedConfig config = 12;
   google.protobuf.Timestamp server_time = 13;
+  EventContext event_context = 14;
 }
 
 message OptimizeResponse {
@@ -37,8 +38,13 @@ message OptimizeResponse {
 
 message TenantContext {
   optional string tenant_id = 1;
-  optional TenantCategory tenant_category = 2;
-  optional double available_history_hours = 3;
+  reserved 2, 3;
+  reserved "tenant_category", "available_history_hours";
+}
+
+message EventContext {
+  optional EventTerm term = 1;
+  optional double available_history_hours = 2;
 }
 
 message Graph {
@@ -604,10 +610,10 @@ enum StagnationDerivation {
   STAGNATION_DERIVATION_REFINED = 2;
 }
 
-enum TenantCategory {
-  TENANT_CATEGORY_UNSPECIFIED = 0;
-  TENANT_CATEGORY_SHORT_TERM = 1;
-  TENANT_CATEGORY_LONG_TERM = 2;
+enum EventTerm {
+  EVENT_TERM_UNSPECIFIED = 0;
+  EVENT_TERM_SHORT = 1;
+  EVENT_TERM_LONG = 2;
 }
 
 enum OptimizationMode {
