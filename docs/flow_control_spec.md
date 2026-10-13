@@ -44,6 +44,7 @@ message OptimizeRequest {
   repeated Event events = 11;
   ResolvedConfig config = 12;
   google.protobuf.Timestamp server_time = 13;
+  EventContext event_context = 14;
 }
 
 message OptimizeResponse {
@@ -74,7 +75,7 @@ enum Verdict {
 | フィールド | 内容 | 用意する側 |
 |---|---|---|
 | `request_id`・`schema_version`・`server_time` | 要求の識別、スキーマの版（`request/1`）、判定に使う現在時刻 | 観測 |
-| `event_id`・`tenant_context` | 最適化の単位となるイベントと、テナント（`tenant_id`、テナント区分、使える履歴の時間） | 観測 |
+| `event_id`・`tenant_context`・`event_context` | 最適化の単位となるイベントとテナント（`tenant_id`）、イベントの性質を表す区分（`term`）と使える履歴の時間 | 観測 |
 | `graph` | Flow 独自のグラフ（ノードとエッジ）。グラフ編集から取得した現在の版を、観測が変換する | 観測（正本はグラフ編集） |
 | `observations` | エッジの流量・停滞量とノードの滞留量。観測スナップショットのスコアを、観測が変換する | 観測 |
 | `history_digest` | 同一イベントの過去の観測値から事前に計算した統計と時系列 | 観測 |
@@ -104,10 +105,11 @@ enum Verdict {
   Observation 以外から到達できないことはインフラ層で保証する（Compose 環境はネットワーク構成、Cloud Run 環境は ingress 制限と Observation の実行 SA への Invoker IAM。service_transport.md）。本サービスはワークロード資格情報と内部JWTを要求しない
   テナント境界は `tenant_id`／`event_id` の必須受領（下記の検証点）と、強制点を観測に集約する現行の分担で維持する
   監査相関のため、呼び出し元は W3C Trace Context（`traceparent`）をリクエストメタデータで伝搬する
-- 不変条件の検証点: `event_id` と `tenant_context.tenant_id` の両方必須（欠落は `invalid_argument`）、グラフ・検知状態・履歴の要約は毎回受領（保持しない）
+- 不変条件の検証点: `event_id`、`tenant_context.tenant_id`、`event_context.term` はいずれも必須（欠落と `EVENT_TERM_UNSPECIFIED` は `invalid_argument`）、グラフ・検知状態・履歴の要約は毎回受領（保持しない）
 - 履歴の同梱方式の採用理由: 本サービスを純関数に保ち、リクエスト完結（再現性・テスト容易性）とテナント保護境界の強制点を観測1箇所に維持するため
   観測の永続化層（PostgreSQL の時系列テーブル。Observation）は観測コンテキスト内部の実装詳細であり、本サービスは直接参照しない
-- 履歴の要約（`history_digest`）の統計と時系列は観測が事前に計算する。時系列窓の期間はイベントの観測設定値（Tenant Management が保持する `ObservationSettings.history_window_days`。既定 30 日）に従い観測が決める。短期イベントの縮退は参照値（`references`）で補完
+- 履歴の要約（`history_digest`）の統計と時系列は観測が事前に計算する。時系列窓の期間はイベントの観測設定値（観測が保持する `ObservationSettings.history_window_days`。既定 30 日）に従い観測が決める。短期イベントの縮退は参照値（`references`）で補完
+- `event_context.term` はイベントの性質（短期＝会期が数日に満たないイベント、長期＝会期が数日以上にわたるイベント）を表し、観測がイベント種別から決める。履歴がどれだけたまっているかは `event_context.available_history_hours` だけで表す
 - 設定値（`config`）の取得元は未確定であり実装フェーズで確定する。それまで観測は既定値を渡す
 - 悉皆でないスコア（共有カーネルの `exhaustive = false`）は、容量ヒントとの比較（パンク判定）とポイント間の大小比較に使わない。履歴パーセンタイルによる高停滞判定にのみ用いる。観測が Flow の型へ変換する際の扱いは実装フェーズで確定する
 - 目的の優先順（1. 最大停滞量の近似最小化、2. 優劣つかない範囲でのスループット最大化）と安全要件の非緩和は実装制約である。応答の `optimization_result.objective_values` は両目的の値を返す
