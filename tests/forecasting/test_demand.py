@@ -324,8 +324,8 @@ def test_mixed_accumulation_uses_occupancy_delta(observed_at: datetime) -> None:
 def test_mixed_steady_uses_littles_law(observed_at: datetime) -> None:
     """GOAL_TRANSIT_MIXED 定常フェーズ（ΔOcc=0）: リトルの法則で滞在を復元
 
-    a->v=10, ΔOcc=0, O_v=60, τ_pass=2, W_dwell=10
-    stay = max(0, (60 - 10*2)/(10-2)) = 5
+    a->v=10 人/分, ΔOcc=0, O_v=60 人, τ_pass=120 秒=2 分, W_dwell=600 秒=10 分
+    stay = max(0, (60 - 10*2)/(10-2)) = 5 人/分
     """
     graph = Graph(
         nodes=(_node("a"), _node("v", kind=NodeKind.GOAL_TRANSIT_MIXED)),
@@ -343,7 +343,7 @@ def test_mixed_steady_uses_littles_law(observed_at: datetime) -> None:
             ),
         ),
     )
-    config = _config(transit_time_prior_sec=2.0, dwell_time_prior_sec=10.0)
+    config = _config(transit_time_prior_sec=120.0, dwell_time_prior_sec=600.0)
 
     v = _demand_of(compute_node_demand(graph, observations, config), "v")
     assert v.staying == pytest.approx(5.0)

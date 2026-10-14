@@ -185,7 +185,9 @@ def _staying_demand(
         and level is not None
     ):
         # (c) リトルの法則：占有レベルのうち通過ベースラインを超える滞留分を換算
-        return max(0.0, (level - gross_in * tau) / (dwell - tau))
+        tau_min = tau / 60.0
+        dwell_min = dwell / 60.0
+        return max(0.0, (level - gross_in * tau_min) / (dwell_min - tau_min))
     if delta_occ is not None:
         return max(0.0, delta_occ)  # (b) 定常・排出フェーズ（実質 0）
     return 0.0  # (d) 信号なし → prior 縮退
