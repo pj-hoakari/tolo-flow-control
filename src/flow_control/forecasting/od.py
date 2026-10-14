@@ -191,7 +191,7 @@ def estimate_od(
 
     if forward_ok:
         raw, _ = _forward_propagate(
-            node_demands, production, flows, config, observations=observations
+            node_demands, production, absorption, flows, config, observations=observations
         )
         raw = _exclude_invalid_pairs(raw, boundary_ids, is_open_mode)
         od = _cut_small_od(raw, config.delta_min)
@@ -219,6 +219,8 @@ def reproduce_link_flows(
     od_matrix: tuple[ODDemand, ...],
     config: ResolvedConfig,
     imputed_flows: tuple[ImputedArcFlow, ...] = (),
+    *,
+    is_open_mode: bool,
 ) -> dict[tuple[str, NodeID], float]:
     """推定 OD を実測配分で再現したリンク流量 v̂ を返す（Step C の検証用）
 
@@ -233,6 +235,9 @@ def reproduce_link_flows(
     if not od_matrix:
         return {}
     flows = _directed_flows(graph, observations)
+    _, absorption = _od_marginals(
+        graph, observations, node_demands, is_open_mode=is_open_mode, has_flow=len(flows) > 0
+    )
     observed_edges = {edge_id for edge_id, _ in flows}
     for imputed in imputed_flows:
         if imputed.edge_id.value not in observed_edges and imputed.rate > 0.0:
@@ -261,7 +266,7 @@ def reproduce_link_flows(
         if nid not in known
     )
     _, arc_load = _forward_propagate(
-        sources, dict(production), flows, config, observations=observations
+        sources, dict(production), absorption, flows, config, observations=observations
     )
     return arc_load
 
@@ -442,6 +447,7 @@ def _imputed_arcs_by_node(
 def _forward_propagate(
     node_demands: tuple[NodeDemand, ...],
     production: dict[NodeID, float],
+    absorption: dict[NodeID, float],
     flows: _DirectedFlows,
     config: ResolvedConfig,
     *,
@@ -449,7 +455,7 @@ def _forward_propagate(
 ) -> tuple[dict[tuple[NodeID, NodeID], float], dict[tuple[str, NodeID], float]]:
     """転換率の前方伝播で OD を直接同定
 
-    各生成源 s の prod_s を seed に，各ノードで終端割合 ρ_v = stay_v/A_v を吸収し，
+    各生成源 s の prod_s を seed に，各ノードで終端割合 ρ_v = absorb_v/A_v を吸収し，
     残りを出口エッジへ観測流量比で配分して下流へ伝播する
     `A→B`（B で終端）と `A→（B→）C`（B を通過）が厳密に分離される
 
@@ -457,10 +463,9 @@ def _forward_propagate(
     (edge_id, from_node) の有向キー。後者は Step C の再現検証に使う
     """
     gross_in = {d.node_id: d.gross_in for d in node_demands}
-    staying = {d.node_id: d.staying for d in node_demands}
-    # 終端割合 ρ_v = stay_v/A_v。stay>A の異常時も relay が負にならないよう [0,1] にクランプ
+    # 終端割合 ρ_v = absorb_v/A_v。absorb>A の異常時も relay が負にならないよう [0,1] にクランプ
     rho = {
-        nid: (min(1.0, staying[nid] / gross_in[nid]) if gross_in[nid] > 0.0 else 0.0)
+        nid: (min(1.0, absorption.get(nid, 0.0) / gross_in[nid]) if gross_in[nid] > 0.0 else 0.0)
         for nid in gross_in
     }
     out_split = _out_split_with_edge(flows)
