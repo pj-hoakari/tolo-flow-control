@@ -69,6 +69,7 @@ def forecast(
         node_demand,
         config,
         demand_result.imputed_flows,
+        is_open_mode=is_open_mode,
     )
 
     # フロー感度 η_e（エッジ単位）

@@ -179,6 +179,57 @@ def test_forward_propagation_terminates_at_mixed_dead_end_without_occupancy() ->
     assert _resolution(result, "hallA").mode == ODResolutionMode.TURNING_EXACT
 
 
+def test_forward_propagation_absorbs_external_exit_at_boundary() -> None:
+    """退出境界では外部流出 max(0, A−P) を終端として吸収し、残りだけを下流へ中継
+
+    H(MIXED, ΔOcc=-10) -e1-> x(退出境界, TRANSIT) -e2-> k(GOAL)、e1=10, e2=4
+    x で 6 が退出、4 が k へ → δ(H,x)=6, δ(H,k)=4
+    """
+    graph = Graph(
+        nodes=(
+            _node("H", NodeKind.GOAL_TRANSIT_MIXED),
+            _node("x", NodeKind.TRANSIT_ONLY, boundary=True, direction=BoundaryDirection.EXIT),
+            _node("k", NodeKind.GOAL),
+        ),
+        edges=(_edge("e1", "H", "x"), _edge("e2", "x", "k")),
+    )
+    observations = Observations(
+        observed_at=_OBSERVED_AT,
+        arc_flows=(_flow("e1", 10.0), _flow("e2", 4.0)),
+        node_occupancies=(_occ("H", occupancy=30.0, delta=-10.0),),
+    )
+
+    result = _run(graph, observations, _config(), is_open_mode=True)
+
+    assert _require(result.od_matrix, "H", "x").demand == pytest.approx(6.0)
+    assert _require(result.od_matrix, "H", "k").demand == pytest.approx(4.0)
+    assert _resolution(result, "x").mode == ODResolutionMode.TURNING_EXACT
+
+
+def test_forward_propagation_absorbs_dead_end_exit_boundary() -> None:
+    """出口エッジの無い退出境界に着いた全量は捨てずに終端する"""
+    graph = Graph(
+        nodes=(
+            _node("H", NodeKind.GOAL_TRANSIT_MIXED),
+            _node("k", NodeKind.TRANSIT_ONLY),
+            _node("x", NodeKind.TRANSIT_ONLY, boundary=True, direction=BoundaryDirection.EXIT),
+        ),
+        edges=(_edge("e1", "H", "k"), _edge("e2", "k", "x")),
+    )
+    observations = Observations(
+        observed_at=_OBSERVED_AT,
+        arc_flows=(_flow("e1", 10.0), _flow("e2", 10.0)),
+        node_occupancies=(_occ("H", occupancy=30.0, delta=-10.0),),
+    )
+
+    result = _run(graph, observations, _config(), is_open_mode=True)
+
+    assert [(od.origin.value, od.destination.value, od.demand) for od in result.od_matrix] == [
+        ("H", "x", pytest.approx(10.0))
+    ]
+    assert _resolution(result, "x").mode == ODResolutionMode.TURNING_EXACT
+
+
 def test_forward_propagation_excludes_boundary_to_boundary() -> None:
     """Open モードの ext→ext（境界生成→境界吸収）は前方伝播後に除外"""
     graph = Graph(
