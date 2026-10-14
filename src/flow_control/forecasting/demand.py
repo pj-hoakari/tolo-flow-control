@@ -246,7 +246,8 @@ def _impute_unobserved_arcs(
         if node.kind == NodeKind.TRANSIT_ONLY:
             return True
         if node.kind == NodeKind.GOAL_TRANSIT_MIXED:
-            return node.node_id in occupancy_by_node
+            occ = occupancy_by_node.get(node.node_id)
+            return occ is not None and occ.occupancy_delta is not None
         return False
 
     progressed = True
@@ -263,8 +264,8 @@ def _impute_unobserved_arcs(
 
             edge = unobserved[0]
             occ = occupancy_by_node.get(node.node_id)
-            delta_occ = occ.occupancy_delta if occ is not None else 0.0
-            residual = inflow[node.node_id] - outflow[node.node_id] - delta_occ
+            delta_occ = occ.occupancy_delta if occ is not None else None
+            residual = inflow[node.node_id] - outflow[node.node_id] - (delta_occ or 0.0)
             magnitude = abs(residual)
 
             neighbor = edge.endpoint_b if edge.endpoint_a == node.node_id else edge.endpoint_a

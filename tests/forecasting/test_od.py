@@ -461,6 +461,26 @@ def test_open_mode_accumulating_mixed_node_is_not_origin() -> None:
     assert all(od.origin != NodeID("H") for od in result.od_matrix)
 
 
+def test_open_mode_mixed_node_without_occupancy_delta_is_not_origin() -> None:
+    graph = Graph(
+        nodes=(
+            _node("H", NodeKind.GOAL_TRANSIT_MIXED),
+            _node("j", NodeKind.TRANSIT_ONLY),
+            _node("ex", NodeKind.GOAL, boundary=True),
+        ),
+        edges=(_edge("e1", "H", "j"), _edge("e2", "j", "ex")),
+    )
+    observations = Observations(
+        observed_at=_OBSERVED_AT,
+        arc_flows=(_flow("e1", 10.0), _flow("e2", 10.0)),
+        node_occupancies=(NodeOccupancy(NodeID("H"), occupancy=30.0, occupancy_delta=None),),
+    )
+
+    result = _run(graph, observations, _config(), is_open_mode=True)
+
+    assert all(od.origin != NodeID("H") for od in result.od_matrix)
+
+
 def test_interior_goal_sink_does_not_spawn_reverse_od() -> None:
     """純 GOAL の内部ノードは補完の錨にならず、偽の再生成（逆向き OD）を生まない
 
