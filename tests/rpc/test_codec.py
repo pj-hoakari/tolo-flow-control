@@ -139,6 +139,18 @@ def test_node_occupancy_round_trip_keeps_missing_level_apart_from_zero(
     assert codec._decode_node_occupancy(encoded) == value
 
 
+@pytest.mark.parametrize("occupancy_delta", [None, 0.0])
+def test_node_occupancy_round_trip_keeps_missing_delta_apart_from_zero(
+    occupancy_delta: float | None,
+) -> None:
+    value = NodeOccupancy(NodeID("v"), occupancy=3.0, occupancy_delta=occupancy_delta)
+
+    encoded = codec._encode_node_occupancy(value)
+
+    assert encoded.HasField("occupancy_delta") is (occupancy_delta is not None)
+    assert codec._decode_node_occupancy(encoded) == value
+
+
 def test_request_round_trip_uses_explicit_event_id() -> None:
     now = datetime(2026, 9, 21, 12, tzinfo=UTC)
     graph = Graph(

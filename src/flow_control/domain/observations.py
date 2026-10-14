@@ -49,7 +49,8 @@ class NodeOccupancy:
     node_id: NodeID
     # 占有プロキシ N_v（リトル型復元は同一観測点由来の到着率とのみ組合せ可）
     occupancy: float | None
-    occupancy_delta: float = 0.0  # 観測ウィンドウ内の占有量変化 ΔOcc（蓄積フェーズの滞在識別）
+    # 観測ウィンドウ内の占有量変化 ΔOcc（蓄積フェーズの滞在識別）
+    occupancy_delta: float | None = 0.0
     # 入口ライン到着率が同一観測点由来か（リトル型復元 (c) の適用条件）
     same_sensor_arrival: bool = False
     confidence_flag: ConfidenceFlag = ConfidenceFlag.OK

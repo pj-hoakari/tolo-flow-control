@@ -496,6 +496,26 @@ def test_conservation_accounts_for_occupancy_delta(observed_at: datetime) -> Non
     assert c.gross_in == pytest.approx(6.0)
 
 
+def test_conservation_skips_mixed_node_without_occupancy_delta(observed_at: datetime) -> None:
+    graph = Graph(
+        nodes=(_node("a"), _node("v", kind=NodeKind.GOAL_TRANSIT_MIXED), _node("c")),
+        edges=(_edge("e1", "a", "v"), _edge("e2", "v", "c")),
+    )
+    observations = Observations(
+        observed_at=observed_at,
+        arc_flows=(_flow("e1", FlowDirection.A_TO_B, 10.0),),
+        node_occupancies=(
+            NodeOccupancy(node_id=NodeID("v"), occupancy=10.0, occupancy_delta=None),
+        ),
+    )
+
+    result = compute_node_demand_result(graph, observations, _config())
+
+    assert result.imputed_arcs == ()
+    assert _demand_of(result.node_demand, "v").gross_out == 0.0
+    assert _demand_of(result.node_demand, "c").gross_in == 0.0
+
+
 def test_conservation_propagates_through_observed_frontier(
     observed_at: datetime,
 ) -> None:

@@ -79,6 +79,7 @@ def _od_marginals(
         occupancy.node_id: occupancy.occupancy_delta
         for occupancy in observations.node_occupancies
         if occupancy.confidence_flag != ConfidenceFlag.INVALID
+        and occupancy.occupancy_delta is not None
     }
 
     if not has_flow:
