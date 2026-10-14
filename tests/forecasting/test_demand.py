@@ -376,6 +376,32 @@ def test_mixed_steady_skips_littles_law_without_shared_sensor(
     assert v.staying == 0.0
 
 
+@pytest.mark.parametrize(("delta", "staying"), [(3.0, 3.0), (0.0, 0.0)])
+def test_mixed_without_occupancy_level_uses_delta_and_skips_littles_law(
+    observed_at: datetime, delta: float, staying: float
+) -> None:
+    graph = Graph(
+        nodes=(_node("a"), _node("v", kind=NodeKind.GOAL_TRANSIT_MIXED)),
+        edges=(_edge("e1", "a", "v"),),
+    )
+    observations = Observations(
+        observed_at=observed_at,
+        arc_flows=(_flow("e1", FlowDirection.A_TO_B, 10.0),),
+        node_occupancies=(
+            NodeOccupancy(
+                node_id=NodeID("v"),
+                occupancy=None,
+                occupancy_delta=delta,
+                same_sensor_arrival=True,
+            ),
+        ),
+    )
+    config = _config(transit_time_prior_sec=2.0, dwell_time_prior_sec=10.0)
+
+    v = _demand_of(compute_node_demand(graph, observations, config), "v")
+    assert v.staying == staying
+
+
 def test_mixed_without_signal_degrades_to_zero(observed_at: datetime) -> None:
     """GOAL_TRANSIT_MIXED で占有も prior も無ければ滞在 0 に縮退（通過扱い）"""
     graph = Graph(
