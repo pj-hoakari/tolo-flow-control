@@ -638,21 +638,23 @@ def _decode_arc_scalar_flow(value: pb.ArcScalarFlow) -> ArcScalarFlow:
 
 
 def _encode_node_occupancy(value: NodeOccupancy) -> pb.NodeOccupancy:
-    return pb.NodeOccupancy(
+    result = pb.NodeOccupancy(
         node_id=_required_id(value.node_id.value, "node_occupancy.node_id"),
-        occupancy=_finite(value.occupancy, "node_occupancy.occupancy"),
         occupancy_delta=_finite(value.occupancy_delta, "node_occupancy.occupancy_delta"),
         same_sensor_arrival=value.same_sensor_arrival,
         confidence_flag=_enum_to_wire(
             value.confidence_flag, _CONFIDENCE_FLAG_TO_WIRE, "confidence flag"
         ),
     )
+    if value.occupancy is not None:
+        result.occupancy = _finite(value.occupancy, "node_occupancy.occupancy")
+    return result
 
 
 def _decode_node_occupancy(value: pb.NodeOccupancy) -> NodeOccupancy:
     return NodeOccupancy(
         node_id=NodeID(_required_string(value, "node_id")),
-        occupancy=_required_float(value, "occupancy"),
+        occupancy=_optional_float(value, "occupancy"),
         occupancy_delta=_required_float(value, "occupancy_delta"),
         same_sensor_arrival=_required_bool(value, "same_sensor_arrival"),
         confidence_flag=_required_enum(
