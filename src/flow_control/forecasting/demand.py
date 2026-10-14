@@ -107,7 +107,9 @@ def compute_node_demand_result(
     for node in active_nodes:
         gross_out = outflow[node.node_id]
         gross_in = inflow[node.node_id]
-        staying = _staying_demand(node, gross_in, occupancy_by_node.get(node.node_id), config)
+        staying = _staying_demand(
+            node, gross_in, gross_out, occupancy_by_node.get(node.node_id), config
+        )
         transit = gross_in - staying
         production = max(0.0, gross_out - gross_in + staying)
         demands.append(
@@ -155,12 +157,13 @@ def _valid_occupancy_by_node(
 def _staying_demand(
     node: Node,
     gross_in: float,
+    gross_out: float,
     occupancy: NodeOccupancy | None,
     config: ResolvedConfig,
 ) -> float:
     """滞在（終端）需要 stay_v を Node.kind で分岐して決める
 
-    GOAL_TRANSIT_MIXED は (b) 占有量変化 → (c) リトルの法則 → (d) prior の順
+    GOAL_TRANSIT_MIXED は (b) 占有量変化 → (c) リトルの法則 → (d) 保存則の順
     （(a) 導出転換率は Step B の転換率内部導出に対応するため扱わない）
     """
     if node.kind == NodeKind.TRANSIT_ONLY:
@@ -190,7 +193,7 @@ def _staying_demand(
         return max(0.0, (level - gross_in * tau_min) / (dwell_min - tau_min))
     if delta_occ is not None:
         return max(0.0, delta_occ)  # (b) 定常・排出フェーズ（実質 0）
-    return 0.0  # (d) 信号なし → prior 縮退
+    return max(0.0, gross_in - gross_out)  # (d) 信号なし → 保存則 max(0, A_v − P_v)
 
 
 def _impute_unobserved_arcs(

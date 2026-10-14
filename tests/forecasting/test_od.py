@@ -132,6 +132,53 @@ def test_forward_propagation_separates_terminate_and_passthrough() -> None:
     assert _resolution(result, "B").reason == ODResolutionReason.DETERMINED
 
 
+def test_forward_propagation_terminates_at_mixed_dead_end_without_occupancy() -> None:
+    """占有の無い混在ノードが行き止まりでも、到着は終端として OD に残る（MER-134）
+
+    gate(境界) -e-in-j1-> j1 -e-j1-hallA-> hallA(MIXED, 出口流量 0)
+                             -e-j1-hallB-> hallB(MIXED) -e-hallB-j2-> j2 -e-j2-out-> out(境界)
+    hallA 流入 75・流出 0 → stay=75 で gate→hallA=75。gate→out=5 は ext→ext で除外
+    """
+    graph = Graph(
+        nodes=(
+            _node("gate", NodeKind.TRANSIT_ONLY, boundary=True),
+            _node("hallA", NodeKind.GOAL_TRANSIT_MIXED),
+            _node("hallB", NodeKind.GOAL_TRANSIT_MIXED),
+            _node("j1", NodeKind.TRANSIT_ONLY),
+            _node("j2", NodeKind.TRANSIT_ONLY),
+            _node("out", NodeKind.TRANSIT_ONLY, boundary=True),
+        ),
+        edges=(
+            _edge("e-hallA-j2", "hallA", "j2"),
+            _edge("e-hallB-j2", "hallB", "j2"),
+            _edge("e-in-j1", "gate", "j1"),
+            _edge("e-j1-hallA", "j1", "hallA"),
+            _edge("e-j1-hallB", "j1", "hallB"),
+            _edge("e-j1-j2", "j1", "j2"),
+            _edge("e-j2-out", "j2", "out"),
+        ),
+    )
+    observations = Observations(
+        observed_at=_OBSERVED_AT,
+        arc_flows=(
+            _flow("e-hallA-j2", 0.0),
+            _flow("e-hallB-j2", 5.0),
+            _flow("e-in-j1", 80.0),
+            _flow("e-j1-hallA", 75.0),
+            _flow("e-j1-hallB", 5.0),
+            _flow("e-j1-j2", 0.0),
+            _flow("e-j2-out", 5.0),
+        ),
+    )
+
+    result = _run(graph, observations, _config(), is_open_mode=True)
+
+    assert [(od.origin.value, od.destination.value, od.demand) for od in result.od_matrix] == [
+        ("gate", "hallA", pytest.approx(75.0))
+    ]
+    assert _resolution(result, "hallA").mode == ODResolutionMode.TURNING_EXACT
+
+
 def test_forward_propagation_excludes_boundary_to_boundary() -> None:
     """Open モードの ext→ext（境界生成→境界吸収）は前方伝播後に除外"""
     graph = Graph(
