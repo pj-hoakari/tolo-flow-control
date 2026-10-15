@@ -10,7 +10,6 @@ from __future__ import annotations
 import json
 import math
 from dataclasses import dataclass, field
-from itertools import combinations
 from pathlib import Path
 from typing import Any
 
@@ -786,23 +785,33 @@ def museum() -> BuiltGraph:
 
 _DESIGN_LIMIT_NODE_SPECS: tuple[tuple[str, NodeKind, bool], ...] = (
     ("gate", NodeKind.GOAL, True),
-    ("j_ne", NodeKind.TRANSIT_ONLY, False),
     ("hallA", NodeKind.GOAL_TRANSIT_MIXED, False),
-    ("j_e", NodeKind.TRANSIT_ONLY, False),
+    ("j_ne", NodeKind.TRANSIT_ONLY, False),
     ("hallB", NodeKind.GOAL_TRANSIT_MIXED, False),
-    ("exit", NodeKind.GOAL, True),
+    ("j_e", NodeKind.TRANSIT_ONLY, False),
     ("hallC", NodeKind.GOAL_TRANSIT_MIXED, False),
-    ("j_s", NodeKind.TRANSIT_ONLY, False),
     ("hallD", NodeKind.GOAL_TRANSIT_MIXED, False),
+    ("j_se", NodeKind.TRANSIT_ONLY, False),
+    ("hallE", NodeKind.GOAL_TRANSIT_MIXED, False),
+    ("j_s", NodeKind.TRANSIT_ONLY, False),
+    ("exit", NodeKind.GOAL, True),
+    ("hallF", NodeKind.GOAL_TRANSIT_MIXED, False),
+    ("j_sw", NodeKind.TRANSIT_ONLY, False),
+    ("hallG", NodeKind.GOAL_TRANSIT_MIXED, False),
     ("j_w", NodeKind.TRANSIT_ONLY, False),
+    ("hallH", NodeKind.GOAL_TRANSIT_MIXED, False),
+    ("j_nw", NodeKind.TRANSIT_ONLY, False),
+    ("hallI", NodeKind.GOAL_TRANSIT_MIXED, False),
+    ("j_n", NodeKind.TRANSIT_ONLY, False),
+    ("hallJ", NodeKind.GOAL_TRANSIT_MIXED, False),
 )
+_DESIGN_LIMIT_SPAN = 5
 
 
 def design_limit() -> BuiltGraph:
-    """設計想定上限規模の密グラフ（10 ノード完全グラフ 45 本＋並行 5 本＝50 エッジ）
+    """設計上限規模の密グラフ（20 ノードの環で各ノードを 5 つ先まで結ぶ 100 エッジ）
 
-    性能ストレス計測用。隣接ホール-ジャンクション間に並行通路を足して
-    エッジ数を要件上限の 50 に揃える。
+    性能ストレス計測用。ノード数・エッジ数を要件上限の 20／100 に揃える。
     """
     b = GraphBuilder()
     n = len(_DESIGN_LIMIT_NODE_SPECS)
@@ -815,16 +824,10 @@ def design_limit() -> BuiltGraph:
             pos=(3.0 * math.cos(angle), 3.0 * math.sin(angle)),
         )
     names = [name for (name, _, _) in _DESIGN_LIMIT_NODE_SPECS]
-    for a, c in combinations(names, 2):
-        b.edge(f"e_{a}_{c}", a, c)
-    for a, c in (
-        ("j_ne", "hallA"),
-        ("hallA", "j_e"),
-        ("j_e", "hallB"),
-        ("hallC", "j_s"),
-        ("j_s", "hallD"),
-    ):
-        b.edge(f"e_{a}_{c}_2", a, c)
+    for i, a in enumerate(names):
+        for step in range(1, _DESIGN_LIMIT_SPAN + 1):
+            c = names[(i + step) % n]
+            b.edge(f"e_{a}_{c}", a, c)
     return b.build()
 
 
