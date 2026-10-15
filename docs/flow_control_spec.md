@@ -95,7 +95,7 @@ enum Verdict {
 | `VERDICT_SKIPPED_COOLDOWN` | トリガーを検出せず、クールタイム中だった |
 | `VERDICT_SKIPPED_WARMUP` | 対象がウォームアップ中で、手動トリガーもなかった |
 | `VERDICT_SKIPPED_TIME` | 計算時間の上限を超えたため打ち切った |
-| `VERDICT_ERROR_SIZE_EXCEEDED` | グラフの規模が上限を超えた |
+| `VERDICT_ERROR_SIZE_EXCEEDED` | グラフの規模が上限（ノード 20、エッジ 100）を超えた |
 | `VERDICT_ERROR_INVALID_INPUT` | 入力が不整合だった（テナント ID の不一致など） |
 
 ## 補足
