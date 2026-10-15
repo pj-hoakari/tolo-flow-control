@@ -102,14 +102,37 @@ def test_handle_request_rejects_unknown_schema() -> None:
     assert response.updated_detection_state is request.detection_state
 
 
-def test_handle_request_rejects_graph_over_fixed_limit() -> None:
-    graph = Graph(nodes=())
-    # The node count alone is sufficient and does not require valid edges.
-    from flow_control.domain.enums import NodeKind
-    from flow_control.domain.graph import Node, NodeID
+def _sized_graph(node_count: int, edge_count: int) -> Graph:
+    nodes = tuple(Node(NodeID(f"n{i}"), NodeKind.GOAL, True) for i in range(node_count))
+    edges = tuple(
+        Edge(
+            EdgeID(f"e{i}"),
+            nodes[i % node_count].node_id,
+            nodes[(i + 1) % node_count].node_id,
+            DirectionConstraint.BIDIRECTIONAL_PRIOR,
+            CurrentDirection.BIDIRECTIONAL,
+            True,
+            ObservationType.VECTOR,
+        )
+        for i in range(edge_count)
+    )
+    return Graph(nodes=nodes, edges=edges)
 
-    graph = Graph(nodes=tuple(Node(NodeID(str(i)), NodeKind.GOAL, True) for i in range(11)))
-    response = handle_request(_request(graph))
+
+def test_handle_request_accepts_graph_at_size_limit() -> None:
+    response = handle_request(_request(_sized_graph(20, 100)))
+
+    assert response.verdict is Verdict.SKIPPED_NO_TRIGGER
+
+
+def test_handle_request_rejects_graph_over_node_limit() -> None:
+    response = handle_request(_request(_sized_graph(21, 0)))
+
+    assert response.verdict is Verdict.ERROR_SIZE_EXCEEDED
+
+
+def test_handle_request_rejects_graph_over_edge_limit() -> None:
+    response = handle_request(_request(_sized_graph(20, 101)))
 
     assert response.verdict is Verdict.ERROR_SIZE_EXCEEDED
 

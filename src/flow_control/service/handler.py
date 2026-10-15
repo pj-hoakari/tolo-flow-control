@@ -25,8 +25,8 @@ from .feedback_extractor import extract_feedback
 from .messages import REQUEST_SCHEMA_VERSION, Request, Response
 from .verdict import Verdict
 
-GRAPH_NODE_LIMIT = 10
-GRAPH_EDGE_LIMIT = 50
+GRAPH_NODE_LIMIT = 20
+GRAPH_EDGE_LIMIT = 100
 BUFFER_SEC = 60.0
 RPC_MARGIN_SEC = 5.0
 MIN_OPT_BUDGET = 30.0
