@@ -16,7 +16,7 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Check generated code
-        uses: pj-hoakari/actions/proto-check@e5cc4b20767674fe5af61af03625d778f7ec3acf # v20261013.0.0
+        uses: pj-hoakari/actions/proto-check@d5a03071134d13698e42b2afbf9ae1761ea64ca6 # v20261017.0.0
         with:
           generate-task: proto:gen
           generated-path: src/flow_control/rpc/generated
@@ -33,7 +33,7 @@ jobs:
         run: uv sync --locked
 
       - name: Check Python code
-        uses: pj-hoakari/actions/python/check@e5cc4b20767674fe5af61af03625d778f7ec3acf # v20261013.0.0
+        uses: pj-hoakari/actions/python/check@d5a03071134d13698e42b2afbf9ae1761ea64ca6 # v20261017.0.0
 
   actionlint:
     runs-on: ubuntu-24.04
