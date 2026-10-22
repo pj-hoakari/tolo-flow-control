@@ -107,7 +107,9 @@ def compute_node_demand_result(
     for node in active_nodes:
         gross_out = outflow[node.node_id]
         gross_in = inflow[node.node_id]
-        staying = _staying_demand(node, gross_in, occupancy_by_node.get(node.node_id), config)
+        staying = _staying_demand(
+            node, gross_in, gross_out, occupancy_by_node.get(node.node_id), config
+        )
         transit = gross_in - staying
         production = max(0.0, gross_out - gross_in + staying)
         demands.append(
@@ -155,12 +157,13 @@ def _valid_occupancy_by_node(
 def _staying_demand(
     node: Node,
     gross_in: float,
+    gross_out: float,
     occupancy: NodeOccupancy | None,
     config: ResolvedConfig,
 ) -> float:
     """滞在（終端）需要 stay_v を Node.kind で分岐して決める
 
-    GOAL_TRANSIT_MIXED は (b) 占有量変化 → (c) リトルの法則 → (d) prior の順
+    GOAL_TRANSIT_MIXED は (b) 占有量変化 → (c) リトルの法則 → (d) 保存則の順
     （(a) 導出転換率は Step B の転換率内部導出に対応するため扱わない）
     """
     if node.kind == NodeKind.TRANSIT_ONLY:
@@ -185,10 +188,12 @@ def _staying_demand(
         and level is not None
     ):
         # (c) リトルの法則：占有レベルのうち通過ベースラインを超える滞留分を換算
-        return max(0.0, (level - gross_in * tau) / (dwell - tau))
+        tau_min = tau / 60.0
+        dwell_min = dwell / 60.0
+        return max(0.0, (level - gross_in * tau_min) / (dwell_min - tau_min))
     if delta_occ is not None:
         return max(0.0, delta_occ)  # (b) 定常・排出フェーズ（実質 0）
-    return 0.0  # (d) 信号なし → prior 縮退
+    return max(0.0, gross_in - gross_out)  # (d) 信号なし → 保存則 max(0, A_v − P_v)
 
 
 def _impute_unobserved_arcs(
@@ -244,7 +249,8 @@ def _impute_unobserved_arcs(
         if node.kind == NodeKind.TRANSIT_ONLY:
             return True
         if node.kind == NodeKind.GOAL_TRANSIT_MIXED:
-            return node.node_id in occupancy_by_node
+            occ = occupancy_by_node.get(node.node_id)
+            return occ is not None and occ.occupancy_delta is not None
         return False
 
     progressed = True
@@ -261,8 +267,8 @@ def _impute_unobserved_arcs(
 
             edge = unobserved[0]
             occ = occupancy_by_node.get(node.node_id)
-            delta_occ = occ.occupancy_delta if occ is not None else 0.0
-            residual = inflow[node.node_id] - outflow[node.node_id] - delta_occ
+            delta_occ = occ.occupancy_delta if occ is not None else None
+            residual = inflow[node.node_id] - outflow[node.node_id] - (delta_occ or 0.0)
             magnitude = abs(residual)
 
             neighbor = edge.endpoint_b if edge.endpoint_a == node.node_id else edge.endpoint_a

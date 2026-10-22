@@ -26,6 +26,7 @@ from flow_control.domain import (
 )
 from flow_control.forecasting import forecast
 from flow_control.forecasting.config import ResolvedConfig
+from flow_control.forecasting.demand import compute_node_demand
 from flow_control.forecasting.od import ODDemand
 from flow_control.forecasting.validation import validate_od
 
@@ -95,7 +96,9 @@ def test_perfect_reproduction_gives_zero_error_and_full_confidence() -> None:
         arc_flows=(_flow("e1", 10.0), _flow("e2", 10.0)),
     )
 
-    result = validate_od(graph, observations, (_od("s", "t", 10.0),), (), _config())
+    result = validate_od(
+        graph, observations, (_od("s", "t", 10.0),), (), _config(), is_open_mode=False
+    )
 
     assert result.reproduction_error == pytest.approx(0.0)
     assert _confidence_of(result, "s") == pytest.approx(1.0)
@@ -117,7 +120,9 @@ def test_reproduction_mismatch_lowers_confidence() -> None:
         arc_flows=(_flow("e1", 10.0),),
     )
 
-    result = validate_od(graph, observations, (_od("s", "t", 4.0),), (), _config())
+    result = validate_od(
+        graph, observations, (_od("s", "t", 4.0),), (), _config(), is_open_mode=False
+    )
 
     assert result.reproduction_error == pytest.approx(0.6, abs=1e-3)
     assert _confidence_of(result, "s") == pytest.approx(0.4, abs=1e-3)
@@ -134,7 +139,9 @@ def test_hold_flag_attenuates_confidence() -> None:
         arc_flows=(_flow("e1", 10.0, flag=ConfidenceFlag.HOLD),),
     )
 
-    result = validate_od(graph, observations, (_od("s", "t", 10.0),), (), _config())
+    result = validate_od(
+        graph, observations, (_od("s", "t", 10.0),), (), _config(), is_open_mode=False
+    )
 
     # HOLD でも再現は一致（残差 0, base=1.0）→ 0.7 倍が効く
     assert result.reproduction_error == pytest.approx(0.0)
@@ -153,7 +160,7 @@ def test_invalid_flag_zeroes_confidence() -> None:
         arc_flows=(_flow("e1", 10.0, flag=ConfidenceFlag.INVALID),),
     )
 
-    result = validate_od(graph, observations, (), (), _config())
+    result = validate_od(graph, observations, (), (), _config(), is_open_mode=False)
 
     assert _confidence_of(result, "s") == pytest.approx(0.0)
     assert _confidence_of(result, "t") == pytest.approx(0.0)
@@ -170,7 +177,7 @@ def test_missing_observation_halves_confidence() -> None:
     )
     observations = Observations(observed_at=_OBSERVED_AT)
 
-    result = validate_od(graph, observations, (), (), _config())
+    result = validate_od(graph, observations, (), (), _config(), is_open_mode=False)
 
     assert _confidence_of(result, "s") == pytest.approx(0.5)
     assert _confidence_of(result, "t") == pytest.approx(0.5)
@@ -194,7 +201,9 @@ def test_partial_coverage_grades_confidence() -> None:
         arc_flows=(_flow("e1", 10.0),),
     )
 
-    result = validate_od(graph, observations, (_od("s", "m", 10.0),), (), _config())
+    result = validate_od(
+        graph, observations, (_od("s", "m", 10.0),), (), _config(), is_open_mode=False
+    )
 
     assert _confidence_of(result, "s") == pytest.approx(1.0)
     assert _confidence_of(result, "m") == pytest.approx(0.75)
@@ -219,10 +228,50 @@ def test_unreachable_od_row_shows_up_as_residual() -> None:
     )
 
     result = validate_od(
-        graph, observations, (_od("s", "t", 10.0), _od("s", "u", 5.0)), (), _config()
+        graph,
+        observations,
+        (_od("s", "t", 10.0), _od("s", "u", 5.0)),
+        (),
+        _config(),
+        is_open_mode=False,
     )
 
     assert result.reproduction_error == pytest.approx(0.5, abs=1e-3)
+
+
+def test_reproduction_absorbs_external_exit_before_relaying() -> None:
+    """退出境界での外部流出は再現配分でも終端し、下流アークへ流し込まない
+
+    H(MIXED, ΔOcc=-10) -e1-> x(退出境界) -e2-> k(GOAL)、e1=10, e2=4
+    OD H→x=6, H→k=4 を流すと e2 に載るのは 4 で観測と一致（残差 0）
+    """
+    graph = Graph(
+        nodes=(
+            _node("H", NodeKind.GOAL_TRANSIT_MIXED),
+            _node("x", NodeKind.TRANSIT_ONLY, boundary=True),
+            _node("k", NodeKind.GOAL),
+        ),
+        edges=(_edge("e1", "H", "x"), _edge("e2", "x", "k")),
+    )
+    observations = Observations(
+        observed_at=_OBSERVED_AT,
+        arc_flows=(_flow("e1", 10.0), _flow("e2", 4.0)),
+        node_occupancies=(
+            NodeOccupancy(node_id=NodeID("H"), occupancy=30.0, occupancy_delta=-10.0),
+        ),
+    )
+    node_demands = compute_node_demand(graph, observations, _config())
+
+    result = validate_od(
+        graph,
+        observations,
+        (_od("H", "x", 6.0), _od("H", "k", 4.0)),
+        node_demands,
+        _config(),
+        is_open_mode=True,
+    )
+
+    assert result.reproduction_error == pytest.approx(0.0, abs=1e-9)
 
 
 def test_forecast_populates_validation_outputs() -> None:

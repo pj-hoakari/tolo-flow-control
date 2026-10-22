@@ -14,8 +14,9 @@ Cloud Runの公開用GatewayはInvoker IAMを無効化してRPCごとに外部�
 - Edge Bridge Service は WebRTC のシグナリングのみを担い、Service Gateway の後ろに置かない。映像はページ間で直接やりとりする
 - PubSub は情報更新 push の3トピックだけに使う。at-least-once 配信、イベント単位の順序キー、受信側の冪等処理を前提とする
 - 実線＝同期RPC（Connect。直接例外のプロトコルは各仕様に従う）または限定HTTP例外、太線（==>）＝PubSub、点線＝リスナー・参照系・外部プッシュ
-- BFF は図では省略する（管理 UI の Auth・GW への接続は BFF 経由。外部トークンは BFF のサーバ側に保持し、ブラウザへ渡さない）
-  スタッフアプリはログインも Token Exchange も直接 Auth と行う（public client の直接交換。トークンは DPoP で鍵束縛）。API 呼び出しはアプリ→GW のまま。BFF は現場運用の認証経路上にない
+- BFF は図では省略する（管理 UI と観測ページの Auth・GW・Edge Bridge Service への接続は BFF 経由。外部トークンは BFF のサーバ側に保持し、ブラウザへ渡さない）
+  スタッフアプリはログインも Token Exchange も直接 Auth と行う（public client の直接交換。トークンは DPoP で鍵束縛）。API 呼び出しはアプリ→GW のまま
+  観測ページの Heartbeat と計測報告は BFF を通るため、BFF は現場運用の経路上にある（ADR-0088）
 
 ## 1. サービス間の関係全体図
 
@@ -63,7 +64,7 @@ flowchart LR
 
   %% クライアント → GW → 各サービス
   StaffApp -- "全 RPC（Operation・Observation・Realtime.Fetch・Notification.トークン管理 等）" --> GW
-  AdminUI -- "匿名の仮テナント作成・所有権取得・Tenant管理・Graph編集・エッジ登録" --> GW
+  AdminUI -- "匿名の仮テナント作成・所有権取得・Tenant管理・Graph編集・エッジ登録・観測設定値" --> GW
   EdgeDev -- "計測値送信・Heartbeat（event_access）" --> GW
   EdgeDev -. "シグナリング" .- EB
   AdminUI -. "シグナリング" .- EB
@@ -77,7 +78,6 @@ flowchart LR
   OBS -- "GuideQueues（GW 非経由の直接呼び出し）" --> LINE
   OBS -- "配信依頼・フィードバック引き渡し" --> OP
   OBS -- "参照値取得" --> RA
-  OBS -- "GetObservationSettings（設定値）" --> TM
   OP -- "SendPush（閉デバイス）" --> NT
   OP -- "匿名化済みフィードバック投入（内部バッチ）" --> RA
   GS -- "QR 計上・復旧 pull" --> OBS
@@ -210,9 +210,9 @@ sequenceDiagram
   User->>IdP: POST /api/signup
   User->>IdP: テナント未指定のAuthorization Code Flow
   IdP-->>User: registration Access Token（scope=tenant.claim）
-  User->>GW: ClaimTenantOwnership<br/>registration Token＋所有権取得トークン
+  User->>GW: ClaimTenantOwnership<br/>registration Token＋所有権取得トークン＋サブドメイン名
   GW->>TM: 主体を維持した内部JWTへ変換して転送
-  TM->>TM: トークン検証・オーナー所属・owned遷移・取得トークン消費
+  TM->>TM: トークン検証・オーナー所属・owned遷移・サブドメイン名の確定・取得トークン消費
   TM-->>User: ownedのTenant
   User->>IdP: tenantId指定で再認可
   IdP-->>User: tenant_access

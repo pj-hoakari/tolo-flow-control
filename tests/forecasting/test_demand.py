@@ -324,8 +324,8 @@ def test_mixed_accumulation_uses_occupancy_delta(observed_at: datetime) -> None:
 def test_mixed_steady_uses_littles_law(observed_at: datetime) -> None:
     """GOAL_TRANSIT_MIXED 定常フェーズ（ΔOcc=0）: リトルの法則で滞在を復元
 
-    a->v=10, ΔOcc=0, O_v=60, τ_pass=2, W_dwell=10
-    stay = max(0, (60 - 10*2)/(10-2)) = 5
+    a->v=10 人/分, ΔOcc=0, O_v=60 人, τ_pass=120 秒=2 分, W_dwell=600 秒=10 分
+    stay = max(0, (60 - 10*2)/(10-2)) = 5 人/分
     """
     graph = Graph(
         nodes=(_node("a"), _node("v", kind=NodeKind.GOAL_TRANSIT_MIXED)),
@@ -343,7 +343,7 @@ def test_mixed_steady_uses_littles_law(observed_at: datetime) -> None:
             ),
         ),
     )
-    config = _config(transit_time_prior_sec=2.0, dwell_time_prior_sec=10.0)
+    config = _config(transit_time_prior_sec=120.0, dwell_time_prior_sec=600.0)
 
     v = _demand_of(compute_node_demand(graph, observations, config), "v")
     assert v.staying == pytest.approx(5.0)
@@ -376,8 +376,60 @@ def test_mixed_steady_skips_littles_law_without_shared_sensor(
     assert v.staying == 0.0
 
 
-def test_mixed_without_signal_degrades_to_zero(observed_at: datetime) -> None:
-    """GOAL_TRANSIT_MIXED で占有も prior も無ければ滞在 0 に縮退（通過扱い）"""
+@pytest.mark.parametrize(("delta", "staying"), [(3.0, 3.0), (0.0, 0.0)])
+def test_mixed_without_occupancy_level_uses_delta_and_skips_littles_law(
+    observed_at: datetime, delta: float, staying: float
+) -> None:
+    graph = Graph(
+        nodes=(_node("a"), _node("v", kind=NodeKind.GOAL_TRANSIT_MIXED)),
+        edges=(_edge("e1", "a", "v"),),
+    )
+    observations = Observations(
+        observed_at=observed_at,
+        arc_flows=(_flow("e1", FlowDirection.A_TO_B, 10.0),),
+        node_occupancies=(
+            NodeOccupancy(
+                node_id=NodeID("v"),
+                occupancy=None,
+                occupancy_delta=delta,
+                same_sensor_arrival=True,
+            ),
+        ),
+    )
+    config = _config(transit_time_prior_sec=2.0, dwell_time_prior_sec=10.0)
+
+    v = _demand_of(compute_node_demand(graph, observations, config), "v")
+    assert v.staying == staying
+
+
+def test_mixed_without_signal_keeps_net_inflow_as_staying(observed_at: datetime) -> None:
+    """GOAL_TRANSIT_MIXED で占有の信号が無ければ保存則 stay = max(0, A − P)
+
+    a->v=10, v->b=6 → stay=4, trans=6, prod=0, absorb=4
+    """
+    graph = Graph(
+        nodes=(_node("a"), _node("v", kind=NodeKind.GOAL_TRANSIT_MIXED), _node("b")),
+        edges=(_edge("e1", "a", "v"), _edge("e2", "v", "b")),
+    )
+    observations = Observations(
+        observed_at=observed_at,
+        arc_flows=(
+            _flow("e1", FlowDirection.A_TO_B, 10.0),
+            _flow("e2", FlowDirection.A_TO_B, 6.0),
+        ),
+    )
+
+    v = _demand_of(compute_node_demand(graph, observations, _config()), "v")
+    assert v.staying == 4.0
+    assert v.transit == 6.0
+    assert v.production == 0.0
+    assert v.absorption == 4.0
+
+
+def test_mixed_without_signal_and_without_outflow_terminates_all(
+    observed_at: datetime,
+) -> None:
+    """出口流量の無い混在ノードは、占有が無くても全到着を終端とする"""
     graph = Graph(
         nodes=(_node("a"), _node("v", kind=NodeKind.GOAL_TRANSIT_MIXED)),
         edges=(_edge("e1", "a", "v"),),
@@ -388,8 +440,76 @@ def test_mixed_without_signal_degrades_to_zero(observed_at: datetime) -> None:
     )
 
     v = _demand_of(compute_node_demand(graph, observations, _config()), "v")
+    assert v.staying == 10.0
+    assert v.transit == 0.0
+
+
+def test_mixed_without_signal_and_net_outflow_stays_zero(observed_at: datetime) -> None:
+    """流出超過（P > A）なら滞在 0、超過分は再生成 prod に計上"""
+    graph = Graph(
+        nodes=(_node("a"), _node("v", kind=NodeKind.GOAL_TRANSIT_MIXED), _node("b")),
+        edges=(_edge("e1", "a", "v"), _edge("e2", "v", "b")),
+    )
+    observations = Observations(
+        observed_at=observed_at,
+        arc_flows=(
+            _flow("e1", FlowDirection.A_TO_B, 4.0),
+            _flow("e2", FlowDirection.A_TO_B, 10.0),
+        ),
+    )
+
+    v = _demand_of(compute_node_demand(graph, observations, _config()), "v")
     assert v.staying == 0.0
-    assert v.transit == 10.0
+    assert v.transit == 4.0
+    assert v.production == 6.0
+
+
+def test_mixed_missing_occupancy_delta_keeps_net_inflow_as_staying(
+    observed_at: datetime,
+) -> None:
+    """占有はあっても ΔOcc が欠測なら信号なしとして保存則 stay = max(0, A − P)"""
+    graph = Graph(
+        nodes=(_node("a"), _node("v", kind=NodeKind.GOAL_TRANSIT_MIXED), _node("b")),
+        edges=(_edge("e1", "a", "v"), _edge("e2", "v", "b")),
+    )
+    observations = Observations(
+        observed_at=observed_at,
+        arc_flows=(
+            _flow("e1", FlowDirection.A_TO_B, 10.0),
+            _flow("e2", FlowDirection.A_TO_B, 6.0),
+        ),
+        node_occupancies=(
+            NodeOccupancy(node_id=NodeID("v"), occupancy=10.0, occupancy_delta=None),
+        ),
+    )
+
+    v = _demand_of(compute_node_demand(graph, observations, _config()), "v")
+    assert v.staying == 4.0
+    assert v.transit == 6.0
+
+
+def test_mixed_missing_occupancy_delta_prefers_littles_law(observed_at: datetime) -> None:
+    """ΔOcc 欠測でもリトルの法則 (c) が適用できれば保存則 (d) より優先する"""
+    graph = Graph(
+        nodes=(_node("a"), _node("v", kind=NodeKind.GOAL_TRANSIT_MIXED)),
+        edges=(_edge("e1", "a", "v"),),
+    )
+    observations = Observations(
+        observed_at=observed_at,
+        arc_flows=(_flow("e1", FlowDirection.A_TO_B, 10.0),),
+        node_occupancies=(
+            NodeOccupancy(
+                node_id=NodeID("v"),
+                occupancy=60.0,
+                occupancy_delta=None,
+                same_sensor_arrival=True,
+            ),
+        ),
+    )
+    config = _config(transit_time_prior_sec=120.0, dwell_time_prior_sec=600.0)
+
+    v = _demand_of(compute_node_demand(graph, observations, config), "v")
+    assert v.staying == pytest.approx(5.0)
 
 
 def test_mixed_occupancy_only_drives_demand(observed_at: datetime) -> None:
@@ -468,6 +588,26 @@ def test_conservation_accounts_for_occupancy_delta(observed_at: datetime) -> Non
     assert v.staying == pytest.approx(4.0)
     assert v.transit == pytest.approx(6.0)
     assert c.gross_in == pytest.approx(6.0)
+
+
+def test_conservation_skips_mixed_node_without_occupancy_delta(observed_at: datetime) -> None:
+    graph = Graph(
+        nodes=(_node("a"), _node("v", kind=NodeKind.GOAL_TRANSIT_MIXED), _node("c")),
+        edges=(_edge("e1", "a", "v"), _edge("e2", "v", "c")),
+    )
+    observations = Observations(
+        observed_at=observed_at,
+        arc_flows=(_flow("e1", FlowDirection.A_TO_B, 10.0),),
+        node_occupancies=(
+            NodeOccupancy(node_id=NodeID("v"), occupancy=10.0, occupancy_delta=None),
+        ),
+    )
+
+    result = compute_node_demand_result(graph, observations, _config())
+
+    assert result.imputed_arcs == ()
+    assert _demand_of(result.node_demand, "v").gross_out == 0.0
+    assert _demand_of(result.node_demand, "c").gross_in == 0.0
 
 
 def test_conservation_propagates_through_observed_frontier(

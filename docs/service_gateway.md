@@ -74,10 +74,9 @@ protoの採用版を固定し、更新時は機械的な互換性と、追加フ
 |---|---|---|---|
 | Tenant Management | `tolo.tenant.v1.TenantService` | StartTenantRegistration | 公開（管理 UI。未認証） |
 | 〃 | 〃 | ClaimTenantOwnership | 公開（管理 UI。registration） |
-| 〃 | 〃 | ChangeTenantContract、ArchiveTenant、CreateEvent、AssignEventType、TransitionEventStatus、ListEvents | 公開（管理 UI、ListEvents はスタッフアプリも） |
+| 〃 | 〃 | ResolveTenantSubdomain | 公開（管理 UI・ゲスト。未認証） |
+| 〃 | 〃 | ChangeTenantContract、ArchiveTenant、CreateEvent、TransitionEventStatus、ListEvents | 公開（管理 UI、ListEvents はスタッフアプリも） |
 | 〃 | 〃 | GetEvent | 内部オンリー（Graph Authoring の参照整合） |
-| 〃 | 〃 | GetObservationSettings | 内部オンリー（Observation の設定値取得） |
-| 〃 | 〃 | UpdateObservationSettings | 公開（管理 UI） |
 | 〃 | `tolo.relation.v1.RelationAdminService` | AddTenantMember、ChangeTenantRole、GrantEventRole、RevokeRole、ListMemberships | 公開（管理 UI。関係参照は Tenant Management が実装） |
 | Graph Authoring | `tolo.graph.v1.GraphAuthoringService` | SaveGraph、MapObservationPoint、AddQrLocation、UpdateQrLocation、RemoveQrLocation、GetGraph、PublishRevision | 公開（管理 UI） |
 | 〃 | `tolo.graph.v1.GraphSupplyService` | 全 RPC（GetCurrentRevision、GetObservationPointMappings、GetDisplayNames、GetGatePoints、GetQrLocations） | 内部オンリー（Observation・Guest Service） |
@@ -88,6 +87,7 @@ protoの採用版を固定し、更新時は機械的な互換性と、追加フ
 | 〃 | `tolo.observation.v1.ManualInterventionService` | 全 RPC（OperateGate、ToggleDangerFlag、RegisterScheduleEvent、ReportCongestion、CorrectQueue） | 公開（スタッフアプリ） |
 | 〃 | `tolo.observation.v1.StatusQueryService` | GetEventOverview | 公開（スタッフアプリ） |
 | 〃 | 〃 | GetGuestSnapshot | 内部オンリー（Guest Service の復旧 pull） |
+| 〃 | `tolo.observation.v1.ObservationSettingsService` | 全 RPC（GetObservationSettings、UpdateObservationSettings） | 公開（管理 UI） |
 | Operation | `tolo.operation.v1.StaffCommunicationService` | SendStaffMessage、RevokeStaffMessage、ShareGuidanceInfo | 公開（スタッフアプリ） |
 | 〃 | 〃 | ListStaffMessages | 公開（スタッフアプリ）＋内部（Guest Service の復旧 pull） |
 | 〃 | `tolo.operation.v1.OperationControlService` | 全 RPC（DirectReassignment、ApplyReassignment、ListReassignments） | 公開（スタッフアプリ、ListReassignments は管理 UI も） |
@@ -113,6 +113,7 @@ protoの採用版を固定し、更新時は機械的な互換性と、追加フ
 | ユーザー（テナント文脈） | `tenant_access`（IdP 発行） | 検証＋内部 JWT へ変換 |
 | ユーザー（イベント文脈） | `event_access`（IdP 発行） | 検証＋内部 JWT へ変換。エッジ端末（観測ページ）もこの経路 |
 | 仮テナント作成 | なし（未認証） | パススルー。StartTenantRegistrationだけを許可し、匿名作成の保護を適用 |
+| サブドメイン名の解決 | なし（未認証） | パススルー。ResolveTenantSubdomainだけを許可し、レート制限を適用 |
 | 仮テナントの所有権取得 | 所有権取得専用の最小トークン（IdP 発行） | 検証＋内部 JWT へ変換 |
 | サービス間の同期 RPC | 文脈トークン（新規マシン起点だけ省略し、呼び出し元を申告する。後述「サービス間経路の検証と再発行」） | 辺ポリシー照合＋token_use=service の内部 JWT を再発行 |
 | ゲスト | なし（未認証） | パススルー（Guest Service のゲスト向け HTTP） |
@@ -125,7 +126,7 @@ protoの採用版を固定し、更新時は機械的な互換性と、追加フ
 - 署名は Discovery の `jwks_uri` から取得した JWKS でローカル検証する。IdP の JWKS を参照するのは原則 Service Gateway のみで、明示例外は Edge Bridge Service（`event_access` の直接検証。Edge Bridge Service）
 - claim 検証: iss（IdP）、aud（バックエンド API 全体の論理 audience。例 `backend-api`。値は1つで、Edge Bridge Service も同じ値を検証する）、exp／nbf（clock skew 許容 ±30 秒）、token_use、client_id（発行先 client）
 - 送信者拘束（DPoP。RFC 9449）: `cnf`（`jkt`）を持つ外部トークンには DPoP proof を要求し検証する。検証項目は、proof の署名、トークンの `cnf`（`jkt`）と proof の公開鍵の一致、アクセストークンのハッシュの一致、HTTP メソッドと対象 URI の一致、発行時刻の許容窓、および proof 識別子の再生防止とする
-- 束縛を要求するのは public client（スタッフアプリ、エッジ端末の観測ページ）へ発行されたトークンに限る。移行中は `cnf` を持たないトークンを従来どおり扱い、public client の対応完了後に、public client へ発行された束縛のないトークンを拒否へ切り替える（発行先は `client_id` claim で判定する）。BFF（confidential client）へ発行されたトークンには束縛を要求しない
+- 束縛を要求するのは public client（スタッフアプリ）へ発行されたトークンに限る。エッジ端末の観測ページは BFF の背後の confidential client であり、束縛を要求しない（ADR-0087）。移行中は `cnf` を持たないトークンを従来どおり扱い、public client の対応完了後に、public client へ発行された束縛のないトークンを拒否へ切り替える（発行先は `client_id` claim で判定する）。BFF（confidential client）へ発行されたトークンには束縛を要求しない
 - proof 識別子の再生防止は短命の保持を要する。JWT 発行処理をステートレスに保つ方針の明示的な例外とする
 - 送信者拘束は外部トークンの層で完結させ、内部 JWT へ `cnf` 等の束縛クレームを持ち込まない
 - メソッド単位の要求 token_use と scope を認可表（後述）で強制し、満たさない要求は宛先サービスへ転送しない。scope は発行時点の権限スナップショットであり、各サービスも内部 JWT の scope を主判定に用いる（入口と宛先の二重確認）。Service Gateway は値を変更せず内部 JWT へ転記する
@@ -263,10 +264,10 @@ streamingの全件bufferingをせず、backpressureと切断を扱う。非冪�
 |---|---|---|
 | Graph Authoring | SaveGraph、MapObservationPoint、AddQrLocation／UpdateQrLocation／RemoveQrLocation、PublishRevision | events.manage |
 | Graph Authoring | GetGraph | events.read |
-| Observation | RegisterEdgeDevice、UnregisterEdgeDevice | events.manage |
+| Observation | RegisterEdgeDevice、UnregisterEdgeDevice、UpdateObservationSettings | events.manage |
 | Observation | OperateGate、UpdateObservationPointConfig、ToggleDangerFlag、RegisterScheduleEvent、ReportCongestion、CorrectQueue | events.operate |
-| Observation | ReportMeasurements、Heartbeat | events.report |
-| Observation | ListEdgeDevices、GetEventOverview | events.read |
+| Observation | ReportMeasurements、Heartbeat、ListEdgeDeviceObservationPoints | events.report |
+| Observation | ListEdgeDevices、GetEventOverview、GetObservationSettings | events.read |
 | Operation | SendStaffMessage、RevokeStaffMessage、ShareGuidanceInfo、DirectReassignment、ApplyReassignment | events.operate |
 | Operation | ListStaffMessages、ListReassignments、GetHistoryDigest、UpdateConnectionState | events.read |
 | Realtime | FetchDeliveries、IssueFirestoreToken | events.read |
@@ -276,7 +277,7 @@ streamingの全件bufferingをせず、backpressureと切断を扱う。非冪�
 | サービス | RPC | scope |
 |---|---|---|
 | Tenant Management | ChangeTenantContract、ArchiveTenant | tenant.write |
-| Tenant Management | CreateEvent、AssignEventType、TransitionEventStatus、UpdateObservationSettings | events.manage |
+| Tenant Management | CreateEvent、TransitionEventStatus | events.manage |
 | Tenant Management | ListEvents | events.read |
 | Tenant Management（RelationAdminService） | AddTenantMember、ChangeTenantRole、GrantEventRole、RevokeRole | tenant.write |
 | Tenant Management（RelationAdminService） | ListMemberships | tenant.read |
@@ -284,7 +285,7 @@ streamingの全件bufferingをせず、backpressureと切断を扱う。非冪�
 
 ### token_use = service を要求（サービス間）
 
-Tenant.GetEvent（テナント文脈必須）、Tenant.GetObservationSettings、Graph 供給系（GetCurrentRevision／GetObservationPointMappings／GetGatePoints／GetDisplayNames／GetQrLocations）、Observation の GetGuestSnapshot、Operation の RequestProposalDelivery／RecordFeedbackValues／ListStaffMessages（Guest Service の復旧時）、Notification.SendPush、Reference Aggregation の SubmitAnonymizedFeedback／GetReferenceValues、Observation.ReportMeasurements（Guest Service 由来）
+Tenant.GetEvent（テナント文脈必須）、Graph 供給系（GetCurrentRevision／GetObservationPointMappings／GetGatePoints／GetDisplayNames／GetQrLocations）、Observation の GetGuestSnapshot、Operation の RequestProposalDelivery／RecordFeedbackValues／ListStaffMessages（Guest Service の復旧時）、Notification.SendPush、Reference Aggregation の SubmitAnonymizedFeedback／GetReferenceValues、Observation.ReportMeasurements（Guest Service 由来）
 
 Flow.Optimize と Line.GuideQueues は Service Gateway を経由しないため本表にない（到達制御で呼び出し元を Observation に限る直接呼び出し。flow_control_spec.md、Line Control）
 
@@ -295,9 +296,11 @@ Tenant.ClaimTenantOwnership（scopeは`tenant.claim`）
 ### パススルー
 
 - Tenant.StartTenantRegistration（未認証の仮テナント作成）
+- Tenant.ResolveTenantSubdomain（未認証のサブドメイン名の解決）
 - Guest Serviceのゲスト向けHTTP（未認証）
 
 StartTenantRegistrationには、送信元単位のレート制限、ボット対策、リクエストサイズ上限を適用する。
+ResolveTenantSubdomainには、レート制限とリクエストサイズ上限を適用する。
 具体値と方式は実装フェーズで確定する。
 
 ## サービス側の検証規約
@@ -309,15 +312,16 @@ StartTenantRegistrationには、送信元単位のレート制限、ボット対
 - tenant_id／event_id claim とリクエスト対象の一致を確認する（保護境界の強制）
   claim もリクエストの識別子も公開 ID のため、値をそのまま突合する（internal_jwt.md）
   token_use=service で claim を持たない場合（マシン起点）は突合できない。この場合に処理を続けてよいのは、境界の強制を要さないと各仕様が明示したメソッドに限る
+  明示の仕方は、組で区切るだけで所属を確かめないか、申告とは別の情報源で所属を確かめるかのどちらかとする（ADR-0102）
 - `tenant_access`／`event_access`／`registration` の主判定は、発行時点のスナップショットである scope とする。通常 RPC は現在の membership／permission を都度参照せず、既発行 scope を外部トークンの TTL まで許容する
 - 例外は Tenant Management の管理系書き込み6 RPC（ArchiveTenant、ChangeTenantContract、AddTenantMember、ChangeTenantRole、GrantEventRole、RevokeRole）とする。Tenant Management は同一 DB の現在の membership／permission をローカルに再確認し、Service Gateway の introspection は別に active／revoked を確認する
 - `token_use=service` のメソッド可否は scope ではなく、Service Gateway が照合済みの辺ポリシーを根拠とする
-- StartTenantRegistrationは内部JWTなしで受理する唯一のTenant Management RPCとし、ほかの同サービスRPCへ未認証要求を転送しない
+- 内部JWTなしで受理するTenant Management RPCはStartTenantRegistrationとResolveTenantSubdomainに限り、ほかの同サービスRPCへ未認証要求を転送しない
 
 ## エラー方針
 
 外部レスポンスの本文に tenant／event／membership／失効の詳細を漏らさない。
-エラーコードによる区別は禁じない。存在しない識別子と権限のない識別子を別のコードで返してよい（識別子は推測できないため。Tenant Management のエラー節）
+エラーコードによる区別は禁じない。存在しない識別子と権限のない識別子を別のコードで返してよい（公開 ID は推測できないため。推測できるサブドメイン名の照会は応答を公開 ID に限る。Tenant Management のエラー節）
 
 | 事象 | Connect エラーコード |
 |---|---|

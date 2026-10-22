@@ -64,6 +64,7 @@ def test_unified_config_defaults_are_noharm() -> None:
     assert cfg.two_stage_optimization is False
     # 需要超過判定は既定で無効（急増のみ）
     assert cfg.theta_demand is None
+    assert cfg.fallback_eta == 0.25
     # 主要フィールドが揃っている
     for name in (
         "beta",

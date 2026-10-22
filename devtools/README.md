@@ -110,7 +110,7 @@ uv run python -m devtools graph ./_devout/venue.yaml --out ./_devout   # 読み�
     `stadium`（ボウル・可変コンコース・スカラー支線）/
     `flex-corridor`（可変通路＋常設細通路の 2 ノード最小）/
     `museum`（特別展袋小路＋常設展）/
-    `design-limit`（上限規模 10 ノード/50 エッジの密グラフ）
+    `design-limit`（上限規模 20 ノード/100 エッジの密グラフ）
   - ファジングのランダムローテーションは汎用位相のみ（expo とシナリオ固有位相は除外。
     `fuzz --graph <preset>` の明示指定は可）
 - シナリオ（各シナリオの想定ケースと**期待する誘導提案**の一覧は
@@ -131,7 +131,7 @@ uv run python -m devtools graph ./_devout/venue.yaml --out ./_devout   # 読み�
     - 特殊経路・機能2・性能: `infeasible-fallback`（Phase1 INFEASIBLE→フォールバック）/
       `restriction-undrainable`（**機能2 の通行制限提案** LIMIT。
       `restriction_proposal_enabled` と `tau_danger_threshold` を設定して有効化）/
-      `stress-design-limit`（上限規模 10 ノード/50 エッジの性能計測）
+      `stress-design-limit`（上限規模 20 ノード/100 エッジの性能計測）
   - **B. 現実的・複雑ケース**
     - expo（一方通行＋観測のないルート/ポイントを含む大規模会場）:
       `expo-single-hall-surge` / `expo-multi-hall-surge` / `expo-oneway-unobserved` /

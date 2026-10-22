@@ -25,7 +25,7 @@ from flow_control.domain.enums import (
 )
 from flow_control.domain.graph import Boundary, Edge, EdgeID, Graph, Node, NodeID
 from flow_control.domain.history import HistoryDigest
-from flow_control.domain.observations import ArcFlow, Observations
+from flow_control.domain.observations import ArcFlow, NodeOccupancy, Observations
 from flow_control.domain.references import Reference
 from flow_control.optimization.results import (
     BoundaryAction,
@@ -125,6 +125,30 @@ def test_codec_rejects_missing_and_nonfinite_values() -> None:
         _ = codec._decode_node(pb.Node())
     with pytest.raises(ValueError, match=r"non-finite scalar\.double_value"):
         _ = codec._encode_scalar(math.nan)
+
+
+@pytest.mark.parametrize("occupancy", [None, 0.0])
+def test_node_occupancy_round_trip_keeps_missing_level_apart_from_zero(
+    occupancy: float | None,
+) -> None:
+    value = NodeOccupancy(NodeID("v"), occupancy=occupancy, occupancy_delta=1.5)
+
+    encoded = codec._encode_node_occupancy(value)
+
+    assert encoded.HasField("occupancy") is (occupancy is not None)
+    assert codec._decode_node_occupancy(encoded) == value
+
+
+@pytest.mark.parametrize("occupancy_delta", [None, 0.0])
+def test_node_occupancy_round_trip_keeps_missing_delta_apart_from_zero(
+    occupancy_delta: float | None,
+) -> None:
+    value = NodeOccupancy(NodeID("v"), occupancy=3.0, occupancy_delta=occupancy_delta)
+
+    encoded = codec._encode_node_occupancy(value)
+
+    assert encoded.HasField("occupancy_delta") is (occupancy_delta is not None)
+    assert codec._decode_node_occupancy(encoded) == value
 
 
 def test_request_round_trip_uses_explicit_event_id() -> None:

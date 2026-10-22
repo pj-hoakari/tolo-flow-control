@@ -132,6 +132,104 @@ def test_forward_propagation_separates_terminate_and_passthrough() -> None:
     assert _resolution(result, "B").reason == ODResolutionReason.DETERMINED
 
 
+def test_forward_propagation_terminates_at_mixed_dead_end_without_occupancy() -> None:
+    """占有の無い混在ノードが行き止まりでも、到着は終端として OD に残る（MER-134）
+
+    gate(境界) -e-in-j1-> j1 -e-j1-hallA-> hallA(MIXED, 出口流量 0)
+                             -e-j1-hallB-> hallB(MIXED) -e-hallB-j2-> j2 -e-j2-out-> out(境界)
+    hallA 流入 75・流出 0 → stay=75 で gate→hallA=75。gate→out=5 は ext→ext で除外
+    """
+    graph = Graph(
+        nodes=(
+            _node("gate", NodeKind.TRANSIT_ONLY, boundary=True),
+            _node("hallA", NodeKind.GOAL_TRANSIT_MIXED),
+            _node("hallB", NodeKind.GOAL_TRANSIT_MIXED),
+            _node("j1", NodeKind.TRANSIT_ONLY),
+            _node("j2", NodeKind.TRANSIT_ONLY),
+            _node("out", NodeKind.TRANSIT_ONLY, boundary=True),
+        ),
+        edges=(
+            _edge("e-hallA-j2", "hallA", "j2"),
+            _edge("e-hallB-j2", "hallB", "j2"),
+            _edge("e-in-j1", "gate", "j1"),
+            _edge("e-j1-hallA", "j1", "hallA"),
+            _edge("e-j1-hallB", "j1", "hallB"),
+            _edge("e-j1-j2", "j1", "j2"),
+            _edge("e-j2-out", "j2", "out"),
+        ),
+    )
+    observations = Observations(
+        observed_at=_OBSERVED_AT,
+        arc_flows=(
+            _flow("e-hallA-j2", 0.0),
+            _flow("e-hallB-j2", 5.0),
+            _flow("e-in-j1", 80.0),
+            _flow("e-j1-hallA", 75.0),
+            _flow("e-j1-hallB", 5.0),
+            _flow("e-j1-j2", 0.0),
+            _flow("e-j2-out", 5.0),
+        ),
+    )
+
+    result = _run(graph, observations, _config(), is_open_mode=True)
+
+    assert [(od.origin.value, od.destination.value, od.demand) for od in result.od_matrix] == [
+        ("gate", "hallA", pytest.approx(75.0))
+    ]
+    assert _resolution(result, "hallA").mode == ODResolutionMode.TURNING_EXACT
+
+
+def test_forward_propagation_absorbs_external_exit_at_boundary() -> None:
+    """退出境界では外部流出 max(0, A−P) を終端として吸収し、残りだけを下流へ中継
+
+    H(MIXED, ΔOcc=-10) -e1-> x(退出境界, TRANSIT) -e2-> k(GOAL)、e1=10, e2=4
+    x で 6 が退出、4 が k へ → δ(H,x)=6, δ(H,k)=4
+    """
+    graph = Graph(
+        nodes=(
+            _node("H", NodeKind.GOAL_TRANSIT_MIXED),
+            _node("x", NodeKind.TRANSIT_ONLY, boundary=True, direction=BoundaryDirection.EXIT),
+            _node("k", NodeKind.GOAL),
+        ),
+        edges=(_edge("e1", "H", "x"), _edge("e2", "x", "k")),
+    )
+    observations = Observations(
+        observed_at=_OBSERVED_AT,
+        arc_flows=(_flow("e1", 10.0), _flow("e2", 4.0)),
+        node_occupancies=(_occ("H", occupancy=30.0, delta=-10.0),),
+    )
+
+    result = _run(graph, observations, _config(), is_open_mode=True)
+
+    assert _require(result.od_matrix, "H", "x").demand == pytest.approx(6.0)
+    assert _require(result.od_matrix, "H", "k").demand == pytest.approx(4.0)
+    assert _resolution(result, "x").mode == ODResolutionMode.TURNING_EXACT
+
+
+def test_forward_propagation_absorbs_dead_end_exit_boundary() -> None:
+    """出口エッジの無い退出境界に着いた全量は捨てずに終端する"""
+    graph = Graph(
+        nodes=(
+            _node("H", NodeKind.GOAL_TRANSIT_MIXED),
+            _node("k", NodeKind.TRANSIT_ONLY),
+            _node("x", NodeKind.TRANSIT_ONLY, boundary=True, direction=BoundaryDirection.EXIT),
+        ),
+        edges=(_edge("e1", "H", "k"), _edge("e2", "k", "x")),
+    )
+    observations = Observations(
+        observed_at=_OBSERVED_AT,
+        arc_flows=(_flow("e1", 10.0), _flow("e2", 10.0)),
+        node_occupancies=(_occ("H", occupancy=30.0, delta=-10.0),),
+    )
+
+    result = _run(graph, observations, _config(), is_open_mode=True)
+
+    assert [(od.origin.value, od.destination.value, od.demand) for od in result.od_matrix] == [
+        ("H", "x", pytest.approx(10.0))
+    ]
+    assert _resolution(result, "x").mode == ODResolutionMode.TURNING_EXACT
+
+
 def test_forward_propagation_excludes_boundary_to_boundary() -> None:
     """Open モードの ext→ext（境界生成→境界吸収）は前方伝播後に除外"""
     graph = Graph(
@@ -458,6 +556,26 @@ def test_open_mode_accumulating_mixed_node_is_not_origin() -> None:
     result = _run(graph, observations, _config(), is_open_mode=True)
 
     assert _require(result.od_matrix, "s", "H").demand == pytest.approx(10.0)
+    assert all(od.origin != NodeID("H") for od in result.od_matrix)
+
+
+def test_open_mode_mixed_node_without_occupancy_delta_is_not_origin() -> None:
+    graph = Graph(
+        nodes=(
+            _node("H", NodeKind.GOAL_TRANSIT_MIXED),
+            _node("j", NodeKind.TRANSIT_ONLY),
+            _node("ex", NodeKind.GOAL, boundary=True),
+        ),
+        edges=(_edge("e1", "H", "j"), _edge("e2", "j", "ex")),
+    )
+    observations = Observations(
+        observed_at=_OBSERVED_AT,
+        arc_flows=(_flow("e1", 10.0), _flow("e2", 10.0)),
+        node_occupancies=(NodeOccupancy(NodeID("H"), occupancy=30.0, occupancy_delta=None),),
+    )
+
+    result = _run(graph, observations, _config(), is_open_mode=True)
+
     assert all(od.origin != NodeID("H") for od in result.od_matrix)
 
 

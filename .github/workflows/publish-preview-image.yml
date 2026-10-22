@@ -1,0 +1,42 @@
+name: Publish Preview Image
+
+on:
+  workflow_dispatch:
+    inputs:
+      pull-request:
+        description: "イメージを公開するプルリクエストの番号"
+        required: true
+        type: number
+  workflow_call:
+    inputs:
+      pull-request:
+        description: "イメージを公開するプルリクエストの番号"
+        required: true
+        type: number
+
+permissions:
+  contents: read
+  packages: write
+  pull-requests: read
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-24.04
+
+    steps:
+      - name: Resolve pull request head
+        id: pr
+        uses: pj-hoakari/actions/pull-request-head@92b346752a66ad19a36fbc929191603f72e00fe9 # v20261020.0.2
+        with:
+          number: ${{ inputs.pull-request }}
+
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ steps.pr.outputs.sha }}
+
+      - name: Build and push
+        uses: pj-hoakari/actions/publish-image@92b346752a66ad19a36fbc929191603f72e00fe9 # v20261020.0.2
+        with:
+          sha: ${{ steps.pr.outputs.sha }}
+          platforms: linux/amd64

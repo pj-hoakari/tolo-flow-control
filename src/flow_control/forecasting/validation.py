@@ -51,6 +51,8 @@ def validate_od(
     node_demands: tuple[NodeDemand, ...],
     config: ResolvedConfig,
     imputed_flows: tuple[ImputedArcFlow, ...] = (),
+    *,
+    is_open_mode: bool,
 ) -> ValidationResult:
     """OD の再現残差とノード信頼度を算出
 
@@ -61,7 +63,13 @@ def validate_od(
     """
     observed = _observed_arc_flows(graph, observations)
     reproduced = reproduce_link_flows(
-        graph, observations, node_demands, od_matrix, config, imputed_flows
+        graph,
+        observations,
+        node_demands,
+        od_matrix,
+        config,
+        imputed_flows,
+        is_open_mode=is_open_mode,
     )
     reproduction_error = _reproduction_error(
         observed, reproduced, has_od=bool(od_matrix), epsilon_0=config.epsilon_0
