@@ -25,7 +25,7 @@ Gatewayは同じイメージを、Composeでは1コンテナ・2listener、Cloud
 到達制御と設定は service_transport.md に従う。
 Composeは `TOLO_GATEWAY_LISTENER_MODE=split` で、公開用と内部用の2listenerを起動する。内部用のポートはホストへ公開しない。
 Cloud Runは公開用を `TOLO_GATEWAY_LISTENER_MODE=public`、内部用を `TOLO_GATEWAY_LISTENER_MODE=internal` で配備し、それぞれ `0.0.0.0:$PORT` に1つのHTTPサーバーを起動する。必要なHTTP/2経路はh2cとする。
-公開用はInvoker IAMを無効にし、外部IdP／DPoP・明示匿名RPC・Guest HTTP・公開JWKSを扱う。内部用はingressを内部に限ってサービスAの実行SAにだけInvokerを付与し、サービス間RPCを扱う。
+公開用はInvoker IAMを無効にし、外部IdP／DPoP・明示匿名RPC・公開JWKSを扱う。内部用はingressを内部に限ってサービスAの実行SAにだけInvokerを付与し、サービス間RPCを扱う。
 同じServiceにサービス専用メソッドが含まれる場合も、公開用ではその実行を拒否する。内部用では外部資格情報によるRPCと匿名RPCを実行しない。
 通常バックエンドはGateway公開用・内部用の実行SAだけをInvokerとして許可する。Observation→Flow／Line等の直接例外は別に設定する。
 全Gatewayインスタンスが同じ内部JWT issuerと論理ID体系を用い、共通JWKSへ検証に必要な鍵集合を公開する。
@@ -37,7 +37,7 @@ DPoPは信頼した転送情報から確定する実際の公開URLで検証し�
 
 ## 業務RPCの受理規則
 
-最上位ルーターでRPC・Guest・JWKS・限定した監視を識別し、未知経路を拒否する。公開JWKSは以下の業務RPC認証処理から外す。
+最上位ルーターでRPC・JWKS・限定した監視を識別し、未知経路を拒否する。公開JWKSは以下の業務RPC認証処理から外す。
 完全修飾RPCごとに受理する受信口と主体種別を宣言し、同じパスへ別認証用ハンドラーを重複登録しない。
 
 | 受信口 | 入力 | 処理 |
@@ -57,7 +57,6 @@ DPoPは信頼した転送情報から確定する実際の公開URLで検証し�
 認証の違いだけではprotoを分けない。再利用する場合もGatewayとバックエンドの実装・認証設定は別にする。
 現時点で下表にあるConnect RPCは再利用対象とし、受信と宛先のpackage・Service・Methodを一致させる。
 独自の入出力や版管理が必要なRPCは独自protoに定義し、対応表へ受信RPC・宛先RPC・変換契約を追加する。現時点では固有の追加RPCを定義しない。
-Guest HTTPはproto再利用の対象外で、限定HTTP例外として扱う。
 
 再利用・独自を通じて完全修飾RPCパスを一意にし、宛先URL・論理ID・公開区分・client／scope／辺の対応を起動時に検証する。
 表の「全RPC」は列挙した現行メソッドだけを意味し、将来の追加メソッドを自動公開しない。未登録RPC・パス重複・任意宛先・Gateway自身への誤転送は拒否する。
@@ -98,7 +97,8 @@ protoの採用版を固定し、更新時は機械的な互換性と、追加フ
 | Notification | `tolo.notification.v1.NotificationService` | SendPush | 内部オンリー（Operation） |
 | 〃 | `tolo.notification.v1.DeviceTokenService` | RegisterDeviceToken、UnregisterDeviceToken | 公開（スタッフアプリ） |
 | Reference Aggregation | `tolo.refagg.v1.ReferenceAggregationService` | SubmitAnonymizedFeedback、GetReferenceValues | 内部オンリー（Operation 投入、Observation 取得） |
-| Guest Service | —（proto なし。ゲスト向け HTTP） | ゲスト用ページ・コンポーネント API | 公開（ゲスト。未認証でパススルー） |
+| Guest Service | `tolo.guest.v1.GuestPageService` | 全 RPC（OpenGuestPage、GetCrowd、GetQueues、ListGuestMessages） | 公開（ゲスト。未認証） |
+| 〃 | `tolo.guest.v1.GuestSettingsService` | 全 RPC（GetGuestSettings、UpdateGuestSettings、ListIssuedUrls） | 公開（管理 UI） |
 
 補足
 
@@ -116,7 +116,7 @@ protoの採用版を固定し、更新時は機械的な互換性と、追加フ
 | サブドメイン名の解決 | なし（未認証） | パススルー。ResolveTenantSubdomainだけを許可し、レート制限を適用 |
 | 仮テナントの所有権取得 | 所有権取得専用の最小トークン（IdP 発行） | 検証＋内部 JWT へ変換 |
 | サービス間の同期 RPC | 文脈トークン（新規マシン起点だけ省略し、呼び出し元を申告する。後述「サービス間経路の検証と再発行」） | 辺ポリシー照合＋token_use=service の内部 JWT を再発行 |
-| ゲスト | なし（未認証） | パススルー（Guest Service のゲスト向け HTTP） |
+| ゲスト | なし（未認証） | パススルー。Guest Service の GuestPageService だけを許可 |
 
 ユーザー経路の外部トークンが鍵束縛（`cnf`）を持つ場合、検証には DPoP proof の検証を含む（後述「外部トークンの検証」）。
 
@@ -182,7 +182,7 @@ scope は外部トークンの値を転記し、拡大も暗黙の縮小もし�
 
 ### クレーム一覧
 
-クレーム構造の正本は internal_jwt.md（共通必須クレームと起点別クレーム）。`txn` は共通必須クレームであり、`scope`、`src_jti`、`origin_sub` は起点別とする。
+クレーム構造の正本は internal_jwt.md（共通必須クレームと起点別クレーム）。`txn` は共通必須クレームであり、`scope`、`src_jti`、`src_exp`、`origin_sub` は起点別とする。
 
 | claim | 内容 |
 |---|---|
@@ -193,6 +193,7 @@ scope は外部トークンの値を転記し、拡大も暗黙の縮小もし�
 | scope | 外部トークンの scope の転記（起点別。マシン起点の service では持たない） |
 | client_id | ユーザー系は外部トークンの `client_id`（発行先 client。BFF、スタッフアプリ等）の転記。サービス系は呼び出し元サービスの識別子（sub と同値） |
 | src_jti | 変換元トークンの jti（入口変換では外部トークン、サービス間再発行では文脈トークン。監査相関用。マシン起点の service では持たない） |
+| src_exp | 外部トークンの exp（入口変換だけが持つ。service の再発行では持たない。認可判定には用いない） |
 | iat／nbf／exp | TTL は 120 秒。入口変換の exp は「発行時刻＋120 秒」と「元トークンの exp」の小さい方。サービス間再発行は独立の 120 秒 |
 | jti | 内部 JWT 自体の識別子（サービス側監査ログ用） |
 | txn | UUIDv7 の処理チェーン識別子（監査・トレース専用）。外部トークンの入口変換または新規マシン起点で生成し、後続ホップへ透過 |
@@ -242,7 +243,6 @@ JWKSは内部JWT・IdP tokenを要求せず、全利用者へ同じ公開鍵集�
 JWKSのURLと必要ならHEAD対応、ETag・HTTPキャッシュの具体値は実装フェーズで確定する。共有キャッシュ追加時は取得側と合わせた鮮度上限を定義し、既存の通常ローテーション待機時間を超えないよう整合させる。
 全インスタンスは同じ鍵集合を返し、新鍵の全配布経路への反映を確認してから署名を開始する。署名用秘密鍵の保管権限は配布機能から分離する。
 
-Guest HTTPは既知のパス・method・固定Guest宛先に限定し、未知RPCをGuestへ転送しない。匿名要求でもGateway→Guestの転送は到達制御を通る経路で行う。
 IdPのDiscovery・JWKS・検証要求、Google metadata、CORS・必要な監視はConnect業務RPC外の限定例外とする。
 例外ごとに受理規則を設け、任意HTTP転送を追加しない。CORS応答の許可を業務RPCの認証成功として扱わない。
 
@@ -271,6 +271,8 @@ streamingの全件bufferingをせず、backpressureと切断を扱う。非冪�
 | Operation | SendStaffMessage、RevokeStaffMessage、ShareGuidanceInfo、DirectReassignment、ApplyReassignment | events.operate |
 | Operation | ListStaffMessages、ListReassignments、GetHistoryDigest、UpdateConnectionState | events.read |
 | Realtime | FetchDeliveries、IssueFirestoreToken | events.read |
+| Guest Service | UpdateGuestSettings | events.manage |
+| Guest Service | GetGuestSettings、ListIssuedUrls | events.read |
 
 ### token_use = tenant_access を要求
 
@@ -297,7 +299,7 @@ Tenant.ClaimTenantOwnership（scopeは`tenant.claim`）
 
 - Tenant.StartTenantRegistration（未認証の仮テナント作成）
 - Tenant.ResolveTenantSubdomain（未認証のサブドメイン名の解決）
-- Guest Serviceのゲスト向けHTTP（未認証）
+- Guest Service の GuestPageService（未認証のゲスト用ページ・コンポーネント API）
 
 StartTenantRegistrationには、送信元単位のレート制限、ボット対策、リクエストサイズ上限を適用する。
 ResolveTenantSubdomainには、レート制限とリクエストサイズ上限を適用する。
@@ -317,6 +319,7 @@ ResolveTenantSubdomainには、レート制限とリクエストサイズ上限�
 - 例外は Tenant Management の管理系書き込み6 RPC（ArchiveTenant、ChangeTenantContract、AddTenantMember、ChangeTenantRole、GrantEventRole、RevokeRole）とする。Tenant Management は同一 DB の現在の membership／permission をローカルに再確認し、Service Gateway の introspection は別に active／revoked を確認する
 - `token_use=service` のメソッド可否は scope ではなく、Service Gateway が照合済みの辺ポリシーを根拠とする
 - 内部JWTなしで受理するTenant Management RPCはStartTenantRegistrationとResolveTenantSubdomainに限り、ほかの同サービスRPCへ未認証要求を転送しない
+- 内部JWTなしで受理するGuest Service RPCはGuestPageServiceに限り、GuestSettingsServiceへ未認証要求を転送しない
 
 ## エラー方針
 
