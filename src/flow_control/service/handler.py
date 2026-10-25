@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import math
 import time
-from dataclasses import replace
+from dataclasses import dataclass, replace
 
 from ..detection import DetectionResult, VerdictHint, detect
 from ..detection.config import ResolvedConfig as DetectionConfig
@@ -25,14 +25,26 @@ from .feedback_extractor import extract_feedback
 from .messages import REQUEST_SCHEMA_VERSION, Request, Response
 from .verdict import Verdict
 
-GRAPH_NODE_LIMIT = 20
-GRAPH_EDGE_LIMIT = 100
 BUFFER_SEC = 60.0
 RPC_MARGIN_SEC = 5.0
 MIN_OPT_BUDGET = 30.0
 
 
-def handle_request(req: Request, *, deadline: float | None = None) -> Response:
+@dataclass(frozen=True)
+class GraphSizeLimit:
+    nodes: int
+    edges: int
+
+
+DEFAULT_GRAPH_SIZE_LIMIT = GraphSizeLimit(nodes=20, edges=100)
+
+
+def handle_request(
+    req: Request,
+    *,
+    deadline: float | None = None,
+    graph_size_limit: GraphSizeLimit = DEFAULT_GRAPH_SIZE_LIMIT,
+) -> Response:
     """Run one stateless Detection → Forecasting → Detour → Optimization cycle."""
     started = time.monotonic()
     validation_errors = _validation_errors(req)
@@ -44,7 +56,10 @@ def handle_request(req: Request, *, deadline: float | None = None) -> Response:
             started,
             diagnostics=Diagnostics(steps_executed=(_step(StepKind.VALIDATION, started),)),
         )
-    if len(req.graph.nodes) > GRAPH_NODE_LIMIT or len(req.graph.edges) > GRAPH_EDGE_LIMIT:
+    if (
+        len(req.graph.nodes) > graph_size_limit.nodes
+        or len(req.graph.edges) > graph_size_limit.edges
+    ):
         return _response(
             req,
             Verdict.ERROR_SIZE_EXCEEDED,

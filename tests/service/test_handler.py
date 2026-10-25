@@ -23,6 +23,7 @@ from flow_control.optimization import optimize as optimization_optimize
 from flow_control.service import (
     EventContext,
     EventTerm,
+    GraphSizeLimit,
     Request,
     ResolvedConfig,
     TenantContext,
@@ -133,6 +134,30 @@ def test_handle_request_rejects_graph_over_node_limit() -> None:
 
 def test_handle_request_rejects_graph_over_edge_limit() -> None:
     response = handle_request(_request(_sized_graph(20, 101)))
+
+    assert response.verdict is Verdict.ERROR_SIZE_EXCEEDED
+
+
+def test_handle_request_accepts_graph_over_default_limit_when_limit_is_raised() -> None:
+    response = handle_request(
+        _request(_sized_graph(50, 150)), graph_size_limit=GraphSizeLimit(nodes=50, edges=150)
+    )
+
+    assert response.verdict is Verdict.SKIPPED_NO_TRIGGER
+
+
+def test_handle_request_rejects_graph_over_raised_node_limit() -> None:
+    response = handle_request(
+        _request(_sized_graph(51, 0)), graph_size_limit=GraphSizeLimit(nodes=50, edges=150)
+    )
+
+    assert response.verdict is Verdict.ERROR_SIZE_EXCEEDED
+
+
+def test_handle_request_rejects_graph_over_raised_edge_limit() -> None:
+    response = handle_request(
+        _request(_sized_graph(50, 151)), graph_size_limit=GraphSizeLimit(nodes=50, edges=150)
+    )
 
     assert response.verdict is Verdict.ERROR_SIZE_EXCEEDED
 

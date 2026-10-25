@@ -16,7 +16,7 @@ from typing import TypeVar, cast
 import grpc
 from grpc_health.v1 import health, health_pb2_grpc
 
-from ..service.handler import handle_request
+from ..service.handler import DEFAULT_GRAPH_SIZE_LIMIT, GraphSizeLimit, handle_request
 from ..service.messages import Response
 from .codec import decode_request, encode_response
 from .generated.tolo.flow.v1.flow_pb2 import OptimizeRequest, OptimizeResponse
@@ -34,6 +34,7 @@ class ServerSettings:
     port: int = 8080
     max_request_bytes: int = DEFAULT_MAX_REQUEST_BYTES
     max_execution_sec: float = DEFAULT_MAX_EXECUTION_SEC
+    graph_size_limit: GraphSizeLimit = DEFAULT_GRAPH_SIZE_LIMIT
 
     @classmethod
     def from_env(cls, env: Mapping[str, str] | None = None) -> ServerSettings:
@@ -47,7 +48,22 @@ class ServerSettings:
             values.get("TOLO_RPC_MAX_EXECUTION_SEC", str(DEFAULT_MAX_EXECUTION_SEC)),
             "TOLO_RPC_MAX_EXECUTION_SEC",
         )
-        return cls(port=port, max_request_bytes=max_bytes, max_execution_sec=max_execution)
+        graph_size_limit = GraphSizeLimit(
+            nodes=_positive_int(
+                values.get("TOLO_GRAPH_MAX_NODES", str(DEFAULT_GRAPH_SIZE_LIMIT.nodes)),
+                "TOLO_GRAPH_MAX_NODES",
+            ),
+            edges=_positive_int(
+                values.get("TOLO_GRAPH_MAX_EDGES", str(DEFAULT_GRAPH_SIZE_LIMIT.edges)),
+                "TOLO_GRAPH_MAX_EDGES",
+            ),
+        )
+        return cls(
+            port=port,
+            max_request_bytes=max_bytes,
+            max_execution_sec=max_execution,
+            graph_size_limit=graph_size_limit,
+        )
 
 
 class _ExecutionPool:
@@ -84,9 +100,11 @@ class FlowControlService:
         self,
         pool: _ExecutionPool,
         max_execution_sec: float,
+        graph_size_limit: GraphSizeLimit,
     ) -> None:
         self._pool: _ExecutionPool = pool
         self._max_execution_sec: float = max_execution_sec
+        self._graph_size_limit: GraphSizeLimit = graph_size_limit
 
     async def optimize(
         self,
@@ -152,11 +170,13 @@ class FlowControlService:
             domain_request = decode_request(request)
         except ValueError as exc:
             raise _DecodeFailureError from exc
-        return handle_request(domain_request, deadline=deadline)
+        return handle_request(
+            domain_request, deadline=deadline, graph_size_limit=self._graph_size_limit
+        )
 
 
 def create_server(settings: ServerSettings, pool: _ExecutionPool) -> grpc.aio.Server:
-    service = FlowControlService(pool, settings.max_execution_sec)
+    service = FlowControlService(pool, settings.max_execution_sec, settings.graph_size_limit)
     server = grpc.aio.server(
         options=[
             ("grpc.max_receive_message_length", settings.max_request_bytes),

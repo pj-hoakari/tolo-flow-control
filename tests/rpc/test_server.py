@@ -2,6 +2,7 @@ import asyncio
 import threading
 from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
+from dataclasses import replace
 from datetime import UTC, datetime
 
 import grpc
@@ -25,6 +26,7 @@ from flow_control.rpc import codec
 from flow_control.rpc.generated.tolo.flow.v1 import flow_pb2 as pb
 from flow_control.service.config import ResolvedConfig
 from flow_control.service.context import TenantContext
+from flow_control.service.handler import DEFAULT_GRAPH_SIZE_LIMIT, GraphSizeLimit
 from flow_control.service.messages import Request, Response
 from flow_control.service.verdict import Verdict
 
@@ -116,8 +118,13 @@ def _blocked_settings(monkeypatch: pytest.MonkeyPatch, max_execution_sec: float)
         updated_detection_state=DetectionState(),
     )
 
-    def handle(_: object, *, deadline: float | None = None) -> Response:
-        del deadline
+    def handle(
+        _: object,
+        *,
+        deadline: float | None = None,
+        graph_size_limit: GraphSizeLimit = DEFAULT_GRAPH_SIZE_LIMIT,
+    ) -> Response:
+        del deadline, graph_size_limit
         started.set()
         try:
             _ = released.wait(1)
@@ -216,6 +223,49 @@ def test_optimize_over_grpc() -> None:
         assert response.request_id == "r1"
 
     asyncio.run(run())
+
+
+def test_optimize_over_grpc_applies_configured_graph_size_limit() -> None:
+    async def run() -> None:
+        nodes = tuple(Node(NodeID(f"n{i}"), NodeKind.GOAL, True) for i in range(21))
+        request = codec.encode_request(
+            replace(_request(), graph=Graph(nodes=nodes)), event_id="event-1"
+        )
+        async with _serve(server.ServerSettings()) as (optimize, _):
+            default_response = await optimize(request)
+        settings = server.ServerSettings(graph_size_limit=GraphSizeLimit(nodes=21, edges=100))
+        async with _serve(settings) as (optimize, _):
+            raised_response = await optimize(request)
+        assert default_response.verdict == pb.VERDICT_ERROR_SIZE_EXCEEDED
+        assert raised_response.verdict != pb.VERDICT_ERROR_SIZE_EXCEEDED
+
+    asyncio.run(run())
+
+
+def test_settings_default_graph_size_limit_when_env_is_unset() -> None:
+    assert server.ServerSettings.from_env({}).graph_size_limit == DEFAULT_GRAPH_SIZE_LIMIT
+
+
+def test_settings_read_graph_size_limit_from_env() -> None:
+    settings = server.ServerSettings.from_env(
+        {"TOLO_GRAPH_MAX_NODES": "50", "TOLO_GRAPH_MAX_EDGES": "150"}
+    )
+
+    assert settings.graph_size_limit == GraphSizeLimit(nodes=50, edges=150)
+
+
+@pytest.mark.parametrize(
+    ("name", "value"),
+    [
+        ("TOLO_GRAPH_MAX_NODES", "0"),
+        ("TOLO_GRAPH_MAX_NODES", "many"),
+        ("TOLO_GRAPH_MAX_EDGES", "0"),
+        ("TOLO_GRAPH_MAX_EDGES", "1.5"),
+    ],
+)
+def test_settings_reject_invalid_graph_size_limit(name: str, value: str) -> None:
+    with pytest.raises(ValueError, match=name):
+        _ = server.ServerSettings.from_env({name: value})
 
 
 def test_health_reports_serving() -> None:
