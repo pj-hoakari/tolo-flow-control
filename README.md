@@ -49,6 +49,8 @@ docker run -d --read-only --tmpfs /tmp -p 8080:8080 tolo-flow-control:arm64
 | `PORT` | `8080` | 待ち受けポート |
 | `TOLO_RPC_MAX_REQUEST_BYTES` | `8388608` | 受理する要求メッセージの上限バイト数 |
 | `TOLO_RPC_MAX_EXECUTION_SEC` | `720` | 1 要求あたりの最大実行時間（秒） |
+| `TOLO_GRAPH_MAX_NODES` | `20` | 受理するグラフのノード数の上限 |
+| `TOLO_GRAPH_MAX_EDGES` | `100` | 受理するグラフのエッジ数の上限 |
 
 ## smoke テスト
 

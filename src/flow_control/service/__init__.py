@@ -36,11 +36,17 @@ from .feedback import (
     RestrictionReason,
     TagObservation,
 )
-from .handler import finalize_detection_state, handle_request
+from .handler import (
+    DEFAULT_GRAPH_SIZE_LIMIT,
+    GraphSizeLimit,
+    finalize_detection_state,
+    handle_request,
+)
 from .messages import REQUEST_SCHEMA_VERSION, Request, Response
 from .verdict import Verdict
 
 __all__ = [
+    "DEFAULT_GRAPH_SIZE_LIMIT",
     "DIAGNOSTICS_SCHEMA_VERSION",
     "FEEDBACK_SCHEMA_VERSION",
     "REQUEST_SCHEMA_VERSION",
@@ -55,6 +61,7 @@ __all__ = [
     "FallbackRecord",
     "FeedbackValues",
     "ForecastSummary",
+    "GraphSizeLimit",
     "ObjectiveValues",
     "OptimizationMode",
     "PredictionActualDiff",
