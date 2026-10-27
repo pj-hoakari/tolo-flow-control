@@ -35,6 +35,22 @@ jobs:
       - name: Check Python code
         uses: pj-hoakari/actions/python/check@92b346752a66ad19a36fbc929191603f72e00fe9 # v20261020.0.2
 
+  proto-breaking:
+    runs-on: ubuntu-26.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+
+      - name: Set up mise
+        uses: jdx/mise-action@08ae2a091c038e1e05ec6f5115dc5c69d5a2a6b8 # v5.1.2
+        with:
+          install_args: buf task
+
+      - name: Check breaking changes
+        run: task proto:breaking
+
   actionlint:
     runs-on: ubuntu-26.04
     steps:
