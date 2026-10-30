@@ -76,7 +76,7 @@ enum Verdict {
 |---|---|---|
 | `request_id`・`schema_version`・`server_time` | 要求の識別、スキーマの版（`request/1`）、判定に使う現在時刻 | 観測 |
 | `event_id`・`tenant_context`・`event_context` | 最適化の単位となるイベントとテナント（`tenant_id`）、イベントの性質を表す区分（`term`）と使える履歴の時間 | 観測 |
-| `graph` | Flow 独自のグラフ（ノードとエッジ）。グラフ編集から取得した現在の版を、観測が変換する | 観測（正本はグラフ編集） |
+| `graph` | Flow 独自のグラフ（ノードとエッジ）。グラフ編集から取得した現在の版を、観測が変換する | 観測（所有はグラフ編集） |
 | `observations` | エッジの流量・停滞量とノードの滞留量。観測スナップショットのスコアを、観測が変換する | 観測 |
 | `history_digest` | 同一イベントの過去の観測値から事前に計算した統計と時系列 | 観測 |
 | `detection_state` | 前回の応答の `updated_detection_state` | 観測（構造は Flow が所有） |
