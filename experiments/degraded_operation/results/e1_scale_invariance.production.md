@@ -2,16 +2,12 @@
 
 設定: tolo-observation の defaultFlowConfig。ただし通行制限のスイッチとしきい値はシナリオの値を使う（本番では通行制限は無効）。
 
-対象は 11 シナリオ、k ∈ [0.01, 0.1, 1.0, 10.0, 100.0]、変種は 3 つ（history: 履歴あり、no_history: p90・baseline・η を None にする。s̄ は窓の平均、η は fallback_eta になる、obs_only: 観測と履歴だけを k 倍し capacity_hint・danger_capacity は据え置く）。各実行は決定的で、k=1 を 2 回走らせて署名の一致を確かめた（シード数の概念はない）。
+対象は 9 シナリオ、k ∈ [0.01, 0.1, 1.0, 10.0, 100.0]、変種は 3 つ（history: 履歴あり、no_history: p90・baseline・η を None にする。s̄ は窓の平均、η は fallback_eta になる、obs_only: 観測と履歴だけを k 倍し capacity_hint・danger_capacity は据え置く）。各実行は決定的で、k=1 を 2 回走らせて署名の一致を確かめた（シード数の概念はない）。
 
 ## 前提の確認
 
 | scenario | variant | 主張する決定種別 | k=1 で非空 |
 |---|---|---|---|
-| reversible-corridor-flip | history | direction | yes |
-| reversible-corridor-flip | no_history | direction | yes |
-| stadium-egress-concourse | history | direction | yes |
-| stadium-egress-concourse | no_history | direction | yes |
 | station-transfer-peak | history | direction | yes |
 | station-transfer-peak | no_history | direction | yes |
 | expo-gate-overcrowded | history | boundary | yes |
@@ -38,8 +34,6 @@ k 倍した浮動小数フィールド: baseline_stagnation, capacity_hint, dang
 
 | scenario | k=0.01 | k=0.1 | k=1 | k=10 | k=100 |
 |---|---|---|---|---|---|
-| reversible-corridor-flip | 一致 | 一致 | 一致 | 一致 | 一致 |
-| stadium-egress-concourse | 一致 | 一致 | 一致 | 一致 | 一致 |
 | station-transfer-peak | 一致 | emphasis | 一致 | 一致 | emphasis |
 | expo-gate-overcrowded | 一致 | 一致 | 一致 | 一致 | 一致 |
 | expo-incident-resume | 一致 | 一致 | 一致 | 一致 | 一致 |
@@ -50,16 +44,14 @@ k 倍した浮動小数フィールド: baseline_stagnation, capacity_hint, dang
 | school-north-stair-peak | 一致 | 一致 | 一致 | 一致 | 一致 |
 | multi-route-surge | 一致 | 一致 | 一致 | 一致 | 一致 |
 
-決定が変わった組: 2/44（11 シナリオ × 4 つの k）。
+決定が変わった組: 2/36（9 シナリオ × 4 つの k）。
 
-決定が一致した組での連続量の最大ずれ（OD/k と throughput/k は相対、τ は相対、重要度は絶対差）: od=1.33e-15, throughput=2.66e-07, tau=3.30e-05, importance=3.99e-06（42 組）。
+決定が一致した組での連続量の最大ずれ（OD/k と throughput/k は相対、τ は相対、重要度は絶対差）: od=1.33e-15, throughput=1.58e-16, tau=3.30e-05, importance=3.67e-06（34 組）。
 
 ## 変種 no_history: k=1 からの決定差分
 
 | scenario | k=0.01 | k=0.1 | k=1 | k=10 | k=100 |
 |---|---|---|---|---|---|
-| reversible-corridor-flip | 一致 | 一致 | 一致 | 一致 | 一致 |
-| stadium-egress-concourse | 一致 | 一致 | 一致 | 一致 | 一致 |
 | station-transfer-peak | 一致 | 一致 | 一致 | 一致 | 一致 |
 | expo-gate-overcrowded | 一致 | 一致 | 一致 | 一致 | 一致 |
 | expo-incident-resume | 一致 | 一致 | 一致 | 一致 | 一致 |
@@ -70,16 +62,14 @@ k 倍した浮動小数フィールド: baseline_stagnation, capacity_hint, dang
 | school-north-stair-peak | 一致 | 一致 | 一致 | 一致 | 一致 |
 | multi-route-surge | 一致 | 一致 | 一致 | 一致 | 一致 |
 
-決定が変わった組: 0/44（11 シナリオ × 4 つの k）。
+決定が変わった組: 0/36（9 シナリオ × 4 つの k）。
 
-決定が一致した組での連続量の最大ずれ（OD/k と throughput/k は相対、τ は相対、重要度は絶対差）: od=1.33e-15, throughput=2.11e-08, tau=1.98e-05, importance=3.96e-06（44 組）。
+決定が一致した組での連続量の最大ずれ（OD/k と throughput/k は相対、τ は相対、重要度は絶対差）: od=1.33e-15, throughput=1.58e-16, tau=1.98e-05, importance=3.67e-06（36 組）。
 
 ## 変種 obs_only: k=1 からの決定差分
 
 | scenario | k=0.01 | k=0.1 | k=1 | k=10 | k=100 |
 |---|---|---|---|---|---|
-| reversible-corridor-flip | direction,emphasis | direction,emphasis | 一致 | direction,emphasis | direction,emphasis |
-| stadium-egress-concourse | direction,emphasis | direction,emphasis | 一致 | direction,detour,emphasis | direction,detour,emphasis |
 | station-transfer-peak | emphasis | emphasis | 一致 | direction,detour,emphasis | direction,detour,emphasis |
 | expo-gate-overcrowded | 一致 | 一致 | 一致 | 一致 | 一致 |
 | expo-incident-resume | 一致 | 一致 | 一致 | 一致 | 一致 |
@@ -90,7 +80,7 @@ k 倍した浮動小数フィールド: baseline_stagnation, capacity_hint, dang
 | school-north-stair-peak | 一致 | 一致 | 一致 | detour,emphasis | detour,emphasis |
 | multi-route-surge | 一致 | 一致 | 一致 | detour,emphasis | detour,emphasis |
 
-決定が変わった組: 28/44（11 シナリオ × 4 つの k）。
+決定が変わった組: 20/36（9 シナリオ × 4 つの k）。
 
 決定が一致した組での連続量の最大ずれ（OD/k と throughput/k は相対、τ は相対、重要度は絶対差）: od=1.33e-15, throughput=1.58e-16, tau=3.30e-05, importance=3.67e-06（16 組）。
 
@@ -109,10 +99,6 @@ epsilon_0 は 1e-6 の零除算よけで、決定に効くはずがない。k=1 
 
 | scenario | variant | ε0×0 | ε0×2 |
 |---|---|---|---|
-| reversible-corridor-flip | history | 一致 | 一致 |
-| reversible-corridor-flip | no_history | 一致 | 一致 |
-| stadium-egress-concourse | history | 一致 | 一致 |
-| stadium-egress-concourse | no_history | 一致 | 一致 |
 | station-transfer-peak | history | emphasis | emphasis |
 | station-transfer-peak | no_history | 一致 | 一致 |
 | expo-gate-overcrowded | history | 一致 | 一致 |

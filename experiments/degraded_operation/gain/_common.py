@@ -72,8 +72,6 @@ def result_name(name: str) -> str:
 
 
 SCENARIO_KINDS: dict[str, str] = {
-    "reversible-corridor-flip": "direction",
-    "stadium-egress-concourse": "direction",
     "station-transfer-peak": "direction",
     "expo-gate-overcrowded": "boundary",
     "expo-incident-resume": "boundary",
