@@ -11,7 +11,7 @@ from ..detection.config import ResolvedConfig as DetectionConfig
 from ..detection.state import DetectionState, QueuedTrigger, QueuedTriggerKind
 from ..detour_routing import route_detour
 from ..detour_routing.config import ResolvedConfig as DetourConfig
-from ..domain.element_state import assess_elements
+from ..domain.element_state import ElementStates, Judgement, assess_elements
 from ..domain.enums import Mode
 from ..forecasting import forecast
 from ..forecasting.config import ResolvedConfig as ForecastConfig
@@ -20,7 +20,15 @@ from ..optimization.config import OptimizationMode as ModuleOptimizationMode
 from ..optimization.config import ResolvedConfig as OptimizationConfig
 from ..optimization.results import OptimizationResult, SolverStatus
 from .config import ResolvedConfig as ServiceConfig
-from .diagnostics import Diagnostics, StepKind, StepRecord, StepStatus, Warning, WarningCode
+from .diagnostics import (
+    Diagnostics,
+    ElementStateRecord,
+    StepKind,
+    StepRecord,
+    StepStatus,
+    Warning,
+    WarningCode,
+)
 from .feedback import FeedbackValues
 from .feedback_extractor import extract_feedback
 from .messages import REQUEST_SCHEMA_VERSION, Request, Response
@@ -90,7 +98,11 @@ def handle_request(
         req.server_time,
     )
     steps.append(_step(StepKind.DETECTION, detection_started))
-    warnings = _detection_warnings(detection)
+    diagnostics = Diagnostics(
+        mode=mode,
+        warnings=_detection_warnings(detection),
+        element_states=_element_state_records(element_states, detection),
+    )
 
     early_verdict = _verdict_of(detection.verdict_hint)
     if early_verdict is not None:
@@ -99,7 +111,7 @@ def handle_request(
             early_verdict,
             finalize_detection_state(detection, early_verdict, req),
             started,
-            diagnostics=Diagnostics(mode=mode, warnings=warnings, steps_executed=tuple(steps)),
+            diagnostics=replace(diagnostics, steps_executed=tuple(steps)),
         )
 
     final_retry = req.detection_state.consecutive_skip_count >= req.config.max_consecutive_skips
@@ -118,7 +130,7 @@ def handle_request(
     rpc_limited = deadline is not None and deadline < service_deadline
 
     if time.monotonic() >= cycle_deadline:
-        return _skipped_time_response(req, detection, mode, warnings, steps, started, final_retry)
+        return _skipped_time_response(req, detection, diagnostics, steps, started, final_retry)
 
     forecast_started = time.monotonic()
     forecast_result = forecast(
@@ -132,7 +144,7 @@ def handle_request(
     )
     steps.append(_step(StepKind.FORECASTING, forecast_started))
     if time.monotonic() >= cycle_deadline:
-        return _skipped_time_response(req, detection, mode, warnings, steps, started, final_retry)
+        return _skipped_time_response(req, detection, diagnostics, steps, started, final_retry)
 
     detour_started = time.monotonic()
     detour_result = route_detour(
@@ -140,21 +152,21 @@ def handle_request(
     )
     steps.append(_step(StepKind.DETOUR, detour_started))
     if time.monotonic() >= cycle_deadline:
-        return _skipped_time_response(req, detection, mode, warnings, steps, started, final_retry)
+        return _skipped_time_response(req, detection, diagnostics, steps, started, final_retry)
 
     now = time.monotonic()
     remaining = service_deadline - now - BUFFER_SEC
     if deadline is not None:
         remaining = min(remaining, deadline - now - RPC_MARGIN_SEC)
     if remaining <= 0.0:
-        return _skipped_time_response(req, detection, mode, warnings, steps, started, final_retry)
+        return _skipped_time_response(req, detection, diagnostics, steps, started, final_retry)
     opt_cap_limit = opt_cap * (2 if final_retry else 1)
     if rpc_limited:
         opt_budget = min(remaining, opt_cap_limit)
     else:
         opt_budget = min(max(MIN_OPT_BUDGET, remaining), opt_cap_limit)
     if opt_budget <= 0.0:
-        return _skipped_time_response(req, detection, mode, warnings, steps, started, final_retry)
+        return _skipped_time_response(req, detection, diagnostics, steps, started, final_retry)
 
     optimization_started = time.monotonic()
     optimize_result = optimize(
@@ -176,7 +188,7 @@ def handle_request(
         optimize_result.optimization_result.solver_status is SolverStatus.TIMEOUT
         or time.monotonic() >= cycle_deadline
     ):
-        return _skipped_time_response(req, detection, mode, warnings, steps, started, final_retry)
+        return _skipped_time_response(req, detection, diagnostics, steps, started, final_retry)
 
     feedback_started = time.monotonic()
     feedback = extract_feedback(
@@ -197,7 +209,7 @@ def handle_request(
         started,
         feedback=feedback,
         optimization_result=optimize_result.optimization_result,
-        diagnostics=Diagnostics(mode=mode, warnings=warnings, steps_executed=tuple(steps)),
+        diagnostics=replace(diagnostics, steps_executed=tuple(steps)),
     )
 
 
@@ -264,12 +276,12 @@ def _response(
 def _skipped_time_response(
     req: Request,
     detection: DetectionResult,
-    mode: Mode,
-    warnings: tuple[Warning, ...],
+    diagnostics: Diagnostics,
     steps: list[StepRecord],
     started: float,
     final_retry: bool,
 ) -> Response:
+    warnings = diagnostics.warnings
     if final_retry:
         warnings += (Warning(WarningCode.SOLVER_GIVEUP),)
     return _response(
@@ -277,7 +289,7 @@ def _skipped_time_response(
         Verdict.SKIPPED_TIME,
         finalize_detection_state(detection, Verdict.SKIPPED_TIME, req),
         started,
-        diagnostics=Diagnostics(mode=mode, warnings=warnings, steps_executed=tuple(steps)),
+        diagnostics=replace(diagnostics, warnings=warnings, steps_executed=tuple(steps)),
     )
 
 
@@ -303,6 +315,23 @@ def _detection_warnings(det: DetectionResult) -> tuple[Warning, ...]:
             (("edge_id", item.edge_id.value), ("held", item.held.value)),
         )
         for item in det.warnings
+    )
+
+
+def _element_state_records(
+    states: ElementStates, det: DetectionResult
+) -> tuple[ElementStateRecord, ...]:
+    skipped = {item.edge_id: item.judgements for item in det.skipped}
+    return tuple(
+        ElementStateRecord(
+            target_key=f"edge:{state.edge_id.value}",
+            observation=state.observation,
+            history=state.history,
+            line_points=state.line_points,
+            skipped=tuple(j for j in Judgement if j in skipped.get(state.edge_id, ())),
+        )
+        for state in states.values()
+        if not state.nominal or state.edge_id in skipped
     )
 
 

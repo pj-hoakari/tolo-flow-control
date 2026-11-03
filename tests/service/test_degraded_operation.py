@@ -26,6 +26,7 @@ from flow_control.domain import (
     ObservationType,
     Reference,
 )
+from flow_control.domain.element_state import HistoryTier, Judgement, ObservationState
 from flow_control.service import (
     EventContext,
     EventTerm,
@@ -35,7 +36,7 @@ from flow_control.service import (
     Verdict,
     handle_request,
 )
-from flow_control.service.diagnostics import Warning, WarningCode
+from flow_control.service.diagnostics import ElementStateRecord, Warning, WarningCode
 
 NOW = datetime(2026, 11, 3, 10, 0, tzinfo=UTC)
 E = EdgeID("e")
@@ -115,53 +116,92 @@ def _partial(held: str) -> Warning:
     return Warning(WarningCode.PARTIAL_COMBINED_TRIGGER, (("edge_id", "e"), ("held", held)))
 
 
+def _record(
+    observation: ObservationState, history: HistoryTier, line_points: int, *skipped: Judgement
+) -> tuple[ElementStateRecord, ...]:
+    return (ElementStateRecord("edge:e", observation, history, line_points, skipped),)
+
+
+OK, ESTABLISHED_TIER = ObservationState.OK, HistoryTier.ESTABLISHED
+UNDETERMINABLE = (Judgement.SURGE, Judgement.HIGH_STAGNATION, Judgement.COMBINED)
+NO_SURGE = (Judgement.SURGE, Judgement.COMBINED)
+
+
 @pytest.mark.parametrize(
-    ("request_", "verdict", "warnings"),
+    ("request_", "verdict", "warnings", "records"),
     [
-        pytest.param(_request(), Verdict.OPTIMIZED, (), id="ok-line-established"),
+        pytest.param(_request(), Verdict.OPTIMIZED, (), (), id="ok-line-established"),
         pytest.param(
             _request(stat=ArcHistoryStat(E, available_span_hours=2.0)),
             Verdict.OPTIMIZED,
             (),
+            _record(OK, HistoryTier.SHORT, 11),
             id="history-short",
         ),
-        pytest.param(_request(stat=None), Verdict.OPTIMIZED, (), id="window-only"),
+        pytest.param(
+            _request(stat=None),
+            Verdict.OPTIMIZED,
+            (),
+            _record(OK, HistoryTier.WINDOW_ONLY, 11),
+            id="window-only",
+        ),
         pytest.param(
             _request(flow_window=(), stagnation_window=()),
             Verdict.SKIPPED_NO_TRIGGER,
             (_partial("HIGH_STAGNATION"),),
+            _record(OK, ESTABLISHED_TIER, 1, *NO_SURGE),
             id="window-empty",
         ),
         pytest.param(
             _request(stat=None, flow_window=(), stagnation_window=()),
             Verdict.SKIPPED_NO_TRIGGER,
             (),
+            _record(OK, HistoryTier.NONE, 1, *UNDETERMINABLE),
             id="no-history",
         ),
         pytest.param(
             _request(flow_window=()),
             Verdict.SKIPPED_NO_TRIGGER,
             (_partial("HIGH_STAGNATION"),),
+            _record(OK, ESTABLISHED_TIER, 1, *NO_SURGE),
             id="line-sparse",
         ),
-        pytest.param(_request(flag=ConfidenceFlag.HOLD), Verdict.SKIPPED_NO_TRIGGER, (), id="hold"),
         pytest.param(
-            _request(flag=ConfidenceFlag.INVALID), Verdict.SKIPPED_NO_TRIGGER, (), id="invalid"
+            _request(flag=ConfidenceFlag.HOLD),
+            Verdict.SKIPPED_NO_TRIGGER,
+            (),
+            _record(ObservationState.HOLD, ESTABLISHED_TIER, 11, *UNDETERMINABLE),
+            id="hold",
         ),
-        pytest.param(_request(observed=False), Verdict.SKIPPED_NO_TRIGGER, (), id="unobserved"),
+        pytest.param(
+            _request(flag=ConfidenceFlag.INVALID),
+            Verdict.SKIPPED_NO_TRIGGER,
+            (),
+            _record(ObservationState.INVALID, ESTABLISHED_TIER, 10, *UNDETERMINABLE),
+            id="invalid",
+        ),
+        pytest.param(
+            _request(observed=False),
+            Verdict.SKIPPED_NO_TRIGGER,
+            (),
+            _record(ObservationState.UNOBSERVED, ESTABLISHED_TIER, 10, *UNDETERMINABLE),
+            id="unobserved",
+        ),
         pytest.param(
             _request(observed_ago=timedelta(minutes=10)),
             Verdict.SKIPPED_NO_TRIGGER,
             (),
+            _record(ObservationState.STALE, ESTABLISHED_TIER, 11, *UNDETERMINABLE),
             id="stale",
         ),
     ],
 )
-def test_element_state_decides_the_combined_trigger(request_, verdict, warnings):
+def test_element_state_decides_the_combined_trigger(request_, verdict, warnings, records):
     response = handle_request(request_)
 
     assert response.verdict is verdict
     assert response.diagnostics.warnings == warnings
+    assert response.diagnostics.element_states == records
 
 
 def test_surge_held_while_stagnation_is_undeterminable_is_warned():
@@ -169,6 +209,9 @@ def test_surge_held_while_stagnation_is_undeterminable_is_warned():
 
     assert response.verdict is Verdict.SKIPPED_NO_TRIGGER
     assert response.diagnostics.warnings == (_partial("SURGE"),)
+    assert response.diagnostics.element_states == _record(
+        OK, HistoryTier.NONE, 11, Judgement.HIGH_STAGNATION, Judgement.COMBINED
+    )
 
 
 def test_zero_flow_line_makes_surge_undeterminable():
@@ -185,6 +228,7 @@ def test_zero_flow_line_makes_surge_undeterminable():
 
     assert response.verdict is Verdict.SKIPPED_NO_TRIGGER
     assert response.diagnostics.warnings == (_partial("HIGH_STAGNATION"),)
+    assert response.diagnostics.element_states == _record(OK, ESTABLISHED_TIER, 11, *NO_SURGE)
 
 
 def test_stagnation_without_surge_is_calm_not_undeterminable():
@@ -201,3 +245,4 @@ def test_stagnation_without_surge_is_calm_not_undeterminable():
 
     assert response.verdict is Verdict.SKIPPED_NO_TRIGGER
     assert response.diagnostics.warnings == ()
+    assert response.diagnostics.element_states == ()

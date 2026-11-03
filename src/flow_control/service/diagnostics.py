@@ -7,6 +7,7 @@ from dataclasses import dataclass
 from datetime import datetime
 from enum import Enum
 
+from ..domain.element_state import HistoryTier, Judgement, ObservationState
 from ..domain.enums import Mode
 
 DIAGNOSTICS_SCHEMA_VERSION = "diagnostics/2"
@@ -105,11 +106,20 @@ class StepRecord:
 
 
 @dataclass(frozen=True)
+class ElementStateRecord:
+    target_key: str
+    observation: ObservationState
+    history: HistoryTier
+    line_points: int
+    skipped: tuple[Judgement, ...] = ()
+
+
+@dataclass(frozen=True)
 class Diagnostics:
     mode: Mode = Mode.CLOSED
     warnings: tuple[Warning, ...] = ()
     trigger_evidences: tuple[TriggerEvidence, ...] = ()
     fallbacks_applied: tuple[FallbackRecord, ...] = ()
     steps_executed: tuple[StepRecord, ...] = ()
-    degraded_short_tenant: bool = False  # 縮退モード適用有無
+    element_states: tuple[ElementStateRecord, ...] = ()
     schema_version: str = DIAGNOSTICS_SCHEMA_VERSION

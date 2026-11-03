@@ -18,6 +18,7 @@ from flow_control.detection.state import (
     WarmupState,
 )
 from flow_control.detection.triggers import Event, EventKind
+from flow_control.domain.element_state import HistoryTier, Judgement, ObservationState
 from flow_control.domain.enums import (
     BoundaryDirection,
     CurrentDirection,
@@ -68,6 +69,7 @@ from flow_control.service.config import OptimizationMode, ResolvedConfig, Throug
 from flow_control.service.context import EventContext, EventTerm, TenantContext
 from flow_control.service.diagnostics import (
     Diagnostics,
+    ElementStateRecord,
     FallbackKind,
     FallbackRecord,
     StepKind,
@@ -323,6 +325,28 @@ _WARNING_CODE_TO_WIRE = {
     WarningCode.PARTIAL_COMBINED_TRIGGER: pb.WARNING_CODE_PARTIAL_COMBINED_TRIGGER,
 }
 _WARNING_CODE_FROM_WIRE = {v: k for k, v in _WARNING_CODE_TO_WIRE.items()}
+_OBSERVATION_STATE_TO_WIRE = {
+    ObservationState.UNOBSERVED: pb.OBSERVATION_STATE_UNOBSERVED,
+    ObservationState.INVALID: pb.OBSERVATION_STATE_INVALID,
+    ObservationState.HOLD: pb.OBSERVATION_STATE_HOLD,
+    ObservationState.STALE: pb.OBSERVATION_STATE_STALE,
+    ObservationState.OK: pb.OBSERVATION_STATE_OK,
+}
+_OBSERVATION_STATE_FROM_WIRE = {v: k for k, v in _OBSERVATION_STATE_TO_WIRE.items()}
+_HISTORY_TIER_TO_WIRE = {
+    HistoryTier.NONE: pb.HISTORY_TIER_NONE,
+    HistoryTier.WINDOW_ONLY: pb.HISTORY_TIER_WINDOW_ONLY,
+    HistoryTier.SHORT: pb.HISTORY_TIER_SHORT,
+    HistoryTier.ESTABLISHED: pb.HISTORY_TIER_ESTABLISHED,
+}
+_HISTORY_TIER_FROM_WIRE = {v: k for k, v in _HISTORY_TIER_TO_WIRE.items()}
+_JUDGEMENT_TO_WIRE = {
+    Judgement.SURGE: pb.JUDGEMENT_SURGE,
+    Judgement.HIGH_STAGNATION: pb.JUDGEMENT_HIGH_STAGNATION,
+    Judgement.COMBINED: pb.JUDGEMENT_COMBINED,
+    Judgement.PUNCTURE: pb.JUDGEMENT_PUNCTURE,
+}
+_JUDGEMENT_FROM_WIRE = {v: k for k, v in _JUDGEMENT_TO_WIRE.items()}
 _TRIGGER_EVIDENCE_SOURCE_TO_WIRE = {
     TriggerEvidenceSource.SURGE: pb.TRIGGER_EVIDENCE_SOURCE_SURGE,
     TriggerEvidenceSource.HIGH_STAGNATION: pb.TRIGGER_EVIDENCE_SOURCE_HIGH_STAGNATION,
@@ -1795,10 +1819,35 @@ def _decode_step(value: pb.StepRecord) -> StepRecord:
     )
 
 
+def _encode_element_state(value: ElementStateRecord) -> pb.ElementStateRecord:
+    return pb.ElementStateRecord(
+        target_key=value.target_key,
+        observation=_enum_to_wire(
+            value.observation, _OBSERVATION_STATE_TO_WIRE, "observation state"
+        ),
+        history=_enum_to_wire(value.history, _HISTORY_TIER_TO_WIRE, "history tier"),
+        line_points=value.line_points,
+        skipped=[_enum_to_wire(item, _JUDGEMENT_TO_WIRE, "judgement") for item in value.skipped],
+    )
+
+
+def _decode_element_state(value: pb.ElementStateRecord) -> ElementStateRecord:
+    return ElementStateRecord(
+        target_key=_required_id(value.target_key, "element_state.target_key"),
+        observation=_enum_from_wire(
+            int(value.observation), _OBSERVATION_STATE_FROM_WIRE, "observation state"
+        ),
+        history=_enum_from_wire(int(value.history), _HISTORY_TIER_FROM_WIRE, "history tier"),
+        line_points=value.line_points,
+        skipped=tuple(
+            _enum_from_wire(int(item), _JUDGEMENT_FROM_WIRE, "judgement") for item in value.skipped
+        ),
+    )
+
+
 def _encode_diagnostics(value: Diagnostics) -> pb.Diagnostics:
     result = pb.Diagnostics(
         mode=_enum_to_wire(value.mode, _MODE_TO_WIRE, "mode"),
-        degraded_short_tenant=value.degraded_short_tenant,
         schema_version=value.schema_version,
     )
     result.warnings.extend(_encode_warning(item) for item in value.warnings)
@@ -1807,6 +1856,7 @@ def _encode_diagnostics(value: Diagnostics) -> pb.Diagnostics:
     )
     result.fallbacks_applied.extend(_encode_fallback(item) for item in value.fallbacks_applied)
     result.steps_executed.extend(_encode_step(item) for item in value.steps_executed)
+    result.element_states.extend(_encode_element_state(item) for item in value.element_states)
     return result
 
 
@@ -1817,7 +1867,7 @@ def _decode_diagnostics(value: pb.Diagnostics) -> Diagnostics:
         trigger_evidences=tuple(_decode_trigger_evidence(item) for item in value.trigger_evidences),
         fallbacks_applied=tuple(_decode_fallback(item) for item in value.fallbacks_applied),
         steps_executed=tuple(_decode_step(item) for item in value.steps_executed),
-        degraded_short_tenant=value.degraded_short_tenant,
+        element_states=tuple(_decode_element_state(item) for item in value.element_states),
         schema_version=_required_id(value.schema_version, "diagnostics.schema_version"),
     )
 

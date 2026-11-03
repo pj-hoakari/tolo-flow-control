@@ -75,6 +75,14 @@ class ElementState:
         return self.stagnation.baseline_source
 
     @property
+    def nominal(self) -> bool:
+        return (
+            self.observation is ObservationState.OK
+            and self.history is HistoryTier.ESTABLISHED
+            and self.line_points >= MIN_SERIES_POINTS
+        )
+
+    @property
     def judgeable(self) -> bool:
         return self.observation is ObservationState.OK
 

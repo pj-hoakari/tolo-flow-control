@@ -9,6 +9,7 @@ from .context import EventContext, EventTerm, TenantContext
 from .diagnostics import (
     DIAGNOSTICS_SCHEMA_VERSION,
     Diagnostics,
+    ElementStateRecord,
     FallbackKind,
     FallbackRecord,
     StepKind,
@@ -55,6 +56,7 @@ __all__ = [
     "DetourMetrics",
     "Diagnostics",
     "DirectionChangeSummary",
+    "ElementStateRecord",
     "EventContext",
     "EventTerm",
     "FallbackKind",

@@ -12,12 +12,12 @@
 capacity_hint 未設定・enabled=False では発火しない（ノーハーム）。
 """
 
-from datetime import datetime
+from datetime import datetime, timedelta
 
 import pytest
 
 from flow_control.detection.config import ResolvedConfig
-from flow_control.detection.diagnostics import PunctureEvidence
+from flow_control.detection.diagnostics import PunctureEvidence, SkippedJudgements
 from flow_control.detection.state import DetectionState, QueuedTriggerKind
 from flow_control.detection.triggers import detect_metric_triggers
 from flow_control.domain import (
@@ -33,9 +33,9 @@ from flow_control.domain import (
     NodeKind,
     ObservationType,
 )
-from flow_control.domain.element_state import assess_elements
+from flow_control.domain.element_state import Judgement, assess_elements
 from flow_control.domain.history import HistoryDigest
-from flow_control.domain.observations import ArcScalarFlow, Observations
+from flow_control.domain.observations import ArcScalarFlow, ConfidenceFlag, Observations
 
 
 def _scalar_graph(edge_id: EdgeID, *, capacity_hint: float | None) -> Graph:
@@ -209,3 +209,39 @@ def test_puncture_ignores_vector_edge(
     )
 
     assert result.triggered_edges == ()
+
+
+@pytest.mark.parametrize(
+    ("flag", "observed_at_offset_min"),
+    [(ConfidenceFlag.HOLD, 0), (ConfidenceFlag.OK, 10)],
+    ids=["hold", "stale"],
+)
+def test_puncture_is_skipped_when_the_count_is_frozen_or_old(
+    base_time: datetime, edge_id: EdgeID, flag: ConfidenceFlag, observed_at_offset_min: int
+):
+    graph = _scalar_graph(edge_id, capacity_hint=100.0)
+    observations = Observations(
+        observed_at=base_time - timedelta(minutes=observed_at_offset_min),
+        arc_scalar_flows=(
+            ArcScalarFlow(edge_id=edge_id, observed_count=150.0, confidence_flag=flag),
+        ),
+    )
+
+    result = _run(
+        graph=graph, observations=observations, config=_puncture_config(), server_time=base_time
+    )
+
+    assert result.triggered_edges == ()
+    assert result.skipped == (
+        SkippedJudgements(
+            edge_id,
+            frozenset(
+                {
+                    Judgement.SURGE,
+                    Judgement.HIGH_STAGNATION,
+                    Judgement.COMBINED,
+                    Judgement.PUNCTURE,
+                }
+            ),
+        ),
+    )

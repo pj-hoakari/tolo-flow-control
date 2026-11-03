@@ -14,6 +14,7 @@ from flow_control.detection.state import (
     WarmupState,
 )
 from flow_control.detection.triggers import Event, EventKind
+from flow_control.domain.element_state import HistoryTier, Judgement, ObservationState
 from flow_control.domain.enums import (
     BoundaryDirection,
     CurrentDirection,
@@ -46,6 +47,7 @@ from flow_control.rpc import codec
 from flow_control.rpc.generated.tolo.flow.v1 import flow_pb2 as pb
 from flow_control.service import (
     Diagnostics,
+    ElementStateRecord,
     EventContext,
     EventTerm,
     FeedbackValues,
@@ -232,7 +234,18 @@ def test_response_round_trip_preserves_nondefault_feedback_and_diagnostics() -> 
                 history_completeness=0.5,
             ),
         ),
-        diagnostics=replace(Diagnostics(), degraded_short_tenant=True),
+        diagnostics=replace(
+            Diagnostics(),
+            element_states=(
+                ElementStateRecord(
+                    target_key="edge:e1",
+                    observation=ObservationState.HOLD,
+                    history=HistoryTier.WINDOW_ONLY,
+                    line_points=1,
+                    skipped=(Judgement.SURGE, Judgement.HIGH_STAGNATION, Judgement.COMBINED),
+                ),
+            ),
+        ),
     )
 
     assert codec.decode_response(codec.encode_response(response)) == response

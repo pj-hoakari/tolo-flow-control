@@ -526,8 +526,18 @@ message Diagnostics {
   repeated TriggerEvidence trigger_evidences = 3;
   repeated FallbackRecord fallbacks_applied = 4;
   repeated StepRecord steps_executed = 5;
-  bool degraded_short_tenant = 6;
+  reserved 6;
+  reserved "degraded_short_tenant";
   string schema_version = 7;
+  repeated ElementStateRecord element_states = 8;
+}
+
+message ElementStateRecord {
+  string target_key = 1;
+  ObservationState observation = 2;
+  HistoryTier history = 3;
+  int32 line_points = 4;
+  repeated Judgement skipped = 5;
 }
 
 message TriggerEvidence {
@@ -759,6 +769,31 @@ enum FallbackKind {
   FALLBACK_KIND_GREEDY_NO_IMPROVEMENT = 12;
   FALLBACK_KIND_LOCALIZATION_CAPPED = 13;
   FALLBACK_KIND_RESTRICTION_PROPOSED = 14;
+}
+
+enum ObservationState {
+  OBSERVATION_STATE_UNSPECIFIED = 0;
+  OBSERVATION_STATE_UNOBSERVED = 1;
+  OBSERVATION_STATE_INVALID = 2;
+  OBSERVATION_STATE_HOLD = 3;
+  OBSERVATION_STATE_STALE = 4;
+  OBSERVATION_STATE_OK = 5;
+}
+
+enum HistoryTier {
+  HISTORY_TIER_UNSPECIFIED = 0;
+  HISTORY_TIER_NONE = 1;
+  HISTORY_TIER_WINDOW_ONLY = 2;
+  HISTORY_TIER_SHORT = 3;
+  HISTORY_TIER_ESTABLISHED = 4;
+}
+
+enum Judgement {
+  JUDGEMENT_UNSPECIFIED = 0;
+  JUDGEMENT_SURGE = 1;
+  JUDGEMENT_HIGH_STAGNATION = 2;
+  JUDGEMENT_COMBINED = 3;
+  JUDGEMENT_PUNCTURE = 4;
 }
 
 enum StepKind {

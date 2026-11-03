@@ -217,6 +217,31 @@ class FallbackKind(int, metaclass=_enum_type_wrapper.EnumTypeWrapper):
     FALLBACK_KIND_LOCALIZATION_CAPPED: _ClassVar[FallbackKind]
     FALLBACK_KIND_RESTRICTION_PROPOSED: _ClassVar[FallbackKind]
 
+class ObservationState(int, metaclass=_enum_type_wrapper.EnumTypeWrapper):
+    __slots__ = ()
+    OBSERVATION_STATE_UNSPECIFIED: _ClassVar[ObservationState]
+    OBSERVATION_STATE_UNOBSERVED: _ClassVar[ObservationState]
+    OBSERVATION_STATE_INVALID: _ClassVar[ObservationState]
+    OBSERVATION_STATE_HOLD: _ClassVar[ObservationState]
+    OBSERVATION_STATE_STALE: _ClassVar[ObservationState]
+    OBSERVATION_STATE_OK: _ClassVar[ObservationState]
+
+class HistoryTier(int, metaclass=_enum_type_wrapper.EnumTypeWrapper):
+    __slots__ = ()
+    HISTORY_TIER_UNSPECIFIED: _ClassVar[HistoryTier]
+    HISTORY_TIER_NONE: _ClassVar[HistoryTier]
+    HISTORY_TIER_WINDOW_ONLY: _ClassVar[HistoryTier]
+    HISTORY_TIER_SHORT: _ClassVar[HistoryTier]
+    HISTORY_TIER_ESTABLISHED: _ClassVar[HistoryTier]
+
+class Judgement(int, metaclass=_enum_type_wrapper.EnumTypeWrapper):
+    __slots__ = ()
+    JUDGEMENT_UNSPECIFIED: _ClassVar[Judgement]
+    JUDGEMENT_SURGE: _ClassVar[Judgement]
+    JUDGEMENT_HIGH_STAGNATION: _ClassVar[Judgement]
+    JUDGEMENT_COMBINED: _ClassVar[Judgement]
+    JUDGEMENT_PUNCTURE: _ClassVar[Judgement]
+
 class StepKind(int, metaclass=_enum_type_wrapper.EnumTypeWrapper):
     __slots__ = ()
     STEP_KIND_UNSPECIFIED: _ClassVar[StepKind]
@@ -384,6 +409,22 @@ FALLBACK_KIND_LP_INFEASIBLE_HELD: FallbackKind
 FALLBACK_KIND_GREEDY_NO_IMPROVEMENT: FallbackKind
 FALLBACK_KIND_LOCALIZATION_CAPPED: FallbackKind
 FALLBACK_KIND_RESTRICTION_PROPOSED: FallbackKind
+OBSERVATION_STATE_UNSPECIFIED: ObservationState
+OBSERVATION_STATE_UNOBSERVED: ObservationState
+OBSERVATION_STATE_INVALID: ObservationState
+OBSERVATION_STATE_HOLD: ObservationState
+OBSERVATION_STATE_STALE: ObservationState
+OBSERVATION_STATE_OK: ObservationState
+HISTORY_TIER_UNSPECIFIED: HistoryTier
+HISTORY_TIER_NONE: HistoryTier
+HISTORY_TIER_WINDOW_ONLY: HistoryTier
+HISTORY_TIER_SHORT: HistoryTier
+HISTORY_TIER_ESTABLISHED: HistoryTier
+JUDGEMENT_UNSPECIFIED: Judgement
+JUDGEMENT_SURGE: Judgement
+JUDGEMENT_HIGH_STAGNATION: Judgement
+JUDGEMENT_COMBINED: Judgement
+JUDGEMENT_PUNCTURE: Judgement
 STEP_KIND_UNSPECIFIED: StepKind
 STEP_KIND_VALIDATION: StepKind
 STEP_KIND_MODE_DECISION: StepKind
@@ -1274,22 +1315,36 @@ class Warning(_message.Message):
     def __init__(self, code: _Optional[_Union[WarningCode, str]] = ..., context: _Optional[_Iterable[_Union[KeyValue, _Mapping]]] = ...) -> None: ...
 
 class Diagnostics(_message.Message):
-    __slots__ = ("mode", "warnings", "trigger_evidences", "fallbacks_applied", "steps_executed", "degraded_short_tenant", "schema_version")
+    __slots__ = ("mode", "warnings", "trigger_evidences", "fallbacks_applied", "steps_executed", "schema_version", "element_states")
     MODE_FIELD_NUMBER: _ClassVar[int]
     WARNINGS_FIELD_NUMBER: _ClassVar[int]
     TRIGGER_EVIDENCES_FIELD_NUMBER: _ClassVar[int]
     FALLBACKS_APPLIED_FIELD_NUMBER: _ClassVar[int]
     STEPS_EXECUTED_FIELD_NUMBER: _ClassVar[int]
-    DEGRADED_SHORT_TENANT_FIELD_NUMBER: _ClassVar[int]
     SCHEMA_VERSION_FIELD_NUMBER: _ClassVar[int]
+    ELEMENT_STATES_FIELD_NUMBER: _ClassVar[int]
     mode: Mode
     warnings: _containers.RepeatedCompositeFieldContainer[Warning]
     trigger_evidences: _containers.RepeatedCompositeFieldContainer[TriggerEvidence]
     fallbacks_applied: _containers.RepeatedCompositeFieldContainer[FallbackRecord]
     steps_executed: _containers.RepeatedCompositeFieldContainer[StepRecord]
-    degraded_short_tenant: bool
     schema_version: str
-    def __init__(self, mode: _Optional[_Union[Mode, str]] = ..., warnings: _Optional[_Iterable[_Union[Warning, _Mapping]]] = ..., trigger_evidences: _Optional[_Iterable[_Union[TriggerEvidence, _Mapping]]] = ..., fallbacks_applied: _Optional[_Iterable[_Union[FallbackRecord, _Mapping]]] = ..., steps_executed: _Optional[_Iterable[_Union[StepRecord, _Mapping]]] = ..., degraded_short_tenant: bool = ..., schema_version: _Optional[str] = ...) -> None: ...
+    element_states: _containers.RepeatedCompositeFieldContainer[ElementStateRecord]
+    def __init__(self, mode: _Optional[_Union[Mode, str]] = ..., warnings: _Optional[_Iterable[_Union[Warning, _Mapping]]] = ..., trigger_evidences: _Optional[_Iterable[_Union[TriggerEvidence, _Mapping]]] = ..., fallbacks_applied: _Optional[_Iterable[_Union[FallbackRecord, _Mapping]]] = ..., steps_executed: _Optional[_Iterable[_Union[StepRecord, _Mapping]]] = ..., schema_version: _Optional[str] = ..., element_states: _Optional[_Iterable[_Union[ElementStateRecord, _Mapping]]] = ...) -> None: ...
+
+class ElementStateRecord(_message.Message):
+    __slots__ = ("target_key", "observation", "history", "line_points", "skipped")
+    TARGET_KEY_FIELD_NUMBER: _ClassVar[int]
+    OBSERVATION_FIELD_NUMBER: _ClassVar[int]
+    HISTORY_FIELD_NUMBER: _ClassVar[int]
+    LINE_POINTS_FIELD_NUMBER: _ClassVar[int]
+    SKIPPED_FIELD_NUMBER: _ClassVar[int]
+    target_key: str
+    observation: ObservationState
+    history: HistoryTier
+    line_points: int
+    skipped: _containers.RepeatedScalarFieldContainer[Judgement]
+    def __init__(self, target_key: _Optional[str] = ..., observation: _Optional[_Union[ObservationState, str]] = ..., history: _Optional[_Union[HistoryTier, str]] = ..., line_points: _Optional[int] = ..., skipped: _Optional[_Iterable[_Union[Judgement, str]]] = ...) -> None: ...
 
 class TriggerEvidence(_message.Message):
     __slots__ = ("source", "occurred_at", "edge_id", "node_id", "metric_value", "threshold_value", "duration_min")
