@@ -215,21 +215,37 @@ def test_surge_held_while_stagnation_is_undeterminable_is_warned():
     )
 
 
-def test_zero_flow_line_makes_surge_undeterminable():
-    zero_line = tuple((t, 0.0) for t, _ in SURGING_LINE)
-    request = _request(flow_window=zero_line)
-    request = replace(
+def _zero_flow_request(stagnation: float) -> Request:
+    request = _request(flow_window=tuple((t, 0.0) for t, _ in SURGING_LINE))
+    return replace(
         request,
         observations=replace(
-            request.observations, arc_flows=(ArcFlow(E, FlowDirection.A_TO_B, 0.0),)
+            request.observations,
+            arc_flows=(ArcFlow(E, FlowDirection.A_TO_B, 0.0),),
+            arc_stagnations=(ArcStagnation(E, stagnation),),
         ),
     )
 
-    response = handle_request(request)
+
+def test_quiet_zero_flow_route_is_no_surge_and_records_nothing():
+    response = handle_request(_zero_flow_request(stagnation=5.0))
 
     assert response.verdict is Verdict.SKIPPED_NO_TRIGGER
-    assert response.diagnostics.warnings == (_partial("HIGH_STAGNATION"),)
-    assert response.diagnostics.element_states == _record(OK, ESTABLISHED_TIER, 11, *NO_SURGE)
+    assert response.diagnostics.warnings == ()
+    assert response.diagnostics.element_states == ()
+
+
+def test_zero_flow_route_with_stagnation_held_warns_with_the_reason_and_does_not_fire():
+    response = handle_request(_zero_flow_request(stagnation=15.0))
+
+    assert response.verdict is Verdict.SKIPPED_NO_TRIGGER
+    assert response.diagnostics.warnings == (
+        Warning(
+            WarningCode.PARTIAL_COMBINED_TRIGGER,
+            (("edge_id", "e"), ("held", "HIGH_STAGNATION"), ("reason", "zero_flow")),
+        ),
+    )
+    assert response.diagnostics.element_states == ()
 
 
 def test_stagnation_without_surge_is_calm_not_undeterminable():

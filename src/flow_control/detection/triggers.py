@@ -119,7 +119,8 @@ def detect_metric_triggers(
 
         state = element_states[edge.edge_id]
         line = state.surge_line()
-        surge_rate = None if line is None else _slope_percent_per_min(line)
+        zero_flow = line is not None and statistics.mean(v for _, v in line) <= EPSILON_FLOW
+        surge_rate = None if line is None or zero_flow else _slope_percent_per_min(line)
         surge_threshold = config.surge_rate_threshold_percent_per_min
         surge_breached = surge_rate is not None and surge_rate > surge_threshold
 
@@ -155,7 +156,7 @@ def detect_metric_triggers(
             stag = _NOT_EVALUATED
 
         skipped: set[Judgement] = set()
-        if surge_rate is None:
+        if surge_rate is None and not zero_flow:
             skipped.add(Judgement.SURGE)
         if basis is None:
             skipped.add(Judgement.HIGH_STAGNATION)
@@ -164,6 +165,12 @@ def detect_metric_triggers(
             if stag.established or surge_breached:
                 held = Judgement.HIGH_STAGNATION if stag.established else Judgement.SURGE
                 warnings.append(PartialCombinedTrigger(edge_id=edge.edge_id, held=held))
+        elif zero_flow and stag.established:
+            warnings.append(
+                PartialCombinedTrigger(
+                    edge_id=edge.edge_id, held=Judgement.HIGH_STAGNATION, reason="zero_flow"
+                )
+            )
 
         if basis is not None and surge_rate is not None and stag.established and surge_breached:
             stag_ratio = _stagnation_ratio(basis, config.beta, config.epsilon_0)
@@ -261,7 +268,7 @@ def _slope_percent_per_min(series: Series) -> float | None:
     y_mean = statistics.mean(ys)
     num = sum((x - x_mean) * (y - y_mean) for (x, y) in zip(xs, ys, strict=True))
     den = sum((x - x_mean) ** 2 for x in xs)
-    if den < EPSILON_FLOW or y_mean < EPSILON_FLOW:
+    if den < EPSILON_FLOW:
         return None
     return (num / den / y_mean) * 100.0
 
