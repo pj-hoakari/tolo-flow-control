@@ -319,6 +319,7 @@ def _stale_detection_state(now: datetime) -> DetectionState:
                 percentile_breached=True,
                 delta_breached=True,
                 stagnation_watch_since=now - timedelta(minutes=3),
+                stagnation_paused_at=now - timedelta(minutes=1),
                 surge_breached=True,
             ),
             ArcWatchState(edge_id=EdgeID("e1")),

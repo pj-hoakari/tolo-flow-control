@@ -15,6 +15,7 @@ established は片方だけでは成立せず、両条件（p90 欠損時は (a)
 発火は組合せ（AND）: ``established AND demand_warning`` で発火する。
 """
 
+from dataclasses import replace
 from datetime import UTC, datetime, timedelta
 
 import pytest
@@ -344,7 +345,9 @@ def test_history_stat_missing_pauses_the_watch_without_firing(
     )
 
     assert result.triggered_edges == ()
-    assert result.new_state.arc_watch_states == previous.arc_watch_states
+    assert result.new_state.arc_watch_states == (
+        replace(previous.arc_watch_states[0], stagnation_paused_at=base_time),
+    )
 
 
 @pytest.mark.parametrize(
@@ -396,11 +399,162 @@ def test_undeterminable_cycle_pauses_the_persistence_timer(
         config=surge_config,
     )
 
-    assert paused.new_state.arc_watch_states == first.new_state.arc_watch_states
-    assert first.new_state.watch_state_of(edge_id) == ArcWatchState(
-        edge_id, percentile_breached=True, delta_breached=True, stagnation_watch_since=started
+    assert paused.new_state.watch_state_of(edge_id) == ArcWatchState(
+        edge_id,
+        percentile_breached=True,
+        delta_breached=True,
+        stagnation_watch_since=started,
+        stagnation_paused_at=paused_at,
     )
-    assert resumed.triggered_edges == (edge_id,)
+    assert resumed.triggered_edges == ()
+    resumed_watch = resumed.new_state.watch_state_of(edge_id)
+    assert resumed_watch is not None
+    assert resumed_watch.stagnation_watch_since == base_time - timedelta(minutes=3)
+    assert resumed_watch.stagnation_paused_at is None
+
+
+_HOLDS = "holds"
+_UNDETERMINABLE = "undeterminable"
+_CALM = "calm"
+_INVALID = "invalid"
+_UNOBSERVED = "unobserved"
+
+
+def _firing_minutes(
+    *,
+    graph: Graph,
+    edge_id: EdgeID,
+    config: ResolvedConfig,
+    make_combined_firing,
+    cycles: list[tuple[int, str]],
+) -> list[int]:
+    state = DetectionState()
+    fired: list[int] = []
+    for minute, kind in cycles:
+        now = _TS + timedelta(minutes=minute)
+        history, observations, _ = make_combined_firing(
+            edge_id, now, stagnation=1.0 if kind == _CALM else 15.0
+        )
+        if kind == _UNDETERMINABLE:
+            observations = Observations(
+                observed_at=now,
+                arc_stagnations=(
+                    ArcStagnation(edge_id, 15.0, confidence_flag=ConfidenceFlag.HOLD),
+                ),
+            )
+        elif kind == _INVALID:
+            observations = Observations(
+                observed_at=now,
+                arc_stagnations=(
+                    ArcStagnation(edge_id, 15.0, confidence_flag=ConfidenceFlag.INVALID),
+                ),
+            )
+        elif kind == _UNOBSERVED:
+            observations = Observations(observed_at=now)
+        result = _run(
+            graph=graph,
+            history=history,
+            observations=observations,
+            previous_state=state,
+            server_time=now,
+            config=config,
+        )
+        state = result.new_state
+        if edge_id in result.triggered_edges:
+            fired.append(minute)
+    return fired
+
+
+def test_unobserved_gap_does_not_count_toward_persistence(
+    basic_graph: Graph,
+    edge_id: EdgeID,
+    surge_config: ResolvedConfig,
+    make_combined_firing,
+):
+    cycles = [(0, _HOLDS), *((m, _UNDETERMINABLE) for m in range(1, 10)), (10, _HOLDS)]
+
+    assert (
+        _firing_minutes(
+            graph=basic_graph,
+            edge_id=edge_id,
+            config=surge_config,
+            make_combined_firing=make_combined_firing,
+            cycles=cycles,
+        )
+        == []
+    )
+
+
+def test_persistence_accumulates_only_observed_holding_across_a_pause(
+    basic_graph: Graph,
+    edge_id: EdgeID,
+    surge_config: ResolvedConfig,
+    make_combined_firing,
+):
+    cycles = [
+        *((m, _HOLDS) for m in range(4)),
+        (4, _UNDETERMINABLE),
+        (5, _UNDETERMINABLE),
+        *((m, _HOLDS) for m in range(6, 10)),
+    ]
+
+    assert _firing_minutes(
+        graph=basic_graph,
+        edge_id=edge_id,
+        config=surge_config,
+        make_combined_firing=make_combined_firing,
+        cycles=cycles,
+    ) == [7]
+
+
+@pytest.mark.parametrize(
+    "gap",
+    [
+        [(m, _UNDETERMINABLE) for m in range(1, 8)],
+        [(1, _UNDETERMINABLE)],
+    ],
+    ids=["expires_while_paused", "expires_on_resume"],
+)
+def test_pause_longer_than_m_restarts_the_persistence_timer(
+    basic_graph: Graph,
+    edge_id: EdgeID,
+    surge_config: ResolvedConfig,
+    make_combined_firing,
+    gap: list[tuple[int, str]],
+):
+    cycles = [(0, _HOLDS), *gap, *((m, _HOLDS) for m in range(8, 15))]
+
+    assert _firing_minutes(
+        graph=basic_graph,
+        edge_id=edge_id,
+        config=surge_config,
+        make_combined_firing=make_combined_firing,
+        cycles=cycles,
+    ) == [13]
+
+
+@pytest.mark.parametrize("breaking", [_CALM, _INVALID, _UNOBSERVED])
+def test_breaking_cycle_after_a_pause_restarts_the_persistence_timer(
+    basic_graph: Graph,
+    edge_id: EdgeID,
+    surge_config: ResolvedConfig,
+    make_combined_firing,
+    breaking: str,
+):
+    cycles = [
+        *((m, _HOLDS) for m in range(3)),
+        (3, _UNDETERMINABLE),
+        (4, breaking),
+        *((m, _HOLDS) for m in range(5, 12)),
+    ]
+
+    assert _firing_minutes(
+        graph=basic_graph,
+        edge_id=edge_id,
+        config=surge_config,
+        make_combined_firing=make_combined_firing,
+        cycles=cycles,
+    ) == [10]
 
 
 @pytest.mark.parametrize("invalid", [True, False], ids=["invalid", "unobserved"])

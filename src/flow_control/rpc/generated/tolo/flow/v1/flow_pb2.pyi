@@ -755,18 +755,20 @@ class QueuedTrigger(_message.Message):
     def __init__(self, kind: _Optional[_Union[QueuedTriggerKind, str]] = ..., first_fired_at: _Optional[_Union[datetime.datetime, _timestamp_pb2.Timestamp, _Mapping]] = ..., last_fired_at: _Optional[_Union[datetime.datetime, _timestamp_pb2.Timestamp, _Mapping]] = ..., accumulated_score: _Optional[float] = ..., origin_edge_id: _Optional[str] = ..., origin_node_id: _Optional[str] = ..., snapshot_ref: _Optional[str] = ...) -> None: ...
 
 class ArcWatchState(_message.Message):
-    __slots__ = ("edge_id", "percentile_breached", "delta_breached", "stagnation_watch_since", "surge_breached")
+    __slots__ = ("edge_id", "percentile_breached", "delta_breached", "stagnation_watch_since", "surge_breached", "stagnation_paused_at")
     EDGE_ID_FIELD_NUMBER: _ClassVar[int]
     PERCENTILE_BREACHED_FIELD_NUMBER: _ClassVar[int]
     DELTA_BREACHED_FIELD_NUMBER: _ClassVar[int]
     STAGNATION_WATCH_SINCE_FIELD_NUMBER: _ClassVar[int]
     SURGE_BREACHED_FIELD_NUMBER: _ClassVar[int]
+    STAGNATION_PAUSED_AT_FIELD_NUMBER: _ClassVar[int]
     edge_id: str
     percentile_breached: bool
     delta_breached: bool
     stagnation_watch_since: _timestamp_pb2.Timestamp
     surge_breached: bool
-    def __init__(self, edge_id: _Optional[str] = ..., percentile_breached: bool = ..., delta_breached: bool = ..., stagnation_watch_since: _Optional[_Union[datetime.datetime, _timestamp_pb2.Timestamp, _Mapping]] = ..., surge_breached: bool = ...) -> None: ...
+    stagnation_paused_at: _timestamp_pb2.Timestamp
+    def __init__(self, edge_id: _Optional[str] = ..., percentile_breached: bool = ..., delta_breached: bool = ..., stagnation_watch_since: _Optional[_Union[datetime.datetime, _timestamp_pb2.Timestamp, _Mapping]] = ..., surge_breached: bool = ..., stagnation_paused_at: _Optional[_Union[datetime.datetime, _timestamp_pb2.Timestamp, _Mapping]] = ...) -> None: ...
 
 class WarmupState(_message.Message):
     __slots__ = ("target_key", "until")

@@ -200,6 +200,7 @@ message ArcWatchState {
   bool surge_breached = 5;
   reserved 6, 7;
   reserved "demand_excess_breached", "demand_watch_since";
+  optional google.protobuf.Timestamp stagnation_paused_at = 8;
 }
 
 message WarmupState {

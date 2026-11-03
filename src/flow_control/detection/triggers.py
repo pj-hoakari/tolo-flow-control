@@ -91,6 +91,7 @@ class _StagnationEval:
     watch_since: datetime | None  # 条件継続の計時開始時刻（条件が破れれば None）
     percentile_breached: bool  # (a).1
     delta_breached: bool  # (a).2
+    paused_at: datetime | None = None
 
 
 _NOT_EVALUATED = _StagnationEval(False, None, False, False)
@@ -134,11 +135,17 @@ def detect_metric_triggers(
                 config.epsilon_0,
             )
         elif previous_watch is not None and not state.out_of_scope:
+            watch_since, paused_at = _carried_watch(
+                previous_watch, config.high_stagnation_duration_min, server_time
+            )
+            if watch_since is not None and paused_at is None:
+                paused_at = server_time
             stag = _StagnationEval(
                 False,
-                previous_watch.stagnation_watch_since,
+                watch_since,
                 previous_watch.percentile_breached,
                 previous_watch.delta_breached,
+                paused_at,
             )
         else:
             stag = _NOT_EVALUATED
@@ -277,13 +284,31 @@ def _evaluate_stagnation(
         return _StagnationEval(False, None, percentile_breached, delta_breached)
 
     # 条件継続中：前サイクルから計時を引き継ぐ
-    if previous_watch is not None and previous_watch.stagnation_watch_since is not None:
-        watch_since = previous_watch.stagnation_watch_since
-    else:
+    watch_since, paused_at = _carried_watch(
+        previous_watch, high_stagnation_duration_min, server_time
+    )
+    if watch_since is None:
         watch_since = server_time
+    elif paused_at is not None:
+        watch_since += server_time - paused_at
     elapsed_minutes = (server_time - watch_since).total_seconds() / 60.0
     established = elapsed_minutes >= high_stagnation_duration_min
     return _StagnationEval(established, watch_since, percentile_breached, delta_breached)
+
+
+def _carried_watch(
+    previous_watch: ArcWatchState | None,
+    high_stagnation_duration_min: float,
+    server_time: datetime,
+) -> tuple[datetime | None, datetime | None]:
+    if previous_watch is None:
+        return None, None
+    paused_at = previous_watch.stagnation_paused_at
+    if paused_at is not None and server_time - paused_at > timedelta(
+        minutes=high_stagnation_duration_min
+    ):
+        return None, None
+    return previous_watch.stagnation_watch_since, paused_at
 
 
 def _build_watch_state(
@@ -303,6 +328,7 @@ def _build_watch_state(
         percentile_breached=stag.percentile_breached,
         delta_breached=stag.delta_breached,
         stagnation_watch_since=stag.watch_since,
+        stagnation_paused_at=stag.paused_at,
         surge_breached=surge_breached,
     )
 

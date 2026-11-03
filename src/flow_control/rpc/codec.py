@@ -862,6 +862,10 @@ def _encode_arc_watch(value: ArcWatchState) -> pb.ArcWatchState:
         _copy_timestamp(
             result, "stagnation_watch_since", value.stagnation_watch_since, "stagnation_watch_since"
         )
+    if value.stagnation_paused_at is not None:
+        _copy_timestamp(
+            result, "stagnation_paused_at", value.stagnation_paused_at, "stagnation_paused_at"
+        )
     return result
 
 
@@ -871,6 +875,7 @@ def _decode_arc_watch(value: pb.ArcWatchState) -> ArcWatchState:
         percentile_breached=value.percentile_breached,
         delta_breached=value.delta_breached,
         stagnation_watch_since=_decode_optional_datetime(value, "stagnation_watch_since"),
+        stagnation_paused_at=_decode_optional_datetime(value, "stagnation_paused_at"),
         surge_breached=value.surge_breached,
     )
 
