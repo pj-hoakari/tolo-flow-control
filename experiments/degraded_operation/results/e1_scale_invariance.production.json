@@ -822,7 +822,7 @@
      "flow_samples": 35,
      "stagnation_samples": 6,
      "directional_flow_samples": 35,
-     "danger_capacity": 1,
+     "danger_flow_capacity": 1,
      "capacity_hint": 3
     },
     "unchanged_fields": [
@@ -870,7 +870,7 @@
      "flow_samples": 35,
      "stagnation_samples": 6,
      "directional_flow_samples": 35,
-     "danger_capacity": 1,
+     "danger_flow_capacity": 1,
      "capacity_hint": 3
     },
     "unchanged_fields": [
@@ -912,7 +912,7 @@
      "baseline_stagnation",
      "capacity_hint",
      "completeness",
-     "danger_capacity",
+     "danger_flow_capacity",
      "directional_flow_samples",
      "flow_rate",
      "flow_samples",
@@ -960,7 +960,7 @@
      "flow_samples": 35,
      "stagnation_samples": 6,
      "directional_flow_samples": 35,
-     "danger_capacity": 1,
+     "danger_flow_capacity": 1,
      "capacity_hint": 3
     },
     "unchanged_fields": [
@@ -1008,7 +1008,7 @@
      "flow_samples": 35,
      "stagnation_samples": 6,
      "directional_flow_samples": 35,
-     "danger_capacity": 1,
+     "danger_flow_capacity": 1,
      "capacity_hint": 3
     },
     "unchanged_fields": [
@@ -1054,7 +1054,7 @@
      "flow_samples": 35,
      "stagnation_samples": 6,
      "directional_flow_samples": 35,
-     "danger_capacity": 1,
+     "danger_flow_capacity": 1,
      "capacity_hint": 3
     },
     "unchanged_fields": [
@@ -1099,7 +1099,7 @@
      "flow_samples": 35,
      "stagnation_samples": 6,
      "directional_flow_samples": 35,
-     "danger_capacity": 1,
+     "danger_flow_capacity": 1,
      "capacity_hint": 3
     },
     "unchanged_fields": [
@@ -1139,7 +1139,7 @@
     "unchanged_fields": [
      "capacity_hint",
      "completeness",
-     "danger_capacity",
+     "danger_flow_capacity",
      "directional_flow_samples",
      "flow_rate",
      "flow_samples",
@@ -1183,7 +1183,7 @@
      "flow_samples": 35,
      "stagnation_samples": 6,
      "directional_flow_samples": 35,
-     "danger_capacity": 1,
+     "danger_flow_capacity": 1,
      "capacity_hint": 3
     },
     "unchanged_fields": [
@@ -1228,7 +1228,7 @@
      "flow_samples": 35,
      "stagnation_samples": 6,
      "directional_flow_samples": 35,
-     "danger_capacity": 1,
+     "danger_flow_capacity": 1,
      "capacity_hint": 3
     },
     "unchanged_fields": [
@@ -1279,7 +1279,7 @@
     "unchanged_fields": [
      "capacity_hint",
      "completeness",
-     "danger_capacity",
+     "danger_flow_capacity",
      "flow_sensitivity_eta",
      "time_resolution_s"
     ]
@@ -1322,7 +1322,7 @@
     "unchanged_fields": [
      "capacity_hint",
      "completeness",
-     "danger_capacity",
+     "danger_flow_capacity",
      "flow_sensitivity_eta",
      "time_resolution_s"
     ]
@@ -1355,7 +1355,7 @@
      "baseline_stagnation",
      "capacity_hint",
      "completeness",
-     "danger_capacity",
+     "danger_flow_capacity",
      "directional_flow_samples",
      "flow_rate",
      "flow_samples",
@@ -1407,7 +1407,7 @@
     "unchanged_fields": [
      "capacity_hint",
      "completeness",
-     "danger_capacity",
+     "danger_flow_capacity",
      "flow_sensitivity_eta",
      "time_resolution_s"
     ]
@@ -1450,7 +1450,7 @@
     "unchanged_fields": [
      "capacity_hint",
      "completeness",
-     "danger_capacity",
+     "danger_flow_capacity",
      "flow_sensitivity_eta",
      "time_resolution_s"
     ]

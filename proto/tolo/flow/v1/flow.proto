@@ -71,6 +71,8 @@ message Boundary {
 }
 
 message Edge {
+  reserved 11;
+  reserved "danger_capacity";
   optional string edge_id = 1;
   optional string endpoint_a = 2;
   optional string endpoint_b = 3;
@@ -81,8 +83,8 @@ message Edge {
   repeated string attribute_tags = 8;
   optional int32 time_resolution_s = 9;
   optional bool danger_flag = 10;
-  optional double danger_capacity = 11;
   optional double capacity_hint = 12;
+  optional double danger_flow_capacity = 13;
 }
 
 message Observations {

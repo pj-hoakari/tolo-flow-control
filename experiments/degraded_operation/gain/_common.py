@@ -109,7 +109,7 @@ OBS_FIELDS = frozenset(
         "flow_p90",
     }
 )
-CAP_FIELDS = frozenset({"capacity_hint", "danger_capacity"})
+CAP_FIELDS = frozenset({"capacity_hint", "danger_capacity", "danger_flow_capacity"})
 
 CONST_GROUPS: dict[str, tuple[tuple[str, str], ...]] = {
     "ipf_tolerance": (("forecasting", "ipf_tolerance"),),

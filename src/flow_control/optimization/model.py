@@ -65,7 +65,7 @@ class MilpInputs:
     capacity_hint: dict[EdgeID, float]  # 容量ヒント（設定済みのみ）
     sigma: dict[EdgeID, float]  # スカラー観測人数
     scalar_edges: frozenset[EdgeID]
-    edge_danger_capacity: dict[EdgeID, float]  # 危険フラグ由来のアーク容量上限
+    edge_danger_flow_capacity: dict[EdgeID, float]  # 危険フラグ由来のアーク容量上限
     node_danger_capacity: dict[NodeID, float]  # 危険フラグ由来のノード通過量上限
     big_m: float
     epsilon: float
@@ -237,7 +237,7 @@ def build_model(
 
     # 容量上限（危険フラグ由来のアーク容量）
     for edge in arc_model.active_edges:
-        cap = inputs.edge_danger_capacity.get(edge.edge_id)
+        cap = inputs.edge_danger_flow_capacity.get(edge.edge_id)
         if cap is None:
             continue
         for arc in arc_model.arcs_of_edge.get(edge.edge_id, ()):
@@ -396,7 +396,7 @@ def build_assignment_lp(
     danger_keys: list[str] = []
     danger_caps: list[float] = []
     for edge in arc_model.active_edges:
-        cap = inputs.edge_danger_capacity.get(edge.edge_id)
+        cap = inputs.edge_danger_flow_capacity.get(edge.edge_id)
         if cap is None:
             continue
         for arc in arc_model.arcs_of_edge.get(edge.edge_id, ()):
@@ -615,7 +615,7 @@ def build_zone_lp(
     danger_keys: list[str] = []
     danger_caps: list[float] = []
     for eid in zone_edge_list:
-        cap = inputs.edge_danger_capacity.get(eid)
+        cap = inputs.edge_danger_flow_capacity.get(eid)
         if cap is None:
             continue
         for arc in arc_model.arcs_of_edge.get(eid, ()):

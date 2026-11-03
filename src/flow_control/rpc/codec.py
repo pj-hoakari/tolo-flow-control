@@ -545,8 +545,10 @@ def _encode_edge(value: Edge) -> pb.Edge:
         time_resolution_s=value.time_resolution_s,
         danger_flag=value.danger_flag,
     )
-    if value.danger_capacity is not None:
-        result.danger_capacity = _finite(value.danger_capacity, "edge.danger_capacity")
+    if value.danger_flow_capacity is not None:
+        result.danger_flow_capacity = _finite(
+            value.danger_flow_capacity, "edge.danger_flow_capacity"
+        )
     if value.capacity_hint is not None:
         result.capacity_hint = _finite(value.capacity_hint, "edge.capacity_hint")
     return result
@@ -570,7 +572,7 @@ def _decode_edge(value: pb.Edge) -> Edge:
         attribute_tags=tuple(value.attribute_tags),
         time_resolution_s=_required_int(value, "time_resolution_s"),
         danger_flag=_required_bool(value, "danger_flag"),
-        danger_capacity=_optional_float(value, "danger_capacity"),
+        danger_flow_capacity=_optional_float(value, "danger_flow_capacity"),
         capacity_hint=_optional_float(value, "capacity_hint"),
     )
 

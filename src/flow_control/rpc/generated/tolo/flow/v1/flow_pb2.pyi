@@ -549,7 +549,7 @@ class Boundary(_message.Message):
     def __init__(self, direction: _Optional[_Union[BoundaryDirection, str]] = ..., active: bool = ...) -> None: ...
 
 class Edge(_message.Message):
-    __slots__ = ("edge_id", "endpoint_a", "endpoint_b", "direction_constraint", "current_direction", "enabled", "observation_type", "attribute_tags", "time_resolution_s", "danger_flag", "danger_capacity", "capacity_hint")
+    __slots__ = ("edge_id", "endpoint_a", "endpoint_b", "direction_constraint", "current_direction", "enabled", "observation_type", "attribute_tags", "time_resolution_s", "danger_flag", "capacity_hint", "danger_flow_capacity")
     EDGE_ID_FIELD_NUMBER: _ClassVar[int]
     ENDPOINT_A_FIELD_NUMBER: _ClassVar[int]
     ENDPOINT_B_FIELD_NUMBER: _ClassVar[int]
@@ -560,8 +560,8 @@ class Edge(_message.Message):
     ATTRIBUTE_TAGS_FIELD_NUMBER: _ClassVar[int]
     TIME_RESOLUTION_S_FIELD_NUMBER: _ClassVar[int]
     DANGER_FLAG_FIELD_NUMBER: _ClassVar[int]
-    DANGER_CAPACITY_FIELD_NUMBER: _ClassVar[int]
     CAPACITY_HINT_FIELD_NUMBER: _ClassVar[int]
+    DANGER_FLOW_CAPACITY_FIELD_NUMBER: _ClassVar[int]
     edge_id: str
     endpoint_a: str
     endpoint_b: str
@@ -572,9 +572,9 @@ class Edge(_message.Message):
     attribute_tags: _containers.RepeatedScalarFieldContainer[str]
     time_resolution_s: int
     danger_flag: bool
-    danger_capacity: float
     capacity_hint: float
-    def __init__(self, edge_id: _Optional[str] = ..., endpoint_a: _Optional[str] = ..., endpoint_b: _Optional[str] = ..., direction_constraint: _Optional[_Union[DirectionConstraint, str]] = ..., current_direction: _Optional[_Union[CurrentDirection, str]] = ..., enabled: bool = ..., observation_type: _Optional[_Union[ObservationType, str]] = ..., attribute_tags: _Optional[_Iterable[str]] = ..., time_resolution_s: _Optional[int] = ..., danger_flag: bool = ..., danger_capacity: _Optional[float] = ..., capacity_hint: _Optional[float] = ...) -> None: ...
+    danger_flow_capacity: float
+    def __init__(self, edge_id: _Optional[str] = ..., endpoint_a: _Optional[str] = ..., endpoint_b: _Optional[str] = ..., direction_constraint: _Optional[_Union[DirectionConstraint, str]] = ..., current_direction: _Optional[_Union[CurrentDirection, str]] = ..., enabled: bool = ..., observation_type: _Optional[_Union[ObservationType, str]] = ..., attribute_tags: _Optional[_Iterable[str]] = ..., time_resolution_s: _Optional[int] = ..., danger_flag: bool = ..., capacity_hint: _Optional[float] = ..., danger_flow_capacity: _Optional[float] = ...) -> None: ...
 
 class Observations(_message.Message):
     __slots__ = ("observed_at", "snapshot_ref", "arc_flows", "arc_stagnations", "arc_scalar_flows", "node_occupancies", "node_turning")

@@ -149,7 +149,7 @@ def render(payload: dict[str, Any]) -> str:
     out.append(
         f"対象は {n_scen} シナリオ、k ∈ {list(payload['ks'])}、変種は 3 つ（history: 履歴あり、"
         "no_history: p90・baseline・η を None にする。s̄ は窓の平均、η は fallback_eta になる、"
-        "obs_only: 観測と履歴だけを k 倍し capacity_hint・danger_capacity は据え置く）。"
+        "obs_only: 観測と履歴だけを k 倍し capacity_hint・danger_capacity・danger_flow_capacity は据え置く）。"
         "各実行は決定的で、k=1 を 2 回走らせて署名の一致を確かめた（シード数の概念はない）。"
     )
     out.append("")

@@ -84,6 +84,7 @@ def test_graph_round_trip_preserves_optional_values() -> None:
                 current_direction=CurrentDirection.A_TO_B,
                 enabled=True,
                 observation_type=ObservationType.VECTOR,
+                danger_flow_capacity=6.0,
                 capacity_hint=40.0,
             ),
         ),
@@ -95,6 +96,7 @@ def test_graph_round_trip_preserves_optional_values() -> None:
     assert encoded.nodes[0].boundary.direction == pb.BOUNDARY_DIRECTION_ENTRY
     assert not encoded.nodes[1].HasField("boundary")
     assert encoded.edges[0].HasField("capacity_hint")
+    assert encoded.edges[0].HasField("danger_flow_capacity")
     assert codec._decode_graph(encoded) == graph
 
 

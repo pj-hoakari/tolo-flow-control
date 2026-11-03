@@ -105,7 +105,7 @@ class GraphBuilder:
         tags: tuple[str, ...] = (),
         time_resolution_s: int = 60,
         danger_flag: bool = False,
-        danger_capacity: float | None = None,
+        danger_flow_capacity: float | None = None,
         capacity_hint: float | None = None,
     ) -> GraphBuilder:
         self._edges.append(
@@ -120,7 +120,7 @@ class GraphBuilder:
                 attribute_tags=tags,
                 time_resolution_s=time_resolution_s,
                 danger_flag=danger_flag,
-                danger_capacity=danger_capacity,
+                danger_flow_capacity=danger_flow_capacity,
                 capacity_hint=capacity_hint,
             )
         )
@@ -185,7 +185,7 @@ def to_dict(built: BuiltGraph) -> dict[str, Any]:
                 "tags": list(e.attribute_tags),
                 "time_resolution_s": e.time_resolution_s,
                 "danger_flag": e.danger_flag,
-                "danger_capacity": e.danger_capacity,
+                "danger_flow_capacity": e.danger_flow_capacity,
                 "capacity_hint": e.capacity_hint,
             }
             for e in built.graph.edges
@@ -226,7 +226,7 @@ def from_dict(data: dict[str, Any]) -> BuiltGraph:
             tags=tuple(e.get("tags", []) or ()),
             time_resolution_s=int(e.get("time_resolution_s", 60)),
             danger_flag=bool(e.get("danger_flag", False)),
-            danger_capacity=e.get("danger_capacity"),
+            danger_flow_capacity=e.get("danger_flow_capacity"),
             capacity_hint=e.get("capacity_hint"),
         )
     return builder.build()

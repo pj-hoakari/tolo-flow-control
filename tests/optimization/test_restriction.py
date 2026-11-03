@@ -42,7 +42,7 @@ def _inputs(
         capacity_hint={_E_SCALAR: 50.0},
         sigma={_E_SCALAR: 10.0},
         scalar_edges=frozenset({_E_SCALAR}),
-        edge_danger_capacity={},
+        edge_danger_flow_capacity={},
         node_danger_capacity={},
         big_m=1000.0,
         epsilon=1e-3,

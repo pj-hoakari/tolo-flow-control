@@ -1,6 +1,6 @@
 # E1: 共通スケール k に対する決定の不変性
 
-対象は 9 シナリオ、k ∈ [0.01, 0.1, 1.0, 10.0, 100.0]、変種は 3 つ（history: 履歴あり、no_history: p90・baseline・η を None にする。s̄ は窓の平均、η は fallback_eta になる、obs_only: 観測と履歴だけを k 倍し capacity_hint・danger_capacity は据え置く）。各実行は決定的で、k=1 を 2 回走らせて署名の一致を確かめた（シード数の概念はない）。
+対象は 9 シナリオ、k ∈ [0.01, 0.1, 1.0, 10.0, 100.0]、変種は 3 つ（history: 履歴あり、no_history: p90・baseline・η を None にする。s̄ は窓の平均、η は fallback_eta になる、obs_only: 観測と履歴だけを k 倍し capacity_hint・danger_capacity・danger_flow_capacity は据え置く）。各実行は決定的で、k=1 を 2 回走らせて署名の一致を確かめた（シード数の概念はない）。
 
 ## 前提の確認
 
@@ -25,7 +25,7 @@
 | multi-route-surge | history | detour | yes |
 | multi-route-surge | no_history | detour | yes |
 
-k 倍した浮動小数フィールド: baseline_stagnation, capacity_hint, danger_capacity, directional_flow_samples, flow_rate, flow_samples, observed_count, occupancy, occupancy_delta, p90_stagnation, stagnation, stagnation_samples。
+k 倍した浮動小数フィールド: baseline_stagnation, capacity_hint, danger_flow_capacity, directional_flow_samples, flow_rate, flow_samples, observed_count, occupancy, occupancy_delta, p90_stagnation, stagnation, stagnation_samples。
 据え置いた浮動小数フィールド（人数次元でないことを目視で確認する対象）: completeness, flow_sensitivity_eta, time_resolution_s。
 
 ## 変種 history: k=1 からの決定差分

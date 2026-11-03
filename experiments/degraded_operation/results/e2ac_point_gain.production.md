@@ -4,7 +4,7 @@
 
 ## 設定
 
-対象は E1 と同じ 11 シナリオ（履歴あり）。シードは各シナリオ 50。観測点はエッジのカメラで、そのエッジの flow_rate・flow_samples・directional_flow_samples・observed_count・stagnation・stagnation_samples・p90_stagnation・baseline_stagnation を同じ g_e 倍する。混在ノードの占有センサは独自の g_v で occupancy と occupancy_delta を倍する。g は [0.6, 1.5] の対数一様。capacity_hint と danger_capacity は運用者が真の単位で設定する値なので動かさない。比較の基準は g=1 の実行の署名である。
+対象は E1 と同じ 11 シナリオ（履歴あり）。シードは各シナリオ 50。観測点はエッジのカメラで、そのエッジの flow_rate・flow_samples・directional_flow_samples・observed_count・stagnation・stagnation_samples・p90_stagnation・baseline_stagnation を同じ g_e 倍する。混在ノードの占有センサは独自の g_v で occupancy と occupancy_delta を倍する。g は [0.6, 1.5] の対数一様。capacity_hint・danger_capacity・danger_flow_capacity は運用者が真の単位で設定する値なので動かさない。比較の基準は g=1 の実行の署名である。
 
 決定種別は verdict、triggered（発火エッジ・ノードの集合）、direction（KEEP 以外の方向提案）、boundary（境界制御）、restriction（通行制限の有無・種類・理由）、detour（採用迂回パス）、emphasis（重要度の順位。1e-6 で同着をまとめる）。core は emphasis を除く 6 種のどれかが変わった割合。制限値 limit_value は連続量なので一致判定に入れず、g=1 との相対差の中央値 / p90 を別に示す。
 
@@ -131,5 +131,5 @@ oracle_edges_abs でも残る食い違いは、補正していない占有セン
 - 短い窓の inject が none より悪い理由: 中央値 300% を超える誤差の推定値を、もっともらしさの検査なしにそのまま当てている。ĝ が一定の範囲を外れたら捨てる検査を入れれば、短い窓の条件は none に近づくはずで、none を下回る（良くなる）ことは期待できない。「補正しないより悪い」はこの素通しの条件での結果である。
 - 注入誤差の出どころ: inject の誤差は grid(3,3) という好条件のグラフで推定したものを、別のグラフのシナリオへ再標本化している。誤差の点間相関や、流量水準の違いは持ち込んでいない。
 - 密度の仮定: density の ρ はスナップショットの流量を公称容量 60 人/分で割った値で、較正期間の平均密度をその半分と置いた。どちらも実測していない。
-- capacity を据え置く選択: 共通倍率が残る条件（oracle_edges_rel、oracle_all_rel、loop）の食い違いは、delta_min と capacity_hint・danger_capacity が真の単位の絶対値であることから来る（E1 の obs_only と同じ機構）。
+- capacity を据え置く選択: 共通倍率が残る条件（oracle_edges_rel、oracle_all_rel、loop）の食い違いは、delta_min と capacity_hint・danger_capacity・danger_flow_capacity が真の単位の絶対値であることから来る（E1 の obs_only と同じ機構）。
 

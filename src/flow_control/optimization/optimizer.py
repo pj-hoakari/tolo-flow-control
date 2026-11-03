@@ -885,7 +885,7 @@ def _build_inputs(
     s_bar: dict[EdgeID, float] = {}
     c_e: dict[EdgeID, float] = {}
     capacity_hint: dict[EdgeID, float] = {}
-    edge_danger_capacity: dict[EdgeID, float] = {}
+    edge_danger_flow_capacity: dict[EdgeID, float] = {}
     scalar_edges: set[EdgeID] = set()
     for edge in arc_model.active_edges:
         if edge.edge_id in s_obs:
@@ -898,8 +898,8 @@ def _build_inputs(
 
         if edge.capacity_hint is not None:
             capacity_hint[edge.edge_id] = edge.capacity_hint
-        if edge.danger_flag and edge.danger_capacity is not None:
-            edge_danger_capacity[edge.edge_id] = edge.danger_capacity
+        if edge.danger_flag and edge.danger_flow_capacity is not None:
+            edge_danger_flow_capacity[edge.edge_id] = edge.danger_flow_capacity
         if edge.observation_type == ObservationType.SCALAR:
             scalar_edges.add(edge.edge_id)
 
@@ -910,7 +910,7 @@ def _build_inputs(
 
     total_demand = sum(k.demand for k in commodities)
     finite_caps = (
-        list(edge_danger_capacity.values())
+        list(edge_danger_flow_capacity.values())
         + list(node_danger_capacity.values())
         + list(capacity_hint.values())
     )
@@ -926,7 +926,7 @@ def _build_inputs(
         capacity_hint=capacity_hint,
         sigma=sigma,
         scalar_edges=frozenset(scalar_edges),
-        edge_danger_capacity=edge_danger_capacity,
+        edge_danger_flow_capacity=edge_danger_flow_capacity,
         node_danger_capacity=node_danger_capacity,
         big_m=big_m,
         epsilon=config.epsilon,
@@ -991,7 +991,7 @@ def _overload_limits(
         caps = [
             c
             for c in (
-                inputs.edge_danger_capacity.get(eid),
+                inputs.edge_danger_flow_capacity.get(eid),
                 inputs.capacity_hint.get(eid),
             )
             if c is not None

@@ -646,7 +646,7 @@ def with_edge_danger(built: BuiltGraph, edge_id: str, capacity: float) -> BuiltG
     """指定エッジに危険フラグと容量上限を立てた新しい ``BuiltGraph`` を返す"""
     eid = EdgeID(edge_id)
     new_edges = tuple(
-        replace(e, danger_flag=True, danger_capacity=capacity) if e.edge_id == eid else e
+        replace(e, danger_flag=True, danger_flow_capacity=capacity) if e.edge_id == eid else e
         for e in built.graph.edges
     )
     return BuiltGraph(
