@@ -50,6 +50,7 @@ from .restriction import (
 )
 from .results import (
     ConstraintReport,
+    LpFallback,
     ObjectiveValues,
     OptimizationResult,
     OptimizeResult,
@@ -1092,6 +1093,7 @@ def _fallback(
             legal_fixed_violations=_legal_violations(arc_model, lp.solution),
             fallback_to_previous=False,
             degraded_mode=True,
+            lp_fallback=LpFallback.SLACK_LP,
         )
         return OptimizeResult(opt_result, stats, report)
 
@@ -1124,6 +1126,7 @@ def _fallback(
         legal_fixed_violations=(),
         fallback_to_previous=previous_result is not None,
         degraded_mode=True,
+        lp_fallback=LpFallback.NO_RESULT if previous_result is None else LpFallback.PREVIOUS_RESULT,
     )
     return OptimizeResult(opt_result, stats, report)
 

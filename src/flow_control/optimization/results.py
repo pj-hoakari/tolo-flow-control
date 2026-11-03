@@ -162,6 +162,12 @@ class SolverStats:
     demand_all_cut: bool = False
 
 
+class LpFallback(str, Enum):
+    SLACK_LP = "SLACK_LP"
+    PREVIOUS_RESULT = "PREVIOUS_RESULT"
+    NO_RESULT = "NO_RESULT"
+
+
 @dataclass(frozen=True)
 class ConstraintReport:
     local_reachability_satisfied: bool
@@ -172,6 +178,7 @@ class ConstraintReport:
     # 劣化経路（方向固定・容量スラック LP）による新提案か。
     # fallback_to_previous と独立で、「劣化した新提案」と「前回への差し戻し」を区別する
     degraded_mode: bool = False
+    lp_fallback: LpFallback | None = None
 
 
 @dataclass(frozen=True)

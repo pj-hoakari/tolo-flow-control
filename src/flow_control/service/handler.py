@@ -18,11 +18,14 @@ from ..forecasting.config import ResolvedConfig as ForecastConfig
 from ..optimization import optimize
 from ..optimization.config import OptimizationMode as ModuleOptimizationMode
 from ..optimization.config import ResolvedConfig as OptimizationConfig
-from ..optimization.results import OptimizationResult, SolverStatus
+from ..optimization.results import LpFallback, OptimizationResult, OptimizeResult, SolverStatus
+from .config import OptimizationMode
 from .config import ResolvedConfig as ServiceConfig
 from .diagnostics import (
     Diagnostics,
     ElementStateRecord,
+    FallbackKind,
+    FallbackRecord,
     StepKind,
     StepRecord,
     StepStatus,
@@ -209,7 +212,11 @@ def handle_request(
         started,
         feedback=feedback,
         optimization_result=optimize_result.optimization_result,
-        diagnostics=replace(diagnostics, steps_executed=tuple(steps)),
+        diagnostics=replace(
+            diagnostics,
+            fallbacks_applied=_fallback_records(optimize_result, req.config.optimization_mode),
+            steps_executed=tuple(steps),
+        ),
     )
 
 
@@ -316,6 +323,26 @@ def _detection_warnings(det: DetectionResult) -> tuple[Warning, ...]:
         )
         for item in det.warnings
     )
+
+
+_FALLBACK_REASONS = {
+    LpFallback.SLACK_LP: "current-direction slack LP",
+    LpFallback.PREVIOUS_RESULT: "previous result copied",
+    LpFallback.NO_RESULT: "no previous result to copy",
+}
+
+
+def _fallback_records(result: OptimizeResult, mode: OptimizationMode) -> tuple[FallbackRecord, ...]:
+    stage = result.constraint_report.lp_fallback
+    if stage is None:
+        return ()
+    reason = _FALLBACK_REASONS[stage]
+    held = FallbackRecord(FallbackKind.DIRECTION_PROPOSAL_HELD, reason)
+    if mode is OptimizationMode.LIGHTWEIGHT:
+        return (FallbackRecord(FallbackKind.LP_INFEASIBLE_HELD, reason), held)
+    if stage is LpFallback.SLACK_LP:
+        return (FallbackRecord(FallbackKind.INFEASIBLE_LP_RELAXED, reason), held)
+    return (held,)
 
 
 def _element_state_records(
