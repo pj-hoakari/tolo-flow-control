@@ -13,6 +13,7 @@ from _common import (
     frac_cell,
     last_attr,
     leaves,
+    load_scenario,
     md_table,
     run_all,
     wilson,
@@ -29,8 +30,6 @@ from e2b_gain_estimation import (
     series_errors,
 )
 
-from devtools.scenarios import get_scenario
-
 SEEDS = 50
 DT = 30
 FLOW = 20.0
@@ -44,7 +43,7 @@ KINDS = (*CORE_KINDS, "emphasis")
 
 
 def owners_of(name: str) -> list[str]:
-    scen = get_scenario(name)
+    scen = load_scenario(name)
     found = {
         owner
         for part in (scen.observations, scen.history_digest)
@@ -55,14 +54,14 @@ def owners_of(name: str) -> list[str]:
 
 
 def cameras_of(name: str) -> frozenset[str]:
-    obs = get_scenario(name).observations
+    obs = load_scenario(name).observations
     return frozenset(
         {f.edge_id.value for f in obs.arc_flows} | {f.edge_id.value for f in obs.arc_scalar_flows}
     )
 
 
 def snapshot_density(name: str) -> dict[str, float]:
-    obs = get_scenario(name).observations
+    obs = load_scenario(name).observations
     return {
         f"edge:{f.edge_id.value}": min(1.0, f.observed_count / NOMINAL_CAPACITY)
         for f in obs.arc_scalar_flows
@@ -82,7 +81,7 @@ def build_arms(
     assert edges, f"{name}: no edge cameras to perturb"
     reference = edges[0]
     density = snapshot_density(name)
-    graph = get_scenario(name).graph
+    graph = load_scenario(name).graph
     net = build_network(graph, cameras_of(name))
     identifiable = [p for p, s in net.status.items() if s == "identifiable"]
     loop_ok = bool(identifiable) and net.routes.shape[0] > 0

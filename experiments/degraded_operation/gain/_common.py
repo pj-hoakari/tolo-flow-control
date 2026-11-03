@@ -17,13 +17,59 @@ if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
 from devtools.pipeline import PipelineRun, run_pipeline  # noqa: E402
-from devtools.scenario_base import Scenario  # noqa: E402
+from devtools.scenario_base import PipelineConfigs, Scenario  # noqa: E402
 from devtools.scenarios import get_scenario  # noqa: E402
+from devtools.scenarios._observation import observation_config  # noqa: E402
 from flow_control.detection.triggers import EventKind  # noqa: E402
 from flow_control.domain import EdgeID, NodeID  # noqa: E402
 from flow_control.optimization.results import DirectionChangeType, SolverStatus  # noqa: E402
+from flow_control.rpc.codec import _decode_config  # noqa: E402
+from flow_control.service.handler import (  # noqa: E402
+    _detection_config,
+    _detour_config,
+    _forecast_config,
+    _optimization_config,
+)
 
 RESULTS = ROOT / "experiments" / "degraded_operation" / "results"
+
+PROFILE = os.environ.get("EXPERIMENT_CONFIG", "devtools")
+assert PROFILE in ("devtools", "production"), (
+    f"EXPERIMENT_CONFIG must be devtools or production, got {PROFILE}"
+)
+
+
+def production_configs(scenario_configs: PipelineConfigs) -> PipelineConfigs:
+    proto = observation_config()
+    proto.surge_rate_threshold_percent_per_min = 10
+    proto.fallback_eta = 0.25
+    service = _decode_config(proto)
+    assert service.delta_min == 0.5, "production delta_min must be 0.5"
+    assert service.optimization_mode.value == "LIGHTWEIGHT", "production mode must be LIGHTWEIGHT"
+    assert not service.restriction_proposal_enabled, "production disables restriction proposals"
+    optimization = replace(
+        _optimization_config(service),
+        restriction_proposal_enabled=scenario_configs.optimization.restriction_proposal_enabled,
+        tau_danger_threshold=scenario_configs.optimization.tau_danger_threshold,
+    )
+    return PipelineConfigs(
+        detection=_detection_config(service),
+        forecasting=_forecast_config(service),
+        detour=_detour_config(service),
+        optimization=optimization,
+    )
+
+
+def load_scenario(name: str) -> Scenario:
+    scenario = get_scenario(name)
+    if PROFILE == "devtools":
+        return scenario
+    return replace(scenario, configs=production_configs(scenario.configs))
+
+
+def result_name(name: str) -> str:
+    return name if PROFILE == "devtools" else f"{name}.{PROFILE}"
+
 
 SCENARIO_KINDS: dict[str, str] = {
     "reversible-corridor-flip": "direction",
@@ -182,7 +228,7 @@ def assert_no_unscaled_people_inputs(scen: Scenario) -> None:
 
 
 def build_task_scenario(task: Task) -> tuple[Scenario, dict[str, Any]]:
-    base = get_scenario(task.name)
+    base = load_scenario(task.name)
     assert_no_unscaled_people_inputs(base)
     if not task.history:
         base = strip_history(base)
@@ -377,8 +423,15 @@ def to_jsonable(obj: Any) -> Any:
 
 def write_outputs(name: str, payload: dict[str, Any], markdown: str) -> None:
     RESULTS.mkdir(parents=True, exist_ok=True)
+    name = result_name(name)
     (RESULTS / f"{name}.json").write_text(
         json.dumps(to_jsonable(payload), ensure_ascii=False, indent=1), encoding="utf-8"
     )
+    if PROFILE == "production":
+        head, _, rest = markdown.partition("\n")
+        markdown = (
+            f"{head}\n\n設定: tolo-observation の defaultFlowConfig。"
+            f"ただし通行制限のスイッチとしきい値はシナリオの値を使う（本番では通行制限は無効）。\n{rest}"
+        )
     (RESULTS / f"{name}.md").write_text(markdown, encoding="utf-8")
     print(f"wrote {RESULTS / name}.json and .md", file=sys.stderr)
