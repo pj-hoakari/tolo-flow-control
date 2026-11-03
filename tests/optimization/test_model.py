@@ -1,5 +1,6 @@
 """MILP 制約のユニットテスト（モデル層を直接呼んでフロー値を検証する）"""
 
+from dataclasses import replace
 from datetime import UTC, datetime
 
 import pytest
@@ -63,6 +64,7 @@ def _mk(eid, a, b, *, obs=ObservationType.VECTOR, danger_cap=None, hint=None):
         current_direction=CurrentDirection.BIDIRECTIONAL,
         enabled=True,
         observation_type=obs,
+        danger_flag=danger_cap is not None,
         danger_capacity=danger_cap,
         capacity_hint=hint,
     )
@@ -121,6 +123,15 @@ def test_edge_danger_capacity_limits_flow():
     p1 = _solve(graph, obs, _demand_n1_n2(10.0), history, ResolvedConfig())
     assert p1.status == SolverStatus.OPTIMAL
     assert _arc(p1.solution, "e_d", "A_TO_B") == pytest.approx(3.0, abs=1e-6)
+
+
+def test_edge_danger_capacity_is_ignored_once_the_flag_is_down():
+    capped = _mk("e_d", NodeID("n1"), NodeID("n2"), danger_cap=3.0)
+    graph = _diamond(replace(capped, danger_flag=False))
+    obs = Observations(observed_at=_OBS_AT, arc_stagnations=(ArcStagnation(EdgeID("e_d"), 100.0),))
+    history = HistoryDigest(arc_stats=(ArcHistoryStat(EdgeID("e_d"), baseline_stagnation=1.0),))
+    p1 = _solve(graph, obs, _demand_n1_n2(10.0), history, ResolvedConfig())
+    assert _arc(p1.solution, "e_d", "A_TO_B") == pytest.approx(10.0, abs=1e-6)
 
 
 def test_no_cap_routes_all_through_congested_edge():

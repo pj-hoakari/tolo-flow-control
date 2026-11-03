@@ -890,7 +890,7 @@ def _build_inputs(
 
         if edge.capacity_hint is not None:
             capacity_hint[edge.edge_id] = edge.capacity_hint
-        if edge.danger_capacity is not None:
+        if edge.danger_flag and edge.danger_capacity is not None:
             edge_danger_capacity[edge.edge_id] = edge.danger_capacity
         if edge.observation_type == ObservationType.SCALAR:
             scalar_edges.add(edge.edge_id)
