@@ -106,6 +106,7 @@ OBS_FIELDS = frozenset(
         "flow_samples",
         "stagnation_samples",
         "directional_flow_samples",
+        "flow_p90",
     }
 )
 CAP_FIELDS = frozenset({"capacity_hint", "danger_capacity"})
