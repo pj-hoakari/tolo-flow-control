@@ -15,7 +15,6 @@ established は片方だけでは成立せず、両条件（p90 欠損時は (a)
 発火は組合せ（AND）: ``established AND demand_warning`` で発火する。
 """
 
-from dataclasses import replace
 from datetime import UTC, datetime, timedelta
 
 import pytest
@@ -240,6 +239,7 @@ def test_records_watch_when_both_satisfied_but_duration_short(
                 percentile_breached=True,
                 delta_breached=True,
                 stagnation_watch_since=base_time - timedelta(minutes=1),
+                stagnation_last_held_at=base_time - timedelta(minutes=1),
             ),
         )
     )
@@ -345,9 +345,7 @@ def test_history_stat_missing_pauses_the_watch_without_firing(
     )
 
     assert result.triggered_edges == ()
-    assert result.new_state.arc_watch_states == (
-        replace(previous.arc_watch_states[0], stagnation_paused_at=base_time),
-    )
+    assert result.new_state.arc_watch_states == previous.arc_watch_states
 
 
 @pytest.mark.parametrize(
@@ -355,7 +353,7 @@ def test_history_stat_missing_pauses_the_watch_without_firing(
     [(ConfidenceFlag.HOLD, 0), (ConfidenceFlag.OK, 3)],
     ids=["hold", "stale"],
 )
-def test_undeterminable_cycle_pauses_the_persistence_timer(
+def test_undeterminable_cycle_leaves_the_watch_unchanged(
     base_time: datetime,
     basic_graph: Graph,
     edge_id: EdgeID,
@@ -377,16 +375,16 @@ def test_undeterminable_cycle_pauses_the_persistence_timer(
         server_time=started,
         config=surge_config,
     )
-    paused_at = base_time - timedelta(minutes=2)
-    paused = _run(
+    undetermined_at = base_time - timedelta(minutes=2)
+    undetermined = _run(
         graph=basic_graph,
         history=history,
         observations=Observations(
-            observed_at=paused_at - timedelta(minutes=observed_ago_min),
+            observed_at=undetermined_at - timedelta(minutes=observed_ago_min),
             arc_stagnations=(ArcStagnation(edge_id, 1.0, confidence_flag=flag),),
         ),
         previous_state=first.new_state,
-        server_time=paused_at,
+        server_time=undetermined_at,
         config=surge_config,
     )
     resumed_history, resumed_observations, _ = make_combined_firing(edge_id, base_time)
@@ -394,23 +392,13 @@ def test_undeterminable_cycle_pauses_the_persistence_timer(
         graph=basic_graph,
         history=resumed_history,
         observations=resumed_observations,
-        previous_state=paused.new_state,
+        previous_state=undetermined.new_state,
         server_time=base_time,
         config=surge_config,
     )
 
-    assert paused.new_state.watch_state_of(edge_id) == ArcWatchState(
-        edge_id,
-        percentile_breached=True,
-        delta_breached=True,
-        stagnation_watch_since=started,
-        stagnation_paused_at=paused_at,
-    )
+    assert undetermined.new_state.arc_watch_states == first.new_state.arc_watch_states
     assert resumed.triggered_edges == ()
-    resumed_watch = resumed.new_state.watch_state_of(edge_id)
-    assert resumed_watch is not None
-    assert resumed_watch.stagnation_watch_since == base_time - timedelta(minutes=3)
-    assert resumed_watch.stagnation_paused_at is None
 
 
 _HOLDS = "holds"
@@ -465,14 +453,22 @@ def _firing_minutes(
     return fired
 
 
-def test_unobserved_gap_does_not_count_toward_persistence(
+@pytest.mark.parametrize(
+    ("cycles", "fired"),
+    [
+        ([(m, _HOLDS) for m in range(7)], [5]),
+        ([(m, _HOLDS) for m in range(0, 8, 2)], [6]),
+    ],
+    ids=["every_minute", "every_two_minutes"],
+)
+def test_consecutive_holding_cycles_establish_after_m(
     basic_graph: Graph,
     edge_id: EdgeID,
     surge_config: ResolvedConfig,
     make_combined_firing,
+    cycles: list[tuple[int, str]],
+    fired: list[int],
 ):
-    cycles = [(0, _HOLDS), *((m, _UNDETERMINABLE) for m in range(1, 10)), (10, _HOLDS)]
-
     assert (
         _firing_minutes(
             graph=basic_graph,
@@ -481,22 +477,23 @@ def test_unobserved_gap_does_not_count_toward_persistence(
             make_combined_firing=make_combined_firing,
             cycles=cycles,
         )
-        == []
+        == fired
     )
 
 
-def test_persistence_accumulates_only_observed_holding_across_a_pause(
+@pytest.mark.parametrize(
+    "gap",
+    [[], [(4, _UNDETERMINABLE), (5, _UNDETERMINABLE)]],
+    ids=["no_cycles", "undeterminable_cycles"],
+)
+def test_gap_counts_one_interval_toward_persistence(
     basic_graph: Graph,
     edge_id: EdgeID,
     surge_config: ResolvedConfig,
     make_combined_firing,
+    gap: list[tuple[int, str]],
 ):
-    cycles = [
-        *((m, _HOLDS) for m in range(4)),
-        (4, _UNDETERMINABLE),
-        (5, _UNDETERMINABLE),
-        *((m, _HOLDS) for m in range(6, 10)),
-    ]
+    cycles = [*((m, _HOLDS) for m in range(4)), *gap, *((m, _HOLDS) for m in range(6, 10))]
 
     assert _firing_minutes(
         graph=basic_graph,
@@ -510,19 +507,20 @@ def test_persistence_accumulates_only_observed_holding_across_a_pause(
 @pytest.mark.parametrize(
     "gap",
     [
-        [(m, _UNDETERMINABLE) for m in range(1, 8)],
+        [],
+        [(m, _UNDETERMINABLE) for m in range(1, 10)],
         [(1, _UNDETERMINABLE)],
     ],
-    ids=["expires_while_paused", "expires_on_resume"],
+    ids=["no_cycles", "undeterminable_every_minute", "undeterminable_once"],
 )
-def test_pause_longer_than_m_restarts_the_persistence_timer(
+def test_gap_longer_than_m_restarts_the_persistence_timer(
     basic_graph: Graph,
     edge_id: EdgeID,
     surge_config: ResolvedConfig,
     make_combined_firing,
     gap: list[tuple[int, str]],
 ):
-    cycles = [(0, _HOLDS), *gap, *((m, _HOLDS) for m in range(8, 15))]
+    cycles = [(0, _HOLDS), *gap, *((m, _HOLDS) for m in range(10, 17))]
 
     assert _firing_minutes(
         graph=basic_graph,
@@ -530,7 +528,7 @@ def test_pause_longer_than_m_restarts_the_persistence_timer(
         config=surge_config,
         make_combined_firing=make_combined_firing,
         cycles=cycles,
-    ) == [13]
+    ) == [15]
 
 
 @pytest.mark.parametrize("breaking", [_CALM, _INVALID, _UNOBSERVED])

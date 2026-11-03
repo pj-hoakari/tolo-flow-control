@@ -73,6 +73,7 @@ class ElementState:
     line: Series
     stagnation: StagnationBasis | None
     puncture: PunctureBasis | None
+    stale_after: timedelta
 
     @property
     def line_points(self) -> int:
@@ -125,7 +126,7 @@ def assess_elements(
     stale_after_resolutions: float = DEFAULT_STALE_AFTER_RESOLUTIONS,
     stale_floor_s: float = DEFAULT_STALE_FLOOR_S,
 ) -> dict[EdgeID, ElementState]:
-    lag_s = (server_time - observations.observed_at).total_seconds()
+    lag = server_time - observations.observed_at
     states: dict[EdgeID, ElementState] = {}
     for edge in graph.enabled_edges():
         window = history.window_series_of(edge.edge_id)
@@ -134,7 +135,9 @@ def assess_elements(
             tuple(v for _, v in window.stagnation_samples) if window is not None else ()
         )
         tier = _history_tier(stat, stagnation_window)
-        stale_after_s = max(stale_after_resolutions * edge.time_resolution_s, stale_floor_s)
+        stale_after = timedelta(
+            seconds=max(stale_after_resolutions * edge.time_resolution_s, stale_floor_s)
+        )
         line = _line(
             edge,
             observations,
@@ -144,7 +147,7 @@ def assess_elements(
         )
         states[edge.edge_id] = ElementState(
             edge_id=edge.edge_id,
-            observation=_observation_state(edge.edge_id, observations, lag_s >= stale_after_s),
+            observation=_observation_state(edge.edge_id, observations, lag >= stale_after),
             history=tier,
             line=line,
             stagnation=_stagnation_basis(edge.edge_id, observations, stat, stagnation_window, tier),
@@ -156,6 +159,7 @@ def assess_elements(
                 window.stagnation_samples if window is not None else (),
                 server_time,
             ),
+            stale_after=stale_after,
         )
     return states
 

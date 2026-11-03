@@ -103,6 +103,7 @@ def _request(
                     percentile_breached=True,
                     delta_breached=True,
                     stagnation_watch_since=NOW - timedelta(minutes=6),
+                    stagnation_last_held_at=NOW - timedelta(minutes=1),
                 ),
             )
         ),

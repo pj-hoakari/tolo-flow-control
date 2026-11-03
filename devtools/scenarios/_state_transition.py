@@ -34,6 +34,7 @@ def firing_watch_states(*, established: bool = True) -> tuple[ArcWatchState, ...
             percentile_breached=True,
             delta_breached=True,
             stagnation_watch_since=DEFAULT_TIME - timedelta(minutes=6),
+            stagnation_last_held_at=DEFAULT_TIME - timedelta(minutes=1),
         ),
     )
 

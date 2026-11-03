@@ -262,6 +262,7 @@ def make_established_watch():
             percentile_breached=True,
             delta_breached=True,
             stagnation_watch_since=base_time - timedelta(minutes=minutes_elapsed),
+            stagnation_last_held_at=base_time - timedelta(minutes=1),
         )
 
     return _make

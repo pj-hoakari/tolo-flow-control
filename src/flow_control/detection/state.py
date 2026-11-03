@@ -30,7 +30,7 @@ class ArcWatchState:
     percentile_breached: bool = False  # (a).1 p90 超過の成立有無
     delta_breached: bool = False  # (a).2 移動平均差分の相対閾値 β 超過の成立有無
     stagnation_watch_since: datetime | None = None  # 停滞警戒（両条件成立）の開始時刻
-    stagnation_paused_at: datetime | None = None
+    stagnation_last_held_at: datetime | None = None
     # 需要警戒系統（(b)）
     surge_breached: bool = False  # (b).1 急増（傾き閾値超）の成立有無
 
