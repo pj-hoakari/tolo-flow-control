@@ -32,8 +32,8 @@ EXPO_LOOP_EDGES = frozenset(
 def expo_configs() -> PipelineConfigs:
     """expo（大規模）向け設定
 
-    軽量モードが既定となり配分 LP は軽いため、OD 量カット ``delta_min`` は
-    compact 既定（8.0）をそのまま使う。STRICT で基準系を回す場合に備えて
+    軽量モードが既定となり配分 LP は軽いため、OD 量カット ``delta_min_fraction`` は
+    compact 既定（0.2）をそのまま使う。STRICT で基準系を回す場合に備えて
     MILP 時間上限のみ短縮を維持する。
     """
     return compact_configs(milp_time_limit_sec=8.0)

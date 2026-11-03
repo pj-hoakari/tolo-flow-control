@@ -38,7 +38,7 @@ class ResolvedConfig:
     # Big-M 定数の係数倍
     big_m_factor: float = 1.0
     # OD 量の足切り閾値（これ以下の需要は最適化対象から除外）
-    delta_min: float = 0.5
+    delta_min_fraction: float = 0.01
     # 停滞量制約の信頼度重み c_e の下限クリップ
     confidence_weight_floor: float = 0.5
     # オペレータ指定の特定ルート集合（スループット最大化対象）

@@ -296,7 +296,8 @@ message ResolvedConfig {
   optional double epsilon = 28;
   optional double epsilon_0 = 29;
   optional double big_m_factor = 30;
-  optional double delta_min = 31;
+  reserved 31;
+  reserved "delta_min";
   optional double confidence_weight_floor = 32;
   optional double mip_rel_gap = 33;
   optional double gravity_alpha = 34;
@@ -328,6 +329,7 @@ message ResolvedConfig {
   optional bool milp_boundary_control_enabled = 60;
   optional bool scheduled_inflow_prior_enabled = 61;
   optional bool log_tenant_id = 62;
+  optional double delta_min_fraction = 63;
 }
 
 message ThroughputWeights {

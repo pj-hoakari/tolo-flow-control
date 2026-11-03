@@ -36,7 +36,9 @@ _OBS_AT = datetime(2026, 6, 18, tzinfo=UTC)
 
 def _solve(graph, observations, forecast, history, config, *, is_open=True):
     arc_model = build_arc_model(graph)
-    commodities = _build_commodities(forecast, set(arc_model.active_nodes), config.delta_min)
+    commodities = _build_commodities(
+        forecast, set(arc_model.active_nodes), config.delta_min_fraction
+    )
     inputs = _build_inputs(graph, observations, forecast, history, arc_model, commodities, config)
     od_pairs = tuple((k.origin, k.destination) for k in commodities)
     drain = compute_drainable(arc_model, od_pairs, frozenset(inputs.s_obs.keys()))

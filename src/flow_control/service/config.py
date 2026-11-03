@@ -77,7 +77,7 @@ class ResolvedConfig:
     epsilon: float = 1e-3  # 辞書式緩和幅
     epsilon_0: float = 1e-6  # ゼロ除算回避
     big_m_factor: float = 1.0  # M = total_demand + max_capacity + 1 を係数倍
-    delta_min: float = 0.5  # OD 量足切り
+    delta_min_fraction: float = 0.01  # OD 量足切り
     confidence_weight_floor: float = 0.5  # 停滞プロキシ制約の信頼度重み c_e の下限クリップ
     mip_rel_gap: float = 0.0  # MILP 相対ギャップ許容（0 で HiGHS 既定＝ほぼ厳密解）
 

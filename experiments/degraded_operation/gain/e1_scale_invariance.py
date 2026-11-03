@@ -18,12 +18,10 @@ KS = (0.01, 0.1, 1.0, 10.0, 100.0)
 PROBE_EPS = (0.0, 2.0)
 VARIANTS = {"history": True, "no_history": False}
 ATTRIBUTION_SETS = (
-    ("delta_min",),
     ("fallback_baseline",),
-    ("delta_min", "fallback_baseline"),
-    ("delta_min", "fallback_baseline", "ipf_tolerance"),
-    ("delta_min", "fallback_baseline", "epsilon_0"),
-    ("delta_min", "fallback_baseline", "ipf_tolerance", "epsilon_0"),
+    ("fallback_baseline", "ipf_tolerance"),
+    ("fallback_baseline", "epsilon_0"),
+    ("fallback_baseline", "ipf_tolerance", "epsilon_0"),
 )
 
 
@@ -247,10 +245,10 @@ def render(payload: dict[str, Any]) -> str:
     )
     out.append("")
     out.append(
-        "定数集合の中身は delta_min = forecasting.delta_min と optimization.delta_min、"
-        "fallback_baseline = detection と optimization の fallback_baseline_stagnation、"
+        "定数集合の中身は fallback_baseline = detection と optimization の fallback_baseline_stagnation、"
         "ipf_tolerance = forecasting.ipf_tolerance、epsilon_0 = 3 モジュールの epsilon_0 である。"
         "fallback_eta はどの集合にも入れていない（η は 停滞/流量 で人数次元が打ち消し合う）。"
+        "delta_min_fraction も入れていない（総需要に対する割合なので倍率に依存しない）。"
     )
     out.append("")
     out.append("## 退化の検査: k=1 のまま epsilon_0 だけを 0 倍・2 倍する")
@@ -294,7 +292,7 @@ WHAT_ELSE = """## この数字が別のものを測っている可能性
 - 非決定性: k=1 を 2 回走らせ、署名の一致を assert した。
 - スケールが効いていない: 変換前後の浮動小数の葉を全て列挙し、各葉の比が規則どおりの係数であることを assert した。k 倍したフィールドと据え置いたフィールドの一覧は上に載せた。
 - 重要度の順位の同着: 重要度を 1e-6 で丸めて同着をまとめてから順位を比べている。LP の退化で同着の並びが揺れる分は差分に数えない。
-- シナリオの偏り: devtools のシナリオは compact_configs（optimization.delta_min=8.0）を使う。本番既定の 0.5 では、壊れ始める k が変わる。
+- シナリオの偏り: devtools のシナリオは compact_configs（optimization.delta_min_fraction=0.2）を使い、本番既定の 0.01 より多くの OD を最適化から外す。
 - 今回のシナリオは references、SCHEDULED_INFLOW、前回の通行制限を持たないことを assert した。これらを持つ入力では、それらも k 倍しないと不変性の検証にならない。
 """
 

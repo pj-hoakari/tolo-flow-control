@@ -44,7 +44,7 @@ def production_configs(scenario_configs: PipelineConfigs) -> PipelineConfigs:
     proto.surge_rate_threshold_percent_per_min = 10
     proto.fallback_eta = 0.25
     service = _decode_config(proto)
-    assert service.delta_min == 0.5, "production delta_min must be 0.5"
+    assert service.delta_min_fraction == 0.01, "production delta_min_fraction must be 0.01"
     assert service.optimization_mode.value == "LIGHTWEIGHT", "production mode must be LIGHTWEIGHT"
     assert not service.restriction_proposal_enabled, "production disables restriction proposals"
     optimization = replace(
@@ -113,7 +113,6 @@ OBS_FIELDS = frozenset(
 CAP_FIELDS = frozenset({"capacity_hint", "danger_capacity"})
 
 CONST_GROUPS: dict[str, tuple[tuple[str, str], ...]] = {
-    "delta_min": (("forecasting", "delta_min"), ("optimization", "delta_min")),
     "fallback_baseline": (
         ("detection", "fallback_baseline_stagnation"),
         ("optimization", "fallback_baseline_stagnation"),

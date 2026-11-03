@@ -446,11 +446,12 @@ def test_closed_mode_equalizes_marginals() -> None:
     assert _require(result.od_matrix, "s1", "t1").demand == pytest.approx(4.05)
 
 
-def test_delta_min_cut_without_reattribution() -> None:
+@pytest.mark.parametrize("scale", [0.01, 1.0, 100.0])
+def test_delta_min_cut_without_reattribution(scale: float) -> None:
     """微小 OD をカットし，失われた需要を残存ペアへ付け替えない
 
-    s -> m -> t1(9.9), t2(0.1)。delta_min=0.5 で t2 をカットしても
-    δ(s,t1)=9.9 のまま（カット分の 0.1 は再現残差として扱う）
+    s -> m -> t1(9.9), t2(0.1)。δ_min は総需要の 5% なので，全流量を
+    何倍にしても t2 だけをカットし，δ(s,t1)=9.9 のまま（カット分は再現残差として扱う）
     """
     graph = Graph(
         nodes=(
@@ -467,13 +468,17 @@ def test_delta_min_cut_without_reattribution() -> None:
     )
     observations = Observations(
         observed_at=_OBSERVED_AT,
-        arc_flows=(_flow("e1", 10.0), _flow("e2", 9.9), _flow("e3", 0.1)),
+        arc_flows=(
+            _flow("e1", 10.0 * scale),
+            _flow("e2", 9.9 * scale),
+            _flow("e3", 0.1 * scale),
+        ),
     )
 
-    result = _run(graph, observations, _config(delta_min=0.5), is_open_mode=True)
+    result = _run(graph, observations, _config(delta_min_fraction=0.05), is_open_mode=True)
 
     assert _find(result.od_matrix, "s", "t2") is None
-    assert _require(result.od_matrix, "s", "t1").demand == pytest.approx(9.9)
+    assert _require(result.od_matrix, "s", "t1").demand == pytest.approx(9.9 * scale)
 
 
 def test_excluded_pair_demand_is_not_reattributed() -> None:

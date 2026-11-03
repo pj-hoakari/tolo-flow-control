@@ -162,7 +162,7 @@ def observation_config() -> pb.ResolvedConfig:
         epsilon=1e-3,
         epsilon_0=1e-6,
         big_m_factor=1,
-        delta_min=0.5,
+        delta_min_fraction=0.01,
         confidence_weight_floor=0.5,
         mip_rel_gap=0,
         gravity_alpha=1,

@@ -85,7 +85,7 @@ def optimize(
     active_edge_ids = {e.edge_id for e in arc_model.active_edges}
     solved_at = observations.observed_at
 
-    commodities = _build_commodities(forecast_result, active_node_set, config.delta_min)
+    commodities = _build_commodities(forecast_result, active_node_set, config.delta_min_fraction)
     inputs = _build_inputs(
         graph, observations, forecast_result, history_digest, arc_model, commodities, config
     )
@@ -806,8 +806,9 @@ def _zone_net_supply(
 
 
 def _build_commodities(
-    forecast_result: ForecastResult, active_nodes: set[NodeID], delta_min: float
+    forecast_result: ForecastResult, active_nodes: set[NodeID], delta_min_fraction: float
 ) -> tuple[Commodity, ...]:
+    delta_min = delta_min_fraction * sum(od.demand for od in forecast_result.od_matrix)
     filtered = [
         od
         for od in forecast_result.od_matrix
