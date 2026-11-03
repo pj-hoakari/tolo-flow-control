@@ -1,0 +1,8442 @@
+{
+ "ks": [
+  0.01,
+  0.1,
+  1.0,
+  10.0,
+  100.0
+ ],
+ "premises": [
+  {
+   "scenario": "reversible-corridor-flip",
+   "variant": "history",
+   "kind": "direction",
+   "present": true
+  },
+  {
+   "scenario": "reversible-corridor-flip",
+   "variant": "no_history",
+   "kind": "direction",
+   "present": true
+  },
+  {
+   "scenario": "stadium-egress-concourse",
+   "variant": "history",
+   "kind": "direction",
+   "present": true
+  },
+  {
+   "scenario": "stadium-egress-concourse",
+   "variant": "no_history",
+   "kind": "direction",
+   "present": true
+  },
+  {
+   "scenario": "station-transfer-peak",
+   "variant": "history",
+   "kind": "direction",
+   "present": true
+  },
+  {
+   "scenario": "station-transfer-peak",
+   "variant": "no_history",
+   "kind": "direction",
+   "present": true
+  },
+  {
+   "scenario": "expo-gate-overcrowded",
+   "variant": "history",
+   "kind": "boundary",
+   "present": true
+  },
+  {
+   "scenario": "expo-gate-overcrowded",
+   "variant": "no_history",
+   "kind": "boundary",
+   "present": true
+  },
+  {
+   "scenario": "expo-incident-resume",
+   "variant": "history",
+   "kind": "boundary",
+   "present": true
+  },
+  {
+   "scenario": "expo-incident-resume",
+   "variant": "no_history",
+   "kind": "boundary",
+   "present": true
+  },
+  {
+   "scenario": "museum-special-exhibit-limit",
+   "variant": "history",
+   "kind": "restriction",
+   "present": true
+  },
+  {
+   "scenario": "museum-special-exhibit-limit",
+   "variant": "no_history",
+   "kind": "restriction",
+   "present": true
+  },
+  {
+   "scenario": "restriction-undrainable",
+   "variant": "history",
+   "kind": "restriction",
+   "present": true
+  },
+  {
+   "scenario": "restriction-undrainable",
+   "variant": "no_history",
+   "kind": "restriction",
+   "present": true
+  },
+  {
+   "scenario": "festival-gate-split",
+   "variant": "history",
+   "kind": "restriction",
+   "present": true
+  },
+  {
+   "scenario": "festival-gate-split",
+   "variant": "no_history",
+   "kind": "restriction",
+   "present": true
+  },
+  {
+   "scenario": "crossing-detour",
+   "variant": "history",
+   "kind": "detour",
+   "present": true
+  },
+  {
+   "scenario": "crossing-detour",
+   "variant": "no_history",
+   "kind": "detour",
+   "present": true
+  },
+  {
+   "scenario": "school-north-stair-peak",
+   "variant": "history",
+   "kind": "detour",
+   "present": true
+  },
+  {
+   "scenario": "school-north-stair-peak",
+   "variant": "no_history",
+   "kind": "detour",
+   "present": true
+  },
+  {
+   "scenario": "multi-route-surge",
+   "variant": "history",
+   "kind": "detour",
+   "present": true
+  },
+  {
+   "scenario": "multi-route-surge",
+   "variant": "no_history",
+   "kind": "detour",
+   "present": true
+  }
+ ],
+ "rows": [
+  {
+   "scenario": "reversible-corridor-flip",
+   "variant": "history",
+   "k": 0.01,
+   "diff": [
+    "direction",
+    "emphasis"
+   ],
+   "cont": {
+    "od": 1.0,
+    "throughput": 1.0,
+    "tau": 1.0,
+    "importance": 0.9999999596774208
+   },
+   "diag": {
+    "solver": "LIGHTWEIGHT",
+    "degraded": false,
+    "od_pairs_input": 0,
+    "commodities": 0,
+    "demand_all_cut": false,
+    "resolution_modes": [
+     "DOUBLY_CONSTRAINED"
+    ]
+   },
+   "census": {
+    "scaled": {
+     "flow_rate": 1,
+     "stagnation": 2,
+     "observed_count": 1,
+     "occupancy": 1,
+     "occupancy_delta": 1,
+     "p90_stagnation": 2,
+     "baseline_stagnation": 2,
+     "stagnation_samples": 2,
+     "flow_samples": 7,
+     "directional_flow_samples": 7,
+     "capacity_hint": 2
+    },
+    "unchanged_fields": [
+     "completeness",
+     "flow_sensitivity_eta",
+     "time_resolution_s"
+    ]
+   },
+   "attribution": {
+    "delta_min": [],
+    "fallback_baseline": [
+     "direction",
+     "emphasis"
+    ],
+    "delta_min+fallback_baseline": [],
+    "delta_min+fallback_baseline+ipf_tolerance": [],
+    "delta_min+fallback_baseline+epsilon_0": [],
+    "delta_min+fallback_baseline+ipf_tolerance+epsilon_0": []
+   }
+  },
+  {
+   "scenario": "reversible-corridor-flip",
+   "variant": "history",
+   "k": 0.1,
+   "diff": [
+    "direction",
+    "emphasis"
+   ],
+   "cont": {
+    "od": 0.0,
+    "throughput": 1.0,
+    "tau": 1.0,
+    "importance": 0.9999999596774208
+   },
+   "diag": {
+    "solver": "LIGHTWEIGHT",
+    "degraded": false,
+    "od_pairs_input": 1,
+    "commodities": 0,
+    "demand_all_cut": true,
+    "resolution_modes": [
+     "DOUBLY_CONSTRAINED"
+    ]
+   },
+   "census": {
+    "scaled": {
+     "flow_rate": 1,
+     "stagnation": 2,
+     "observed_count": 1,
+     "occupancy": 1,
+     "occupancy_delta": 1,
+     "p90_stagnation": 2,
+     "baseline_stagnation": 2,
+     "stagnation_samples": 2,
+     "flow_samples": 7,
+     "directional_flow_samples": 7,
+     "capacity_hint": 2
+    },
+    "unchanged_fields": [
+     "completeness",
+     "flow_sensitivity_eta",
+     "time_resolution_s"
+    ]
+   },
+   "attribution": {
+    "delta_min": [],
+    "fallback_baseline": [
+     "direction",
+     "emphasis"
+    ],
+    "delta_min+fallback_baseline": [],
+    "delta_min+fallback_baseline+ipf_tolerance": [],
+    "delta_min+fallback_baseline+epsilon_0": [],
+    "delta_min+fallback_baseline+ipf_tolerance+epsilon_0": []
+   }
+  },
+  {
+   "scenario": "reversible-corridor-flip",
+   "variant": "history",
+   "k": 1.0,
+   "diff": [],
+   "cont": {
+    "od": 0.0,
+    "throughput": 0.0,
+    "tau": 0.0,
+    "importance": 0.0
+   },
+   "diag": {
+    "solver": "LIGHTWEIGHT",
+    "degraded": false,
+    "od_pairs_input": 1,
+    "commodities": 1,
+    "demand_all_cut": false,
+    "resolution_modes": [
+     "DOUBLY_CONSTRAINED"
+    ]
+   },
+   "census": {
+    "scaled": {},
+    "unchanged_fields": [
+     "baseline_stagnation",
+     "capacity_hint",
+     "completeness",
+     "directional_flow_samples",
+     "flow_rate",
+     "flow_samples",
+     "flow_sensitivity_eta",
+     "observed_count",
+     "occupancy",
+     "occupancy_delta",
+     "p90_stagnation",
+     "stagnation",
+     "stagnation_samples",
+     "time_resolution_s"
+    ]
+   }
+  },
+  {
+   "scenario": "reversible-corridor-flip",
+   "variant": "history",
+   "k": 10.0,
+   "diff": [],
+   "cont": {
+    "od": 0.0,
+    "throughput": 2.419352890719604e-09,
+    "tau": 2.9999989997345366e-07,
+    "importance": 3.629032108154462e-08
+   },
+   "diag": {
+    "solver": "LIGHTWEIGHT",
+    "degraded": false,
+    "od_pairs_input": 1,
+    "commodities": 1,
+    "demand_all_cut": false,
+    "resolution_modes": [
+     "DOUBLY_CONSTRAINED"
+    ]
+   },
+   "census": {
+    "scaled": {
+     "flow_rate": 1,
+     "stagnation": 2,
+     "observed_count": 1,
+     "occupancy": 1,
+     "occupancy_delta": 1,
+     "p90_stagnation": 2,
+     "baseline_stagnation": 2,
+     "stagnation_samples": 2,
+     "flow_samples": 7,
+     "directional_flow_samples": 7,
+     "capacity_hint": 2
+    },
+    "unchanged_fields": [
+     "completeness",
+     "flow_sensitivity_eta",
+     "time_resolution_s"
+    ]
+   },
+   "attribution": {
+    "delta_min": [],
+    "fallback_baseline": [],
+    "delta_min+fallback_baseline": [],
+    "delta_min+fallback_baseline+ipf_tolerance": [],
+    "delta_min+fallback_baseline+epsilon_0": [],
+    "delta_min+fallback_baseline+ipf_tolerance+epsilon_0": []
+   }
+  },
+  {
+   "scenario": "reversible-corridor-flip",
+   "variant": "history",
+   "k": 100.0,
+   "diff": [],
+   "cont": {
+    "od": 0.0,
+    "throughput": 2.661292691667083e-09,
+    "tau": 3.299998900029544e-07,
+    "importance": 3.9919353378436995e-08
+   },
+   "diag": {
+    "solver": "LIGHTWEIGHT",
+    "degraded": false,
+    "od_pairs_input": 1,
+    "commodities": 1,
+    "demand_all_cut": false,
+    "resolution_modes": [
+     "DOUBLY_CONSTRAINED"
+    ]
+   },
+   "census": {
+    "scaled": {
+     "flow_rate": 1,
+     "stagnation": 2,
+     "observed_count": 1,
+     "occupancy": 1,
+     "occupancy_delta": 1,
+     "p90_stagnation": 2,
+     "baseline_stagnation": 2,
+     "stagnation_samples": 2,
+     "flow_samples": 7,
+     "directional_flow_samples": 7,
+     "capacity_hint": 2
+    },
+    "unchanged_fields": [
+     "completeness",
+     "flow_sensitivity_eta",
+     "time_resolution_s"
+    ]
+   },
+   "attribution": {
+    "delta_min": [],
+    "fallback_baseline": [],
+    "delta_min+fallback_baseline": [],
+    "delta_min+fallback_baseline+ipf_tolerance": [],
+    "delta_min+fallback_baseline+epsilon_0": [],
+    "delta_min+fallback_baseline+ipf_tolerance+epsilon_0": []
+   }
+  },
+  {
+   "scenario": "reversible-corridor-flip",
+   "variant": "no_history",
+   "k": 0.01,
+   "diff": [
+    "verdict",
+    "triggered",
+    "direction",
+    "emphasis"
+   ],
+   "cont": {
+    "od": 1.0,
+    "throughput": 1.0,
+    "tau": 1.0,
+    "importance": 0.9999999599786569
+   },
+   "diag": {
+    "solver": "LIGHTWEIGHT",
+    "degraded": false,
+    "od_pairs_input": 0,
+    "commodities": 0,
+    "demand_all_cut": false,
+    "resolution_modes": [
+     "DOUBLY_CONSTRAINED"
+    ]
+   },
+   "census": {
+    "scaled": {
+     "flow_rate": 1,
+     "stagnation": 2,
+     "observed_count": 1,
+     "occupancy": 1,
+     "occupancy_delta": 1,
+     "stagnation_samples": 2,
+     "flow_samples": 7,
+     "directional_flow_samples": 7,
+     "capacity_hint": 2
+    },
+    "unchanged_fields": [
+     "completeness",
+     "time_resolution_s"
+    ]
+   },
+   "attribution": {
+    "delta_min": [
+     "verdict",
+     "triggered",
+     "direction",
+     "emphasis"
+    ],
+    "fallback_baseline": [
+     "direction",
+     "emphasis"
+    ],
+    "delta_min+fallback_baseline": [
+     "emphasis"
+    ],
+    "delta_min+fallback_baseline+ipf_tolerance": [
+     "emphasis"
+    ],
+    "delta_min+fallback_baseline+epsilon_0": [],
+    "delta_min+fallback_baseline+ipf_tolerance+epsilon_0": []
+   }
+  },
+  {
+   "scenario": "reversible-corridor-flip",
+   "variant": "no_history",
+   "k": 0.1,
+   "diff": [
+    "verdict",
+    "triggered",
+    "direction",
+    "emphasis"
+   ],
+   "cont": {
+    "od": 0.0,
+    "throughput": 1.0,
+    "tau": 1.0,
+    "importance": 0.9999999599786569
+   },
+   "diag": {
+    "solver": "LIGHTWEIGHT",
+    "degraded": false,
+    "od_pairs_input": 1,
+    "commodities": 0,
+    "demand_all_cut": true,
+    "resolution_modes": [
+     "DOUBLY_CONSTRAINED"
+    ]
+   },
+   "census": {
+    "scaled": {
+     "flow_rate": 1,
+     "stagnation": 2,
+     "observed_count": 1,
+     "occupancy": 1,
+     "occupancy_delta": 1,
+     "stagnation_samples": 2,
+     "flow_samples": 7,
+     "directional_flow_samples": 7,
+     "capacity_hint": 2
+    },
+    "unchanged_fields": [
+     "completeness",
+     "time_resolution_s"
+    ]
+   },
+   "attribution": {
+    "delta_min": [
+     "verdict",
+     "triggered",
+     "direction",
+     "emphasis"
+    ],
+    "fallback_baseline": [
+     "direction",
+     "emphasis"
+    ],
+    "delta_min+fallback_baseline": [
+     "emphasis"
+    ],
+    "delta_min+fallback_baseline+ipf_tolerance": [
+     "emphasis"
+    ],
+    "delta_min+fallback_baseline+epsilon_0": [],
+    "delta_min+fallback_baseline+ipf_tolerance+epsilon_0": []
+   }
+  },
+  {
+   "scenario": "reversible-corridor-flip",
+   "variant": "no_history",
+   "k": 1.0,
+   "diff": [],
+   "cont": {
+    "od": 0.0,
+    "throughput": 0.0,
+    "tau": 0.0,
+    "importance": 0.0
+   },
+   "diag": {
+    "solver": "LIGHTWEIGHT",
+    "degraded": false,
+    "od_pairs_input": 1,
+    "commodities": 1,
+    "demand_all_cut": false,
+    "resolution_modes": [
+     "DOUBLY_CONSTRAINED"
+    ]
+   },
+   "census": {
+    "scaled": {},
+    "unchanged_fields": [
+     "capacity_hint",
+     "completeness",
+     "directional_flow_samples",
+     "flow_rate",
+     "flow_samples",
+     "observed_count",
+     "occupancy",
+     "occupancy_delta",
+     "stagnation",
+     "stagnation_samples",
+     "time_resolution_s"
+    ]
+   }
+  },
+  {
+   "scenario": "reversible-corridor-flip",
+   "variant": "no_history",
+   "k": 10.0,
+   "diff": [],
+   "cont": {
+    "od": 0.0,
+    "throughput": 0.0004800260814159579,
+    "tau": 0.9,
+    "importance": 0.0004802822110531749
+   },
+   "diag": {
+    "solver": "LIGHTWEIGHT",
+    "degraded": false,
+    "od_pairs_input": 1,
+    "commodities": 1,
+    "demand_all_cut": false,
+    "resolution_modes": [
+     "DOUBLY_CONSTRAINED"
+    ]
+   },
+   "census": {
+    "scaled": {
+     "flow_rate": 1,
+     "stagnation": 2,
+     "observed_count": 1,
+     "occupancy": 1,
+     "occupancy_delta": 1,
+     "stagnation_samples": 2,
+     "flow_samples": 7,
+     "directional_flow_samples": 7,
+     "capacity_hint": 2
+    },
+    "unchanged_fields": [
+     "completeness",
+     "time_resolution_s"
+    ]
+   },
+   "attribution": {
+    "delta_min": [],
+    "fallback_baseline": [],
+    "delta_min+fallback_baseline": [],
+    "delta_min+fallback_baseline+ipf_tolerance": [],
+    "delta_min+fallback_baseline+epsilon_0": [],
+    "delta_min+fallback_baseline+ipf_tolerance+epsilon_0": []
+   }
+  },
+  {
+   "scenario": "reversible-corridor-flip",
+   "variant": "no_history",
+   "k": 100.0,
+   "diff": [],
+   "cont": {
+    "od": 0.0,
+    "throughput": 0.0005280033440208849,
+    "tau": 0.99,
+    "importance": 0.0005282850750001167
+   },
+   "diag": {
+    "solver": "LIGHTWEIGHT",
+    "degraded": false,
+    "od_pairs_input": 1,
+    "commodities": 1,
+    "demand_all_cut": false,
+    "resolution_modes": [
+     "DOUBLY_CONSTRAINED"
+    ]
+   },
+   "census": {
+    "scaled": {
+     "flow_rate": 1,
+     "stagnation": 2,
+     "observed_count": 1,
+     "occupancy": 1,
+     "occupancy_delta": 1,
+     "stagnation_samples": 2,
+     "flow_samples": 7,
+     "directional_flow_samples": 7,
+     "capacity_hint": 2
+    },
+    "unchanged_fields": [
+     "completeness",
+     "time_resolution_s"
+    ]
+   },
+   "attribution": {
+    "delta_min": [],
+    "fallback_baseline": [],
+    "delta_min+fallback_baseline": [],
+    "delta_min+fallback_baseline+ipf_tolerance": [],
+    "delta_min+fallback_baseline+epsilon_0": [],
+    "delta_min+fallback_baseline+ipf_tolerance+epsilon_0": []
+   }
+  },
+  {
+   "scenario": "reversible-corridor-flip",
+   "variant": "obs_only",
+   "k": 0.01,
+   "diff": [
+    "direction",
+    "emphasis"
+   ],
+   "cont": {
+    "od": 1.0,
+    "throughput": 1.0,
+    "tau": 1.0,
+    "importance": 0.9999999596774208
+   },
+   "diag": {
+    "solver": "LIGHTWEIGHT",
+    "degraded": false,
+    "od_pairs_input": 0,
+    "commodities": 0,
+    "demand_all_cut": false,
+    "resolution_modes": [
+     "DOUBLY_CONSTRAINED"
+    ]
+   },
+   "census": {
+    "scaled": {
+     "flow_rate": 1,
+     "stagnation": 2,
+     "observed_count": 1,
+     "occupancy": 1,
+     "occupancy_delta": 1,
+     "p90_stagnation": 2,
+     "baseline_stagnation": 2,
+     "stagnation_samples": 2,
+     "flow_samples": 7,
+     "directional_flow_samples": 7
+    },
+    "unchanged_fields": [
+     "capacity_hint",
+     "completeness",
+     "flow_sensitivity_eta",
+     "time_resolution_s"
+    ]
+   }
+  },
+  {
+   "scenario": "reversible-corridor-flip",
+   "variant": "obs_only",
+   "k": 0.1,
+   "diff": [
+    "direction",
+    "emphasis"
+   ],
+   "cont": {
+    "od": 0.0,
+    "throughput": 1.0,
+    "tau": 1.0,
+    "importance": 0.9999999596774208
+   },
+   "diag": {
+    "solver": "LIGHTWEIGHT",
+    "degraded": false,
+    "od_pairs_input": 1,
+    "commodities": 0,
+    "demand_all_cut": true,
+    "resolution_modes": [
+     "DOUBLY_CONSTRAINED"
+    ]
+   },
+   "census": {
+    "scaled": {
+     "flow_rate": 1,
+     "stagnation": 2,
+     "observed_count": 1,
+     "occupancy": 1,
+     "occupancy_delta": 1,
+     "p90_stagnation": 2,
+     "baseline_stagnation": 2,
+     "stagnation_samples": 2,
+     "flow_samples": 7,
+     "directional_flow_samples": 7
+    },
+    "unchanged_fields": [
+     "capacity_hint",
+     "completeness",
+     "flow_sensitivity_eta",
+     "time_resolution_s"
+    ]
+   }
+  },
+  {
+   "scenario": "reversible-corridor-flip",
+   "variant": "obs_only",
+   "k": 1.0,
+   "diff": [],
+   "cont": {
+    "od": 0.0,
+    "throughput": 0.0,
+    "tau": 0.0,
+    "importance": 0.0
+   },
+   "diag": {
+    "solver": "LIGHTWEIGHT",
+    "degraded": false,
+    "od_pairs_input": 1,
+    "commodities": 1,
+    "demand_all_cut": false,
+    "resolution_modes": [
+     "DOUBLY_CONSTRAINED"
+    ]
+   },
+   "census": {
+    "scaled": {},
+    "unchanged_fields": [
+     "baseline_stagnation",
+     "capacity_hint",
+     "completeness",
+     "directional_flow_samples",
+     "flow_rate",
+     "flow_samples",
+     "flow_sensitivity_eta",
+     "observed_count",
+     "occupancy",
+     "occupancy_delta",
+     "p90_stagnation",
+     "stagnation",
+     "stagnation_samples",
+     "time_resolution_s"
+    ]
+   }
+  },
+  {
+   "scenario": "reversible-corridor-flip",
+   "variant": "obs_only",
+   "k": 10.0,
+   "diff": [
+    "direction",
+    "emphasis"
+   ],
+   "cont": {
+    "od": 0.0,
+    "throughput": 1.0,
+    "tau": 0.0416669541665708,
+    "importance": 0.9999999596774208
+   },
+   "diag": {
+    "solver": "INFEASIBLE",
+    "degraded": true,
+    "od_pairs_input": 1,
+    "commodities": 1,
+    "demand_all_cut": false,
+    "resolution_modes": [
+     "DOUBLY_CONSTRAINED"
+    ]
+   },
+   "census": {
+    "scaled": {
+     "flow_rate": 1,
+     "stagnation": 2,
+     "observed_count": 1,
+     "occupancy": 1,
+     "occupancy_delta": 1,
+     "p90_stagnation": 2,
+     "baseline_stagnation": 2,
+     "stagnation_samples": 2,
+     "flow_samples": 7,
+     "directional_flow_samples": 7
+    },
+    "unchanged_fields": [
+     "capacity_hint",
+     "completeness",
+     "flow_sensitivity_eta",
+     "time_resolution_s"
+    ]
+   }
+  },
+  {
+   "scenario": "reversible-corridor-flip",
+   "variant": "obs_only",
+   "k": 100.0,
+   "diff": [
+    "direction",
+    "emphasis"
+   ],
+   "cont": {
+    "od": 0.0,
+    "throughput": 1.0,
+    "tau": 0.04166698291656124,
+    "importance": 0.9999999596774208
+   },
+   "diag": {
+    "solver": "INFEASIBLE",
+    "degraded": true,
+    "od_pairs_input": 1,
+    "commodities": 1,
+    "demand_all_cut": false,
+    "resolution_modes": [
+     "DOUBLY_CONSTRAINED"
+    ]
+   },
+   "census": {
+    "scaled": {
+     "flow_rate": 1,
+     "stagnation": 2,
+     "observed_count": 1,
+     "occupancy": 1,
+     "occupancy_delta": 1,
+     "p90_stagnation": 2,
+     "baseline_stagnation": 2,
+     "stagnation_samples": 2,
+     "flow_samples": 7,
+     "directional_flow_samples": 7
+    },
+    "unchanged_fields": [
+     "capacity_hint",
+     "completeness",
+     "flow_sensitivity_eta",
+     "time_resolution_s"
+    ]
+   }
+  },
+  {
+   "scenario": "stadium-egress-concourse",
+   "variant": "history",
+   "k": 0.01,
+   "diff": [
+    "direction",
+    "detour",
+    "emphasis"
+   ],
+   "cont": {
+    "od": 1.0,
+    "throughput": 1.0,
+    "tau": 1.0,
+    "importance": 0.9999999795361533
+   },
+   "diag": {
+    "solver": "LIGHTWEIGHT",
+    "degraded": false,
+    "od_pairs_input": 0,
+    "commodities": 0,
+    "demand_all_cut": false,
+    "resolution_modes": [
+     "DOUBLY_CONSTRAINED"
+    ]
+   },
+   "census": {
+    "scaled": {
+     "flow_rate": 1,
+     "stagnation": 9,
+     "observed_count": 5,
+     "occupancy": 1,
+     "occupancy_delta": 1,
+     "p90_stagnation": 9,
+     "baseline_stagnation": 9,
+     "flow_samples": 35,
+     "stagnation_samples": 9,
+     "directional_flow_samples": 7,
+     "capacity_hint": 2
+    },
+    "unchanged_fields": [
+     "completeness",
+     "flow_sensitivity_eta",
+     "time_resolution_s"
+    ]
+   },
+   "attribution": {
+    "delta_min": [],
+    "fallback_baseline": [
+     "direction",
+     "detour",
+     "emphasis"
+    ],
+    "delta_min+fallback_baseline": [],
+    "delta_min+fallback_baseline+ipf_tolerance": [],
+    "delta_min+fallback_baseline+epsilon_0": [],
+    "delta_min+fallback_baseline+ipf_tolerance+epsilon_0": []
+   }
+  },
+  {
+   "scenario": "stadium-egress-concourse",
+   "variant": "history",
+   "k": 0.1,
+   "diff": [
+    "direction",
+    "detour",
+    "emphasis"
+   ],
+   "cont": {
+    "od": 0.0,
+    "throughput": 1.0,
+    "tau": 1.0,
+    "importance": 0.9999999795361533
+   },
+   "diag": {
+    "solver": "LIGHTWEIGHT",
+    "degraded": false,
+    "od_pairs_input": 1,
+    "commodities": 0,
+    "demand_all_cut": true,
+    "resolution_modes": [
+     "DOUBLY_CONSTRAINED"
+    ]
+   },
+   "census": {
+    "scaled": {
+     "flow_rate": 1,
+     "stagnation": 9,
+     "observed_count": 5,
+     "occupancy": 1,
+     "occupancy_delta": 1,
+     "p90_stagnation": 9,
+     "baseline_stagnation": 9,
+     "flow_samples": 35,
+     "stagnation_samples": 9,
+     "directional_flow_samples": 7,
+     "capacity_hint": 2
+    },
+    "unchanged_fields": [
+     "completeness",
+     "flow_sensitivity_eta",
+     "time_resolution_s"
+    ]
+   },
+   "attribution": {
+    "delta_min": [],
+    "fallback_baseline": [
+     "direction",
+     "detour",
+     "emphasis"
+    ],
+    "delta_min+fallback_baseline": [],
+    "delta_min+fallback_baseline+ipf_tolerance": [],
+    "delta_min+fallback_baseline+epsilon_0": [],
+    "delta_min+fallback_baseline+ipf_tolerance+epsilon_0": []
+   }
+  },
+  {
+   "scenario": "stadium-egress-concourse",
+   "variant": "history",
+   "k": 1.0,
+   "diff": [],
+   "cont": {
+    "od": 0.0,
+    "throughput": 0.0,
+    "tau": 0.0,
+    "importance": 0.0
+   },
+   "diag": {
+    "solver": "LIGHTWEIGHT",
+    "degraded": false,
+    "od_pairs_input": 1,
+    "commodities": 1,
+    "demand_all_cut": false,
+    "resolution_modes": [
+     "DOUBLY_CONSTRAINED"
+    ]
+   },
+   "census": {
+    "scaled": {},
+    "unchanged_fields": [
+     "baseline_stagnation",
+     "capacity_hint",
+     "completeness",
+     "directional_flow_samples",
+     "flow_rate",
+     "flow_samples",
+     "flow_sensitivity_eta",
+     "observed_count",
+     "occupancy",
+     "occupancy_delta",
+     "p90_stagnation",
+     "stagnation",
+     "stagnation_samples",
+     "time_resolution_s"
+    ]
+   }
+  },
+  {
+   "scenario": "stadium-egress-concourse",
+   "variant": "history",
+   "k": 10.0,
+   "diff": [],
+   "cont": {
+    "od": 0.0,
+    "throughput": 0.0,
+    "tau": 2.999999000349173e-07,
+    "importance": 1.8417461999931106e-08
+   },
+   "diag": {
+    "solver": "LIGHTWEIGHT",
+    "degraded": false,
+    "od_pairs_input": 1,
+    "commodities": 1,
+    "demand_all_cut": false,
+    "resolution_modes": [
+     "DOUBLY_CONSTRAINED"
+    ]
+   },
+   "census": {
+    "scaled": {
+     "flow_rate": 1,
+     "stagnation": 9,
+     "observed_count": 5,
+     "occupancy": 1,
+     "occupancy_delta": 1,
+     "p90_stagnation": 9,
+     "baseline_stagnation": 9,
+     "flow_samples": 35,
+     "stagnation_samples": 9,
+     "directional_flow_samples": 7,
+     "capacity_hint": 2
+    },
+    "unchanged_fields": [
+     "completeness",
+     "flow_sensitivity_eta",
+     "time_resolution_s"
+    ]
+   },
+   "attribution": {
+    "delta_min": [],
+    "fallback_baseline": [],
+    "delta_min+fallback_baseline": [],
+    "delta_min+fallback_baseline+ipf_tolerance": [],
+    "delta_min+fallback_baseline+epsilon_0": [],
+    "delta_min+fallback_baseline+ipf_tolerance+epsilon_0": []
+   }
+  },
+  {
+   "scenario": "stadium-egress-concourse",
+   "variant": "history",
+   "k": 100.0,
+   "diff": [],
+   "cont": {
+    "od": 0.0,
+    "throughput": 0.0,
+    "tau": 3.299998900745397e-07,
+    "importance": 2.0259208199924217e-08
+   },
+   "diag": {
+    "solver": "LIGHTWEIGHT",
+    "degraded": false,
+    "od_pairs_input": 1,
+    "commodities": 1,
+    "demand_all_cut": false,
+    "resolution_modes": [
+     "DOUBLY_CONSTRAINED"
+    ]
+   },
+   "census": {
+    "scaled": {
+     "flow_rate": 1,
+     "stagnation": 9,
+     "observed_count": 5,
+     "occupancy": 1,
+     "occupancy_delta": 1,
+     "p90_stagnation": 9,
+     "baseline_stagnation": 9,
+     "flow_samples": 35,
+     "stagnation_samples": 9,
+     "directional_flow_samples": 7,
+     "capacity_hint": 2
+    },
+    "unchanged_fields": [
+     "completeness",
+     "flow_sensitivity_eta",
+     "time_resolution_s"
+    ]
+   },
+   "attribution": {
+    "delta_min": [],
+    "fallback_baseline": [],
+    "delta_min+fallback_baseline": [],
+    "delta_min+fallback_baseline+ipf_tolerance": [],
+    "delta_min+fallback_baseline+epsilon_0": [],
+    "delta_min+fallback_baseline+ipf_tolerance+epsilon_0": []
+   }
+  },
+  {
+   "scenario": "stadium-egress-concourse",
+   "variant": "no_history",
+   "k": 0.01,
+   "diff": [
+    "verdict",
+    "triggered",
+    "direction",
+    "detour",
+    "emphasis"
+   ],
+   "cont": {
+    "od": 1.0,
+    "throughput": 1.0,
+    "tau": 1.0,
+    "importance": 0.9999999795862824
+   },
+   "diag": {
+    "solver": "LIGHTWEIGHT",
+    "degraded": false,
+    "od_pairs_input": 0,
+    "commodities": 0,
+    "demand_all_cut": false,
+    "resolution_modes": [
+     "DOUBLY_CONSTRAINED"
+    ]
+   },
+   "census": {
+    "scaled": {
+     "flow_rate": 1,
+     "stagnation": 9,
+     "observed_count": 5,
+     "occupancy": 1,
+     "occupancy_delta": 1,
+     "flow_samples": 35,
+     "stagnation_samples": 9,
+     "directional_flow_samples": 7,
+     "capacity_hint": 2
+    },
+    "unchanged_fields": [
+     "completeness",
+     "time_resolution_s"
+    ]
+   },
+   "attribution": {
+    "delta_min": [
+     "verdict",
+     "triggered",
+     "direction",
+     "detour",
+     "emphasis"
+    ],
+    "fallback_baseline": [
+     "direction",
+     "detour",
+     "emphasis"
+    ],
+    "delta_min+fallback_baseline": [],
+    "delta_min+fallback_baseline+ipf_tolerance": [],
+    "delta_min+fallback_baseline+epsilon_0": [],
+    "delta_min+fallback_baseline+ipf_tolerance+epsilon_0": []
+   }
+  },
+  {
+   "scenario": "stadium-egress-concourse",
+   "variant": "no_history",
+   "k": 0.1,
+   "diff": [
+    "verdict",
+    "triggered",
+    "direction",
+    "detour",
+    "emphasis"
+   ],
+   "cont": {
+    "od": 0.0,
+    "throughput": 1.0,
+    "tau": 1.0,
+    "importance": 0.9999999795862824
+   },
+   "diag": {
+    "solver": "LIGHTWEIGHT",
+    "degraded": false,
+    "od_pairs_input": 1,
+    "commodities": 0,
+    "demand_all_cut": true,
+    "resolution_modes": [
+     "DOUBLY_CONSTRAINED"
+    ]
+   },
+   "census": {
+    "scaled": {
+     "flow_rate": 1,
+     "stagnation": 9,
+     "observed_count": 5,
+     "occupancy": 1,
+     "occupancy_delta": 1,
+     "flow_samples": 35,
+     "stagnation_samples": 9,
+     "directional_flow_samples": 7,
+     "capacity_hint": 2
+    },
+    "unchanged_fields": [
+     "completeness",
+     "time_resolution_s"
+    ]
+   },
+   "attribution": {
+    "delta_min": [
+     "verdict",
+     "triggered",
+     "direction",
+     "detour",
+     "emphasis"
+    ],
+    "fallback_baseline": [
+     "direction",
+     "detour",
+     "emphasis"
+    ],
+    "delta_min+fallback_baseline": [],
+    "delta_min+fallback_baseline+ipf_tolerance": [],
+    "delta_min+fallback_baseline+epsilon_0": [],
+    "delta_min+fallback_baseline+ipf_tolerance+epsilon_0": []
+   }
+  },
+  {
+   "scenario": "stadium-egress-concourse",
+   "variant": "no_history",
+   "k": 1.0,
+   "diff": [],
+   "cont": {
+    "od": 0.0,
+    "throughput": 0.0,
+    "tau": 0.0,
+    "importance": 0.0
+   },
+   "diag": {
+    "solver": "LIGHTWEIGHT",
+    "degraded": false,
+    "od_pairs_input": 1,
+    "commodities": 1,
+    "demand_all_cut": false,
+    "resolution_modes": [
+     "DOUBLY_CONSTRAINED"
+    ]
+   },
+   "census": {
+    "scaled": {},
+    "unchanged_fields": [
+     "capacity_hint",
+     "completeness",
+     "directional_flow_samples",
+     "flow_rate",
+     "flow_samples",
+     "observed_count",
+     "occupancy",
+     "occupancy_delta",
+     "stagnation",
+     "stagnation_samples",
+     "time_resolution_s"
+    ]
+   }
+  },
+  {
+   "scenario": "stadium-egress-concourse",
+   "variant": "no_history",
+   "k": 10.0,
+   "diff": [],
+   "cont": {
+    "od": 0.0,
+    "throughput": 0.0,
+    "tau": 0.8999999999999999,
+    "importance": 3.9992350825385214e-05
+   },
+   "diag": {
+    "solver": "LIGHTWEIGHT",
+    "degraded": false,
+    "od_pairs_input": 1,
+    "commodities": 1,
+    "demand_all_cut": false,
+    "resolution_modes": [
+     "DOUBLY_CONSTRAINED"
+    ]
+   },
+   "census": {
+    "scaled": {
+     "flow_rate": 1,
+     "stagnation": 9,
+     "observed_count": 5,
+     "occupancy": 1,
+     "occupancy_delta": 1,
+     "flow_samples": 35,
+     "stagnation_samples": 9,
+     "directional_flow_samples": 7,
+     "capacity_hint": 2
+    },
+    "unchanged_fields": [
+     "completeness",
+     "time_resolution_s"
+    ]
+   },
+   "attribution": {
+    "delta_min": [],
+    "fallback_baseline": [],
+    "delta_min+fallback_baseline": [],
+    "delta_min+fallback_baseline+ipf_tolerance": [],
+    "delta_min+fallback_baseline+epsilon_0": [],
+    "delta_min+fallback_baseline+ipf_tolerance+epsilon_0": []
+   }
+  },
+  {
+   "scenario": "stadium-egress-concourse",
+   "variant": "no_history",
+   "k": 100.0,
+   "diff": [],
+   "cont": {
+    "od": 0.0,
+    "throughput": 0.0,
+    "tau": 0.99,
+    "importance": 4.399050863976295e-05
+   },
+   "diag": {
+    "solver": "LIGHTWEIGHT",
+    "degraded": false,
+    "od_pairs_input": 1,
+    "commodities": 1,
+    "demand_all_cut": false,
+    "resolution_modes": [
+     "DOUBLY_CONSTRAINED"
+    ]
+   },
+   "census": {
+    "scaled": {
+     "flow_rate": 1,
+     "stagnation": 9,
+     "observed_count": 5,
+     "occupancy": 1,
+     "occupancy_delta": 1,
+     "flow_samples": 35,
+     "stagnation_samples": 9,
+     "directional_flow_samples": 7,
+     "capacity_hint": 2
+    },
+    "unchanged_fields": [
+     "completeness",
+     "time_resolution_s"
+    ]
+   },
+   "attribution": {
+    "delta_min": [],
+    "fallback_baseline": [],
+    "delta_min+fallback_baseline": [],
+    "delta_min+fallback_baseline+ipf_tolerance": [],
+    "delta_min+fallback_baseline+epsilon_0": [],
+    "delta_min+fallback_baseline+ipf_tolerance+epsilon_0": []
+   }
+  },
+  {
+   "scenario": "stadium-egress-concourse",
+   "variant": "obs_only",
+   "k": 0.01,
+   "diff": [
+    "direction",
+    "detour",
+    "emphasis"
+   ],
+   "cont": {
+    "od": 1.0,
+    "throughput": 1.0,
+    "tau": 1.0,
+    "importance": 0.9999999795361533
+   },
+   "diag": {
+    "solver": "LIGHTWEIGHT",
+    "degraded": false,
+    "od_pairs_input": 0,
+    "commodities": 0,
+    "demand_all_cut": false,
+    "resolution_modes": [
+     "DOUBLY_CONSTRAINED"
+    ]
+   },
+   "census": {
+    "scaled": {
+     "flow_rate": 1,
+     "stagnation": 9,
+     "observed_count": 5,
+     "occupancy": 1,
+     "occupancy_delta": 1,
+     "p90_stagnation": 9,
+     "baseline_stagnation": 9,
+     "flow_samples": 35,
+     "stagnation_samples": 9,
+     "directional_flow_samples": 7
+    },
+    "unchanged_fields": [
+     "capacity_hint",
+     "completeness",
+     "flow_sensitivity_eta",
+     "time_resolution_s"
+    ]
+   }
+  },
+  {
+   "scenario": "stadium-egress-concourse",
+   "variant": "obs_only",
+   "k": 0.1,
+   "diff": [
+    "direction",
+    "detour",
+    "emphasis"
+   ],
+   "cont": {
+    "od": 0.0,
+    "throughput": 1.0,
+    "tau": 1.0,
+    "importance": 0.9999999795361533
+   },
+   "diag": {
+    "solver": "LIGHTWEIGHT",
+    "degraded": false,
+    "od_pairs_input": 1,
+    "commodities": 0,
+    "demand_all_cut": true,
+    "resolution_modes": [
+     "DOUBLY_CONSTRAINED"
+    ]
+   },
+   "census": {
+    "scaled": {
+     "flow_rate": 1,
+     "stagnation": 9,
+     "observed_count": 5,
+     "occupancy": 1,
+     "occupancy_delta": 1,
+     "p90_stagnation": 9,
+     "baseline_stagnation": 9,
+     "flow_samples": 35,
+     "stagnation_samples": 9,
+     "directional_flow_samples": 7
+    },
+    "unchanged_fields": [
+     "capacity_hint",
+     "completeness",
+     "flow_sensitivity_eta",
+     "time_resolution_s"
+    ]
+   }
+  },
+  {
+   "scenario": "stadium-egress-concourse",
+   "variant": "obs_only",
+   "k": 1.0,
+   "diff": [],
+   "cont": {
+    "od": 0.0,
+    "throughput": 0.0,
+    "tau": 0.0,
+    "importance": 0.0
+   },
+   "diag": {
+    "solver": "LIGHTWEIGHT",
+    "degraded": false,
+    "od_pairs_input": 1,
+    "commodities": 1,
+    "demand_all_cut": false,
+    "resolution_modes": [
+     "DOUBLY_CONSTRAINED"
+    ]
+   },
+   "census": {
+    "scaled": {},
+    "unchanged_fields": [
+     "baseline_stagnation",
+     "capacity_hint",
+     "completeness",
+     "directional_flow_samples",
+     "flow_rate",
+     "flow_samples",
+     "flow_sensitivity_eta",
+     "observed_count",
+     "occupancy",
+     "occupancy_delta",
+     "p90_stagnation",
+     "stagnation",
+     "stagnation_samples",
+     "time_resolution_s"
+    ]
+   }
+  },
+  {
+   "scenario": "stadium-egress-concourse",
+   "variant": "obs_only",
+   "k": 10.0,
+   "diff": [
+    "direction",
+    "detour",
+    "emphasis"
+   ],
+   "cont": {
+    "od": 0.0,
+    "throughput": 0.0,
+    "tau": 0.12250026324991231,
+    "importance": 0.9999999795361533
+   },
+   "diag": {
+    "solver": "INFEASIBLE",
+    "degraded": true,
+    "od_pairs_input": 1,
+    "commodities": 1,
+    "demand_all_cut": false,
+    "resolution_modes": [
+     "DOUBLY_CONSTRAINED"
+    ]
+   },
+   "census": {
+    "scaled": {
+     "flow_rate": 1,
+     "stagnation": 9,
+     "observed_count": 5,
+     "occupancy": 1,
+     "occupancy_delta": 1,
+     "p90_stagnation": 9,
+     "baseline_stagnation": 9,
+     "flow_samples": 35,
+     "stagnation_samples": 9,
+     "directional_flow_samples": 7
+    },
+    "unchanged_fields": [
+     "capacity_hint",
+     "completeness",
+     "flow_sensitivity_eta",
+     "time_resolution_s"
+    ]
+   }
+  },
+  {
+   "scenario": "stadium-egress-concourse",
+   "variant": "obs_only",
+   "k": 100.0,
+   "diff": [
+    "direction",
+    "detour",
+    "emphasis"
+   ],
+   "cont": {
+    "od": 0.0,
+    "throughput": 0.0,
+    "tau": 0.12250028957490355,
+    "importance": 0.9999999795361533
+   },
+   "diag": {
+    "solver": "INFEASIBLE",
+    "degraded": true,
+    "od_pairs_input": 1,
+    "commodities": 1,
+    "demand_all_cut": false,
+    "resolution_modes": [
+     "DOUBLY_CONSTRAINED"
+    ]
+   },
+   "census": {
+    "scaled": {
+     "flow_rate": 1,
+     "stagnation": 9,
+     "observed_count": 5,
+     "occupancy": 1,
+     "occupancy_delta": 1,
+     "p90_stagnation": 9,
+     "baseline_stagnation": 9,
+     "flow_samples": 35,
+     "stagnation_samples": 9,
+     "directional_flow_samples": 7
+    },
+    "unchanged_fields": [
+     "capacity_hint",
+     "completeness",
+     "flow_sensitivity_eta",
+     "time_resolution_s"
+    ]
+   }
+  },
+  {
+   "scenario": "station-transfer-peak",
+   "variant": "history",
+   "k": 0.01,
+   "diff": [
+    "direction",
+    "emphasis"
+   ],
+   "cont": {
+    "od": 1.0,
+    "throughput": 1.0,
+    "tau": 1.0,
+    "importance": 0.9999999803921573
+   },
+   "diag": {
+    "solver": "LIGHTWEIGHT",
+    "degraded": false,
+    "od_pairs_input": 0,
+    "commodities": 0,
+    "demand_all_cut": false,
+    "resolution_modes": [
+     "DOUBLY_CONSTRAINED"
+    ]
+   },
+   "census": {
+    "scaled": {
+     "flow_rate": 5,
+     "stagnation": 5,
+     "observed_count": 5,
+     "occupancy": 2,
+     "occupancy_delta": 2,
+     "p90_stagnation": 5,
+     "baseline_stagnation": 5,
+     "flow_samples": 35,
+     "stagnation_samples": 5,
+     "directional_flow_samples": 35,
+     "capacity_hint": 4
+    },
+    "unchanged_fields": [
+     "completeness",
+     "flow_sensitivity_eta",
+     "time_resolution_s"
+    ]
+   },
+   "attribution": {
+    "delta_min": [],
+    "fallback_baseline": [
+     "direction",
+     "emphasis"
+    ],
+    "delta_min+fallback_baseline": [],
+    "delta_min+fallback_baseline+ipf_tolerance": [],
+    "delta_min+fallback_baseline+epsilon_0": [],
+    "delta_min+fallback_baseline+ipf_tolerance+epsilon_0": []
+   }
+  },
+  {
+   "scenario": "station-transfer-peak",
+   "variant": "history",
+   "k": 0.1,
+   "diff": [
+    "direction",
+    "emphasis"
+   ],
+   "cont": {
+    "od": 1.480297366166875e-16,
+    "throughput": 1.0,
+    "tau": 1.0,
+    "importance": 0.9999999803921573
+   },
+   "diag": {
+    "solver": "LIGHTWEIGHT",
+    "degraded": false,
+    "od_pairs_input": 3,
+    "commodities": 0,
+    "demand_all_cut": true,
+    "resolution_modes": [
+     "DOUBLY_CONSTRAINED"
+    ]
+   },
+   "census": {
+    "scaled": {
+     "flow_rate": 5,
+     "stagnation": 5,
+     "observed_count": 5,
+     "occupancy": 2,
+     "occupancy_delta": 2,
+     "p90_stagnation": 5,
+     "baseline_stagnation": 5,
+     "flow_samples": 35,
+     "stagnation_samples": 5,
+     "directional_flow_samples": 35,
+     "capacity_hint": 4
+    },
+    "unchanged_fields": [
+     "completeness",
+     "flow_sensitivity_eta",
+     "time_resolution_s"
+    ]
+   },
+   "attribution": {
+    "delta_min": [
+     "emphasis"
+    ],
+    "fallback_baseline": [
+     "direction",
+     "emphasis"
+    ],
+    "delta_min+fallback_baseline": [
+     "emphasis"
+    ],
+    "delta_min+fallback_baseline+ipf_tolerance": [
+     "emphasis"
+    ],
+    "delta_min+fallback_baseline+epsilon_0": [],
+    "delta_min+fallback_baseline+ipf_tolerance+epsilon_0": []
+   }
+  },
+  {
+   "scenario": "station-transfer-peak",
+   "variant": "history",
+   "k": 1.0,
+   "diff": [],
+   "cont": {
+    "od": 0.0,
+    "throughput": 0.0,
+    "tau": 0.0,
+    "importance": 0.0
+   },
+   "diag": {
+    "solver": "LIGHTWEIGHT",
+    "degraded": false,
+    "od_pairs_input": 3,
+    "commodities": 3,
+    "demand_all_cut": false,
+    "resolution_modes": [
+     "DOUBLY_CONSTRAINED"
+    ]
+   },
+   "census": {
+    "scaled": {},
+    "unchanged_fields": [
+     "baseline_stagnation",
+     "capacity_hint",
+     "completeness",
+     "directional_flow_samples",
+     "flow_rate",
+     "flow_samples",
+     "flow_sensitivity_eta",
+     "observed_count",
+     "occupancy",
+     "occupancy_delta",
+     "p90_stagnation",
+     "stagnation",
+     "stagnation_samples",
+     "time_resolution_s"
+    ]
+   }
+  },
+  {
+   "scenario": "station-transfer-peak",
+   "variant": "history",
+   "k": 10.0,
+   "diff": [],
+   "cont": {
+    "od": 0.0,
+    "throughput": 0.0,
+    "tau": 2.999998999677926e-07,
+    "importance": 1.764705837015157e-08
+   },
+   "diag": {
+    "solver": "LIGHTWEIGHT",
+    "degraded": false,
+    "od_pairs_input": 3,
+    "commodities": 3,
+    "demand_all_cut": false,
+    "resolution_modes": [
+     "DOUBLY_CONSTRAINED"
+    ]
+   },
+   "census": {
+    "scaled": {
+     "flow_rate": 5,
+     "stagnation": 5,
+     "observed_count": 5,
+     "occupancy": 2,
+     "occupancy_delta": 2,
+     "p90_stagnation": 5,
+     "baseline_stagnation": 5,
+     "flow_samples": 35,
+     "stagnation_samples": 5,
+     "directional_flow_samples": 35,
+     "capacity_hint": 4
+    },
+    "unchanged_fields": [
+     "completeness",
+     "flow_sensitivity_eta",
+     "time_resolution_s"
+    ]
+   },
+   "attribution": {
+    "delta_min": [],
+    "fallback_baseline": [],
+    "delta_min+fallback_baseline": [],
+    "delta_min+fallback_baseline+ipf_tolerance": [],
+    "delta_min+fallback_baseline+epsilon_0": [],
+    "delta_min+fallback_baseline+ipf_tolerance+epsilon_0": []
+   }
+  },
+  {
+   "scenario": "station-transfer-peak",
+   "variant": "history",
+   "k": 100.0,
+   "diff": [
+    "emphasis"
+   ],
+   "cont": {
+    "od": 0.0,
+    "throughput": 0.0,
+    "tau": 3.2999989009561074e-07,
+    "importance": 0.31148458622178277
+   },
+   "diag": {
+    "solver": "LIGHTWEIGHT",
+    "degraded": false,
+    "od_pairs_input": 3,
+    "commodities": 3,
+    "demand_all_cut": false,
+    "resolution_modes": [
+     "DOUBLY_CONSTRAINED"
+    ]
+   },
+   "census": {
+    "scaled": {
+     "flow_rate": 5,
+     "stagnation": 5,
+     "observed_count": 5,
+     "occupancy": 2,
+     "occupancy_delta": 2,
+     "p90_stagnation": 5,
+     "baseline_stagnation": 5,
+     "flow_samples": 35,
+     "stagnation_samples": 5,
+     "directional_flow_samples": 35,
+     "capacity_hint": 4
+    },
+    "unchanged_fields": [
+     "completeness",
+     "flow_sensitivity_eta",
+     "time_resolution_s"
+    ]
+   },
+   "attribution": {
+    "delta_min": [
+     "emphasis"
+    ],
+    "fallback_baseline": [
+     "emphasis"
+    ],
+    "delta_min+fallback_baseline": [
+     "emphasis"
+    ],
+    "delta_min+fallback_baseline+ipf_tolerance": [
+     "emphasis"
+    ],
+    "delta_min+fallback_baseline+epsilon_0": [],
+    "delta_min+fallback_baseline+ipf_tolerance+epsilon_0": []
+   }
+  },
+  {
+   "scenario": "station-transfer-peak",
+   "variant": "no_history",
+   "k": 0.01,
+   "diff": [
+    "verdict",
+    "triggered",
+    "direction",
+    "detour",
+    "emphasis"
+   ],
+   "cont": {
+    "od": 1.0,
+    "throughput": 1.0,
+    "tau": 1.0,
+    "importance": 0.9999999803921573
+   },
+   "diag": {
+    "solver": "LIGHTWEIGHT",
+    "degraded": false,
+    "od_pairs_input": 0,
+    "commodities": 0,
+    "demand_all_cut": false,
+    "resolution_modes": [
+     "DOUBLY_CONSTRAINED"
+    ]
+   },
+   "census": {
+    "scaled": {
+     "flow_rate": 5,
+     "stagnation": 5,
+     "observed_count": 5,
+     "occupancy": 2,
+     "occupancy_delta": 2,
+     "flow_samples": 35,
+     "stagnation_samples": 5,
+     "directional_flow_samples": 35,
+     "capacity_hint": 4
+    },
+    "unchanged_fields": [
+     "completeness",
+     "time_resolution_s"
+    ]
+   },
+   "attribution": {
+    "delta_min": [
+     "verdict",
+     "triggered",
+     "direction",
+     "detour",
+     "emphasis"
+    ],
+    "fallback_baseline": [
+     "direction",
+     "emphasis"
+    ],
+    "delta_min+fallback_baseline": [],
+    "delta_min+fallback_baseline+ipf_tolerance": [],
+    "delta_min+fallback_baseline+epsilon_0": [],
+    "delta_min+fallback_baseline+ipf_tolerance+epsilon_0": []
+   }
+  },
+  {
+   "scenario": "station-transfer-peak",
+   "variant": "no_history",
+   "k": 0.1,
+   "diff": [
+    "verdict",
+    "triggered",
+    "direction",
+    "detour",
+    "emphasis"
+   ],
+   "cont": {
+    "od": 1.480297366166875e-16,
+    "throughput": 1.0,
+    "tau": 1.0,
+    "importance": 0.9999999803921573
+   },
+   "diag": {
+    "solver": "LIGHTWEIGHT",
+    "degraded": false,
+    "od_pairs_input": 3,
+    "commodities": 0,
+    "demand_all_cut": true,
+    "resolution_modes": [
+     "DOUBLY_CONSTRAINED"
+    ]
+   },
+   "census": {
+    "scaled": {
+     "flow_rate": 5,
+     "stagnation": 5,
+     "observed_count": 5,
+     "occupancy": 2,
+     "occupancy_delta": 2,
+     "flow_samples": 35,
+     "stagnation_samples": 5,
+     "directional_flow_samples": 35,
+     "capacity_hint": 4
+    },
+    "unchanged_fields": [
+     "completeness",
+     "time_resolution_s"
+    ]
+   },
+   "attribution": {
+    "delta_min": [
+     "verdict",
+     "triggered",
+     "direction",
+     "detour",
+     "emphasis"
+    ],
+    "fallback_baseline": [
+     "direction",
+     "emphasis"
+    ],
+    "delta_min+fallback_baseline": [],
+    "delta_min+fallback_baseline+ipf_tolerance": [],
+    "delta_min+fallback_baseline+epsilon_0": [],
+    "delta_min+fallback_baseline+ipf_tolerance+epsilon_0": []
+   }
+  },
+  {
+   "scenario": "station-transfer-peak",
+   "variant": "no_history",
+   "k": 1.0,
+   "diff": [],
+   "cont": {
+    "od": 0.0,
+    "throughput": 0.0,
+    "tau": 0.0,
+    "importance": 0.0
+   },
+   "diag": {
+    "solver": "LIGHTWEIGHT",
+    "degraded": false,
+    "od_pairs_input": 3,
+    "commodities": 3,
+    "demand_all_cut": false,
+    "resolution_modes": [
+     "DOUBLY_CONSTRAINED"
+    ]
+   },
+   "census": {
+    "scaled": {},
+    "unchanged_fields": [
+     "capacity_hint",
+     "completeness",
+     "directional_flow_samples",
+     "flow_rate",
+     "flow_samples",
+     "observed_count",
+     "occupancy",
+     "occupancy_delta",
+     "stagnation",
+     "stagnation_samples",
+     "time_resolution_s"
+    ]
+   }
+  },
+  {
+   "scenario": "station-transfer-peak",
+   "variant": "no_history",
+   "k": 10.0,
+   "diff": [],
+   "cont": {
+    "od": 0.0,
+    "throughput": 0.0,
+    "tau": 0.9000000000000001,
+    "importance": 0.00020168709797252493
+   },
+   "diag": {
+    "solver": "LIGHTWEIGHT",
+    "degraded": false,
+    "od_pairs_input": 3,
+    "commodities": 3,
+    "demand_all_cut": false,
+    "resolution_modes": [
+     "DOUBLY_CONSTRAINED"
+    ]
+   },
+   "census": {
+    "scaled": {
+     "flow_rate": 5,
+     "stagnation": 5,
+     "observed_count": 5,
+     "occupancy": 2,
+     "occupancy_delta": 2,
+     "flow_samples": 35,
+     "stagnation_samples": 5,
+     "directional_flow_samples": 35,
+     "capacity_hint": 4
+    },
+    "unchanged_fields": [
+     "completeness",
+     "time_resolution_s"
+    ]
+   },
+   "attribution": {
+    "delta_min": [],
+    "fallback_baseline": [],
+    "delta_min+fallback_baseline": [],
+    "delta_min+fallback_baseline+ipf_tolerance": [],
+    "delta_min+fallback_baseline+epsilon_0": [],
+    "delta_min+fallback_baseline+ipf_tolerance+epsilon_0": []
+   }
+  },
+  {
+   "scenario": "station-transfer-peak",
+   "variant": "no_history",
+   "k": 100.0,
+   "diff": [],
+   "cont": {
+    "od": 0.0,
+    "throughput": 0.0,
+    "tau": 0.99,
+    "importance": 0.00022185580816153072
+   },
+   "diag": {
+    "solver": "LIGHTWEIGHT",
+    "degraded": false,
+    "od_pairs_input": 3,
+    "commodities": 3,
+    "demand_all_cut": false,
+    "resolution_modes": [
+     "DOUBLY_CONSTRAINED"
+    ]
+   },
+   "census": {
+    "scaled": {
+     "flow_rate": 5,
+     "stagnation": 5,
+     "observed_count": 5,
+     "occupancy": 2,
+     "occupancy_delta": 2,
+     "flow_samples": 35,
+     "stagnation_samples": 5,
+     "directional_flow_samples": 35,
+     "capacity_hint": 4
+    },
+    "unchanged_fields": [
+     "completeness",
+     "time_resolution_s"
+    ]
+   },
+   "attribution": {
+    "delta_min": [],
+    "fallback_baseline": [],
+    "delta_min+fallback_baseline": [],
+    "delta_min+fallback_baseline+ipf_tolerance": [],
+    "delta_min+fallback_baseline+epsilon_0": [],
+    "delta_min+fallback_baseline+ipf_tolerance+epsilon_0": []
+   }
+  },
+  {
+   "scenario": "station-transfer-peak",
+   "variant": "obs_only",
+   "k": 0.01,
+   "diff": [
+    "direction",
+    "emphasis"
+   ],
+   "cont": {
+    "od": 1.0,
+    "throughput": 1.0,
+    "tau": 1.0,
+    "importance": 0.9999999803921573
+   },
+   "diag": {
+    "solver": "LIGHTWEIGHT",
+    "degraded": false,
+    "od_pairs_input": 0,
+    "commodities": 0,
+    "demand_all_cut": false,
+    "resolution_modes": [
+     "DOUBLY_CONSTRAINED"
+    ]
+   },
+   "census": {
+    "scaled": {
+     "flow_rate": 5,
+     "stagnation": 5,
+     "observed_count": 5,
+     "occupancy": 2,
+     "occupancy_delta": 2,
+     "p90_stagnation": 5,
+     "baseline_stagnation": 5,
+     "flow_samples": 35,
+     "stagnation_samples": 5,
+     "directional_flow_samples": 35
+    },
+    "unchanged_fields": [
+     "capacity_hint",
+     "completeness",
+     "flow_sensitivity_eta",
+     "time_resolution_s"
+    ]
+   }
+  },
+  {
+   "scenario": "station-transfer-peak",
+   "variant": "obs_only",
+   "k": 0.1,
+   "diff": [
+    "direction",
+    "emphasis"
+   ],
+   "cont": {
+    "od": 1.480297366166875e-16,
+    "throughput": 1.0,
+    "tau": 1.0,
+    "importance": 0.9999999803921573
+   },
+   "diag": {
+    "solver": "LIGHTWEIGHT",
+    "degraded": false,
+    "od_pairs_input": 3,
+    "commodities": 0,
+    "demand_all_cut": true,
+    "resolution_modes": [
+     "DOUBLY_CONSTRAINED"
+    ]
+   },
+   "census": {
+    "scaled": {
+     "flow_rate": 5,
+     "stagnation": 5,
+     "observed_count": 5,
+     "occupancy": 2,
+     "occupancy_delta": 2,
+     "p90_stagnation": 5,
+     "baseline_stagnation": 5,
+     "flow_samples": 35,
+     "stagnation_samples": 5,
+     "directional_flow_samples": 35
+    },
+    "unchanged_fields": [
+     "capacity_hint",
+     "completeness",
+     "flow_sensitivity_eta",
+     "time_resolution_s"
+    ]
+   }
+  },
+  {
+   "scenario": "station-transfer-peak",
+   "variant": "obs_only",
+   "k": 1.0,
+   "diff": [],
+   "cont": {
+    "od": 0.0,
+    "throughput": 0.0,
+    "tau": 0.0,
+    "importance": 0.0
+   },
+   "diag": {
+    "solver": "LIGHTWEIGHT",
+    "degraded": false,
+    "od_pairs_input": 3,
+    "commodities": 3,
+    "demand_all_cut": false,
+    "resolution_modes": [
+     "DOUBLY_CONSTRAINED"
+    ]
+   },
+   "census": {
+    "scaled": {},
+    "unchanged_fields": [
+     "baseline_stagnation",
+     "capacity_hint",
+     "completeness",
+     "directional_flow_samples",
+     "flow_rate",
+     "flow_samples",
+     "flow_sensitivity_eta",
+     "observed_count",
+     "occupancy",
+     "occupancy_delta",
+     "p90_stagnation",
+     "stagnation",
+     "stagnation_samples",
+     "time_resolution_s"
+    ]
+   }
+  },
+  {
+   "scenario": "station-transfer-peak",
+   "variant": "obs_only",
+   "k": 10.0,
+   "diff": [
+    "direction",
+    "detour",
+    "emphasis"
+   ],
+   "cont": {
+    "od": 0.0,
+    "throughput": 0.0,
+    "tau": 0.04068336162722698,
+    "importance": 0.3154061549107486
+   },
+   "diag": {
+    "solver": "INFEASIBLE",
+    "degraded": true,
+    "od_pairs_input": 3,
+    "commodities": 3,
+    "demand_all_cut": false,
+    "resolution_modes": [
+     "DOUBLY_CONSTRAINED"
+    ]
+   },
+   "census": {
+    "scaled": {
+     "flow_rate": 5,
+     "stagnation": 5,
+     "observed_count": 5,
+     "occupancy": 2,
+     "occupancy_delta": 2,
+     "p90_stagnation": 5,
+     "baseline_stagnation": 5,
+     "flow_samples": 35,
+     "stagnation_samples": 5,
+     "directional_flow_samples": 35
+    },
+    "unchanged_fields": [
+     "capacity_hint",
+     "completeness",
+     "flow_sensitivity_eta",
+     "time_resolution_s"
+    ]
+   }
+  },
+  {
+   "scenario": "station-transfer-peak",
+   "variant": "obs_only",
+   "k": 100.0,
+   "diff": [
+    "direction",
+    "detour",
+    "emphasis"
+   ],
+   "cont": {
+    "od": 0.0,
+    "throughput": 0.0,
+    "tau": 0.044570371817212864,
+    "importance": 0.3471708607245894
+   },
+   "diag": {
+    "solver": "INFEASIBLE",
+    "degraded": true,
+    "od_pairs_input": 3,
+    "commodities": 3,
+    "demand_all_cut": false,
+    "resolution_modes": [
+     "DOUBLY_CONSTRAINED"
+    ]
+   },
+   "census": {
+    "scaled": {
+     "flow_rate": 5,
+     "stagnation": 5,
+     "observed_count": 5,
+     "occupancy": 2,
+     "occupancy_delta": 2,
+     "p90_stagnation": 5,
+     "baseline_stagnation": 5,
+     "flow_samples": 35,
+     "stagnation_samples": 5,
+     "directional_flow_samples": 35
+    },
+    "unchanged_fields": [
+     "capacity_hint",
+     "completeness",
+     "flow_sensitivity_eta",
+     "time_resolution_s"
+    ]
+   }
+  },
+  {
+   "scenario": "expo-gate-overcrowded",
+   "variant": "history",
+   "k": 0.01,
+   "diff": [
+    "emphasis"
+   ],
+   "cont": {
+    "od": 1.0,
+    "throughput": 1.0,
+    "tau": 1.0,
+    "importance": 0.9999999777777784
+   },
+   "diag": {
+    "solver": "LIGHTWEIGHT",
+    "degraded": false,
+    "od_pairs_input": 0,
+    "commodities": 0,
+    "demand_all_cut": false,
+    "resolution_modes": [
+     "DOUBLY_CONSTRAINED"
+    ]
+   },
+   "census": {
+    "scaled": {
+     "flow_rate": 5,
+     "stagnation": 6,
+     "observed_count": 5,
+     "occupancy": 4,
+     "occupancy_delta": 3,
+     "p90_stagnation": 6,
+     "baseline_stagnation": 6,
+     "flow_samples": 35,
+     "stagnation_samples": 6,
+     "directional_flow_samples": 35,
+     "danger_capacity": 1,
+     "capacity_hint": 3
+    },
+    "unchanged_fields": [
+     "completeness",
+     "flow_sensitivity_eta",
+     "time_resolution_s"
+    ]
+   },
+   "attribution": {
+    "delta_min": [],
+    "fallback_baseline": [
+     "emphasis"
+    ],
+    "delta_min+fallback_baseline": [],
+    "delta_min+fallback_baseline+ipf_tolerance": [],
+    "delta_min+fallback_baseline+epsilon_0": [],
+    "delta_min+fallback_baseline+ipf_tolerance+epsilon_0": []
+   }
+  },
+  {
+   "scenario": "expo-gate-overcrowded",
+   "variant": "history",
+   "k": 0.1,
+   "diff": [
+    "emphasis"
+   ],
+   "cont": {
+    "od": 0.0,
+    "throughput": 1.0,
+    "tau": 1.0,
+    "importance": 0.9999999777777784
+   },
+   "diag": {
+    "solver": "LIGHTWEIGHT",
+    "degraded": false,
+    "od_pairs_input": 3,
+    "commodities": 0,
+    "demand_all_cut": true,
+    "resolution_modes": [
+     "DOUBLY_CONSTRAINED"
+    ]
+   },
+   "census": {
+    "scaled": {
+     "flow_rate": 5,
+     "stagnation": 6,
+     "observed_count": 5,
+     "occupancy": 4,
+     "occupancy_delta": 3,
+     "p90_stagnation": 6,
+     "baseline_stagnation": 6,
+     "flow_samples": 35,
+     "stagnation_samples": 6,
+     "directional_flow_samples": 35,
+     "danger_capacity": 1,
+     "capacity_hint": 3
+    },
+    "unchanged_fields": [
+     "completeness",
+     "flow_sensitivity_eta",
+     "time_resolution_s"
+    ]
+   },
+   "attribution": {
+    "delta_min": [],
+    "fallback_baseline": [
+     "emphasis"
+    ],
+    "delta_min+fallback_baseline": [],
+    "delta_min+fallback_baseline+ipf_tolerance": [],
+    "delta_min+fallback_baseline+epsilon_0": [],
+    "delta_min+fallback_baseline+ipf_tolerance+epsilon_0": []
+   }
+  },
+  {
+   "scenario": "expo-gate-overcrowded",
+   "variant": "history",
+   "k": 1.0,
+   "diff": [],
+   "cont": {
+    "od": 0.0,
+    "throughput": 0.0,
+    "tau": 0.0,
+    "importance": 0.0
+   },
+   "diag": {
+    "solver": "LIGHTWEIGHT",
+    "degraded": false,
+    "od_pairs_input": 3,
+    "commodities": 3,
+    "demand_all_cut": false,
+    "resolution_modes": [
+     "DOUBLY_CONSTRAINED"
+    ]
+   },
+   "census": {
+    "scaled": {},
+    "unchanged_fields": [
+     "baseline_stagnation",
+     "capacity_hint",
+     "completeness",
+     "danger_capacity",
+     "directional_flow_samples",
+     "flow_rate",
+     "flow_samples",
+     "flow_sensitivity_eta",
+     "observed_count",
+     "occupancy",
+     "occupancy_delta",
+     "p90_stagnation",
+     "stagnation",
+     "stagnation_samples",
+     "time_resolution_s"
+    ]
+   }
+  },
+  {
+   "scenario": "expo-gate-overcrowded",
+   "variant": "history",
+   "k": 10.0,
+   "diff": [],
+   "cont": {
+    "od": 0.0,
+    "throughput": 0.0,
+    "tau": 2.99999900068788e-07,
+    "importance": 1.999999943436137e-08
+   },
+   "diag": {
+    "solver": "LIGHTWEIGHT",
+    "degraded": false,
+    "od_pairs_input": 3,
+    "commodities": 3,
+    "demand_all_cut": false,
+    "resolution_modes": [
+     "DOUBLY_CONSTRAINED"
+    ]
+   },
+   "census": {
+    "scaled": {
+     "flow_rate": 5,
+     "stagnation": 6,
+     "observed_count": 5,
+     "occupancy": 4,
+     "occupancy_delta": 3,
+     "p90_stagnation": 6,
+     "baseline_stagnation": 6,
+     "flow_samples": 35,
+     "stagnation_samples": 6,
+     "directional_flow_samples": 35,
+     "danger_capacity": 1,
+     "capacity_hint": 3
+    },
+    "unchanged_fields": [
+     "completeness",
+     "flow_sensitivity_eta",
+     "time_resolution_s"
+    ]
+   },
+   "attribution": {
+    "delta_min": [],
+    "fallback_baseline": [],
+    "delta_min+fallback_baseline": [],
+    "delta_min+fallback_baseline+ipf_tolerance": [],
+    "delta_min+fallback_baseline+epsilon_0": [],
+    "delta_min+fallback_baseline+ipf_tolerance+epsilon_0": []
+   }
+  },
+  {
+   "scenario": "expo-gate-overcrowded",
+   "variant": "history",
+   "k": 100.0,
+   "diff": [],
+   "cont": {
+    "od": 0.0,
+    "throughput": 0.0,
+    "tau": 3.2999989018155547e-07,
+    "importance": 2.1999999266775205e-08
+   },
+   "diag": {
+    "solver": "LIGHTWEIGHT",
+    "degraded": false,
+    "od_pairs_input": 3,
+    "commodities": 3,
+    "demand_all_cut": false,
+    "resolution_modes": [
+     "DOUBLY_CONSTRAINED"
+    ]
+   },
+   "census": {
+    "scaled": {
+     "flow_rate": 5,
+     "stagnation": 6,
+     "observed_count": 5,
+     "occupancy": 4,
+     "occupancy_delta": 3,
+     "p90_stagnation": 6,
+     "baseline_stagnation": 6,
+     "flow_samples": 35,
+     "stagnation_samples": 6,
+     "directional_flow_samples": 35,
+     "danger_capacity": 1,
+     "capacity_hint": 3
+    },
+    "unchanged_fields": [
+     "completeness",
+     "flow_sensitivity_eta",
+     "time_resolution_s"
+    ]
+   },
+   "attribution": {
+    "delta_min": [],
+    "fallback_baseline": [],
+    "delta_min+fallback_baseline": [],
+    "delta_min+fallback_baseline+ipf_tolerance": [],
+    "delta_min+fallback_baseline+epsilon_0": [],
+    "delta_min+fallback_baseline+ipf_tolerance+epsilon_0": []
+   }
+  },
+  {
+   "scenario": "expo-gate-overcrowded",
+   "variant": "no_history",
+   "k": 0.01,
+   "diff": [
+    "emphasis"
+   ],
+   "cont": {
+    "od": 1.0,
+    "throughput": 1.0,
+    "tau": 1.0,
+    "importance": 0.9999999777777784
+   },
+   "diag": {
+    "solver": "LIGHTWEIGHT",
+    "degraded": false,
+    "od_pairs_input": 0,
+    "commodities": 0,
+    "demand_all_cut": false,
+    "resolution_modes": [
+     "DOUBLY_CONSTRAINED"
+    ]
+   },
+   "census": {
+    "scaled": {
+     "flow_rate": 5,
+     "stagnation": 6,
+     "observed_count": 5,
+     "occupancy": 4,
+     "occupancy_delta": 3,
+     "flow_samples": 35,
+     "stagnation_samples": 6,
+     "directional_flow_samples": 35,
+     "danger_capacity": 1,
+     "capacity_hint": 3
+    },
+    "unchanged_fields": [
+     "completeness",
+     "time_resolution_s"
+    ]
+   },
+   "attribution": {
+    "delta_min": [],
+    "fallback_baseline": [
+     "emphasis"
+    ],
+    "delta_min+fallback_baseline": [],
+    "delta_min+fallback_baseline+ipf_tolerance": [],
+    "delta_min+fallback_baseline+epsilon_0": [],
+    "delta_min+fallback_baseline+ipf_tolerance+epsilon_0": []
+   }
+  },
+  {
+   "scenario": "expo-gate-overcrowded",
+   "variant": "no_history",
+   "k": 0.1,
+   "diff": [
+    "emphasis"
+   ],
+   "cont": {
+    "od": 0.0,
+    "throughput": 1.0,
+    "tau": 1.0,
+    "importance": 0.9999999777777784
+   },
+   "diag": {
+    "solver": "LIGHTWEIGHT",
+    "degraded": false,
+    "od_pairs_input": 3,
+    "commodities": 0,
+    "demand_all_cut": true,
+    "resolution_modes": [
+     "DOUBLY_CONSTRAINED"
+    ]
+   },
+   "census": {
+    "scaled": {
+     "flow_rate": 5,
+     "stagnation": 6,
+     "observed_count": 5,
+     "occupancy": 4,
+     "occupancy_delta": 3,
+     "flow_samples": 35,
+     "stagnation_samples": 6,
+     "directional_flow_samples": 35,
+     "danger_capacity": 1,
+     "capacity_hint": 3
+    },
+    "unchanged_fields": [
+     "completeness",
+     "time_resolution_s"
+    ]
+   },
+   "attribution": {
+    "delta_min": [],
+    "fallback_baseline": [
+     "emphasis"
+    ],
+    "delta_min+fallback_baseline": [],
+    "delta_min+fallback_baseline+ipf_tolerance": [],
+    "delta_min+fallback_baseline+epsilon_0": [],
+    "delta_min+fallback_baseline+ipf_tolerance+epsilon_0": []
+   }
+  },
+  {
+   "scenario": "expo-gate-overcrowded",
+   "variant": "no_history",
+   "k": 1.0,
+   "diff": [],
+   "cont": {
+    "od": 0.0,
+    "throughput": 0.0,
+    "tau": 0.0,
+    "importance": 0.0
+   },
+   "diag": {
+    "solver": "LIGHTWEIGHT",
+    "degraded": false,
+    "od_pairs_input": 3,
+    "commodities": 3,
+    "demand_all_cut": false,
+    "resolution_modes": [
+     "DOUBLY_CONSTRAINED"
+    ]
+   },
+   "census": {
+    "scaled": {},
+    "unchanged_fields": [
+     "capacity_hint",
+     "completeness",
+     "danger_capacity",
+     "directional_flow_samples",
+     "flow_rate",
+     "flow_samples",
+     "observed_count",
+     "occupancy",
+     "occupancy_delta",
+     "stagnation",
+     "stagnation_samples",
+     "time_resolution_s"
+    ]
+   }
+  },
+  {
+   "scenario": "expo-gate-overcrowded",
+   "variant": "no_history",
+   "k": 10.0,
+   "diff": [],
+   "cont": {
+    "od": 0.0,
+    "throughput": 0.0,
+    "tau": 0.8999999999999999,
+    "importance": 1.999999943436137e-08
+   },
+   "diag": {
+    "solver": "LIGHTWEIGHT",
+    "degraded": false,
+    "od_pairs_input": 3,
+    "commodities": 3,
+    "demand_all_cut": false,
+    "resolution_modes": [
+     "DOUBLY_CONSTRAINED"
+    ]
+   },
+   "census": {
+    "scaled": {
+     "flow_rate": 5,
+     "stagnation": 6,
+     "observed_count": 5,
+     "occupancy": 4,
+     "occupancy_delta": 3,
+     "flow_samples": 35,
+     "stagnation_samples": 6,
+     "directional_flow_samples": 35,
+     "danger_capacity": 1,
+     "capacity_hint": 3
+    },
+    "unchanged_fields": [
+     "completeness",
+     "time_resolution_s"
+    ]
+   },
+   "attribution": {
+    "delta_min": [],
+    "fallback_baseline": [],
+    "delta_min+fallback_baseline": [],
+    "delta_min+fallback_baseline+ipf_tolerance": [],
+    "delta_min+fallback_baseline+epsilon_0": [],
+    "delta_min+fallback_baseline+ipf_tolerance+epsilon_0": []
+   }
+  },
+  {
+   "scenario": "expo-gate-overcrowded",
+   "variant": "no_history",
+   "k": 100.0,
+   "diff": [],
+   "cont": {
+    "od": 0.0,
+    "throughput": 0.0,
+    "tau": 0.99,
+    "importance": 2.1999999266775205e-08
+   },
+   "diag": {
+    "solver": "LIGHTWEIGHT",
+    "degraded": false,
+    "od_pairs_input": 3,
+    "commodities": 3,
+    "demand_all_cut": false,
+    "resolution_modes": [
+     "DOUBLY_CONSTRAINED"
+    ]
+   },
+   "census": {
+    "scaled": {
+     "flow_rate": 5,
+     "stagnation": 6,
+     "observed_count": 5,
+     "occupancy": 4,
+     "occupancy_delta": 3,
+     "flow_samples": 35,
+     "stagnation_samples": 6,
+     "directional_flow_samples": 35,
+     "danger_capacity": 1,
+     "capacity_hint": 3
+    },
+    "unchanged_fields": [
+     "completeness",
+     "time_resolution_s"
+    ]
+   },
+   "attribution": {
+    "delta_min": [],
+    "fallback_baseline": [],
+    "delta_min+fallback_baseline": [],
+    "delta_min+fallback_baseline+ipf_tolerance": [],
+    "delta_min+fallback_baseline+epsilon_0": [],
+    "delta_min+fallback_baseline+ipf_tolerance+epsilon_0": []
+   }
+  },
+  {
+   "scenario": "expo-gate-overcrowded",
+   "variant": "obs_only",
+   "k": 0.01,
+   "diff": [
+    "emphasis"
+   ],
+   "cont": {
+    "od": 1.0,
+    "throughput": 1.0,
+    "tau": 1.0,
+    "importance": 0.9999999777777784
+   },
+   "diag": {
+    "solver": "LIGHTWEIGHT",
+    "degraded": false,
+    "od_pairs_input": 0,
+    "commodities": 0,
+    "demand_all_cut": false,
+    "resolution_modes": [
+     "DOUBLY_CONSTRAINED"
+    ]
+   },
+   "census": {
+    "scaled": {
+     "flow_rate": 5,
+     "stagnation": 6,
+     "observed_count": 5,
+     "occupancy": 4,
+     "occupancy_delta": 3,
+     "p90_stagnation": 6,
+     "baseline_stagnation": 6,
+     "flow_samples": 35,
+     "stagnation_samples": 6,
+     "directional_flow_samples": 35
+    },
+    "unchanged_fields": [
+     "capacity_hint",
+     "completeness",
+     "danger_capacity",
+     "flow_sensitivity_eta",
+     "time_resolution_s"
+    ]
+   }
+  },
+  {
+   "scenario": "expo-gate-overcrowded",
+   "variant": "obs_only",
+   "k": 0.1,
+   "diff": [
+    "emphasis"
+   ],
+   "cont": {
+    "od": 0.0,
+    "throughput": 1.0,
+    "tau": 1.0,
+    "importance": 0.9999999777777784
+   },
+   "diag": {
+    "solver": "LIGHTWEIGHT",
+    "degraded": false,
+    "od_pairs_input": 3,
+    "commodities": 0,
+    "demand_all_cut": true,
+    "resolution_modes": [
+     "DOUBLY_CONSTRAINED"
+    ]
+   },
+   "census": {
+    "scaled": {
+     "flow_rate": 5,
+     "stagnation": 6,
+     "observed_count": 5,
+     "occupancy": 4,
+     "occupancy_delta": 3,
+     "p90_stagnation": 6,
+     "baseline_stagnation": 6,
+     "flow_samples": 35,
+     "stagnation_samples": 6,
+     "directional_flow_samples": 35
+    },
+    "unchanged_fields": [
+     "capacity_hint",
+     "completeness",
+     "danger_capacity",
+     "flow_sensitivity_eta",
+     "time_resolution_s"
+    ]
+   }
+  },
+  {
+   "scenario": "expo-gate-overcrowded",
+   "variant": "obs_only",
+   "k": 1.0,
+   "diff": [],
+   "cont": {
+    "od": 0.0,
+    "throughput": 0.0,
+    "tau": 0.0,
+    "importance": 0.0
+   },
+   "diag": {
+    "solver": "LIGHTWEIGHT",
+    "degraded": false,
+    "od_pairs_input": 3,
+    "commodities": 3,
+    "demand_all_cut": false,
+    "resolution_modes": [
+     "DOUBLY_CONSTRAINED"
+    ]
+   },
+   "census": {
+    "scaled": {},
+    "unchanged_fields": [
+     "baseline_stagnation",
+     "capacity_hint",
+     "completeness",
+     "danger_capacity",
+     "directional_flow_samples",
+     "flow_rate",
+     "flow_samples",
+     "flow_sensitivity_eta",
+     "observed_count",
+     "occupancy",
+     "occupancy_delta",
+     "p90_stagnation",
+     "stagnation",
+     "stagnation_samples",
+     "time_resolution_s"
+    ]
+   }
+  },
+  {
+   "scenario": "expo-gate-overcrowded",
+   "variant": "obs_only",
+   "k": 10.0,
+   "diff": [],
+   "cont": {
+    "od": 0.0,
+    "throughput": 0.0,
+    "tau": 2.99999900068788e-07,
+    "importance": 1.999999943436137e-08
+   },
+   "diag": {
+    "solver": "INFEASIBLE",
+    "degraded": true,
+    "od_pairs_input": 3,
+    "commodities": 3,
+    "demand_all_cut": false,
+    "resolution_modes": [
+     "DOUBLY_CONSTRAINED"
+    ]
+   },
+   "census": {
+    "scaled": {
+     "flow_rate": 5,
+     "stagnation": 6,
+     "observed_count": 5,
+     "occupancy": 4,
+     "occupancy_delta": 3,
+     "p90_stagnation": 6,
+     "baseline_stagnation": 6,
+     "flow_samples": 35,
+     "stagnation_samples": 6,
+     "directional_flow_samples": 35
+    },
+    "unchanged_fields": [
+     "capacity_hint",
+     "completeness",
+     "danger_capacity",
+     "flow_sensitivity_eta",
+     "time_resolution_s"
+    ]
+   }
+  },
+  {
+   "scenario": "expo-gate-overcrowded",
+   "variant": "obs_only",
+   "k": 100.0,
+   "diff": [],
+   "cont": {
+    "od": 0.0,
+    "throughput": 0.0,
+    "tau": 3.2999989018155547e-07,
+    "importance": 2.1999999266775205e-08
+   },
+   "diag": {
+    "solver": "INFEASIBLE",
+    "degraded": true,
+    "od_pairs_input": 3,
+    "commodities": 3,
+    "demand_all_cut": false,
+    "resolution_modes": [
+     "DOUBLY_CONSTRAINED"
+    ]
+   },
+   "census": {
+    "scaled": {
+     "flow_rate": 5,
+     "stagnation": 6,
+     "observed_count": 5,
+     "occupancy": 4,
+     "occupancy_delta": 3,
+     "p90_stagnation": 6,
+     "baseline_stagnation": 6,
+     "flow_samples": 35,
+     "stagnation_samples": 6,
+     "directional_flow_samples": 35
+    },
+    "unchanged_fields": [
+     "capacity_hint",
+     "completeness",
+     "danger_capacity",
+     "flow_sensitivity_eta",
+     "time_resolution_s"
+    ]
+   }
+  },
+  {
+   "scenario": "expo-incident-resume",
+   "variant": "history",
+   "k": 0.01,
+   "diff": [
+    "emphasis"
+   ],
+   "cont": {
+    "od": 1.0,
+    "throughput": 1.0,
+    "tau": 1.0,
+    "importance": 0.9999999629629643
+   },
+   "diag": {
+    "solver": "LIGHTWEIGHT",
+    "degraded": false,
+    "od_pairs_input": 0,
+    "commodities": 0,
+    "demand_all_cut": false,
+    "resolution_modes": [
+     "DOUBLY_CONSTRAINED"
+    ]
+   },
+   "census": {
+    "scaled": {
+     "flow_rate": 4,
+     "stagnation": 6,
+     "observed_count": 4,
+     "occupancy": 4,
+     "occupancy_delta": 2,
+     "p90_stagnation": 6,
+     "baseline_stagnation": 6,
+     "flow_samples": 28,
+     "stagnation_samples": 6,
+     "directional_flow_samples": 28,
+     "capacity_hint": 3
+    },
+    "unchanged_fields": [
+     "completeness",
+     "flow_sensitivity_eta",
+     "time_resolution_s"
+    ]
+   },
+   "attribution": {
+    "delta_min": [],
+    "fallback_baseline": [
+     "emphasis"
+    ],
+    "delta_min+fallback_baseline": [],
+    "delta_min+fallback_baseline+ipf_tolerance": [],
+    "delta_min+fallback_baseline+epsilon_0": [],
+    "delta_min+fallback_baseline+ipf_tolerance+epsilon_0": []
+   }
+  },
+  {
+   "scenario": "expo-incident-resume",
+   "variant": "history",
+   "k": 0.1,
+   "diff": [
+    "emphasis"
+   ],
+   "cont": {
+    "od": 1.480297366166875e-16,
+    "throughput": 1.0,
+    "tau": 1.0,
+    "importance": 0.9999999629629643
+   },
+   "diag": {
+    "solver": "LIGHTWEIGHT",
+    "degraded": false,
+    "od_pairs_input": 2,
+    "commodities": 0,
+    "demand_all_cut": true,
+    "resolution_modes": [
+     "DOUBLY_CONSTRAINED"
+    ]
+   },
+   "census": {
+    "scaled": {
+     "flow_rate": 4,
+     "stagnation": 6,
+     "observed_count": 4,
+     "occupancy": 4,
+     "occupancy_delta": 2,
+     "p90_stagnation": 6,
+     "baseline_stagnation": 6,
+     "flow_samples": 28,
+     "stagnation_samples": 6,
+     "directional_flow_samples": 28,
+     "capacity_hint": 3
+    },
+    "unchanged_fields": [
+     "completeness",
+     "flow_sensitivity_eta",
+     "time_resolution_s"
+    ]
+   },
+   "attribution": {
+    "delta_min": [],
+    "fallback_baseline": [
+     "emphasis"
+    ],
+    "delta_min+fallback_baseline": [],
+    "delta_min+fallback_baseline+ipf_tolerance": [],
+    "delta_min+fallback_baseline+epsilon_0": [],
+    "delta_min+fallback_baseline+ipf_tolerance+epsilon_0": []
+   }
+  },
+  {
+   "scenario": "expo-incident-resume",
+   "variant": "history",
+   "k": 1.0,
+   "diff": [],
+   "cont": {
+    "od": 0.0,
+    "throughput": 0.0,
+    "tau": 0.0,
+    "importance": 0.0
+   },
+   "diag": {
+    "solver": "LIGHTWEIGHT",
+    "degraded": false,
+    "od_pairs_input": 2,
+    "commodities": 2,
+    "demand_all_cut": false,
+    "resolution_modes": [
+     "DOUBLY_CONSTRAINED"
+    ]
+   },
+   "census": {
+    "scaled": {},
+    "unchanged_fields": [
+     "baseline_stagnation",
+     "capacity_hint",
+     "completeness",
+     "directional_flow_samples",
+     "flow_rate",
+     "flow_samples",
+     "flow_sensitivity_eta",
+     "observed_count",
+     "occupancy",
+     "occupancy_delta",
+     "p90_stagnation",
+     "stagnation",
+     "stagnation_samples",
+     "time_resolution_s"
+    ]
+   }
+  },
+  {
+   "scenario": "expo-incident-resume",
+   "variant": "history",
+   "k": 10.0,
+   "diff": [],
+   "cont": {
+    "od": 0.0,
+    "throughput": 0.0,
+    "tau": 2.999998998515389e-07,
+    "importance": 3.333333198352051e-08
+   },
+   "diag": {
+    "solver": "LIGHTWEIGHT",
+    "degraded": false,
+    "od_pairs_input": 2,
+    "commodities": 2,
+    "demand_all_cut": false,
+    "resolution_modes": [
+     "DOUBLY_CONSTRAINED"
+    ]
+   },
+   "census": {
+    "scaled": {
+     "flow_rate": 4,
+     "stagnation": 6,
+     "observed_count": 4,
+     "occupancy": 4,
+     "occupancy_delta": 2,
+     "p90_stagnation": 6,
+     "baseline_stagnation": 6,
+     "flow_samples": 28,
+     "stagnation_samples": 6,
+     "directional_flow_samples": 28,
+     "capacity_hint": 3
+    },
+    "unchanged_fields": [
+     "completeness",
+     "flow_sensitivity_eta",
+     "time_resolution_s"
+    ]
+   },
+   "attribution": {
+    "delta_min": [],
+    "fallback_baseline": [],
+    "delta_min+fallback_baseline": [],
+    "delta_min+fallback_baseline+ipf_tolerance": [],
+    "delta_min+fallback_baseline+epsilon_0": [],
+    "delta_min+fallback_baseline+ipf_tolerance+epsilon_0": []
+   }
+  },
+  {
+   "scenario": "expo-incident-resume",
+   "variant": "history",
+   "k": 100.0,
+   "diff": [],
+   "cont": {
+    "od": 0.0,
+    "throughput": 0.0,
+    "tau": 3.299998899461417e-07,
+    "importance": 3.6666665370610474e-08
+   },
+   "diag": {
+    "solver": "LIGHTWEIGHT",
+    "degraded": false,
+    "od_pairs_input": 2,
+    "commodities": 2,
+    "demand_all_cut": false,
+    "resolution_modes": [
+     "DOUBLY_CONSTRAINED"
+    ]
+   },
+   "census": {
+    "scaled": {
+     "flow_rate": 4,
+     "stagnation": 6,
+     "observed_count": 4,
+     "occupancy": 4,
+     "occupancy_delta": 2,
+     "p90_stagnation": 6,
+     "baseline_stagnation": 6,
+     "flow_samples": 28,
+     "stagnation_samples": 6,
+     "directional_flow_samples": 28,
+     "capacity_hint": 3
+    },
+    "unchanged_fields": [
+     "completeness",
+     "flow_sensitivity_eta",
+     "time_resolution_s"
+    ]
+   },
+   "attribution": {
+    "delta_min": [],
+    "fallback_baseline": [],
+    "delta_min+fallback_baseline": [],
+    "delta_min+fallback_baseline+ipf_tolerance": [],
+    "delta_min+fallback_baseline+epsilon_0": [],
+    "delta_min+fallback_baseline+ipf_tolerance+epsilon_0": []
+   }
+  },
+  {
+   "scenario": "expo-incident-resume",
+   "variant": "no_history",
+   "k": 0.01,
+   "diff": [
+    "verdict",
+    "triggered",
+    "emphasis"
+   ],
+   "cont": {
+    "od": 1.0,
+    "throughput": 1.0,
+    "tau": 1.0,
+    "importance": 0.9999999629629643
+   },
+   "diag": {
+    "solver": "LIGHTWEIGHT",
+    "degraded": false,
+    "od_pairs_input": 0,
+    "commodities": 0,
+    "demand_all_cut": false,
+    "resolution_modes": [
+     "DOUBLY_CONSTRAINED"
+    ]
+   },
+   "census": {
+    "scaled": {
+     "flow_rate": 4,
+     "stagnation": 6,
+     "observed_count": 4,
+     "occupancy": 4,
+     "occupancy_delta": 2,
+     "flow_samples": 28,
+     "stagnation_samples": 6,
+     "directional_flow_samples": 28,
+     "capacity_hint": 3
+    },
+    "unchanged_fields": [
+     "completeness",
+     "time_resolution_s"
+    ]
+   },
+   "attribution": {
+    "delta_min": [
+     "verdict",
+     "triggered"
+    ],
+    "fallback_baseline": [
+     "emphasis"
+    ],
+    "delta_min+fallback_baseline": [],
+    "delta_min+fallback_baseline+ipf_tolerance": [],
+    "delta_min+fallback_baseline+epsilon_0": [],
+    "delta_min+fallback_baseline+ipf_tolerance+epsilon_0": []
+   }
+  },
+  {
+   "scenario": "expo-incident-resume",
+   "variant": "no_history",
+   "k": 0.1,
+   "diff": [
+    "verdict",
+    "triggered",
+    "emphasis"
+   ],
+   "cont": {
+    "od": 1.480297366166875e-16,
+    "throughput": 1.0,
+    "tau": 1.0,
+    "importance": 0.9999999629629643
+   },
+   "diag": {
+    "solver": "LIGHTWEIGHT",
+    "degraded": false,
+    "od_pairs_input": 2,
+    "commodities": 0,
+    "demand_all_cut": true,
+    "resolution_modes": [
+     "DOUBLY_CONSTRAINED"
+    ]
+   },
+   "census": {
+    "scaled": {
+     "flow_rate": 4,
+     "stagnation": 6,
+     "observed_count": 4,
+     "occupancy": 4,
+     "occupancy_delta": 2,
+     "flow_samples": 28,
+     "stagnation_samples": 6,
+     "directional_flow_samples": 28,
+     "capacity_hint": 3
+    },
+    "unchanged_fields": [
+     "completeness",
+     "time_resolution_s"
+    ]
+   },
+   "attribution": {
+    "delta_min": [
+     "verdict",
+     "triggered"
+    ],
+    "fallback_baseline": [
+     "emphasis"
+    ],
+    "delta_min+fallback_baseline": [],
+    "delta_min+fallback_baseline+ipf_tolerance": [],
+    "delta_min+fallback_baseline+epsilon_0": [],
+    "delta_min+fallback_baseline+ipf_tolerance+epsilon_0": []
+   }
+  },
+  {
+   "scenario": "expo-incident-resume",
+   "variant": "no_history",
+   "k": 1.0,
+   "diff": [],
+   "cont": {
+    "od": 0.0,
+    "throughput": 0.0,
+    "tau": 0.0,
+    "importance": 0.0
+   },
+   "diag": {
+    "solver": "LIGHTWEIGHT",
+    "degraded": false,
+    "od_pairs_input": 2,
+    "commodities": 2,
+    "demand_all_cut": false,
+    "resolution_modes": [
+     "DOUBLY_CONSTRAINED"
+    ]
+   },
+   "census": {
+    "scaled": {},
+    "unchanged_fields": [
+     "capacity_hint",
+     "completeness",
+     "directional_flow_samples",
+     "flow_rate",
+     "flow_samples",
+     "observed_count",
+     "occupancy",
+     "occupancy_delta",
+     "stagnation",
+     "stagnation_samples",
+     "time_resolution_s"
+    ]
+   }
+  },
+  {
+   "scenario": "expo-incident-resume",
+   "variant": "no_history",
+   "k": 10.0,
+   "diff": [],
+   "cont": {
+    "od": 0.0,
+    "throughput": 0.0,
+    "tau": 0.9,
+    "importance": 3.333333198352051e-08
+   },
+   "diag": {
+    "solver": "LIGHTWEIGHT",
+    "degraded": false,
+    "od_pairs_input": 2,
+    "commodities": 2,
+    "demand_all_cut": false,
+    "resolution_modes": [
+     "DOUBLY_CONSTRAINED"
+    ]
+   },
+   "census": {
+    "scaled": {
+     "flow_rate": 4,
+     "stagnation": 6,
+     "observed_count": 4,
+     "occupancy": 4,
+     "occupancy_delta": 2,
+     "flow_samples": 28,
+     "stagnation_samples": 6,
+     "directional_flow_samples": 28,
+     "capacity_hint": 3
+    },
+    "unchanged_fields": [
+     "completeness",
+     "time_resolution_s"
+    ]
+   },
+   "attribution": {
+    "delta_min": [],
+    "fallback_baseline": [],
+    "delta_min+fallback_baseline": [],
+    "delta_min+fallback_baseline+ipf_tolerance": [],
+    "delta_min+fallback_baseline+epsilon_0": [],
+    "delta_min+fallback_baseline+ipf_tolerance+epsilon_0": []
+   }
+  },
+  {
+   "scenario": "expo-incident-resume",
+   "variant": "no_history",
+   "k": 100.0,
+   "diff": [],
+   "cont": {
+    "od": 0.0,
+    "throughput": 0.0,
+    "tau": 0.99,
+    "importance": 3.6666665370610474e-08
+   },
+   "diag": {
+    "solver": "LIGHTWEIGHT",
+    "degraded": false,
+    "od_pairs_input": 2,
+    "commodities": 2,
+    "demand_all_cut": false,
+    "resolution_modes": [
+     "DOUBLY_CONSTRAINED"
+    ]
+   },
+   "census": {
+    "scaled": {
+     "flow_rate": 4,
+     "stagnation": 6,
+     "observed_count": 4,
+     "occupancy": 4,
+     "occupancy_delta": 2,
+     "flow_samples": 28,
+     "stagnation_samples": 6,
+     "directional_flow_samples": 28,
+     "capacity_hint": 3
+    },
+    "unchanged_fields": [
+     "completeness",
+     "time_resolution_s"
+    ]
+   },
+   "attribution": {
+    "delta_min": [],
+    "fallback_baseline": [],
+    "delta_min+fallback_baseline": [],
+    "delta_min+fallback_baseline+ipf_tolerance": [],
+    "delta_min+fallback_baseline+epsilon_0": [],
+    "delta_min+fallback_baseline+ipf_tolerance+epsilon_0": []
+   }
+  },
+  {
+   "scenario": "expo-incident-resume",
+   "variant": "obs_only",
+   "k": 0.01,
+   "diff": [
+    "emphasis"
+   ],
+   "cont": {
+    "od": 1.0,
+    "throughput": 1.0,
+    "tau": 1.0,
+    "importance": 0.9999999629629643
+   },
+   "diag": {
+    "solver": "LIGHTWEIGHT",
+    "degraded": false,
+    "od_pairs_input": 0,
+    "commodities": 0,
+    "demand_all_cut": false,
+    "resolution_modes": [
+     "DOUBLY_CONSTRAINED"
+    ]
+   },
+   "census": {
+    "scaled": {
+     "flow_rate": 4,
+     "stagnation": 6,
+     "observed_count": 4,
+     "occupancy": 4,
+     "occupancy_delta": 2,
+     "p90_stagnation": 6,
+     "baseline_stagnation": 6,
+     "flow_samples": 28,
+     "stagnation_samples": 6,
+     "directional_flow_samples": 28
+    },
+    "unchanged_fields": [
+     "capacity_hint",
+     "completeness",
+     "flow_sensitivity_eta",
+     "time_resolution_s"
+    ]
+   }
+  },
+  {
+   "scenario": "expo-incident-resume",
+   "variant": "obs_only",
+   "k": 0.1,
+   "diff": [
+    "emphasis"
+   ],
+   "cont": {
+    "od": 1.480297366166875e-16,
+    "throughput": 1.0,
+    "tau": 1.0,
+    "importance": 0.9999999629629643
+   },
+   "diag": {
+    "solver": "LIGHTWEIGHT",
+    "degraded": false,
+    "od_pairs_input": 2,
+    "commodities": 0,
+    "demand_all_cut": true,
+    "resolution_modes": [
+     "DOUBLY_CONSTRAINED"
+    ]
+   },
+   "census": {
+    "scaled": {
+     "flow_rate": 4,
+     "stagnation": 6,
+     "observed_count": 4,
+     "occupancy": 4,
+     "occupancy_delta": 2,
+     "p90_stagnation": 6,
+     "baseline_stagnation": 6,
+     "flow_samples": 28,
+     "stagnation_samples": 6,
+     "directional_flow_samples": 28
+    },
+    "unchanged_fields": [
+     "capacity_hint",
+     "completeness",
+     "flow_sensitivity_eta",
+     "time_resolution_s"
+    ]
+   }
+  },
+  {
+   "scenario": "expo-incident-resume",
+   "variant": "obs_only",
+   "k": 1.0,
+   "diff": [],
+   "cont": {
+    "od": 0.0,
+    "throughput": 0.0,
+    "tau": 0.0,
+    "importance": 0.0
+   },
+   "diag": {
+    "solver": "LIGHTWEIGHT",
+    "degraded": false,
+    "od_pairs_input": 2,
+    "commodities": 2,
+    "demand_all_cut": false,
+    "resolution_modes": [
+     "DOUBLY_CONSTRAINED"
+    ]
+   },
+   "census": {
+    "scaled": {},
+    "unchanged_fields": [
+     "baseline_stagnation",
+     "capacity_hint",
+     "completeness",
+     "directional_flow_samples",
+     "flow_rate",
+     "flow_samples",
+     "flow_sensitivity_eta",
+     "observed_count",
+     "occupancy",
+     "occupancy_delta",
+     "p90_stagnation",
+     "stagnation",
+     "stagnation_samples",
+     "time_resolution_s"
+    ]
+   }
+  },
+  {
+   "scenario": "expo-incident-resume",
+   "variant": "obs_only",
+   "k": 10.0,
+   "diff": [],
+   "cont": {
+    "od": 0.0,
+    "throughput": 0.0,
+    "tau": 2.999998998515389e-07,
+    "importance": 3.333333198352051e-08
+   },
+   "diag": {
+    "solver": "INFEASIBLE",
+    "degraded": true,
+    "od_pairs_input": 2,
+    "commodities": 2,
+    "demand_all_cut": false,
+    "resolution_modes": [
+     "DOUBLY_CONSTRAINED"
+    ]
+   },
+   "census": {
+    "scaled": {
+     "flow_rate": 4,
+     "stagnation": 6,
+     "observed_count": 4,
+     "occupancy": 4,
+     "occupancy_delta": 2,
+     "p90_stagnation": 6,
+     "baseline_stagnation": 6,
+     "flow_samples": 28,
+     "stagnation_samples": 6,
+     "directional_flow_samples": 28
+    },
+    "unchanged_fields": [
+     "capacity_hint",
+     "completeness",
+     "flow_sensitivity_eta",
+     "time_resolution_s"
+    ]
+   }
+  },
+  {
+   "scenario": "expo-incident-resume",
+   "variant": "obs_only",
+   "k": 100.0,
+   "diff": [],
+   "cont": {
+    "od": 0.0,
+    "throughput": 0.0,
+    "tau": 3.299998899461417e-07,
+    "importance": 3.6666665370610474e-08
+   },
+   "diag": {
+    "solver": "INFEASIBLE",
+    "degraded": true,
+    "od_pairs_input": 2,
+    "commodities": 2,
+    "demand_all_cut": false,
+    "resolution_modes": [
+     "DOUBLY_CONSTRAINED"
+    ]
+   },
+   "census": {
+    "scaled": {
+     "flow_rate": 4,
+     "stagnation": 6,
+     "observed_count": 4,
+     "occupancy": 4,
+     "occupancy_delta": 2,
+     "p90_stagnation": 6,
+     "baseline_stagnation": 6,
+     "flow_samples": 28,
+     "stagnation_samples": 6,
+     "directional_flow_samples": 28
+    },
+    "unchanged_fields": [
+     "capacity_hint",
+     "completeness",
+     "flow_sensitivity_eta",
+     "time_resolution_s"
+    ]
+   }
+  },
+  {
+   "scenario": "museum-special-exhibit-limit",
+   "variant": "history",
+   "k": 0.01,
+   "diff": [
+    "restriction",
+    "restriction_limit",
+    "emphasis"
+   ],
+   "cont": {
+    "od": 1.0,
+    "throughput": 1.0,
+    "tau": 1.0,
+    "importance": 0.9999999666666678
+   },
+   "diag": {
+    "solver": "LIGHTWEIGHT",
+    "degraded": false,
+    "od_pairs_input": 0,
+    "commodities": 0,
+    "demand_all_cut": false,
+    "resolution_modes": [
+     "TURNING_EXACT"
+    ]
+   },
+   "census": {
+    "scaled": {
+     "flow_rate": 4,
+     "stagnation": 4,
+     "observed_count": 4,
+     "occupancy": 3,
+     "occupancy_delta": 3,
+     "p90_stagnation": 4,
+     "baseline_stagnation": 4,
+     "flow_samples": 28,
+     "stagnation_samples": 4,
+     "directional_flow_samples": 28,
+     "capacity_hint": 1
+    },
+    "unchanged_fields": [
+     "completeness",
+     "flow_sensitivity_eta",
+     "time_resolution_s"
+    ]
+   },
+   "attribution": {
+    "delta_min": [],
+    "fallback_baseline": [
+     "restriction",
+     "restriction_limit",
+     "emphasis"
+    ],
+    "delta_min+fallback_baseline": [],
+    "delta_min+fallback_baseline+ipf_tolerance": [],
+    "delta_min+fallback_baseline+epsilon_0": [],
+    "delta_min+fallback_baseline+ipf_tolerance+epsilon_0": []
+   }
+  },
+  {
+   "scenario": "museum-special-exhibit-limit",
+   "variant": "history",
+   "k": 0.1,
+   "diff": [
+    "restriction",
+    "restriction_limit",
+    "emphasis"
+   ],
+   "cont": {
+    "od": 1.0,
+    "throughput": 1.0,
+    "tau": 1.0,
+    "importance": 0.9999999666666678
+   },
+   "diag": {
+    "solver": "LIGHTWEIGHT",
+    "degraded": false,
+    "od_pairs_input": 2,
+    "commodities": 0,
+    "demand_all_cut": true,
+    "resolution_modes": [
+     "TURNING_EXACT"
+    ]
+   },
+   "census": {
+    "scaled": {
+     "flow_rate": 4,
+     "stagnation": 4,
+     "observed_count": 4,
+     "occupancy": 3,
+     "occupancy_delta": 3,
+     "p90_stagnation": 4,
+     "baseline_stagnation": 4,
+     "flow_samples": 28,
+     "stagnation_samples": 4,
+     "directional_flow_samples": 28,
+     "capacity_hint": 1
+    },
+    "unchanged_fields": [
+     "completeness",
+     "flow_sensitivity_eta",
+     "time_resolution_s"
+    ]
+   },
+   "attribution": {
+    "delta_min": [],
+    "fallback_baseline": [
+     "restriction",
+     "restriction_limit",
+     "emphasis"
+    ],
+    "delta_min+fallback_baseline": [],
+    "delta_min+fallback_baseline+ipf_tolerance": [],
+    "delta_min+fallback_baseline+epsilon_0": [],
+    "delta_min+fallback_baseline+ipf_tolerance+epsilon_0": []
+   }
+  },
+  {
+   "scenario": "museum-special-exhibit-limit",
+   "variant": "history",
+   "k": 1.0,
+   "diff": [],
+   "cont": {
+    "od": 0.0,
+    "throughput": 0.0,
+    "tau": 0.0,
+    "importance": 0.0
+   },
+   "diag": {
+    "solver": "LIGHTWEIGHT",
+    "degraded": false,
+    "od_pairs_input": 3,
+    "commodities": 1,
+    "demand_all_cut": false,
+    "resolution_modes": [
+     "TURNING_EXACT"
+    ]
+   },
+   "census": {
+    "scaled": {},
+    "unchanged_fields": [
+     "baseline_stagnation",
+     "capacity_hint",
+     "completeness",
+     "directional_flow_samples",
+     "flow_rate",
+     "flow_samples",
+     "flow_sensitivity_eta",
+     "observed_count",
+     "occupancy",
+     "occupancy_delta",
+     "p90_stagnation",
+     "stagnation",
+     "stagnation_samples",
+     "time_resolution_s"
+    ]
+   }
+  },
+  {
+   "scenario": "museum-special-exhibit-limit",
+   "variant": "history",
+   "k": 10.0,
+   "diff": [
+    "emphasis"
+   ],
+   "cont": {
+    "od": 2.2204460492503126e-16,
+    "throughput": 0.0,
+    "tau": 2.9999990011504734e-07,
+    "importance": 0.28571425408163376
+   },
+   "diag": {
+    "solver": "LIGHTWEIGHT",
+    "degraded": false,
+    "od_pairs_input": 3,
+    "commodities": 3,
+    "demand_all_cut": false,
+    "resolution_modes": [
+     "TURNING_EXACT"
+    ]
+   },
+   "census": {
+    "scaled": {
+     "flow_rate": 4,
+     "stagnation": 4,
+     "observed_count": 4,
+     "occupancy": 3,
+     "occupancy_delta": 3,
+     "p90_stagnation": 4,
+     "baseline_stagnation": 4,
+     "flow_samples": 28,
+     "stagnation_samples": 4,
+     "directional_flow_samples": 28,
+     "capacity_hint": 1
+    },
+    "unchanged_fields": [
+     "completeness",
+     "flow_sensitivity_eta",
+     "time_resolution_s"
+    ]
+   },
+   "attribution": {
+    "delta_min": [],
+    "fallback_baseline": [
+     "emphasis"
+    ],
+    "delta_min+fallback_baseline": [],
+    "delta_min+fallback_baseline+ipf_tolerance": [],
+    "delta_min+fallback_baseline+epsilon_0": [],
+    "delta_min+fallback_baseline+ipf_tolerance+epsilon_0": []
+   }
+  },
+  {
+   "scenario": "museum-special-exhibit-limit",
+   "variant": "history",
+   "k": 100.0,
+   "diff": [
+    "emphasis"
+   ],
+   "cont": {
+    "od": 2.2204460492503126e-16,
+    "throughput": 0.0,
+    "tau": 3.2999989016732187e-07,
+    "importance": 0.28571425255102156
+   },
+   "diag": {
+    "solver": "LIGHTWEIGHT",
+    "degraded": false,
+    "od_pairs_input": 3,
+    "commodities": 3,
+    "demand_all_cut": false,
+    "resolution_modes": [
+     "TURNING_EXACT"
+    ]
+   },
+   "census": {
+    "scaled": {
+     "flow_rate": 4,
+     "stagnation": 4,
+     "observed_count": 4,
+     "occupancy": 3,
+     "occupancy_delta": 3,
+     "p90_stagnation": 4,
+     "baseline_stagnation": 4,
+     "flow_samples": 28,
+     "stagnation_samples": 4,
+     "directional_flow_samples": 28,
+     "capacity_hint": 1
+    },
+    "unchanged_fields": [
+     "completeness",
+     "flow_sensitivity_eta",
+     "time_resolution_s"
+    ]
+   },
+   "attribution": {
+    "delta_min": [],
+    "fallback_baseline": [
+     "emphasis"
+    ],
+    "delta_min+fallback_baseline": [],
+    "delta_min+fallback_baseline+ipf_tolerance": [],
+    "delta_min+fallback_baseline+epsilon_0": [],
+    "delta_min+fallback_baseline+ipf_tolerance+epsilon_0": []
+   }
+  },
+  {
+   "scenario": "museum-special-exhibit-limit",
+   "variant": "no_history",
+   "k": 0.01,
+   "diff": [
+    "verdict",
+    "triggered",
+    "restriction",
+    "restriction_limit",
+    "emphasis"
+   ],
+   "cont": {
+    "od": 1.0,
+    "throughput": 1.0,
+    "tau": 1.0,
+    "importance": 0.9999999666666678
+   },
+   "diag": {
+    "solver": "LIGHTWEIGHT",
+    "degraded": false,
+    "od_pairs_input": 0,
+    "commodities": 0,
+    "demand_all_cut": false,
+    "resolution_modes": [
+     "TURNING_EXACT"
+    ]
+   },
+   "census": {
+    "scaled": {
+     "flow_rate": 4,
+     "stagnation": 4,
+     "observed_count": 4,
+     "occupancy": 3,
+     "occupancy_delta": 3,
+     "flow_samples": 28,
+     "stagnation_samples": 4,
+     "directional_flow_samples": 28,
+     "capacity_hint": 1
+    },
+    "unchanged_fields": [
+     "completeness",
+     "time_resolution_s"
+    ]
+   },
+   "attribution": {
+    "delta_min": [
+     "verdict",
+     "triggered",
+     "restriction",
+     "restriction_limit"
+    ],
+    "fallback_baseline": [
+     "restriction",
+     "restriction_limit",
+     "emphasis"
+    ],
+    "delta_min+fallback_baseline": [],
+    "delta_min+fallback_baseline+ipf_tolerance": [],
+    "delta_min+fallback_baseline+epsilon_0": [],
+    "delta_min+fallback_baseline+ipf_tolerance+epsilon_0": []
+   }
+  },
+  {
+   "scenario": "museum-special-exhibit-limit",
+   "variant": "no_history",
+   "k": 0.1,
+   "diff": [
+    "verdict",
+    "triggered",
+    "restriction",
+    "restriction_limit",
+    "emphasis"
+   ],
+   "cont": {
+    "od": 1.0,
+    "throughput": 1.0,
+    "tau": 1.0,
+    "importance": 0.9999999666666678
+   },
+   "diag": {
+    "solver": "LIGHTWEIGHT",
+    "degraded": false,
+    "od_pairs_input": 2,
+    "commodities": 0,
+    "demand_all_cut": true,
+    "resolution_modes": [
+     "TURNING_EXACT"
+    ]
+   },
+   "census": {
+    "scaled": {
+     "flow_rate": 4,
+     "stagnation": 4,
+     "observed_count": 4,
+     "occupancy": 3,
+     "occupancy_delta": 3,
+     "flow_samples": 28,
+     "stagnation_samples": 4,
+     "directional_flow_samples": 28,
+     "capacity_hint": 1
+    },
+    "unchanged_fields": [
+     "completeness",
+     "time_resolution_s"
+    ]
+   },
+   "attribution": {
+    "delta_min": [
+     "verdict",
+     "triggered",
+     "restriction",
+     "restriction_limit"
+    ],
+    "fallback_baseline": [
+     "restriction",
+     "restriction_limit",
+     "emphasis"
+    ],
+    "delta_min+fallback_baseline": [],
+    "delta_min+fallback_baseline+ipf_tolerance": [],
+    "delta_min+fallback_baseline+epsilon_0": [],
+    "delta_min+fallback_baseline+ipf_tolerance+epsilon_0": []
+   }
+  },
+  {
+   "scenario": "museum-special-exhibit-limit",
+   "variant": "no_history",
+   "k": 1.0,
+   "diff": [],
+   "cont": {
+    "od": 0.0,
+    "throughput": 0.0,
+    "tau": 0.0,
+    "importance": 0.0
+   },
+   "diag": {
+    "solver": "LIGHTWEIGHT",
+    "degraded": false,
+    "od_pairs_input": 3,
+    "commodities": 1,
+    "demand_all_cut": false,
+    "resolution_modes": [
+     "TURNING_EXACT"
+    ]
+   },
+   "census": {
+    "scaled": {},
+    "unchanged_fields": [
+     "capacity_hint",
+     "completeness",
+     "directional_flow_samples",
+     "flow_rate",
+     "flow_samples",
+     "observed_count",
+     "occupancy",
+     "occupancy_delta",
+     "stagnation",
+     "stagnation_samples",
+     "time_resolution_s"
+    ]
+   }
+  },
+  {
+   "scenario": "museum-special-exhibit-limit",
+   "variant": "no_history",
+   "k": 10.0,
+   "diff": [
+    "emphasis"
+   ],
+   "cont": {
+    "od": 2.2204460492503126e-16,
+    "throughput": 0.0,
+    "tau": 0.9,
+    "importance": 0.28571425408163376
+   },
+   "diag": {
+    "solver": "LIGHTWEIGHT",
+    "degraded": false,
+    "od_pairs_input": 3,
+    "commodities": 3,
+    "demand_all_cut": false,
+    "resolution_modes": [
+     "TURNING_EXACT"
+    ]
+   },
+   "census": {
+    "scaled": {
+     "flow_rate": 4,
+     "stagnation": 4,
+     "observed_count": 4,
+     "occupancy": 3,
+     "occupancy_delta": 3,
+     "flow_samples": 28,
+     "stagnation_samples": 4,
+     "directional_flow_samples": 28,
+     "capacity_hint": 1
+    },
+    "unchanged_fields": [
+     "completeness",
+     "time_resolution_s"
+    ]
+   },
+   "attribution": {
+    "delta_min": [],
+    "fallback_baseline": [
+     "emphasis"
+    ],
+    "delta_min+fallback_baseline": [],
+    "delta_min+fallback_baseline+ipf_tolerance": [],
+    "delta_min+fallback_baseline+epsilon_0": [],
+    "delta_min+fallback_baseline+ipf_tolerance+epsilon_0": []
+   }
+  },
+  {
+   "scenario": "museum-special-exhibit-limit",
+   "variant": "no_history",
+   "k": 100.0,
+   "diff": [
+    "emphasis"
+   ],
+   "cont": {
+    "od": 2.2204460492503126e-16,
+    "throughput": 0.0,
+    "tau": 0.99,
+    "importance": 0.28571425255102156
+   },
+   "diag": {
+    "solver": "LIGHTWEIGHT",
+    "degraded": false,
+    "od_pairs_input": 3,
+    "commodities": 3,
+    "demand_all_cut": false,
+    "resolution_modes": [
+     "TURNING_EXACT"
+    ]
+   },
+   "census": {
+    "scaled": {
+     "flow_rate": 4,
+     "stagnation": 4,
+     "observed_count": 4,
+     "occupancy": 3,
+     "occupancy_delta": 3,
+     "flow_samples": 28,
+     "stagnation_samples": 4,
+     "directional_flow_samples": 28,
+     "capacity_hint": 1
+    },
+    "unchanged_fields": [
+     "completeness",
+     "time_resolution_s"
+    ]
+   },
+   "attribution": {
+    "delta_min": [],
+    "fallback_baseline": [
+     "emphasis"
+    ],
+    "delta_min+fallback_baseline": [],
+    "delta_min+fallback_baseline+ipf_tolerance": [],
+    "delta_min+fallback_baseline+epsilon_0": [],
+    "delta_min+fallback_baseline+ipf_tolerance+epsilon_0": []
+   }
+  },
+  {
+   "scenario": "museum-special-exhibit-limit",
+   "variant": "obs_only",
+   "k": 0.01,
+   "diff": [
+    "restriction",
+    "restriction_limit",
+    "emphasis"
+   ],
+   "cont": {
+    "od": 1.0,
+    "throughput": 1.0,
+    "tau": 1.0,
+    "importance": 0.9999999666666678
+   },
+   "diag": {
+    "solver": "LIGHTWEIGHT",
+    "degraded": false,
+    "od_pairs_input": 0,
+    "commodities": 0,
+    "demand_all_cut": false,
+    "resolution_modes": [
+     "TURNING_EXACT"
+    ]
+   },
+   "census": {
+    "scaled": {
+     "flow_rate": 4,
+     "stagnation": 4,
+     "observed_count": 4,
+     "occupancy": 3,
+     "occupancy_delta": 3,
+     "p90_stagnation": 4,
+     "baseline_stagnation": 4,
+     "flow_samples": 28,
+     "stagnation_samples": 4,
+     "directional_flow_samples": 28
+    },
+    "unchanged_fields": [
+     "capacity_hint",
+     "completeness",
+     "flow_sensitivity_eta",
+     "time_resolution_s"
+    ]
+   }
+  },
+  {
+   "scenario": "museum-special-exhibit-limit",
+   "variant": "obs_only",
+   "k": 0.1,
+   "diff": [
+    "restriction",
+    "restriction_limit",
+    "emphasis"
+   ],
+   "cont": {
+    "od": 1.0,
+    "throughput": 1.0,
+    "tau": 1.0,
+    "importance": 0.9999999666666678
+   },
+   "diag": {
+    "solver": "LIGHTWEIGHT",
+    "degraded": false,
+    "od_pairs_input": 2,
+    "commodities": 0,
+    "demand_all_cut": true,
+    "resolution_modes": [
+     "TURNING_EXACT"
+    ]
+   },
+   "census": {
+    "scaled": {
+     "flow_rate": 4,
+     "stagnation": 4,
+     "observed_count": 4,
+     "occupancy": 3,
+     "occupancy_delta": 3,
+     "p90_stagnation": 4,
+     "baseline_stagnation": 4,
+     "flow_samples": 28,
+     "stagnation_samples": 4,
+     "directional_flow_samples": 28
+    },
+    "unchanged_fields": [
+     "capacity_hint",
+     "completeness",
+     "flow_sensitivity_eta",
+     "time_resolution_s"
+    ]
+   }
+  },
+  {
+   "scenario": "museum-special-exhibit-limit",
+   "variant": "obs_only",
+   "k": 1.0,
+   "diff": [],
+   "cont": {
+    "od": 0.0,
+    "throughput": 0.0,
+    "tau": 0.0,
+    "importance": 0.0
+   },
+   "diag": {
+    "solver": "LIGHTWEIGHT",
+    "degraded": false,
+    "od_pairs_input": 3,
+    "commodities": 1,
+    "demand_all_cut": false,
+    "resolution_modes": [
+     "TURNING_EXACT"
+    ]
+   },
+   "census": {
+    "scaled": {},
+    "unchanged_fields": [
+     "baseline_stagnation",
+     "capacity_hint",
+     "completeness",
+     "directional_flow_samples",
+     "flow_rate",
+     "flow_samples",
+     "flow_sensitivity_eta",
+     "observed_count",
+     "occupancy",
+     "occupancy_delta",
+     "p90_stagnation",
+     "stagnation",
+     "stagnation_samples",
+     "time_resolution_s"
+    ]
+   }
+  },
+  {
+   "scenario": "museum-special-exhibit-limit",
+   "variant": "obs_only",
+   "k": 10.0,
+   "diff": [
+    "restriction",
+    "restriction_limit",
+    "emphasis"
+   ],
+   "cont": {
+    "od": 2.2204460492503126e-16,
+    "throughput": 0.0,
+    "tau": 2.9999990011504734e-07,
+    "importance": 0.28571425408163376
+   },
+   "diag": {
+    "solver": "INFEASIBLE",
+    "degraded": true,
+    "od_pairs_input": 3,
+    "commodities": 3,
+    "demand_all_cut": false,
+    "resolution_modes": [
+     "TURNING_EXACT"
+    ]
+   },
+   "census": {
+    "scaled": {
+     "flow_rate": 4,
+     "stagnation": 4,
+     "observed_count": 4,
+     "occupancy": 3,
+     "occupancy_delta": 3,
+     "p90_stagnation": 4,
+     "baseline_stagnation": 4,
+     "flow_samples": 28,
+     "stagnation_samples": 4,
+     "directional_flow_samples": 28
+    },
+    "unchanged_fields": [
+     "capacity_hint",
+     "completeness",
+     "flow_sensitivity_eta",
+     "time_resolution_s"
+    ]
+   }
+  },
+  {
+   "scenario": "museum-special-exhibit-limit",
+   "variant": "obs_only",
+   "k": 100.0,
+   "diff": [
+    "restriction",
+    "restriction_limit",
+    "emphasis"
+   ],
+   "cont": {
+    "od": 2.2204460492503126e-16,
+    "throughput": 0.0,
+    "tau": 3.2999989016732187e-07,
+    "importance": 0.28571425255102156
+   },
+   "diag": {
+    "solver": "INFEASIBLE",
+    "degraded": true,
+    "od_pairs_input": 3,
+    "commodities": 3,
+    "demand_all_cut": false,
+    "resolution_modes": [
+     "TURNING_EXACT"
+    ]
+   },
+   "census": {
+    "scaled": {
+     "flow_rate": 4,
+     "stagnation": 4,
+     "observed_count": 4,
+     "occupancy": 3,
+     "occupancy_delta": 3,
+     "p90_stagnation": 4,
+     "baseline_stagnation": 4,
+     "flow_samples": 28,
+     "stagnation_samples": 4,
+     "directional_flow_samples": 28
+    },
+    "unchanged_fields": [
+     "capacity_hint",
+     "completeness",
+     "flow_sensitivity_eta",
+     "time_resolution_s"
+    ]
+   }
+  },
+  {
+   "scenario": "restriction-undrainable",
+   "variant": "history",
+   "k": 0.01,
+   "diff": [
+    "restriction",
+    "restriction_limit",
+    "emphasis"
+   ],
+   "cont": {
+    "od": 1.0,
+    "throughput": 1.0,
+    "tau": 1.0,
+    "importance": 0.9999999750000007
+   },
+   "diag": {
+    "solver": "LIGHTWEIGHT",
+    "degraded": false,
+    "od_pairs_input": 0,
+    "commodities": 0,
+    "demand_all_cut": false,
+    "resolution_modes": [
+     "TURNING_EXACT"
+    ]
+   },
+   "census": {
+    "scaled": {
+     "flow_rate": 3,
+     "stagnation": 3,
+     "observed_count": 3,
+     "occupancy": 2,
+     "occupancy_delta": 2,
+     "p90_stagnation": 3,
+     "baseline_stagnation": 3,
+     "flow_samples": 21,
+     "stagnation_samples": 3,
+     "directional_flow_samples": 21,
+     "capacity_hint": 1
+    },
+    "unchanged_fields": [
+     "completeness",
+     "flow_sensitivity_eta",
+     "time_resolution_s"
+    ]
+   },
+   "attribution": {
+    "delta_min": [],
+    "fallback_baseline": [
+     "restriction",
+     "restriction_limit",
+     "emphasis"
+    ],
+    "delta_min+fallback_baseline": [],
+    "delta_min+fallback_baseline+ipf_tolerance": [],
+    "delta_min+fallback_baseline+epsilon_0": [],
+    "delta_min+fallback_baseline+ipf_tolerance+epsilon_0": []
+   }
+  },
+  {
+   "scenario": "restriction-undrainable",
+   "variant": "history",
+   "k": 0.1,
+   "diff": [
+    "restriction",
+    "restriction_limit",
+    "emphasis"
+   ],
+   "cont": {
+    "od": 0.0,
+    "throughput": 1.0,
+    "tau": 1.0,
+    "importance": 0.9999999750000007
+   },
+   "diag": {
+    "solver": "LIGHTWEIGHT",
+    "degraded": false,
+    "od_pairs_input": 2,
+    "commodities": 0,
+    "demand_all_cut": true,
+    "resolution_modes": [
+     "TURNING_EXACT"
+    ]
+   },
+   "census": {
+    "scaled": {
+     "flow_rate": 3,
+     "stagnation": 3,
+     "observed_count": 3,
+     "occupancy": 2,
+     "occupancy_delta": 2,
+     "p90_stagnation": 3,
+     "baseline_stagnation": 3,
+     "flow_samples": 21,
+     "stagnation_samples": 3,
+     "directional_flow_samples": 21,
+     "capacity_hint": 1
+    },
+    "unchanged_fields": [
+     "completeness",
+     "flow_sensitivity_eta",
+     "time_resolution_s"
+    ]
+   },
+   "attribution": {
+    "delta_min": [],
+    "fallback_baseline": [
+     "restriction",
+     "restriction_limit",
+     "emphasis"
+    ],
+    "delta_min+fallback_baseline": [],
+    "delta_min+fallback_baseline+ipf_tolerance": [],
+    "delta_min+fallback_baseline+epsilon_0": [],
+    "delta_min+fallback_baseline+ipf_tolerance+epsilon_0": []
+   }
+  },
+  {
+   "scenario": "restriction-undrainable",
+   "variant": "history",
+   "k": 1.0,
+   "diff": [],
+   "cont": {
+    "od": 0.0,
+    "throughput": 0.0,
+    "tau": 0.0,
+    "importance": 0.0
+   },
+   "diag": {
+    "solver": "LIGHTWEIGHT",
+    "degraded": false,
+    "od_pairs_input": 2,
+    "commodities": 2,
+    "demand_all_cut": false,
+    "resolution_modes": [
+     "TURNING_EXACT"
+    ]
+   },
+   "census": {
+    "scaled": {},
+    "unchanged_fields": [
+     "baseline_stagnation",
+     "capacity_hint",
+     "completeness",
+     "directional_flow_samples",
+     "flow_rate",
+     "flow_samples",
+     "flow_sensitivity_eta",
+     "observed_count",
+     "occupancy",
+     "occupancy_delta",
+     "p90_stagnation",
+     "stagnation",
+     "stagnation_samples",
+     "time_resolution_s"
+    ]
+   }
+  },
+  {
+   "scenario": "restriction-undrainable",
+   "variant": "history",
+   "k": 10.0,
+   "diff": [],
+   "cont": {
+    "od": 0.0,
+    "throughput": 0.0,
+    "tau": 2.9999990011504734e-07,
+    "importance": 2.249999930814539e-08
+   },
+   "diag": {
+    "solver": "LIGHTWEIGHT",
+    "degraded": false,
+    "od_pairs_input": 2,
+    "commodities": 2,
+    "demand_all_cut": false,
+    "resolution_modes": [
+     "TURNING_EXACT"
+    ]
+   },
+   "census": {
+    "scaled": {
+     "flow_rate": 3,
+     "stagnation": 3,
+     "observed_count": 3,
+     "occupancy": 2,
+     "occupancy_delta": 2,
+     "p90_stagnation": 3,
+     "baseline_stagnation": 3,
+     "flow_samples": 21,
+     "stagnation_samples": 3,
+     "directional_flow_samples": 21,
+     "capacity_hint": 1
+    },
+    "unchanged_fields": [
+     "completeness",
+     "flow_sensitivity_eta",
+     "time_resolution_s"
+    ]
+   },
+   "attribution": {
+    "delta_min": [],
+    "fallback_baseline": [],
+    "delta_min+fallback_baseline": [],
+    "delta_min+fallback_baseline+ipf_tolerance": [],
+    "delta_min+fallback_baseline+epsilon_0": [],
+    "delta_min+fallback_baseline+ipf_tolerance+epsilon_0": []
+   }
+  },
+  {
+   "scenario": "restriction-undrainable",
+   "variant": "history",
+   "k": 100.0,
+   "diff": [],
+   "cont": {
+    "od": 0.0,
+    "throughput": 0.0,
+    "tau": 3.2999989016732187e-07,
+    "importance": 2.474999927226662e-08
+   },
+   "diag": {
+    "solver": "LIGHTWEIGHT",
+    "degraded": false,
+    "od_pairs_input": 2,
+    "commodities": 2,
+    "demand_all_cut": false,
+    "resolution_modes": [
+     "TURNING_EXACT"
+    ]
+   },
+   "census": {
+    "scaled": {
+     "flow_rate": 3,
+     "stagnation": 3,
+     "observed_count": 3,
+     "occupancy": 2,
+     "occupancy_delta": 2,
+     "p90_stagnation": 3,
+     "baseline_stagnation": 3,
+     "flow_samples": 21,
+     "stagnation_samples": 3,
+     "directional_flow_samples": 21,
+     "capacity_hint": 1
+    },
+    "unchanged_fields": [
+     "completeness",
+     "flow_sensitivity_eta",
+     "time_resolution_s"
+    ]
+   },
+   "attribution": {
+    "delta_min": [],
+    "fallback_baseline": [],
+    "delta_min+fallback_baseline": [],
+    "delta_min+fallback_baseline+ipf_tolerance": [],
+    "delta_min+fallback_baseline+epsilon_0": [],
+    "delta_min+fallback_baseline+ipf_tolerance+epsilon_0": []
+   }
+  },
+  {
+   "scenario": "restriction-undrainable",
+   "variant": "no_history",
+   "k": 0.01,
+   "diff": [
+    "verdict",
+    "triggered",
+    "restriction",
+    "restriction_limit",
+    "emphasis"
+   ],
+   "cont": {
+    "od": 1.0,
+    "throughput": 1.0,
+    "tau": 1.0,
+    "importance": 0.9999999750000007
+   },
+   "diag": {
+    "solver": "LIGHTWEIGHT",
+    "degraded": false,
+    "od_pairs_input": 0,
+    "commodities": 0,
+    "demand_all_cut": false,
+    "resolution_modes": [
+     "TURNING_EXACT"
+    ]
+   },
+   "census": {
+    "scaled": {
+     "flow_rate": 3,
+     "stagnation": 3,
+     "observed_count": 3,
+     "occupancy": 2,
+     "occupancy_delta": 2,
+     "flow_samples": 21,
+     "stagnation_samples": 3,
+     "directional_flow_samples": 21,
+     "capacity_hint": 1
+    },
+    "unchanged_fields": [
+     "completeness",
+     "time_resolution_s"
+    ]
+   },
+   "attribution": {
+    "delta_min": [
+     "verdict",
+     "triggered",
+     "restriction",
+     "restriction_limit"
+    ],
+    "fallback_baseline": [
+     "restriction",
+     "restriction_limit",
+     "emphasis"
+    ],
+    "delta_min+fallback_baseline": [],
+    "delta_min+fallback_baseline+ipf_tolerance": [],
+    "delta_min+fallback_baseline+epsilon_0": [],
+    "delta_min+fallback_baseline+ipf_tolerance+epsilon_0": []
+   }
+  },
+  {
+   "scenario": "restriction-undrainable",
+   "variant": "no_history",
+   "k": 0.1,
+   "diff": [
+    "verdict",
+    "triggered",
+    "restriction",
+    "restriction_limit",
+    "emphasis"
+   ],
+   "cont": {
+    "od": 0.0,
+    "throughput": 1.0,
+    "tau": 1.0,
+    "importance": 0.9999999750000007
+   },
+   "diag": {
+    "solver": "LIGHTWEIGHT",
+    "degraded": false,
+    "od_pairs_input": 2,
+    "commodities": 0,
+    "demand_all_cut": true,
+    "resolution_modes": [
+     "TURNING_EXACT"
+    ]
+   },
+   "census": {
+    "scaled": {
+     "flow_rate": 3,
+     "stagnation": 3,
+     "observed_count": 3,
+     "occupancy": 2,
+     "occupancy_delta": 2,
+     "flow_samples": 21,
+     "stagnation_samples": 3,
+     "directional_flow_samples": 21,
+     "capacity_hint": 1
+    },
+    "unchanged_fields": [
+     "completeness",
+     "time_resolution_s"
+    ]
+   },
+   "attribution": {
+    "delta_min": [
+     "verdict",
+     "triggered",
+     "restriction",
+     "restriction_limit"
+    ],
+    "fallback_baseline": [
+     "restriction",
+     "restriction_limit",
+     "emphasis"
+    ],
+    "delta_min+fallback_baseline": [],
+    "delta_min+fallback_baseline+ipf_tolerance": [],
+    "delta_min+fallback_baseline+epsilon_0": [],
+    "delta_min+fallback_baseline+ipf_tolerance+epsilon_0": []
+   }
+  },
+  {
+   "scenario": "restriction-undrainable",
+   "variant": "no_history",
+   "k": 1.0,
+   "diff": [],
+   "cont": {
+    "od": 0.0,
+    "throughput": 0.0,
+    "tau": 0.0,
+    "importance": 0.0
+   },
+   "diag": {
+    "solver": "LIGHTWEIGHT",
+    "degraded": false,
+    "od_pairs_input": 2,
+    "commodities": 2,
+    "demand_all_cut": false,
+    "resolution_modes": [
+     "TURNING_EXACT"
+    ]
+   },
+   "census": {
+    "scaled": {},
+    "unchanged_fields": [
+     "capacity_hint",
+     "completeness",
+     "directional_flow_samples",
+     "flow_rate",
+     "flow_samples",
+     "observed_count",
+     "occupancy",
+     "occupancy_delta",
+     "stagnation",
+     "stagnation_samples",
+     "time_resolution_s"
+    ]
+   }
+  },
+  {
+   "scenario": "restriction-undrainable",
+   "variant": "no_history",
+   "k": 10.0,
+   "diff": [],
+   "cont": {
+    "od": 0.0,
+    "throughput": 0.0,
+    "tau": 0.9,
+    "importance": 2.249999930814539e-08
+   },
+   "diag": {
+    "solver": "LIGHTWEIGHT",
+    "degraded": false,
+    "od_pairs_input": 2,
+    "commodities": 2,
+    "demand_all_cut": false,
+    "resolution_modes": [
+     "TURNING_EXACT"
+    ]
+   },
+   "census": {
+    "scaled": {
+     "flow_rate": 3,
+     "stagnation": 3,
+     "observed_count": 3,
+     "occupancy": 2,
+     "occupancy_delta": 2,
+     "flow_samples": 21,
+     "stagnation_samples": 3,
+     "directional_flow_samples": 21,
+     "capacity_hint": 1
+    },
+    "unchanged_fields": [
+     "completeness",
+     "time_resolution_s"
+    ]
+   },
+   "attribution": {
+    "delta_min": [],
+    "fallback_baseline": [],
+    "delta_min+fallback_baseline": [],
+    "delta_min+fallback_baseline+ipf_tolerance": [],
+    "delta_min+fallback_baseline+epsilon_0": [],
+    "delta_min+fallback_baseline+ipf_tolerance+epsilon_0": []
+   }
+  },
+  {
+   "scenario": "restriction-undrainable",
+   "variant": "no_history",
+   "k": 100.0,
+   "diff": [],
+   "cont": {
+    "od": 0.0,
+    "throughput": 0.0,
+    "tau": 0.99,
+    "importance": 2.474999927226662e-08
+   },
+   "diag": {
+    "solver": "LIGHTWEIGHT",
+    "degraded": false,
+    "od_pairs_input": 2,
+    "commodities": 2,
+    "demand_all_cut": false,
+    "resolution_modes": [
+     "TURNING_EXACT"
+    ]
+   },
+   "census": {
+    "scaled": {
+     "flow_rate": 3,
+     "stagnation": 3,
+     "observed_count": 3,
+     "occupancy": 2,
+     "occupancy_delta": 2,
+     "flow_samples": 21,
+     "stagnation_samples": 3,
+     "directional_flow_samples": 21,
+     "capacity_hint": 1
+    },
+    "unchanged_fields": [
+     "completeness",
+     "time_resolution_s"
+    ]
+   },
+   "attribution": {
+    "delta_min": [],
+    "fallback_baseline": [],
+    "delta_min+fallback_baseline": [],
+    "delta_min+fallback_baseline+ipf_tolerance": [],
+    "delta_min+fallback_baseline+epsilon_0": [],
+    "delta_min+fallback_baseline+ipf_tolerance+epsilon_0": []
+   }
+  },
+  {
+   "scenario": "restriction-undrainable",
+   "variant": "obs_only",
+   "k": 0.01,
+   "diff": [
+    "restriction",
+    "restriction_limit",
+    "emphasis"
+   ],
+   "cont": {
+    "od": 1.0,
+    "throughput": 1.0,
+    "tau": 1.0,
+    "importance": 0.9999999750000007
+   },
+   "diag": {
+    "solver": "LIGHTWEIGHT",
+    "degraded": false,
+    "od_pairs_input": 0,
+    "commodities": 0,
+    "demand_all_cut": false,
+    "resolution_modes": [
+     "TURNING_EXACT"
+    ]
+   },
+   "census": {
+    "scaled": {
+     "flow_rate": 3,
+     "stagnation": 3,
+     "observed_count": 3,
+     "occupancy": 2,
+     "occupancy_delta": 2,
+     "p90_stagnation": 3,
+     "baseline_stagnation": 3,
+     "flow_samples": 21,
+     "stagnation_samples": 3,
+     "directional_flow_samples": 21
+    },
+    "unchanged_fields": [
+     "capacity_hint",
+     "completeness",
+     "flow_sensitivity_eta",
+     "time_resolution_s"
+    ]
+   }
+  },
+  {
+   "scenario": "restriction-undrainable",
+   "variant": "obs_only",
+   "k": 0.1,
+   "diff": [
+    "restriction",
+    "restriction_limit",
+    "emphasis"
+   ],
+   "cont": {
+    "od": 0.0,
+    "throughput": 1.0,
+    "tau": 1.0,
+    "importance": 0.9999999750000007
+   },
+   "diag": {
+    "solver": "LIGHTWEIGHT",
+    "degraded": false,
+    "od_pairs_input": 2,
+    "commodities": 0,
+    "demand_all_cut": true,
+    "resolution_modes": [
+     "TURNING_EXACT"
+    ]
+   },
+   "census": {
+    "scaled": {
+     "flow_rate": 3,
+     "stagnation": 3,
+     "observed_count": 3,
+     "occupancy": 2,
+     "occupancy_delta": 2,
+     "p90_stagnation": 3,
+     "baseline_stagnation": 3,
+     "flow_samples": 21,
+     "stagnation_samples": 3,
+     "directional_flow_samples": 21
+    },
+    "unchanged_fields": [
+     "capacity_hint",
+     "completeness",
+     "flow_sensitivity_eta",
+     "time_resolution_s"
+    ]
+   }
+  },
+  {
+   "scenario": "restriction-undrainable",
+   "variant": "obs_only",
+   "k": 1.0,
+   "diff": [],
+   "cont": {
+    "od": 0.0,
+    "throughput": 0.0,
+    "tau": 0.0,
+    "importance": 0.0
+   },
+   "diag": {
+    "solver": "LIGHTWEIGHT",
+    "degraded": false,
+    "od_pairs_input": 2,
+    "commodities": 2,
+    "demand_all_cut": false,
+    "resolution_modes": [
+     "TURNING_EXACT"
+    ]
+   },
+   "census": {
+    "scaled": {},
+    "unchanged_fields": [
+     "baseline_stagnation",
+     "capacity_hint",
+     "completeness",
+     "directional_flow_samples",
+     "flow_rate",
+     "flow_samples",
+     "flow_sensitivity_eta",
+     "observed_count",
+     "occupancy",
+     "occupancy_delta",
+     "p90_stagnation",
+     "stagnation",
+     "stagnation_samples",
+     "time_resolution_s"
+    ]
+   }
+  },
+  {
+   "scenario": "restriction-undrainable",
+   "variant": "obs_only",
+   "k": 10.0,
+   "diff": [
+    "restriction",
+    "restriction_limit"
+   ],
+   "cont": {
+    "od": 0.0,
+    "throughput": 0.0,
+    "tau": 2.9999990011504734e-07,
+    "importance": 2.249999930814539e-08
+   },
+   "diag": {
+    "solver": "INFEASIBLE",
+    "degraded": true,
+    "od_pairs_input": 2,
+    "commodities": 2,
+    "demand_all_cut": false,
+    "resolution_modes": [
+     "TURNING_EXACT"
+    ]
+   },
+   "census": {
+    "scaled": {
+     "flow_rate": 3,
+     "stagnation": 3,
+     "observed_count": 3,
+     "occupancy": 2,
+     "occupancy_delta": 2,
+     "p90_stagnation": 3,
+     "baseline_stagnation": 3,
+     "flow_samples": 21,
+     "stagnation_samples": 3,
+     "directional_flow_samples": 21
+    },
+    "unchanged_fields": [
+     "capacity_hint",
+     "completeness",
+     "flow_sensitivity_eta",
+     "time_resolution_s"
+    ]
+   }
+  },
+  {
+   "scenario": "restriction-undrainable",
+   "variant": "obs_only",
+   "k": 100.0,
+   "diff": [
+    "restriction",
+    "restriction_limit"
+   ],
+   "cont": {
+    "od": 0.0,
+    "throughput": 0.0,
+    "tau": 3.2999989016732187e-07,
+    "importance": 2.474999927226662e-08
+   },
+   "diag": {
+    "solver": "INFEASIBLE",
+    "degraded": true,
+    "od_pairs_input": 2,
+    "commodities": 2,
+    "demand_all_cut": false,
+    "resolution_modes": [
+     "TURNING_EXACT"
+    ]
+   },
+   "census": {
+    "scaled": {
+     "flow_rate": 3,
+     "stagnation": 3,
+     "observed_count": 3,
+     "occupancy": 2,
+     "occupancy_delta": 2,
+     "p90_stagnation": 3,
+     "baseline_stagnation": 3,
+     "flow_samples": 21,
+     "stagnation_samples": 3,
+     "directional_flow_samples": 21
+    },
+    "unchanged_fields": [
+     "capacity_hint",
+     "completeness",
+     "flow_sensitivity_eta",
+     "time_resolution_s"
+    ]
+   }
+  },
+  {
+   "scenario": "festival-gate-split",
+   "variant": "history",
+   "k": 0.01,
+   "diff": [
+    "restriction",
+    "restriction_limit",
+    "emphasis"
+   ],
+   "cont": {
+    "od": 1.0,
+    "throughput": 1.0,
+    "tau": 1.0,
+    "importance": 0.9999999666666678
+   },
+   "diag": {
+    "solver": "LIGHTWEIGHT",
+    "degraded": false,
+    "od_pairs_input": 0,
+    "commodities": 0,
+    "demand_all_cut": false,
+    "resolution_modes": [
+     "DOUBLY_CONSTRAINED"
+    ]
+   },
+   "census": {
+    "scaled": {
+     "flow_rate": 3,
+     "stagnation": 6,
+     "observed_count": 3,
+     "occupancy": 2,
+     "occupancy_delta": 2,
+     "p90_stagnation": 6,
+     "baseline_stagnation": 6,
+     "flow_samples": 21,
+     "stagnation_samples": 6,
+     "directional_flow_samples": 21,
+     "capacity_hint": 1
+    },
+    "unchanged_fields": [
+     "completeness",
+     "flow_sensitivity_eta",
+     "time_resolution_s"
+    ]
+   },
+   "attribution": {
+    "delta_min": [],
+    "fallback_baseline": [
+     "restriction",
+     "restriction_limit",
+     "emphasis"
+    ],
+    "delta_min+fallback_baseline": [],
+    "delta_min+fallback_baseline+ipf_tolerance": [],
+    "delta_min+fallback_baseline+epsilon_0": [],
+    "delta_min+fallback_baseline+ipf_tolerance+epsilon_0": []
+   }
+  },
+  {
+   "scenario": "festival-gate-split",
+   "variant": "history",
+   "k": 0.1,
+   "diff": [
+    "restriction",
+    "restriction_limit",
+    "emphasis"
+   ],
+   "cont": {
+    "od": 1.480297366166875e-16,
+    "throughput": 1.0,
+    "tau": 1.0,
+    "importance": 0.9999999666666678
+   },
+   "diag": {
+    "solver": "LIGHTWEIGHT",
+    "degraded": false,
+    "od_pairs_input": 2,
+    "commodities": 0,
+    "demand_all_cut": true,
+    "resolution_modes": [
+     "DOUBLY_CONSTRAINED"
+    ]
+   },
+   "census": {
+    "scaled": {
+     "flow_rate": 3,
+     "stagnation": 6,
+     "observed_count": 3,
+     "occupancy": 2,
+     "occupancy_delta": 2,
+     "p90_stagnation": 6,
+     "baseline_stagnation": 6,
+     "flow_samples": 21,
+     "stagnation_samples": 6,
+     "directional_flow_samples": 21,
+     "capacity_hint": 1
+    },
+    "unchanged_fields": [
+     "completeness",
+     "flow_sensitivity_eta",
+     "time_resolution_s"
+    ]
+   },
+   "attribution": {
+    "delta_min": [],
+    "fallback_baseline": [
+     "restriction",
+     "restriction_limit",
+     "emphasis"
+    ],
+    "delta_min+fallback_baseline": [],
+    "delta_min+fallback_baseline+ipf_tolerance": [],
+    "delta_min+fallback_baseline+epsilon_0": [],
+    "delta_min+fallback_baseline+ipf_tolerance+epsilon_0": []
+   }
+  },
+  {
+   "scenario": "festival-gate-split",
+   "variant": "history",
+   "k": 1.0,
+   "diff": [],
+   "cont": {
+    "od": 0.0,
+    "throughput": 0.0,
+    "tau": 0.0,
+    "importance": 0.0
+   },
+   "diag": {
+    "solver": "INFEASIBLE",
+    "degraded": true,
+    "od_pairs_input": 2,
+    "commodities": 2,
+    "demand_all_cut": false,
+    "resolution_modes": [
+     "DOUBLY_CONSTRAINED"
+    ]
+   },
+   "census": {
+    "scaled": {},
+    "unchanged_fields": [
+     "baseline_stagnation",
+     "capacity_hint",
+     "completeness",
+     "directional_flow_samples",
+     "flow_rate",
+     "flow_samples",
+     "flow_sensitivity_eta",
+     "observed_count",
+     "occupancy",
+     "occupancy_delta",
+     "p90_stagnation",
+     "stagnation",
+     "stagnation_samples",
+     "time_resolution_s"
+    ]
+   }
+  },
+  {
+   "scenario": "festival-gate-split",
+   "variant": "history",
+   "k": 10.0,
+   "diff": [],
+   "cont": {
+    "od": 0.0,
+    "throughput": 0.0,
+    "tau": 2.999998999916892e-07,
+    "importance": 2.999999892949745e-08
+   },
+   "diag": {
+    "solver": "INFEASIBLE",
+    "degraded": true,
+    "od_pairs_input": 2,
+    "commodities": 2,
+    "demand_all_cut": false,
+    "resolution_modes": [
+     "DOUBLY_CONSTRAINED"
+    ]
+   },
+   "census": {
+    "scaled": {
+     "flow_rate": 3,
+     "stagnation": 6,
+     "observed_count": 3,
+     "occupancy": 2,
+     "occupancy_delta": 2,
+     "p90_stagnation": 6,
+     "baseline_stagnation": 6,
+     "flow_samples": 21,
+     "stagnation_samples": 6,
+     "directional_flow_samples": 21,
+     "capacity_hint": 1
+    },
+    "unchanged_fields": [
+     "completeness",
+     "flow_sensitivity_eta",
+     "time_resolution_s"
+    ]
+   },
+   "attribution": {
+    "delta_min": [],
+    "fallback_baseline": [],
+    "delta_min+fallback_baseline": [],
+    "delta_min+fallback_baseline+ipf_tolerance": [],
+    "delta_min+fallback_baseline+epsilon_0": [],
+    "delta_min+fallback_baseline+ipf_tolerance+epsilon_0": []
+   }
+  },
+  {
+   "scenario": "festival-gate-split",
+   "variant": "history",
+   "k": 100.0,
+   "diff": [],
+   "cont": {
+    "od": 0.0,
+    "throughput": 0.0,
+    "tau": 3.299998899965183e-07,
+    "importance": 3.299999895567396e-08
+   },
+   "diag": {
+    "solver": "INFEASIBLE",
+    "degraded": true,
+    "od_pairs_input": 2,
+    "commodities": 2,
+    "demand_all_cut": false,
+    "resolution_modes": [
+     "DOUBLY_CONSTRAINED"
+    ]
+   },
+   "census": {
+    "scaled": {
+     "flow_rate": 3,
+     "stagnation": 6,
+     "observed_count": 3,
+     "occupancy": 2,
+     "occupancy_delta": 2,
+     "p90_stagnation": 6,
+     "baseline_stagnation": 6,
+     "flow_samples": 21,
+     "stagnation_samples": 6,
+     "directional_flow_samples": 21,
+     "capacity_hint": 1
+    },
+    "unchanged_fields": [
+     "completeness",
+     "flow_sensitivity_eta",
+     "time_resolution_s"
+    ]
+   },
+   "attribution": {
+    "delta_min": [],
+    "fallback_baseline": [],
+    "delta_min+fallback_baseline": [],
+    "delta_min+fallback_baseline+ipf_tolerance": [],
+    "delta_min+fallback_baseline+epsilon_0": [],
+    "delta_min+fallback_baseline+ipf_tolerance+epsilon_0": []
+   }
+  },
+  {
+   "scenario": "festival-gate-split",
+   "variant": "no_history",
+   "k": 0.01,
+   "diff": [
+    "verdict",
+    "triggered",
+    "restriction",
+    "restriction_limit",
+    "emphasis"
+   ],
+   "cont": {
+    "od": 1.0,
+    "throughput": 1.0,
+    "tau": 1.0,
+    "importance": 0.9999999666666678
+   },
+   "diag": {
+    "solver": "LIGHTWEIGHT",
+    "degraded": false,
+    "od_pairs_input": 0,
+    "commodities": 0,
+    "demand_all_cut": false,
+    "resolution_modes": [
+     "DOUBLY_CONSTRAINED"
+    ]
+   },
+   "census": {
+    "scaled": {
+     "flow_rate": 3,
+     "stagnation": 6,
+     "observed_count": 3,
+     "occupancy": 2,
+     "occupancy_delta": 2,
+     "flow_samples": 21,
+     "stagnation_samples": 6,
+     "directional_flow_samples": 21,
+     "capacity_hint": 1
+    },
+    "unchanged_fields": [
+     "completeness",
+     "time_resolution_s"
+    ]
+   },
+   "attribution": {
+    "delta_min": [
+     "verdict",
+     "triggered"
+    ],
+    "fallback_baseline": [
+     "restriction",
+     "restriction_limit",
+     "emphasis"
+    ],
+    "delta_min+fallback_baseline": [],
+    "delta_min+fallback_baseline+ipf_tolerance": [],
+    "delta_min+fallback_baseline+epsilon_0": [],
+    "delta_min+fallback_baseline+ipf_tolerance+epsilon_0": []
+   }
+  },
+  {
+   "scenario": "festival-gate-split",
+   "variant": "no_history",
+   "k": 0.1,
+   "diff": [
+    "verdict",
+    "triggered",
+    "restriction",
+    "restriction_limit",
+    "emphasis"
+   ],
+   "cont": {
+    "od": 1.480297366166875e-16,
+    "throughput": 1.0,
+    "tau": 1.0,
+    "importance": 0.9999999666666678
+   },
+   "diag": {
+    "solver": "LIGHTWEIGHT",
+    "degraded": false,
+    "od_pairs_input": 2,
+    "commodities": 0,
+    "demand_all_cut": true,
+    "resolution_modes": [
+     "DOUBLY_CONSTRAINED"
+    ]
+   },
+   "census": {
+    "scaled": {
+     "flow_rate": 3,
+     "stagnation": 6,
+     "observed_count": 3,
+     "occupancy": 2,
+     "occupancy_delta": 2,
+     "flow_samples": 21,
+     "stagnation_samples": 6,
+     "directional_flow_samples": 21,
+     "capacity_hint": 1
+    },
+    "unchanged_fields": [
+     "completeness",
+     "time_resolution_s"
+    ]
+   },
+   "attribution": {
+    "delta_min": [
+     "verdict",
+     "triggered"
+    ],
+    "fallback_baseline": [
+     "restriction",
+     "restriction_limit",
+     "emphasis"
+    ],
+    "delta_min+fallback_baseline": [],
+    "delta_min+fallback_baseline+ipf_tolerance": [],
+    "delta_min+fallback_baseline+epsilon_0": [],
+    "delta_min+fallback_baseline+ipf_tolerance+epsilon_0": []
+   }
+  },
+  {
+   "scenario": "festival-gate-split",
+   "variant": "no_history",
+   "k": 1.0,
+   "diff": [],
+   "cont": {
+    "od": 0.0,
+    "throughput": 0.0,
+    "tau": 0.0,
+    "importance": 0.0
+   },
+   "diag": {
+    "solver": "INFEASIBLE",
+    "degraded": true,
+    "od_pairs_input": 2,
+    "commodities": 2,
+    "demand_all_cut": false,
+    "resolution_modes": [
+     "DOUBLY_CONSTRAINED"
+    ]
+   },
+   "census": {
+    "scaled": {},
+    "unchanged_fields": [
+     "capacity_hint",
+     "completeness",
+     "directional_flow_samples",
+     "flow_rate",
+     "flow_samples",
+     "observed_count",
+     "occupancy",
+     "occupancy_delta",
+     "stagnation",
+     "stagnation_samples",
+     "time_resolution_s"
+    ]
+   }
+  },
+  {
+   "scenario": "festival-gate-split",
+   "variant": "no_history",
+   "k": 10.0,
+   "diff": [],
+   "cont": {
+    "od": 0.0,
+    "throughput": 0.0,
+    "tau": 0.9,
+    "importance": 2.999999892949745e-08
+   },
+   "diag": {
+    "solver": "INFEASIBLE",
+    "degraded": true,
+    "od_pairs_input": 2,
+    "commodities": 2,
+    "demand_all_cut": false,
+    "resolution_modes": [
+     "DOUBLY_CONSTRAINED"
+    ]
+   },
+   "census": {
+    "scaled": {
+     "flow_rate": 3,
+     "stagnation": 6,
+     "observed_count": 3,
+     "occupancy": 2,
+     "occupancy_delta": 2,
+     "flow_samples": 21,
+     "stagnation_samples": 6,
+     "directional_flow_samples": 21,
+     "capacity_hint": 1
+    },
+    "unchanged_fields": [
+     "completeness",
+     "time_resolution_s"
+    ]
+   },
+   "attribution": {
+    "delta_min": [],
+    "fallback_baseline": [],
+    "delta_min+fallback_baseline": [],
+    "delta_min+fallback_baseline+ipf_tolerance": [],
+    "delta_min+fallback_baseline+epsilon_0": [],
+    "delta_min+fallback_baseline+ipf_tolerance+epsilon_0": []
+   }
+  },
+  {
+   "scenario": "festival-gate-split",
+   "variant": "no_history",
+   "k": 100.0,
+   "diff": [],
+   "cont": {
+    "od": 0.0,
+    "throughput": 0.0,
+    "tau": 0.99,
+    "importance": 3.299999895567396e-08
+   },
+   "diag": {
+    "solver": "INFEASIBLE",
+    "degraded": true,
+    "od_pairs_input": 2,
+    "commodities": 2,
+    "demand_all_cut": false,
+    "resolution_modes": [
+     "DOUBLY_CONSTRAINED"
+    ]
+   },
+   "census": {
+    "scaled": {
+     "flow_rate": 3,
+     "stagnation": 6,
+     "observed_count": 3,
+     "occupancy": 2,
+     "occupancy_delta": 2,
+     "flow_samples": 21,
+     "stagnation_samples": 6,
+     "directional_flow_samples": 21,
+     "capacity_hint": 1
+    },
+    "unchanged_fields": [
+     "completeness",
+     "time_resolution_s"
+    ]
+   },
+   "attribution": {
+    "delta_min": [],
+    "fallback_baseline": [],
+    "delta_min+fallback_baseline": [],
+    "delta_min+fallback_baseline+ipf_tolerance": [],
+    "delta_min+fallback_baseline+epsilon_0": [],
+    "delta_min+fallback_baseline+ipf_tolerance+epsilon_0": []
+   }
+  },
+  {
+   "scenario": "festival-gate-split",
+   "variant": "obs_only",
+   "k": 0.01,
+   "diff": [
+    "restriction",
+    "restriction_limit",
+    "emphasis"
+   ],
+   "cont": {
+    "od": 1.0,
+    "throughput": 1.0,
+    "tau": 1.0,
+    "importance": 0.9999999666666678
+   },
+   "diag": {
+    "solver": "LIGHTWEIGHT",
+    "degraded": false,
+    "od_pairs_input": 0,
+    "commodities": 0,
+    "demand_all_cut": false,
+    "resolution_modes": [
+     "DOUBLY_CONSTRAINED"
+    ]
+   },
+   "census": {
+    "scaled": {
+     "flow_rate": 3,
+     "stagnation": 6,
+     "observed_count": 3,
+     "occupancy": 2,
+     "occupancy_delta": 2,
+     "p90_stagnation": 6,
+     "baseline_stagnation": 6,
+     "flow_samples": 21,
+     "stagnation_samples": 6,
+     "directional_flow_samples": 21
+    },
+    "unchanged_fields": [
+     "capacity_hint",
+     "completeness",
+     "flow_sensitivity_eta",
+     "time_resolution_s"
+    ]
+   }
+  },
+  {
+   "scenario": "festival-gate-split",
+   "variant": "obs_only",
+   "k": 0.1,
+   "diff": [
+    "restriction",
+    "restriction_limit",
+    "emphasis"
+   ],
+   "cont": {
+    "od": 1.480297366166875e-16,
+    "throughput": 1.0,
+    "tau": 1.0,
+    "importance": 0.9999999666666678
+   },
+   "diag": {
+    "solver": "LIGHTWEIGHT",
+    "degraded": false,
+    "od_pairs_input": 2,
+    "commodities": 0,
+    "demand_all_cut": true,
+    "resolution_modes": [
+     "DOUBLY_CONSTRAINED"
+    ]
+   },
+   "census": {
+    "scaled": {
+     "flow_rate": 3,
+     "stagnation": 6,
+     "observed_count": 3,
+     "occupancy": 2,
+     "occupancy_delta": 2,
+     "p90_stagnation": 6,
+     "baseline_stagnation": 6,
+     "flow_samples": 21,
+     "stagnation_samples": 6,
+     "directional_flow_samples": 21
+    },
+    "unchanged_fields": [
+     "capacity_hint",
+     "completeness",
+     "flow_sensitivity_eta",
+     "time_resolution_s"
+    ]
+   }
+  },
+  {
+   "scenario": "festival-gate-split",
+   "variant": "obs_only",
+   "k": 1.0,
+   "diff": [],
+   "cont": {
+    "od": 0.0,
+    "throughput": 0.0,
+    "tau": 0.0,
+    "importance": 0.0
+   },
+   "diag": {
+    "solver": "INFEASIBLE",
+    "degraded": true,
+    "od_pairs_input": 2,
+    "commodities": 2,
+    "demand_all_cut": false,
+    "resolution_modes": [
+     "DOUBLY_CONSTRAINED"
+    ]
+   },
+   "census": {
+    "scaled": {},
+    "unchanged_fields": [
+     "baseline_stagnation",
+     "capacity_hint",
+     "completeness",
+     "directional_flow_samples",
+     "flow_rate",
+     "flow_samples",
+     "flow_sensitivity_eta",
+     "observed_count",
+     "occupancy",
+     "occupancy_delta",
+     "p90_stagnation",
+     "stagnation",
+     "stagnation_samples",
+     "time_resolution_s"
+    ]
+   }
+  },
+  {
+   "scenario": "festival-gate-split",
+   "variant": "obs_only",
+   "k": 10.0,
+   "diff": [
+    "restriction_limit"
+   ],
+   "cont": {
+    "od": 0.0,
+    "throughput": 0.0,
+    "tau": 2.999998999916892e-07,
+    "importance": 2.999999892949745e-08
+   },
+   "diag": {
+    "solver": "INFEASIBLE",
+    "degraded": true,
+    "od_pairs_input": 2,
+    "commodities": 2,
+    "demand_all_cut": false,
+    "resolution_modes": [
+     "DOUBLY_CONSTRAINED"
+    ]
+   },
+   "census": {
+    "scaled": {
+     "flow_rate": 3,
+     "stagnation": 6,
+     "observed_count": 3,
+     "occupancy": 2,
+     "occupancy_delta": 2,
+     "p90_stagnation": 6,
+     "baseline_stagnation": 6,
+     "flow_samples": 21,
+     "stagnation_samples": 6,
+     "directional_flow_samples": 21
+    },
+    "unchanged_fields": [
+     "capacity_hint",
+     "completeness",
+     "flow_sensitivity_eta",
+     "time_resolution_s"
+    ]
+   }
+  },
+  {
+   "scenario": "festival-gate-split",
+   "variant": "obs_only",
+   "k": 100.0,
+   "diff": [
+    "restriction_limit"
+   ],
+   "cont": {
+    "od": 0.0,
+    "throughput": 0.0,
+    "tau": 3.299998899965183e-07,
+    "importance": 3.299999895567396e-08
+   },
+   "diag": {
+    "solver": "INFEASIBLE",
+    "degraded": true,
+    "od_pairs_input": 2,
+    "commodities": 2,
+    "demand_all_cut": false,
+    "resolution_modes": [
+     "DOUBLY_CONSTRAINED"
+    ]
+   },
+   "census": {
+    "scaled": {
+     "flow_rate": 3,
+     "stagnation": 6,
+     "observed_count": 3,
+     "occupancy": 2,
+     "occupancy_delta": 2,
+     "p90_stagnation": 6,
+     "baseline_stagnation": 6,
+     "flow_samples": 21,
+     "stagnation_samples": 6,
+     "directional_flow_samples": 21
+    },
+    "unchanged_fields": [
+     "capacity_hint",
+     "completeness",
+     "flow_sensitivity_eta",
+     "time_resolution_s"
+    ]
+   }
+  },
+  {
+   "scenario": "crossing-detour",
+   "variant": "history",
+   "k": 0.01,
+   "diff": [
+    "emphasis"
+   ],
+   "cont": {
+    "od": 1.0,
+    "throughput": 1.0,
+    "tau": 1.0,
+    "importance": 0.9999999666666678
+   },
+   "diag": {
+    "solver": "LIGHTWEIGHT",
+    "degraded": false,
+    "od_pairs_input": 0,
+    "commodities": 0,
+    "demand_all_cut": false,
+    "resolution_modes": [
+     "DOUBLY_CONSTRAINED"
+    ]
+   },
+   "census": {
+    "scaled": {
+     "flow_rate": 2,
+     "stagnation": 7,
+     "observed_count": 2,
+     "occupancy": 1,
+     "occupancy_delta": 1,
+     "p90_stagnation": 7,
+     "baseline_stagnation": 7,
+     "flow_samples": 14,
+     "stagnation_samples": 7,
+     "directional_flow_samples": 14,
+     "capacity_hint": 1
+    },
+    "unchanged_fields": [
+     "completeness",
+     "flow_sensitivity_eta",
+     "time_resolution_s"
+    ]
+   },
+   "attribution": {
+    "delta_min": [],
+    "fallback_baseline": [
+     "emphasis"
+    ],
+    "delta_min+fallback_baseline": [],
+    "delta_min+fallback_baseline+ipf_tolerance": [],
+    "delta_min+fallback_baseline+epsilon_0": [],
+    "delta_min+fallback_baseline+ipf_tolerance+epsilon_0": []
+   }
+  },
+  {
+   "scenario": "crossing-detour",
+   "variant": "history",
+   "k": 0.1,
+   "diff": [
+    "emphasis"
+   ],
+   "cont": {
+    "od": 0.0,
+    "throughput": 1.0,
+    "tau": 1.0,
+    "importance": 0.9999999666666678
+   },
+   "diag": {
+    "solver": "LIGHTWEIGHT",
+    "degraded": false,
+    "od_pairs_input": 1,
+    "commodities": 0,
+    "demand_all_cut": true,
+    "resolution_modes": [
+     "DOUBLY_CONSTRAINED"
+    ]
+   },
+   "census": {
+    "scaled": {
+     "flow_rate": 2,
+     "stagnation": 7,
+     "observed_count": 2,
+     "occupancy": 1,
+     "occupancy_delta": 1,
+     "p90_stagnation": 7,
+     "baseline_stagnation": 7,
+     "flow_samples": 14,
+     "stagnation_samples": 7,
+     "directional_flow_samples": 14,
+     "capacity_hint": 1
+    },
+    "unchanged_fields": [
+     "completeness",
+     "flow_sensitivity_eta",
+     "time_resolution_s"
+    ]
+   },
+   "attribution": {
+    "delta_min": [],
+    "fallback_baseline": [
+     "emphasis"
+    ],
+    "delta_min+fallback_baseline": [],
+    "delta_min+fallback_baseline+ipf_tolerance": [],
+    "delta_min+fallback_baseline+epsilon_0": [],
+    "delta_min+fallback_baseline+ipf_tolerance+epsilon_0": []
+   }
+  },
+  {
+   "scenario": "crossing-detour",
+   "variant": "history",
+   "k": 1.0,
+   "diff": [],
+   "cont": {
+    "od": 0.0,
+    "throughput": 0.0,
+    "tau": 0.0,
+    "importance": 0.0
+   },
+   "diag": {
+    "solver": "LIGHTWEIGHT",
+    "degraded": false,
+    "od_pairs_input": 1,
+    "commodities": 1,
+    "demand_all_cut": false,
+    "resolution_modes": [
+     "DOUBLY_CONSTRAINED"
+    ]
+   },
+   "census": {
+    "scaled": {},
+    "unchanged_fields": [
+     "baseline_stagnation",
+     "capacity_hint",
+     "completeness",
+     "directional_flow_samples",
+     "flow_rate",
+     "flow_samples",
+     "flow_sensitivity_eta",
+     "observed_count",
+     "occupancy",
+     "occupancy_delta",
+     "p90_stagnation",
+     "stagnation",
+     "stagnation_samples",
+     "time_resolution_s"
+    ]
+   }
+  },
+  {
+   "scenario": "crossing-detour",
+   "variant": "history",
+   "k": 10.0,
+   "diff": [],
+   "cont": {
+    "od": 0.0,
+    "throughput": 0.0,
+    "tau": 2.999999000598498e-07,
+    "importance": 2.999999892949745e-08
+   },
+   "diag": {
+    "solver": "LIGHTWEIGHT",
+    "degraded": false,
+    "od_pairs_input": 1,
+    "commodities": 1,
+    "demand_all_cut": false,
+    "resolution_modes": [
+     "DOUBLY_CONSTRAINED"
+    ]
+   },
+   "census": {
+    "scaled": {
+     "flow_rate": 2,
+     "stagnation": 7,
+     "observed_count": 2,
+     "occupancy": 1,
+     "occupancy_delta": 1,
+     "p90_stagnation": 7,
+     "baseline_stagnation": 7,
+     "flow_samples": 14,
+     "stagnation_samples": 7,
+     "directional_flow_samples": 14,
+     "capacity_hint": 1
+    },
+    "unchanged_fields": [
+     "completeness",
+     "flow_sensitivity_eta",
+     "time_resolution_s"
+    ]
+   },
+   "attribution": {
+    "delta_min": [],
+    "fallback_baseline": [],
+    "delta_min+fallback_baseline": [],
+    "delta_min+fallback_baseline+ipf_tolerance": [],
+    "delta_min+fallback_baseline+epsilon_0": [],
+    "delta_min+fallback_baseline+ipf_tolerance+epsilon_0": []
+   }
+  },
+  {
+   "scenario": "crossing-detour",
+   "variant": "history",
+   "k": 100.0,
+   "diff": [],
+   "cont": {
+    "od": 0.0,
+    "throughput": 0.0,
+    "tau": 3.2999989002913506e-07,
+    "importance": 3.299999895567396e-08
+   },
+   "diag": {
+    "solver": "LIGHTWEIGHT",
+    "degraded": false,
+    "od_pairs_input": 1,
+    "commodities": 1,
+    "demand_all_cut": false,
+    "resolution_modes": [
+     "DOUBLY_CONSTRAINED"
+    ]
+   },
+   "census": {
+    "scaled": {
+     "flow_rate": 2,
+     "stagnation": 7,
+     "observed_count": 2,
+     "occupancy": 1,
+     "occupancy_delta": 1,
+     "p90_stagnation": 7,
+     "baseline_stagnation": 7,
+     "flow_samples": 14,
+     "stagnation_samples": 7,
+     "directional_flow_samples": 14,
+     "capacity_hint": 1
+    },
+    "unchanged_fields": [
+     "completeness",
+     "flow_sensitivity_eta",
+     "time_resolution_s"
+    ]
+   },
+   "attribution": {
+    "delta_min": [],
+    "fallback_baseline": [],
+    "delta_min+fallback_baseline": [],
+    "delta_min+fallback_baseline+ipf_tolerance": [],
+    "delta_min+fallback_baseline+epsilon_0": [],
+    "delta_min+fallback_baseline+ipf_tolerance+epsilon_0": []
+   }
+  },
+  {
+   "scenario": "crossing-detour",
+   "variant": "no_history",
+   "k": 0.01,
+   "diff": [
+    "verdict",
+    "triggered",
+    "detour",
+    "emphasis"
+   ],
+   "cont": {
+    "od": 1.0,
+    "throughput": 1.0,
+    "tau": 1.0,
+    "importance": 0.9999999666666678
+   },
+   "diag": {
+    "solver": "LIGHTWEIGHT",
+    "degraded": false,
+    "od_pairs_input": 0,
+    "commodities": 0,
+    "demand_all_cut": false,
+    "resolution_modes": [
+     "DOUBLY_CONSTRAINED"
+    ]
+   },
+   "census": {
+    "scaled": {
+     "flow_rate": 2,
+     "stagnation": 7,
+     "observed_count": 2,
+     "occupancy": 1,
+     "occupancy_delta": 1,
+     "flow_samples": 14,
+     "stagnation_samples": 7,
+     "directional_flow_samples": 14,
+     "capacity_hint": 1
+    },
+    "unchanged_fields": [
+     "completeness",
+     "time_resolution_s"
+    ]
+   },
+   "attribution": {
+    "delta_min": [
+     "verdict",
+     "triggered",
+     "detour",
+     "emphasis"
+    ],
+    "fallback_baseline": [
+     "emphasis"
+    ],
+    "delta_min+fallback_baseline": [],
+    "delta_min+fallback_baseline+ipf_tolerance": [],
+    "delta_min+fallback_baseline+epsilon_0": [],
+    "delta_min+fallback_baseline+ipf_tolerance+epsilon_0": []
+   }
+  },
+  {
+   "scenario": "crossing-detour",
+   "variant": "no_history",
+   "k": 0.1,
+   "diff": [
+    "verdict",
+    "triggered",
+    "detour",
+    "emphasis"
+   ],
+   "cont": {
+    "od": 0.0,
+    "throughput": 1.0,
+    "tau": 1.0,
+    "importance": 0.9999999666666678
+   },
+   "diag": {
+    "solver": "LIGHTWEIGHT",
+    "degraded": false,
+    "od_pairs_input": 1,
+    "commodities": 0,
+    "demand_all_cut": true,
+    "resolution_modes": [
+     "DOUBLY_CONSTRAINED"
+    ]
+   },
+   "census": {
+    "scaled": {
+     "flow_rate": 2,
+     "stagnation": 7,
+     "observed_count": 2,
+     "occupancy": 1,
+     "occupancy_delta": 1,
+     "flow_samples": 14,
+     "stagnation_samples": 7,
+     "directional_flow_samples": 14,
+     "capacity_hint": 1
+    },
+    "unchanged_fields": [
+     "completeness",
+     "time_resolution_s"
+    ]
+   },
+   "attribution": {
+    "delta_min": [
+     "verdict",
+     "triggered",
+     "detour",
+     "emphasis"
+    ],
+    "fallback_baseline": [
+     "emphasis"
+    ],
+    "delta_min+fallback_baseline": [],
+    "delta_min+fallback_baseline+ipf_tolerance": [],
+    "delta_min+fallback_baseline+epsilon_0": [],
+    "delta_min+fallback_baseline+ipf_tolerance+epsilon_0": []
+   }
+  },
+  {
+   "scenario": "crossing-detour",
+   "variant": "no_history",
+   "k": 1.0,
+   "diff": [],
+   "cont": {
+    "od": 0.0,
+    "throughput": 0.0,
+    "tau": 0.0,
+    "importance": 0.0
+   },
+   "diag": {
+    "solver": "LIGHTWEIGHT",
+    "degraded": false,
+    "od_pairs_input": 1,
+    "commodities": 1,
+    "demand_all_cut": false,
+    "resolution_modes": [
+     "DOUBLY_CONSTRAINED"
+    ]
+   },
+   "census": {
+    "scaled": {},
+    "unchanged_fields": [
+     "capacity_hint",
+     "completeness",
+     "directional_flow_samples",
+     "flow_rate",
+     "flow_samples",
+     "observed_count",
+     "occupancy",
+     "occupancy_delta",
+     "stagnation",
+     "stagnation_samples",
+     "time_resolution_s"
+    ]
+   }
+  },
+  {
+   "scenario": "crossing-detour",
+   "variant": "no_history",
+   "k": 10.0,
+   "diff": [],
+   "cont": {
+    "od": 0.0,
+    "throughput": 0.0,
+    "tau": 0.9,
+    "importance": 2.999999892949745e-08
+   },
+   "diag": {
+    "solver": "LIGHTWEIGHT",
+    "degraded": false,
+    "od_pairs_input": 1,
+    "commodities": 1,
+    "demand_all_cut": false,
+    "resolution_modes": [
+     "DOUBLY_CONSTRAINED"
+    ]
+   },
+   "census": {
+    "scaled": {
+     "flow_rate": 2,
+     "stagnation": 7,
+     "observed_count": 2,
+     "occupancy": 1,
+     "occupancy_delta": 1,
+     "flow_samples": 14,
+     "stagnation_samples": 7,
+     "directional_flow_samples": 14,
+     "capacity_hint": 1
+    },
+    "unchanged_fields": [
+     "completeness",
+     "time_resolution_s"
+    ]
+   },
+   "attribution": {
+    "delta_min": [],
+    "fallback_baseline": [],
+    "delta_min+fallback_baseline": [],
+    "delta_min+fallback_baseline+ipf_tolerance": [],
+    "delta_min+fallback_baseline+epsilon_0": [],
+    "delta_min+fallback_baseline+ipf_tolerance+epsilon_0": []
+   }
+  },
+  {
+   "scenario": "crossing-detour",
+   "variant": "no_history",
+   "k": 100.0,
+   "diff": [],
+   "cont": {
+    "od": 0.0,
+    "throughput": 0.0,
+    "tau": 0.99,
+    "importance": 3.299999895567396e-08
+   },
+   "diag": {
+    "solver": "LIGHTWEIGHT",
+    "degraded": false,
+    "od_pairs_input": 1,
+    "commodities": 1,
+    "demand_all_cut": false,
+    "resolution_modes": [
+     "DOUBLY_CONSTRAINED"
+    ]
+   },
+   "census": {
+    "scaled": {
+     "flow_rate": 2,
+     "stagnation": 7,
+     "observed_count": 2,
+     "occupancy": 1,
+     "occupancy_delta": 1,
+     "flow_samples": 14,
+     "stagnation_samples": 7,
+     "directional_flow_samples": 14,
+     "capacity_hint": 1
+    },
+    "unchanged_fields": [
+     "completeness",
+     "time_resolution_s"
+    ]
+   },
+   "attribution": {
+    "delta_min": [],
+    "fallback_baseline": [],
+    "delta_min+fallback_baseline": [],
+    "delta_min+fallback_baseline+ipf_tolerance": [],
+    "delta_min+fallback_baseline+epsilon_0": [],
+    "delta_min+fallback_baseline+ipf_tolerance+epsilon_0": []
+   }
+  },
+  {
+   "scenario": "crossing-detour",
+   "variant": "obs_only",
+   "k": 0.01,
+   "diff": [
+    "emphasis"
+   ],
+   "cont": {
+    "od": 1.0,
+    "throughput": 1.0,
+    "tau": 1.0,
+    "importance": 0.9999999666666678
+   },
+   "diag": {
+    "solver": "LIGHTWEIGHT",
+    "degraded": false,
+    "od_pairs_input": 0,
+    "commodities": 0,
+    "demand_all_cut": false,
+    "resolution_modes": [
+     "DOUBLY_CONSTRAINED"
+    ]
+   },
+   "census": {
+    "scaled": {
+     "flow_rate": 2,
+     "stagnation": 7,
+     "observed_count": 2,
+     "occupancy": 1,
+     "occupancy_delta": 1,
+     "p90_stagnation": 7,
+     "baseline_stagnation": 7,
+     "flow_samples": 14,
+     "stagnation_samples": 7,
+     "directional_flow_samples": 14
+    },
+    "unchanged_fields": [
+     "capacity_hint",
+     "completeness",
+     "flow_sensitivity_eta",
+     "time_resolution_s"
+    ]
+   }
+  },
+  {
+   "scenario": "crossing-detour",
+   "variant": "obs_only",
+   "k": 0.1,
+   "diff": [
+    "emphasis"
+   ],
+   "cont": {
+    "od": 0.0,
+    "throughput": 1.0,
+    "tau": 1.0,
+    "importance": 0.9999999666666678
+   },
+   "diag": {
+    "solver": "LIGHTWEIGHT",
+    "degraded": false,
+    "od_pairs_input": 1,
+    "commodities": 0,
+    "demand_all_cut": true,
+    "resolution_modes": [
+     "DOUBLY_CONSTRAINED"
+    ]
+   },
+   "census": {
+    "scaled": {
+     "flow_rate": 2,
+     "stagnation": 7,
+     "observed_count": 2,
+     "occupancy": 1,
+     "occupancy_delta": 1,
+     "p90_stagnation": 7,
+     "baseline_stagnation": 7,
+     "flow_samples": 14,
+     "stagnation_samples": 7,
+     "directional_flow_samples": 14
+    },
+    "unchanged_fields": [
+     "capacity_hint",
+     "completeness",
+     "flow_sensitivity_eta",
+     "time_resolution_s"
+    ]
+   }
+  },
+  {
+   "scenario": "crossing-detour",
+   "variant": "obs_only",
+   "k": 1.0,
+   "diff": [],
+   "cont": {
+    "od": 0.0,
+    "throughput": 0.0,
+    "tau": 0.0,
+    "importance": 0.0
+   },
+   "diag": {
+    "solver": "LIGHTWEIGHT",
+    "degraded": false,
+    "od_pairs_input": 1,
+    "commodities": 1,
+    "demand_all_cut": false,
+    "resolution_modes": [
+     "DOUBLY_CONSTRAINED"
+    ]
+   },
+   "census": {
+    "scaled": {},
+    "unchanged_fields": [
+     "baseline_stagnation",
+     "capacity_hint",
+     "completeness",
+     "directional_flow_samples",
+     "flow_rate",
+     "flow_samples",
+     "flow_sensitivity_eta",
+     "observed_count",
+     "occupancy",
+     "occupancy_delta",
+     "p90_stagnation",
+     "stagnation",
+     "stagnation_samples",
+     "time_resolution_s"
+    ]
+   }
+  },
+  {
+   "scenario": "crossing-detour",
+   "variant": "obs_only",
+   "k": 10.0,
+   "diff": [
+    "emphasis"
+   ],
+   "cont": {
+    "od": 0.0,
+    "throughput": 0.15254237288135594,
+    "tau": 0.015025337228616063,
+    "importance": 0.3039215576028454
+   },
+   "diag": {
+    "solver": "LIGHTWEIGHT",
+    "degraded": false,
+    "od_pairs_input": 1,
+    "commodities": 1,
+    "demand_all_cut": false,
+    "resolution_modes": [
+     "DOUBLY_CONSTRAINED"
+    ]
+   },
+   "census": {
+    "scaled": {
+     "flow_rate": 2,
+     "stagnation": 7,
+     "observed_count": 2,
+     "occupancy": 1,
+     "occupancy_delta": 1,
+     "p90_stagnation": 7,
+     "baseline_stagnation": 7,
+     "flow_samples": 14,
+     "stagnation_samples": 7,
+     "directional_flow_samples": 14
+    },
+    "unchanged_fields": [
+     "capacity_hint",
+     "completeness",
+     "flow_sensitivity_eta",
+     "time_resolution_s"
+    ]
+   }
+  },
+  {
+   "scenario": "crossing-detour",
+   "variant": "obs_only",
+   "k": 100.0,
+   "diff": [
+    "emphasis"
+   ],
+   "cont": {
+    "od": 0.0,
+    "throughput": 0.16527545909849747,
+    "tau": 0.01650307501239393,
+    "importance": 0.3304679927101496
+   },
+   "diag": {
+    "solver": "LIGHTWEIGHT",
+    "degraded": false,
+    "od_pairs_input": 1,
+    "commodities": 1,
+    "demand_all_cut": false,
+    "resolution_modes": [
+     "DOUBLY_CONSTRAINED"
+    ]
+   },
+   "census": {
+    "scaled": {
+     "flow_rate": 2,
+     "stagnation": 7,
+     "observed_count": 2,
+     "occupancy": 1,
+     "occupancy_delta": 1,
+     "p90_stagnation": 7,
+     "baseline_stagnation": 7,
+     "flow_samples": 14,
+     "stagnation_samples": 7,
+     "directional_flow_samples": 14
+    },
+    "unchanged_fields": [
+     "capacity_hint",
+     "completeness",
+     "flow_sensitivity_eta",
+     "time_resolution_s"
+    ]
+   }
+  },
+  {
+   "scenario": "school-north-stair-peak",
+   "variant": "history",
+   "k": 0.01,
+   "diff": [
+    "emphasis"
+   ],
+   "cont": {
+    "od": 1.0,
+    "throughput": 1.0,
+    "tau": 1.0,
+    "importance": 0.4471544515500043
+   },
+   "diag": {
+    "solver": "LIGHTWEIGHT",
+    "degraded": false,
+    "od_pairs_input": 0,
+    "commodities": 0,
+    "demand_all_cut": false,
+    "resolution_modes": [
+     "DOUBLY_CONSTRAINED"
+    ]
+   },
+   "census": {
+    "scaled": {
+     "flow_rate": 7,
+     "stagnation": 12,
+     "observed_count": 7,
+     "occupancy": 7,
+     "occupancy_delta": 6,
+     "p90_stagnation": 12,
+     "baseline_stagnation": 12,
+     "flow_samples": 49,
+     "stagnation_samples": 12,
+     "directional_flow_samples": 49,
+     "capacity_hint": 15
+    },
+    "unchanged_fields": [
+     "completeness",
+     "flow_sensitivity_eta",
+     "time_resolution_s"
+    ]
+   },
+   "attribution": {
+    "delta_min": [],
+    "fallback_baseline": [
+     "emphasis"
+    ],
+    "delta_min+fallback_baseline": [],
+    "delta_min+fallback_baseline+ipf_tolerance": [],
+    "delta_min+fallback_baseline+epsilon_0": [],
+    "delta_min+fallback_baseline+ipf_tolerance+epsilon_0": []
+   }
+  },
+  {
+   "scenario": "school-north-stair-peak",
+   "variant": "history",
+   "k": 0.1,
+   "diff": [
+    "emphasis"
+   ],
+   "cont": {
+    "od": 1.0,
+    "throughput": 1.0,
+    "tau": 1.0,
+    "importance": 0.4471544515500043
+   },
+   "diag": {
+    "solver": "LIGHTWEIGHT",
+    "degraded": false,
+    "od_pairs_input": 1,
+    "commodities": 0,
+    "demand_all_cut": true,
+    "resolution_modes": [
+     "DOUBLY_CONSTRAINED"
+    ]
+   },
+   "census": {
+    "scaled": {
+     "flow_rate": 7,
+     "stagnation": 12,
+     "observed_count": 7,
+     "occupancy": 7,
+     "occupancy_delta": 6,
+     "p90_stagnation": 12,
+     "baseline_stagnation": 12,
+     "flow_samples": 49,
+     "stagnation_samples": 12,
+     "directional_flow_samples": 49,
+     "capacity_hint": 15
+    },
+    "unchanged_fields": [
+     "completeness",
+     "flow_sensitivity_eta",
+     "time_resolution_s"
+    ]
+   },
+   "attribution": {
+    "delta_min": [],
+    "fallback_baseline": [
+     "emphasis"
+    ],
+    "delta_min+fallback_baseline": [],
+    "delta_min+fallback_baseline+ipf_tolerance": [],
+    "delta_min+fallback_baseline+epsilon_0": [],
+    "delta_min+fallback_baseline+ipf_tolerance+epsilon_0": []
+   }
+  },
+  {
+   "scenario": "school-north-stair-peak",
+   "variant": "history",
+   "k": 1.0,
+   "diff": [],
+   "cont": {
+    "od": 0.0,
+    "throughput": 0.0,
+    "tau": 0.0,
+    "importance": 0.0
+   },
+   "diag": {
+    "solver": "LIGHTWEIGHT",
+    "degraded": false,
+    "od_pairs_input": 6,
+    "commodities": 1,
+    "demand_all_cut": false,
+    "resolution_modes": [
+     "DOUBLY_CONSTRAINED"
+    ]
+   },
+   "census": {
+    "scaled": {},
+    "unchanged_fields": [
+     "baseline_stagnation",
+     "capacity_hint",
+     "completeness",
+     "directional_flow_samples",
+     "flow_rate",
+     "flow_samples",
+     "flow_sensitivity_eta",
+     "observed_count",
+     "occupancy",
+     "occupancy_delta",
+     "p90_stagnation",
+     "stagnation",
+     "stagnation_samples",
+     "time_resolution_s"
+    ]
+   }
+  },
+  {
+   "scenario": "school-north-stair-peak",
+   "variant": "history",
+   "k": 10.0,
+   "diff": [
+    "emphasis"
+   ],
+   "cont": {
+    "od": 0.0,
+    "throughput": 0.375,
+    "tau": 2.9999989999662356e-07,
+    "importance": 0.23396009721400196
+   },
+   "diag": {
+    "solver": "LIGHTWEIGHT",
+    "degraded": false,
+    "od_pairs_input": 6,
+    "commodities": 6,
+    "demand_all_cut": false,
+    "resolution_modes": [
+     "DOUBLY_CONSTRAINED"
+    ]
+   },
+   "census": {
+    "scaled": {
+     "flow_rate": 7,
+     "stagnation": 12,
+     "observed_count": 7,
+     "occupancy": 7,
+     "occupancy_delta": 6,
+     "p90_stagnation": 12,
+     "baseline_stagnation": 12,
+     "flow_samples": 49,
+     "stagnation_samples": 12,
+     "directional_flow_samples": 49,
+     "capacity_hint": 15
+    },
+    "unchanged_fields": [
+     "completeness",
+     "flow_sensitivity_eta",
+     "time_resolution_s"
+    ]
+   },
+   "attribution": {
+    "delta_min": [],
+    "fallback_baseline": [
+     "emphasis"
+    ],
+    "delta_min+fallback_baseline": [],
+    "delta_min+fallback_baseline+ipf_tolerance": [],
+    "delta_min+fallback_baseline+epsilon_0": [],
+    "delta_min+fallback_baseline+ipf_tolerance+epsilon_0": []
+   }
+  },
+  {
+   "scenario": "school-north-stair-peak",
+   "variant": "history",
+   "k": 100.0,
+   "diff": [
+    "emphasis"
+   ],
+   "cont": {
+    "od": 0.0,
+    "throughput": 0.375,
+    "tau": 3.299998901149421e-07,
+    "importance": 0.2339600993016287
+   },
+   "diag": {
+    "solver": "LIGHTWEIGHT",
+    "degraded": false,
+    "od_pairs_input": 6,
+    "commodities": 6,
+    "demand_all_cut": false,
+    "resolution_modes": [
+     "DOUBLY_CONSTRAINED"
+    ]
+   },
+   "census": {
+    "scaled": {
+     "flow_rate": 7,
+     "stagnation": 12,
+     "observed_count": 7,
+     "occupancy": 7,
+     "occupancy_delta": 6,
+     "p90_stagnation": 12,
+     "baseline_stagnation": 12,
+     "flow_samples": 49,
+     "stagnation_samples": 12,
+     "directional_flow_samples": 49,
+     "capacity_hint": 15
+    },
+    "unchanged_fields": [
+     "completeness",
+     "flow_sensitivity_eta",
+     "time_resolution_s"
+    ]
+   },
+   "attribution": {
+    "delta_min": [],
+    "fallback_baseline": [
+     "emphasis"
+    ],
+    "delta_min+fallback_baseline": [],
+    "delta_min+fallback_baseline+ipf_tolerance": [],
+    "delta_min+fallback_baseline+epsilon_0": [],
+    "delta_min+fallback_baseline+ipf_tolerance+epsilon_0": []
+   }
+  },
+  {
+   "scenario": "school-north-stair-peak",
+   "variant": "no_history",
+   "k": 0.01,
+   "diff": [
+    "verdict",
+    "triggered",
+    "detour",
+    "emphasis"
+   ],
+   "cont": {
+    "od": 1.0,
+    "throughput": 1.0,
+    "tau": 1.0,
+    "importance": 0.9999999552845548
+   },
+   "diag": {
+    "solver": "LIGHTWEIGHT",
+    "degraded": false,
+    "od_pairs_input": 0,
+    "commodities": 0,
+    "demand_all_cut": false,
+    "resolution_modes": [
+     "DOUBLY_CONSTRAINED"
+    ]
+   },
+   "census": {
+    "scaled": {
+     "flow_rate": 7,
+     "stagnation": 12,
+     "observed_count": 7,
+     "occupancy": 7,
+     "occupancy_delta": 6,
+     "flow_samples": 49,
+     "stagnation_samples": 12,
+     "directional_flow_samples": 49,
+     "capacity_hint": 15
+    },
+    "unchanged_fields": [
+     "completeness",
+     "time_resolution_s"
+    ]
+   },
+   "attribution": {
+    "delta_min": [
+     "verdict",
+     "triggered",
+     "detour",
+     "emphasis"
+    ],
+    "fallback_baseline": [
+     "emphasis"
+    ],
+    "delta_min+fallback_baseline": [],
+    "delta_min+fallback_baseline+ipf_tolerance": [],
+    "delta_min+fallback_baseline+epsilon_0": [],
+    "delta_min+fallback_baseline+ipf_tolerance+epsilon_0": []
+   }
+  },
+  {
+   "scenario": "school-north-stair-peak",
+   "variant": "no_history",
+   "k": 0.1,
+   "diff": [
+    "verdict",
+    "triggered",
+    "detour",
+    "emphasis"
+   ],
+   "cont": {
+    "od": 1.0,
+    "throughput": 1.0,
+    "tau": 1.0,
+    "importance": 0.9999999552845548
+   },
+   "diag": {
+    "solver": "LIGHTWEIGHT",
+    "degraded": false,
+    "od_pairs_input": 1,
+    "commodities": 0,
+    "demand_all_cut": true,
+    "resolution_modes": [
+     "DOUBLY_CONSTRAINED"
+    ]
+   },
+   "census": {
+    "scaled": {
+     "flow_rate": 7,
+     "stagnation": 12,
+     "observed_count": 7,
+     "occupancy": 7,
+     "occupancy_delta": 6,
+     "flow_samples": 49,
+     "stagnation_samples": 12,
+     "directional_flow_samples": 49,
+     "capacity_hint": 15
+    },
+    "unchanged_fields": [
+     "completeness",
+     "time_resolution_s"
+    ]
+   },
+   "attribution": {
+    "delta_min": [
+     "verdict",
+     "triggered",
+     "detour",
+     "emphasis"
+    ],
+    "fallback_baseline": [
+     "emphasis"
+    ],
+    "delta_min+fallback_baseline": [],
+    "delta_min+fallback_baseline+ipf_tolerance": [],
+    "delta_min+fallback_baseline+epsilon_0": [],
+    "delta_min+fallback_baseline+ipf_tolerance+epsilon_0": []
+   }
+  },
+  {
+   "scenario": "school-north-stair-peak",
+   "variant": "no_history",
+   "k": 1.0,
+   "diff": [],
+   "cont": {
+    "od": 0.0,
+    "throughput": 0.0,
+    "tau": 0.0,
+    "importance": 0.0
+   },
+   "diag": {
+    "solver": "LIGHTWEIGHT",
+    "degraded": false,
+    "od_pairs_input": 6,
+    "commodities": 1,
+    "demand_all_cut": false,
+    "resolution_modes": [
+     "DOUBLY_CONSTRAINED"
+    ]
+   },
+   "census": {
+    "scaled": {},
+    "unchanged_fields": [
+     "capacity_hint",
+     "completeness",
+     "directional_flow_samples",
+     "flow_rate",
+     "flow_samples",
+     "observed_count",
+     "occupancy",
+     "occupancy_delta",
+     "stagnation",
+     "stagnation_samples",
+     "time_resolution_s"
+    ]
+   }
+  },
+  {
+   "scenario": "school-north-stair-peak",
+   "variant": "no_history",
+   "k": 10.0,
+   "diff": [
+    "emphasis"
+   ],
+   "cont": {
+    "od": 0.0,
+    "throughput": 0.375,
+    "tau": 0.9,
+    "importance": 0.23396009721400196
+   },
+   "diag": {
+    "solver": "LIGHTWEIGHT",
+    "degraded": false,
+    "od_pairs_input": 6,
+    "commodities": 6,
+    "demand_all_cut": false,
+    "resolution_modes": [
+     "DOUBLY_CONSTRAINED"
+    ]
+   },
+   "census": {
+    "scaled": {
+     "flow_rate": 7,
+     "stagnation": 12,
+     "observed_count": 7,
+     "occupancy": 7,
+     "occupancy_delta": 6,
+     "flow_samples": 49,
+     "stagnation_samples": 12,
+     "directional_flow_samples": 49,
+     "capacity_hint": 15
+    },
+    "unchanged_fields": [
+     "completeness",
+     "time_resolution_s"
+    ]
+   },
+   "attribution": {
+    "delta_min": [],
+    "fallback_baseline": [
+     "emphasis"
+    ],
+    "delta_min+fallback_baseline": [],
+    "delta_min+fallback_baseline+ipf_tolerance": [],
+    "delta_min+fallback_baseline+epsilon_0": [],
+    "delta_min+fallback_baseline+ipf_tolerance+epsilon_0": []
+   }
+  },
+  {
+   "scenario": "school-north-stair-peak",
+   "variant": "no_history",
+   "k": 100.0,
+   "diff": [
+    "emphasis"
+   ],
+   "cont": {
+    "od": 0.0,
+    "throughput": 0.375,
+    "tau": 0.99,
+    "importance": 0.2339600993016287
+   },
+   "diag": {
+    "solver": "LIGHTWEIGHT",
+    "degraded": false,
+    "od_pairs_input": 6,
+    "commodities": 6,
+    "demand_all_cut": false,
+    "resolution_modes": [
+     "DOUBLY_CONSTRAINED"
+    ]
+   },
+   "census": {
+    "scaled": {
+     "flow_rate": 7,
+     "stagnation": 12,
+     "observed_count": 7,
+     "occupancy": 7,
+     "occupancy_delta": 6,
+     "flow_samples": 49,
+     "stagnation_samples": 12,
+     "directional_flow_samples": 49,
+     "capacity_hint": 15
+    },
+    "unchanged_fields": [
+     "completeness",
+     "time_resolution_s"
+    ]
+   },
+   "attribution": {
+    "delta_min": [],
+    "fallback_baseline": [
+     "emphasis"
+    ],
+    "delta_min+fallback_baseline": [],
+    "delta_min+fallback_baseline+ipf_tolerance": [],
+    "delta_min+fallback_baseline+epsilon_0": [],
+    "delta_min+fallback_baseline+ipf_tolerance+epsilon_0": []
+   }
+  },
+  {
+   "scenario": "school-north-stair-peak",
+   "variant": "obs_only",
+   "k": 0.01,
+   "diff": [
+    "emphasis"
+   ],
+   "cont": {
+    "od": 1.0,
+    "throughput": 1.0,
+    "tau": 1.0,
+    "importance": 0.4471544515500043
+   },
+   "diag": {
+    "solver": "LIGHTWEIGHT",
+    "degraded": false,
+    "od_pairs_input": 0,
+    "commodities": 0,
+    "demand_all_cut": false,
+    "resolution_modes": [
+     "DOUBLY_CONSTRAINED"
+    ]
+   },
+   "census": {
+    "scaled": {
+     "flow_rate": 7,
+     "stagnation": 12,
+     "observed_count": 7,
+     "occupancy": 7,
+     "occupancy_delta": 6,
+     "p90_stagnation": 12,
+     "baseline_stagnation": 12,
+     "flow_samples": 49,
+     "stagnation_samples": 12,
+     "directional_flow_samples": 49
+    },
+    "unchanged_fields": [
+     "capacity_hint",
+     "completeness",
+     "flow_sensitivity_eta",
+     "time_resolution_s"
+    ]
+   }
+  },
+  {
+   "scenario": "school-north-stair-peak",
+   "variant": "obs_only",
+   "k": 0.1,
+   "diff": [
+    "emphasis"
+   ],
+   "cont": {
+    "od": 1.0,
+    "throughput": 1.0,
+    "tau": 1.0,
+    "importance": 0.4471544515500043
+   },
+   "diag": {
+    "solver": "LIGHTWEIGHT",
+    "degraded": false,
+    "od_pairs_input": 1,
+    "commodities": 0,
+    "demand_all_cut": true,
+    "resolution_modes": [
+     "DOUBLY_CONSTRAINED"
+    ]
+   },
+   "census": {
+    "scaled": {
+     "flow_rate": 7,
+     "stagnation": 12,
+     "observed_count": 7,
+     "occupancy": 7,
+     "occupancy_delta": 6,
+     "p90_stagnation": 12,
+     "baseline_stagnation": 12,
+     "flow_samples": 49,
+     "stagnation_samples": 12,
+     "directional_flow_samples": 49
+    },
+    "unchanged_fields": [
+     "capacity_hint",
+     "completeness",
+     "flow_sensitivity_eta",
+     "time_resolution_s"
+    ]
+   }
+  },
+  {
+   "scenario": "school-north-stair-peak",
+   "variant": "obs_only",
+   "k": 1.0,
+   "diff": [],
+   "cont": {
+    "od": 0.0,
+    "throughput": 0.0,
+    "tau": 0.0,
+    "importance": 0.0
+   },
+   "diag": {
+    "solver": "LIGHTWEIGHT",
+    "degraded": false,
+    "od_pairs_input": 6,
+    "commodities": 1,
+    "demand_all_cut": false,
+    "resolution_modes": [
+     "DOUBLY_CONSTRAINED"
+    ]
+   },
+   "census": {
+    "scaled": {},
+    "unchanged_fields": [
+     "baseline_stagnation",
+     "capacity_hint",
+     "completeness",
+     "directional_flow_samples",
+     "flow_rate",
+     "flow_samples",
+     "flow_sensitivity_eta",
+     "observed_count",
+     "occupancy",
+     "occupancy_delta",
+     "p90_stagnation",
+     "stagnation",
+     "stagnation_samples",
+     "time_resolution_s"
+    ]
+   }
+  },
+  {
+   "scenario": "school-north-stair-peak",
+   "variant": "obs_only",
+   "k": 10.0,
+   "diff": [
+    "detour",
+    "emphasis"
+   ],
+   "cont": {
+    "od": 0.0,
+    "throughput": 0.3288590604026846,
+    "tau": 0.005499701650009855,
+    "importance": 0.7601625676350071
+   },
+   "diag": {
+    "solver": "INFEASIBLE",
+    "degraded": true,
+    "od_pairs_input": 6,
+    "commodities": 6,
+    "demand_all_cut": false,
+    "resolution_modes": [
+     "DOUBLY_CONSTRAINED"
+    ]
+   },
+   "census": {
+    "scaled": {
+     "flow_rate": 7,
+     "stagnation": 12,
+     "observed_count": 7,
+     "occupancy": 7,
+     "occupancy_delta": 6,
+     "p90_stagnation": 12,
+     "baseline_stagnation": 12,
+     "flow_samples": 49,
+     "stagnation_samples": 12,
+     "directional_flow_samples": 49
+    },
+    "unchanged_fields": [
+     "capacity_hint",
+     "completeness",
+     "flow_sensitivity_eta",
+     "time_resolution_s"
+    ]
+   }
+  },
+  {
+   "scenario": "school-north-stair-peak",
+   "variant": "obs_only",
+   "k": 100.0,
+   "diff": [
+    "detour",
+    "emphasis"
+   ],
+   "cont": {
+    "od": 0.0,
+    "throughput": 0.3706733794839522,
+    "tau": 0.0005496701815011236,
+    "importance": 0.7601625676350071
+   },
+   "diag": {
+    "solver": "INFEASIBLE",
+    "degraded": true,
+    "od_pairs_input": 6,
+    "commodities": 6,
+    "demand_all_cut": false,
+    "resolution_modes": [
+     "DOUBLY_CONSTRAINED"
+    ]
+   },
+   "census": {
+    "scaled": {
+     "flow_rate": 7,
+     "stagnation": 12,
+     "observed_count": 7,
+     "occupancy": 7,
+     "occupancy_delta": 6,
+     "p90_stagnation": 12,
+     "baseline_stagnation": 12,
+     "flow_samples": 49,
+     "stagnation_samples": 12,
+     "directional_flow_samples": 49
+    },
+    "unchanged_fields": [
+     "capacity_hint",
+     "completeness",
+     "flow_sensitivity_eta",
+     "time_resolution_s"
+    ]
+   }
+  },
+  {
+   "scenario": "multi-route-surge",
+   "variant": "history",
+   "k": 0.01,
+   "diff": [
+    "emphasis"
+   ],
+   "cont": {
+    "od": 1.0,
+    "throughput": 1.0,
+    "tau": 1.0,
+    "importance": 0.9999999714285723
+   },
+   "diag": {
+    "solver": "LIGHTWEIGHT",
+    "degraded": false,
+    "od_pairs_input": 0,
+    "commodities": 0,
+    "demand_all_cut": false,
+    "resolution_modes": [
+     "DOUBLY_CONSTRAINED"
+    ]
+   },
+   "census": {
+    "scaled": {
+     "flow_rate": 3,
+     "stagnation": 7,
+     "observed_count": 3,
+     "occupancy": 2,
+     "occupancy_delta": 2,
+     "p90_stagnation": 7,
+     "baseline_stagnation": 7,
+     "flow_samples": 21,
+     "stagnation_samples": 7,
+     "directional_flow_samples": 21,
+     "capacity_hint": 3
+    },
+    "unchanged_fields": [
+     "completeness",
+     "flow_sensitivity_eta",
+     "time_resolution_s"
+    ]
+   },
+   "attribution": {
+    "delta_min": [],
+    "fallback_baseline": [
+     "emphasis"
+    ],
+    "delta_min+fallback_baseline": [],
+    "delta_min+fallback_baseline+ipf_tolerance": [],
+    "delta_min+fallback_baseline+epsilon_0": [],
+    "delta_min+fallback_baseline+ipf_tolerance+epsilon_0": []
+   }
+  },
+  {
+   "scenario": "multi-route-surge",
+   "variant": "history",
+   "k": 0.1,
+   "diff": [
+    "emphasis"
+   ],
+   "cont": {
+    "od": 0.0,
+    "throughput": 1.0,
+    "tau": 1.0,
+    "importance": 0.9999999714285723
+   },
+   "diag": {
+    "solver": "LIGHTWEIGHT",
+    "degraded": false,
+    "od_pairs_input": 2,
+    "commodities": 0,
+    "demand_all_cut": true,
+    "resolution_modes": [
+     "DOUBLY_CONSTRAINED"
+    ]
+   },
+   "census": {
+    "scaled": {
+     "flow_rate": 3,
+     "stagnation": 7,
+     "observed_count": 3,
+     "occupancy": 2,
+     "occupancy_delta": 2,
+     "p90_stagnation": 7,
+     "baseline_stagnation": 7,
+     "flow_samples": 21,
+     "stagnation_samples": 7,
+     "directional_flow_samples": 21,
+     "capacity_hint": 3
+    },
+    "unchanged_fields": [
+     "completeness",
+     "flow_sensitivity_eta",
+     "time_resolution_s"
+    ]
+   },
+   "attribution": {
+    "delta_min": [],
+    "fallback_baseline": [
+     "emphasis"
+    ],
+    "delta_min+fallback_baseline": [],
+    "delta_min+fallback_baseline+ipf_tolerance": [],
+    "delta_min+fallback_baseline+epsilon_0": [],
+    "delta_min+fallback_baseline+ipf_tolerance+epsilon_0": []
+   }
+  },
+  {
+   "scenario": "multi-route-surge",
+   "variant": "history",
+   "k": 1.0,
+   "diff": [],
+   "cont": {
+    "od": 0.0,
+    "throughput": 0.0,
+    "tau": 0.0,
+    "importance": 0.0
+   },
+   "diag": {
+    "solver": "LIGHTWEIGHT",
+    "degraded": false,
+    "od_pairs_input": 2,
+    "commodities": 2,
+    "demand_all_cut": false,
+    "resolution_modes": [
+     "DOUBLY_CONSTRAINED"
+    ]
+   },
+   "census": {
+    "scaled": {},
+    "unchanged_fields": [
+     "baseline_stagnation",
+     "capacity_hint",
+     "completeness",
+     "directional_flow_samples",
+     "flow_rate",
+     "flow_samples",
+     "flow_sensitivity_eta",
+     "observed_count",
+     "occupancy",
+     "occupancy_delta",
+     "p90_stagnation",
+     "stagnation",
+     "stagnation_samples",
+     "time_resolution_s"
+    ]
+   }
+  },
+  {
+   "scenario": "multi-route-surge",
+   "variant": "history",
+   "k": 10.0,
+   "diff": [],
+   "cont": {
+    "od": 0.0,
+    "throughput": 0.0,
+    "tau": 2.999998999447476e-07,
+    "importance": 2.571428481257243e-08
+   },
+   "diag": {
+    "solver": "LIGHTWEIGHT",
+    "degraded": false,
+    "od_pairs_input": 2,
+    "commodities": 2,
+    "demand_all_cut": false,
+    "resolution_modes": [
+     "DOUBLY_CONSTRAINED"
+    ]
+   },
+   "census": {
+    "scaled": {
+     "flow_rate": 3,
+     "stagnation": 7,
+     "observed_count": 3,
+     "occupancy": 2,
+     "occupancy_delta": 2,
+     "p90_stagnation": 7,
+     "baseline_stagnation": 7,
+     "flow_samples": 21,
+     "stagnation_samples": 7,
+     "directional_flow_samples": 21,
+     "capacity_hint": 3
+    },
+    "unchanged_fields": [
+     "completeness",
+     "flow_sensitivity_eta",
+     "time_resolution_s"
+    ]
+   },
+   "attribution": {
+    "delta_min": [],
+    "fallback_baseline": [],
+    "delta_min+fallback_baseline": [],
+    "delta_min+fallback_baseline+ipf_tolerance": [],
+    "delta_min+fallback_baseline+epsilon_0": [],
+    "delta_min+fallback_baseline+ipf_tolerance+epsilon_0": []
+   }
+  },
+  {
+   "scenario": "multi-route-surge",
+   "variant": "history",
+   "k": 100.0,
+   "diff": [],
+   "cont": {
+    "od": 0.0,
+    "throughput": 0.0,
+    "tau": 3.299998899899683e-07,
+    "importance": 2.8285713438158666e-08
+   },
+   "diag": {
+    "solver": "LIGHTWEIGHT",
+    "degraded": false,
+    "od_pairs_input": 2,
+    "commodities": 2,
+    "demand_all_cut": false,
+    "resolution_modes": [
+     "DOUBLY_CONSTRAINED"
+    ]
+   },
+   "census": {
+    "scaled": {
+     "flow_rate": 3,
+     "stagnation": 7,
+     "observed_count": 3,
+     "occupancy": 2,
+     "occupancy_delta": 2,
+     "p90_stagnation": 7,
+     "baseline_stagnation": 7,
+     "flow_samples": 21,
+     "stagnation_samples": 7,
+     "directional_flow_samples": 21,
+     "capacity_hint": 3
+    },
+    "unchanged_fields": [
+     "completeness",
+     "flow_sensitivity_eta",
+     "time_resolution_s"
+    ]
+   },
+   "attribution": {
+    "delta_min": [],
+    "fallback_baseline": [],
+    "delta_min+fallback_baseline": [],
+    "delta_min+fallback_baseline+ipf_tolerance": [],
+    "delta_min+fallback_baseline+epsilon_0": [],
+    "delta_min+fallback_baseline+ipf_tolerance+epsilon_0": []
+   }
+  },
+  {
+   "scenario": "multi-route-surge",
+   "variant": "no_history",
+   "k": 0.01,
+   "diff": [
+    "verdict",
+    "triggered",
+    "detour",
+    "emphasis"
+   ],
+   "cont": {
+    "od": 1.0,
+    "throughput": 1.0,
+    "tau": 1.0,
+    "importance": 0.9999999714285723
+   },
+   "diag": {
+    "solver": "LIGHTWEIGHT",
+    "degraded": false,
+    "od_pairs_input": 0,
+    "commodities": 0,
+    "demand_all_cut": false,
+    "resolution_modes": [
+     "DOUBLY_CONSTRAINED"
+    ]
+   },
+   "census": {
+    "scaled": {
+     "flow_rate": 3,
+     "stagnation": 7,
+     "observed_count": 3,
+     "occupancy": 2,
+     "occupancy_delta": 2,
+     "flow_samples": 21,
+     "stagnation_samples": 7,
+     "directional_flow_samples": 21,
+     "capacity_hint": 3
+    },
+    "unchanged_fields": [
+     "completeness",
+     "time_resolution_s"
+    ]
+   },
+   "attribution": {
+    "delta_min": [
+     "verdict",
+     "triggered",
+     "detour",
+     "emphasis"
+    ],
+    "fallback_baseline": [
+     "emphasis"
+    ],
+    "delta_min+fallback_baseline": [],
+    "delta_min+fallback_baseline+ipf_tolerance": [],
+    "delta_min+fallback_baseline+epsilon_0": [],
+    "delta_min+fallback_baseline+ipf_tolerance+epsilon_0": []
+   }
+  },
+  {
+   "scenario": "multi-route-surge",
+   "variant": "no_history",
+   "k": 0.1,
+   "diff": [
+    "verdict",
+    "triggered",
+    "detour",
+    "emphasis"
+   ],
+   "cont": {
+    "od": 0.0,
+    "throughput": 1.0,
+    "tau": 1.0,
+    "importance": 0.9999999714285723
+   },
+   "diag": {
+    "solver": "LIGHTWEIGHT",
+    "degraded": false,
+    "od_pairs_input": 2,
+    "commodities": 0,
+    "demand_all_cut": true,
+    "resolution_modes": [
+     "DOUBLY_CONSTRAINED"
+    ]
+   },
+   "census": {
+    "scaled": {
+     "flow_rate": 3,
+     "stagnation": 7,
+     "observed_count": 3,
+     "occupancy": 2,
+     "occupancy_delta": 2,
+     "flow_samples": 21,
+     "stagnation_samples": 7,
+     "directional_flow_samples": 21,
+     "capacity_hint": 3
+    },
+    "unchanged_fields": [
+     "completeness",
+     "time_resolution_s"
+    ]
+   },
+   "attribution": {
+    "delta_min": [
+     "verdict",
+     "triggered",
+     "detour",
+     "emphasis"
+    ],
+    "fallback_baseline": [
+     "emphasis"
+    ],
+    "delta_min+fallback_baseline": [],
+    "delta_min+fallback_baseline+ipf_tolerance": [],
+    "delta_min+fallback_baseline+epsilon_0": [],
+    "delta_min+fallback_baseline+ipf_tolerance+epsilon_0": []
+   }
+  },
+  {
+   "scenario": "multi-route-surge",
+   "variant": "no_history",
+   "k": 1.0,
+   "diff": [],
+   "cont": {
+    "od": 0.0,
+    "throughput": 0.0,
+    "tau": 0.0,
+    "importance": 0.0
+   },
+   "diag": {
+    "solver": "LIGHTWEIGHT",
+    "degraded": false,
+    "od_pairs_input": 2,
+    "commodities": 2,
+    "demand_all_cut": false,
+    "resolution_modes": [
+     "DOUBLY_CONSTRAINED"
+    ]
+   },
+   "census": {
+    "scaled": {},
+    "unchanged_fields": [
+     "capacity_hint",
+     "completeness",
+     "directional_flow_samples",
+     "flow_rate",
+     "flow_samples",
+     "observed_count",
+     "occupancy",
+     "occupancy_delta",
+     "stagnation",
+     "stagnation_samples",
+     "time_resolution_s"
+    ]
+   }
+  },
+  {
+   "scenario": "multi-route-surge",
+   "variant": "no_history",
+   "k": 10.0,
+   "diff": [],
+   "cont": {
+    "od": 0.0,
+    "throughput": 0.0,
+    "tau": 0.8999999999999999,
+    "importance": 2.571428481257243e-08
+   },
+   "diag": {
+    "solver": "LIGHTWEIGHT",
+    "degraded": false,
+    "od_pairs_input": 2,
+    "commodities": 2,
+    "demand_all_cut": false,
+    "resolution_modes": [
+     "DOUBLY_CONSTRAINED"
+    ]
+   },
+   "census": {
+    "scaled": {
+     "flow_rate": 3,
+     "stagnation": 7,
+     "observed_count": 3,
+     "occupancy": 2,
+     "occupancy_delta": 2,
+     "flow_samples": 21,
+     "stagnation_samples": 7,
+     "directional_flow_samples": 21,
+     "capacity_hint": 3
+    },
+    "unchanged_fields": [
+     "completeness",
+     "time_resolution_s"
+    ]
+   },
+   "attribution": {
+    "delta_min": [],
+    "fallback_baseline": [],
+    "delta_min+fallback_baseline": [],
+    "delta_min+fallback_baseline+ipf_tolerance": [],
+    "delta_min+fallback_baseline+epsilon_0": [],
+    "delta_min+fallback_baseline+ipf_tolerance+epsilon_0": []
+   }
+  },
+  {
+   "scenario": "multi-route-surge",
+   "variant": "no_history",
+   "k": 100.0,
+   "diff": [],
+   "cont": {
+    "od": 0.0,
+    "throughput": 0.0,
+    "tau": 0.99,
+    "importance": 2.8285713438158666e-08
+   },
+   "diag": {
+    "solver": "LIGHTWEIGHT",
+    "degraded": false,
+    "od_pairs_input": 2,
+    "commodities": 2,
+    "demand_all_cut": false,
+    "resolution_modes": [
+     "DOUBLY_CONSTRAINED"
+    ]
+   },
+   "census": {
+    "scaled": {
+     "flow_rate": 3,
+     "stagnation": 7,
+     "observed_count": 3,
+     "occupancy": 2,
+     "occupancy_delta": 2,
+     "flow_samples": 21,
+     "stagnation_samples": 7,
+     "directional_flow_samples": 21,
+     "capacity_hint": 3
+    },
+    "unchanged_fields": [
+     "completeness",
+     "time_resolution_s"
+    ]
+   },
+   "attribution": {
+    "delta_min": [],
+    "fallback_baseline": [],
+    "delta_min+fallback_baseline": [],
+    "delta_min+fallback_baseline+ipf_tolerance": [],
+    "delta_min+fallback_baseline+epsilon_0": [],
+    "delta_min+fallback_baseline+ipf_tolerance+epsilon_0": []
+   }
+  },
+  {
+   "scenario": "multi-route-surge",
+   "variant": "obs_only",
+   "k": 0.01,
+   "diff": [
+    "emphasis"
+   ],
+   "cont": {
+    "od": 1.0,
+    "throughput": 1.0,
+    "tau": 1.0,
+    "importance": 0.9999999714285723
+   },
+   "diag": {
+    "solver": "LIGHTWEIGHT",
+    "degraded": false,
+    "od_pairs_input": 0,
+    "commodities": 0,
+    "demand_all_cut": false,
+    "resolution_modes": [
+     "DOUBLY_CONSTRAINED"
+    ]
+   },
+   "census": {
+    "scaled": {
+     "flow_rate": 3,
+     "stagnation": 7,
+     "observed_count": 3,
+     "occupancy": 2,
+     "occupancy_delta": 2,
+     "p90_stagnation": 7,
+     "baseline_stagnation": 7,
+     "flow_samples": 21,
+     "stagnation_samples": 7,
+     "directional_flow_samples": 21
+    },
+    "unchanged_fields": [
+     "capacity_hint",
+     "completeness",
+     "flow_sensitivity_eta",
+     "time_resolution_s"
+    ]
+   }
+  },
+  {
+   "scenario": "multi-route-surge",
+   "variant": "obs_only",
+   "k": 0.1,
+   "diff": [
+    "emphasis"
+   ],
+   "cont": {
+    "od": 0.0,
+    "throughput": 1.0,
+    "tau": 1.0,
+    "importance": 0.9999999714285723
+   },
+   "diag": {
+    "solver": "LIGHTWEIGHT",
+    "degraded": false,
+    "od_pairs_input": 2,
+    "commodities": 0,
+    "demand_all_cut": true,
+    "resolution_modes": [
+     "DOUBLY_CONSTRAINED"
+    ]
+   },
+   "census": {
+    "scaled": {
+     "flow_rate": 3,
+     "stagnation": 7,
+     "observed_count": 3,
+     "occupancy": 2,
+     "occupancy_delta": 2,
+     "p90_stagnation": 7,
+     "baseline_stagnation": 7,
+     "flow_samples": 21,
+     "stagnation_samples": 7,
+     "directional_flow_samples": 21
+    },
+    "unchanged_fields": [
+     "capacity_hint",
+     "completeness",
+     "flow_sensitivity_eta",
+     "time_resolution_s"
+    ]
+   }
+  },
+  {
+   "scenario": "multi-route-surge",
+   "variant": "obs_only",
+   "k": 1.0,
+   "diff": [],
+   "cont": {
+    "od": 0.0,
+    "throughput": 0.0,
+    "tau": 0.0,
+    "importance": 0.0
+   },
+   "diag": {
+    "solver": "LIGHTWEIGHT",
+    "degraded": false,
+    "od_pairs_input": 2,
+    "commodities": 2,
+    "demand_all_cut": false,
+    "resolution_modes": [
+     "DOUBLY_CONSTRAINED"
+    ]
+   },
+   "census": {
+    "scaled": {},
+    "unchanged_fields": [
+     "baseline_stagnation",
+     "capacity_hint",
+     "completeness",
+     "directional_flow_samples",
+     "flow_rate",
+     "flow_samples",
+     "flow_sensitivity_eta",
+     "observed_count",
+     "occupancy",
+     "occupancy_delta",
+     "p90_stagnation",
+     "stagnation",
+     "stagnation_samples",
+     "time_resolution_s"
+    ]
+   }
+  },
+  {
+   "scenario": "multi-route-surge",
+   "variant": "obs_only",
+   "k": 10.0,
+   "diff": [
+    "detour",
+    "emphasis"
+   ],
+   "cont": {
+    "od": 0.0,
+    "throughput": 0.0,
+    "tau": 2.999998999447476e-07,
+    "importance": 0.7142856938775517
+   },
+   "diag": {
+    "solver": "INFEASIBLE",
+    "degraded": true,
+    "od_pairs_input": 2,
+    "commodities": 2,
+    "demand_all_cut": false,
+    "resolution_modes": [
+     "DOUBLY_CONSTRAINED"
+    ]
+   },
+   "census": {
+    "scaled": {
+     "flow_rate": 3,
+     "stagnation": 7,
+     "observed_count": 3,
+     "occupancy": 2,
+     "occupancy_delta": 2,
+     "p90_stagnation": 7,
+     "baseline_stagnation": 7,
+     "flow_samples": 21,
+     "stagnation_samples": 7,
+     "directional_flow_samples": 21
+    },
+    "unchanged_fields": [
+     "capacity_hint",
+     "completeness",
+     "flow_sensitivity_eta",
+     "time_resolution_s"
+    ]
+   }
+  },
+  {
+   "scenario": "multi-route-surge",
+   "variant": "obs_only",
+   "k": 100.0,
+   "diff": [
+    "detour",
+    "emphasis"
+   ],
+   "cont": {
+    "od": 0.0,
+    "throughput": 0.0,
+    "tau": 3.299998899899683e-07,
+    "importance": 0.7142856938775517
+   },
+   "diag": {
+    "solver": "INFEASIBLE",
+    "degraded": true,
+    "od_pairs_input": 2,
+    "commodities": 2,
+    "demand_all_cut": false,
+    "resolution_modes": [
+     "DOUBLY_CONSTRAINED"
+    ]
+   },
+   "census": {
+    "scaled": {
+     "flow_rate": 3,
+     "stagnation": 7,
+     "observed_count": 3,
+     "occupancy": 2,
+     "occupancy_delta": 2,
+     "p90_stagnation": 7,
+     "baseline_stagnation": 7,
+     "flow_samples": 21,
+     "stagnation_samples": 7,
+     "directional_flow_samples": 21
+    },
+    "unchanged_fields": [
+     "capacity_hint",
+     "completeness",
+     "flow_sensitivity_eta",
+     "time_resolution_s"
+    ]
+   }
+  }
+ ],
+ "probes": [
+  {
+   "scenario": "reversible-corridor-flip",
+   "variant": "history",
+   "eps_factor": 0.0,
+   "diff": []
+  },
+  {
+   "scenario": "reversible-corridor-flip",
+   "variant": "history",
+   "eps_factor": 2.0,
+   "diff": []
+  },
+  {
+   "scenario": "reversible-corridor-flip",
+   "variant": "no_history",
+   "eps_factor": 0.0,
+   "diff": []
+  },
+  {
+   "scenario": "reversible-corridor-flip",
+   "variant": "no_history",
+   "eps_factor": 2.0,
+   "diff": []
+  },
+  {
+   "scenario": "stadium-egress-concourse",
+   "variant": "history",
+   "eps_factor": 0.0,
+   "diff": []
+  },
+  {
+   "scenario": "stadium-egress-concourse",
+   "variant": "history",
+   "eps_factor": 2.0,
+   "diff": []
+  },
+  {
+   "scenario": "stadium-egress-concourse",
+   "variant": "no_history",
+   "eps_factor": 0.0,
+   "diff": []
+  },
+  {
+   "scenario": "stadium-egress-concourse",
+   "variant": "no_history",
+   "eps_factor": 2.0,
+   "diff": []
+  },
+  {
+   "scenario": "station-transfer-peak",
+   "variant": "history",
+   "eps_factor": 0.0,
+   "diff": [
+    "emphasis"
+   ]
+  },
+  {
+   "scenario": "station-transfer-peak",
+   "variant": "history",
+   "eps_factor": 2.0,
+   "diff": [
+    "emphasis"
+   ]
+  },
+  {
+   "scenario": "station-transfer-peak",
+   "variant": "no_history",
+   "eps_factor": 0.0,
+   "diff": []
+  },
+  {
+   "scenario": "station-transfer-peak",
+   "variant": "no_history",
+   "eps_factor": 2.0,
+   "diff": []
+  },
+  {
+   "scenario": "expo-gate-overcrowded",
+   "variant": "history",
+   "eps_factor": 0.0,
+   "diff": []
+  },
+  {
+   "scenario": "expo-gate-overcrowded",
+   "variant": "history",
+   "eps_factor": 2.0,
+   "diff": []
+  },
+  {
+   "scenario": "expo-gate-overcrowded",
+   "variant": "no_history",
+   "eps_factor": 0.0,
+   "diff": []
+  },
+  {
+   "scenario": "expo-gate-overcrowded",
+   "variant": "no_history",
+   "eps_factor": 2.0,
+   "diff": []
+  },
+  {
+   "scenario": "expo-incident-resume",
+   "variant": "history",
+   "eps_factor": 0.0,
+   "diff": []
+  },
+  {
+   "scenario": "expo-incident-resume",
+   "variant": "history",
+   "eps_factor": 2.0,
+   "diff": []
+  },
+  {
+   "scenario": "expo-incident-resume",
+   "variant": "no_history",
+   "eps_factor": 0.0,
+   "diff": []
+  },
+  {
+   "scenario": "expo-incident-resume",
+   "variant": "no_history",
+   "eps_factor": 2.0,
+   "diff": []
+  },
+  {
+   "scenario": "museum-special-exhibit-limit",
+   "variant": "history",
+   "eps_factor": 0.0,
+   "diff": []
+  },
+  {
+   "scenario": "museum-special-exhibit-limit",
+   "variant": "history",
+   "eps_factor": 2.0,
+   "diff": []
+  },
+  {
+   "scenario": "museum-special-exhibit-limit",
+   "variant": "no_history",
+   "eps_factor": 0.0,
+   "diff": []
+  },
+  {
+   "scenario": "museum-special-exhibit-limit",
+   "variant": "no_history",
+   "eps_factor": 2.0,
+   "diff": []
+  },
+  {
+   "scenario": "restriction-undrainable",
+   "variant": "history",
+   "eps_factor": 0.0,
+   "diff": []
+  },
+  {
+   "scenario": "restriction-undrainable",
+   "variant": "history",
+   "eps_factor": 2.0,
+   "diff": []
+  },
+  {
+   "scenario": "restriction-undrainable",
+   "variant": "no_history",
+   "eps_factor": 0.0,
+   "diff": []
+  },
+  {
+   "scenario": "restriction-undrainable",
+   "variant": "no_history",
+   "eps_factor": 2.0,
+   "diff": []
+  },
+  {
+   "scenario": "festival-gate-split",
+   "variant": "history",
+   "eps_factor": 0.0,
+   "diff": []
+  },
+  {
+   "scenario": "festival-gate-split",
+   "variant": "history",
+   "eps_factor": 2.0,
+   "diff": []
+  },
+  {
+   "scenario": "festival-gate-split",
+   "variant": "no_history",
+   "eps_factor": 0.0,
+   "diff": []
+  },
+  {
+   "scenario": "festival-gate-split",
+   "variant": "no_history",
+   "eps_factor": 2.0,
+   "diff": []
+  },
+  {
+   "scenario": "crossing-detour",
+   "variant": "history",
+   "eps_factor": 0.0,
+   "diff": []
+  },
+  {
+   "scenario": "crossing-detour",
+   "variant": "history",
+   "eps_factor": 2.0,
+   "diff": []
+  },
+  {
+   "scenario": "crossing-detour",
+   "variant": "no_history",
+   "eps_factor": 0.0,
+   "diff": []
+  },
+  {
+   "scenario": "crossing-detour",
+   "variant": "no_history",
+   "eps_factor": 2.0,
+   "diff": []
+  },
+  {
+   "scenario": "school-north-stair-peak",
+   "variant": "history",
+   "eps_factor": 0.0,
+   "diff": []
+  },
+  {
+   "scenario": "school-north-stair-peak",
+   "variant": "history",
+   "eps_factor": 2.0,
+   "diff": []
+  },
+  {
+   "scenario": "school-north-stair-peak",
+   "variant": "no_history",
+   "eps_factor": 0.0,
+   "diff": []
+  },
+  {
+   "scenario": "school-north-stair-peak",
+   "variant": "no_history",
+   "eps_factor": 2.0,
+   "diff": []
+  },
+  {
+   "scenario": "multi-route-surge",
+   "variant": "history",
+   "eps_factor": 0.0,
+   "diff": []
+  },
+  {
+   "scenario": "multi-route-surge",
+   "variant": "history",
+   "eps_factor": 2.0,
+   "diff": []
+  },
+  {
+   "scenario": "multi-route-surge",
+   "variant": "no_history",
+   "eps_factor": 0.0,
+   "diff": []
+  },
+  {
+   "scenario": "multi-route-surge",
+   "variant": "no_history",
+   "eps_factor": 2.0,
+   "diff": []
+  }
+ ]
+}
