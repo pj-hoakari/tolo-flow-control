@@ -133,7 +133,7 @@ def detect_metric_triggers(
                 server_time,
                 config.epsilon_0,
             )
-        elif previous_watch is not None:
+        elif previous_watch is not None and not state.out_of_scope:
             stag = _StagnationEval(
                 False,
                 previous_watch.stagnation_watch_since,

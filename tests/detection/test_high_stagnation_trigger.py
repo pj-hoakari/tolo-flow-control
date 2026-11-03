@@ -403,6 +403,59 @@ def test_undeterminable_cycle_pauses_the_persistence_timer(
     assert resumed.triggered_edges == (edge_id,)
 
 
+@pytest.mark.parametrize("invalid", [True, False], ids=["invalid", "unobserved"])
+def test_out_of_scope_cycle_resets_the_persistence_timer(
+    base_time: datetime,
+    basic_graph: Graph,
+    edge_id: EdgeID,
+    surge_config: ResolvedConfig,
+    make_history,
+    make_combined_firing,
+    invalid: bool,
+):
+    started = base_time - timedelta(minutes=5)
+    history = make_history((edge_id, 5.0, 5.0, 5.0))
+    first = _run(
+        graph=basic_graph,
+        history=history,
+        observations=Observations(
+            observed_at=started, arc_stagnations=(ArcStagnation(edge_id, 15.0),)
+        ),
+        previous_state=DetectionState(),
+        server_time=started,
+        config=surge_config,
+    )
+    reset_at = base_time - timedelta(minutes=2)
+    reset = _run(
+        graph=basic_graph,
+        history=history,
+        observations=Observations(
+            observed_at=reset_at,
+            arc_stagnations=(
+                (ArcStagnation(edge_id, 1.0, confidence_flag=ConfidenceFlag.INVALID),)
+                if invalid
+                else ()
+            ),
+        ),
+        previous_state=first.new_state,
+        server_time=reset_at,
+        config=surge_config,
+    )
+    resumed_history, resumed_observations, _ = make_combined_firing(edge_id, base_time)
+    resumed = _run(
+        graph=basic_graph,
+        history=resumed_history,
+        observations=resumed_observations,
+        previous_state=reset.new_state,
+        server_time=base_time,
+        config=surge_config,
+    )
+
+    assert first.new_state.watch_state_of(edge_id) is not None
+    assert reset.new_state.watch_state_of(edge_id) is None
+    assert resumed.triggered_edges == ()
+
+
 @pytest.mark.parametrize("scale", [0.1, 1.0, 10.0])
 def test_window_mean_is_the_baseline_when_history_has_none(
     scale: float,
