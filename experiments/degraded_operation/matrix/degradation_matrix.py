@@ -5,9 +5,8 @@ import importlib
 import json
 import sys
 from collections import Counter
-from collections.abc import Callable, Iterator, Sequence
-from contextlib import contextmanager
-from dataclasses import dataclass, replace
+from collections.abc import Callable, Sequence
+from dataclasses import dataclass
 from datetime import UTC, timedelta
 from pathlib import Path
 from unittest.mock import patch
@@ -18,9 +17,6 @@ sys.path.insert(0, str(ROOT))
 pb = importlib.import_module("flow_control.rpc.generated.tolo.flow.v1.flow_pb2")
 codec = importlib.import_module("flow_control.rpc.codec")
 handler = importlib.import_module("flow_control.service.handler")
-detector = importlib.import_module("flow_control.detection.detector")
-triggers = importlib.import_module("flow_control.detection.triggers")
-history_types = importlib.import_module("flow_control.domain.history")
 obs = importlib.import_module("devtools.scenarios._observation")
 graph_builder = importlib.import_module("devtools.graph_builder")
 
@@ -279,10 +275,8 @@ class Condition:
     label: str
     alter: Callable[[pb.OptimizeRequest, int, Sequence[obs.Cycle]], None]
     probe: Callable[[pb.OptimizeRequest], bool]
-    spec_fire: bool | None
-    spec_stagnation_only: bool
+    spec_fire: bool
     spec: str
-    spec_short_tenant: bool = False
 
 
 def _hot_window_stops_at_cut(request) -> bool:
@@ -307,17 +301,15 @@ CONDITIONS = (
         alter_none,
         lambda r: True,
         True,
-        False,
-        "§9.2.3 停滞警戒∧急増で発火",
+        "§6.2 観測 OK・履歴十分: 停滞警戒 ∧ 急増で発火",
     ),
     Condition(
         "no_history",
         "履歴なし（統計も直近窓もなし）",
         alter_no_history,
         lambda r: not r.history_digest.arc_stats and not r.history_digest.window_series,
-        None,
         False,
-        "§9.2.4 は P90 欠損だけを扱い、直近窓の欠落を定めない",
+        "§6.2 履歴なし: 急増も停滞警戒も判定不能",
     ),
     Condition(
         "short_span",
@@ -325,17 +317,15 @@ CONDITIONS = (
         alter_short_span,
         lambda r: all(not s.HasField("p90_stagnation") for s in r.history_digest.arc_stats),
         True,
-        False,
-        "§9.2.4 履歴不足 / §9.3: (a).2 だけで停滞警戒を判定して発火",
+        "§6.2 履歴 4 時間未満: (a).2 だけで停滞警戒を判定して発火",
     ),
     Condition(
         "empty_window",
         "長期統計あり・直近窓が常に空",
         alter_empty_window,
         lambda r: bool(r.history_digest.arc_stats) and not r.history_digest.window_series,
-        None,
         False,
-        "定めなし（§9.2.4 は P90 欠損時の縮退だけ）",
+        "§6.2 長期統計あり・窓が空: 急増は判定不能。停滞警戒の成立を警告する",
     ),
     Condition(
         "restart",
@@ -343,35 +333,31 @@ CONDITIONS = (
         alter_restart,
         lambda r: 0 < _hot_series_len(r, "flow_samples") <= PROBE - ONSET,
         True,
-        False,
-        "定めなし。窓が戻れば §9.2.3 で発火するはず",
+        "§6.2 窓が戻るまでは窓が空・ライン間欠、戻れば通常",
     ),
     Condition(
         "no_line",
         "急増エッジにラインなし（arc_flows を送らない）",
         alter_no_line,
         lambda r: not _hot_flows(r) and _hot_series_len(r, "flow_samples") == 0,
-        True,
-        True,
-        "§9.2.4 ラインなし: 停滞警戒単独の縮退発火（DEGRADED_COMBINED_TRIGGER）、§9.1 SURGE_PROXY_FALLBACK",
+        False,
+        "Q4: ラインなしの規則はない。流量が 0 点なので急増は判定不能（ライン間欠と同じ）",
     ),
     Condition(
         "no_line_zero",
         "急増エッジにラインなし（Observation の形: 0 人/分を送る）",
         alter_no_line_zero,
         lambda r: all(f.flow_rate == 0 for f in _hot_flows(r)) and len(_hot_flows(r)) == 2,
-        True,
-        True,
-        "§9.2.4 ラインなし（入力上は 0 人/分のラインと区別できない）",
+        False,
+        "Q4: 0 人/分は観測値。平均 0 では傾きを求められず急増は判定不能",
     ),
     Condition(
         "intermittent_0",
         "間欠ライン（今回値あり・窓の流量 0 点）",
         alter_intermittent_0,
         lambda r: _hot_series_len(r, "flow_samples") == 0 and bool(_hot_flows(r)),
-        None,
         False,
-        "定めなし（§9.1 は窓の系列を前提にする）",
+        "§6.2 ライン間欠（今回値の 1 点のみ）: 急増は判定不能",
     ),
     Condition(
         "intermittent_1",
@@ -379,8 +365,7 @@ CONDITIONS = (
         alter_intermittent_1,
         lambda r: _hot_series_len(r, "flow_samples") == 1 and bool(_hot_flows(r)),
         True,
-        False,
-        "§9.1 窓内の点で傾きを求める（今回値と合わせて 2 点）",
+        "§6.2 窓と今回値で 2 点: 通常",
     ),
     Condition(
         "sparse",
@@ -388,8 +373,7 @@ CONDITIONS = (
         alter_sparse,
         lambda r: 0 < _hot_series_len(r, "flow_samples") <= 7,
         True,
-        False,
-        "§9.1 窓内の点で傾きを求める",
+        "§6.2 窓に 2 点以上: 通常",
     ),
     Condition(
         "point_missing",
@@ -397,8 +381,7 @@ CONDITIONS = (
         alter_point_missing,
         lambda r: not _hot_flows(r) and _series(r, HOT) is None,
         False,
-        False,
-        "§9.2.4 カメラなし: 警戒・発火なし",
+        "§6.2 観測なし: 対象外",
     ),
     Condition(
         "node_missing",
@@ -406,8 +389,7 @@ CONDITIONS = (
         alter_node_missing,
         lambda r: not r.observations.node_occupancies,
         True,
-        False,
-        "§9.2 は検知にノード占有を使わない（発火は変わらない）",
+        "検知はノード占有を使わない（発火は変わらない）",
     ),
     Condition(
         "invalid",
@@ -419,17 +401,15 @@ CONDITIONS = (
             and _hot_window_stops_at_cut(r)
         ),
         False,
-        False,
-        "要件 §5.6 / 設計 §3: INVALID の値は使わない（§9.2.4 カメラなし相当）",
+        "§6.2 INVALID: 対象外",
     ),
     Condition(
         "hold_flag",
         "急増エッジが HOLD（フラグのみ。値は実測のまま）",
         alter_hold_flag,
         lambda r: _hot_stagnation(r).confidence_flag == pb.CONFIDENCE_FLAG_HOLD,
-        True,
         False,
-        "要件 §5.6: HOLD は低信頼として扱うが値は使う",
+        "§6.2 HOLD: 値が実測でもフラグで判定不能",
     ),
     Condition(
         "hold_frozen",
@@ -439,9 +419,8 @@ CONDITIONS = (
             _hot_stagnation(r).confidence_flag == pb.CONFIDENCE_FLAG_HOLD
             and _hot_window_stops_at_cut(r)
         ),
-        None,
         False,
-        "要件 §5.6 / 設計 §3.5: 低信頼として使い、窓には含めない。発火可否は定めない",
+        "§6.2 HOLD: 判定不能",
     ),
     Condition(
         "dropout",
@@ -449,8 +428,7 @@ CONDITIONS = (
         alter_dropout,
         lambda r: not _hot_flows(r) and _hot_window_stops_at_cut(r),
         False,
-        False,
-        "連携 §2.2.7: 欠損は HOLD/INVALID で届く前提。今回値なしはカメラなし相当（§9.2.4）",
+        "§6.2 今回値なしは観測なしとして対象外",
     ),
     Condition(
         "stale",
@@ -460,9 +438,8 @@ CONDITIONS = (
             r.server_time.ToDatetime(tzinfo=UTC) - r.observations.observed_at.ToDatetime(tzinfo=UTC)
             == STALE
         ),
-        None,
         False,
-        "定めなし（observed_at の鮮度規則はない）",
+        "§6.2 観測が古い（2 分解能以上、下限 60 秒）: HOLD と同じ",
     ),
     Condition(
         "short_term",
@@ -470,95 +447,9 @@ CONDITIONS = (
         alter_short_term,
         lambda r: r.event_context.term == pb.EVENT_TERM_SHORT,
         True,
-        False,
-        "§9.3 / 設計 §4.5: (a).2 のみ・degraded_short_tenant=true・ウォームアップ 15 分",
-        spec_short_tenant=True,
+        "§6.3 term は縮退に使わない: 基準と同じ応答",
     ),
 )
-
-
-@contextmanager
-def patched_detect_metric_triggers(wrap) -> Iterator[None]:
-    if wrap is None:
-        yield
-        return
-    with patch.object(detector, "detect_metric_triggers", wrap(detector.detect_metric_triggers)):
-        yield
-
-
-def prototype_d5_baseline_reference(inner):
-    def call(**kwargs):
-        digest = kwargs["history_digest"]
-        series = list(digest.window_series)
-        for edge in kwargs["graph"].enabled_edges():
-            stat = digest.stat_of(edge.edge_id)
-            window = digest.window_series_of(edge.edge_id)
-            if stat is None or stat.baseline_stagnation is None:
-                continue
-            if window is not None and window.stagnation_samples:
-                continue
-            synthetic = ((kwargs["server_time"], stat.baseline_stagnation),)
-            if window is None:
-                series.append(
-                    history_types.ArcWindowSeries(edge.edge_id, stagnation_samples=synthetic)
-                )
-            else:
-                series[series.index(window)] = replace(window, stagnation_samples=synthetic)
-        return inner(**{**kwargs, "history_digest": replace(digest, window_series=tuple(series))})
-
-    return call
-
-
-def prototype_d6_lineless_fallback(inner):
-    def call(**kwargs):
-        observations = kwargs["observations"]
-        digest = kwargs["history_digest"]
-        config = kwargs["config"]
-        blind = set()
-        for edge in kwargs["graph"].enabled_edges():
-            now = triggers._current_line_flow(observations, edge.edge_id)
-            window = digest.window_series_of(edge.edge_id)
-            samples = window.flow_samples if window is not None else ()
-            if not samples and now is None:
-                continue
-            series = triggers._line_series(
-                samples,
-                now,
-                observations.observed_at,
-                edge.time_resolution_s,
-                config.surge_evaluate_window_minute,
-                kwargs["server_time"],
-            )
-            if triggers._slope_percent_per_min(series) is None:
-                blind.add(edge.edge_id)
-        lineless_observations = replace(
-            observations,
-            arc_flows=tuple(f for f in observations.arc_flows if f.edge_id not in blind),
-        )
-        lineless_digest = replace(
-            digest,
-            window_series=tuple(
-                replace(w, flow_samples=()) if w.edge_id in blind else w
-                for w in digest.window_series
-            ),
-        )
-        return inner(
-            **{**kwargs, "observations": lineless_observations, "history_digest": lineless_digest}
-        )
-
-    return call
-
-
-def prototype_both(inner):
-    return prototype_d5_baseline_reference(prototype_d6_lineless_fallback(inner))
-
-
-VARIANTS = {
-    "baseline": None,
-    "D5": prototype_d5_baseline_reference,
-    "D6": prototype_d6_lineless_fallback,
-    "D5+D6": prototype_both,
-}
 
 
 def _stable(response: pb.OptimizeResponse) -> bytes:
@@ -572,7 +463,7 @@ def _stable(response: pb.OptimizeResponse) -> bytes:
     return copy.SerializeToString(deterministic=True)
 
 
-def run(condition: Condition, kind: str, variant: str) -> dict:
+def run(condition: Condition, kind: str) -> dict:
     cycles = timeline(kind)
     state = pb.DetectionState()
     previous = None
@@ -590,10 +481,11 @@ def run(condition: Condition, kind: str, variant: str) -> dict:
     triggered: list[str] = []
     altered = False
     fallbacks = 0
-    short_tenant = False
+    hot_at_probe: dict | None = None
+    hot_partial: set[str] = set()
     fired_response = None
     digest = hashlib.sha256()
-    with patch.object(handler, "detect", spy), patched_detect_metric_triggers(VARIANTS[variant]):
+    with patch.object(handler, "detect", spy):
         for index in range(CYCLES):
             request = base_request(cycles, index)
             reference = request.SerializeToString(deterministic=True)
@@ -612,7 +504,16 @@ def run(condition: Condition, kind: str, variant: str) -> dict:
             verdicts.append(verdict)
             warnings.update(pb.WarningCode.Name(w.code) for w in response.diagnostics.warnings)
             fallbacks += len(response.diagnostics.fallbacks_applied)
-            short_tenant = short_tenant or response.diagnostics.degraded_short_tenant
+            if index <= PROBE:
+                hot_at_probe = _hot_record(response)
+            for warning in response.diagnostics.warnings:
+                context = {item.key: item.value.string_value for item in warning.context}
+                if (
+                    index >= ONSET
+                    and warning.code == pb.WARNING_CODE_PARTIAL_COMBINED_TRIGGER
+                    and context.get("edge_id") == HOT
+                ):
+                    hot_partial.add(context["held"])
             for watch in response.updated_detection_state.arc_watch_states:
                 if watch.edge_id == HOT:
                     flags["percentile"] |= watch.percentile_breached
@@ -629,13 +530,16 @@ def run(condition: Condition, kind: str, variant: str) -> dict:
             if verdict == "OPTIMIZED":
                 triggered = [edge.value for edge in detections[-1].triggered_edges]
                 fired_response = response
+                assert (
+                    response.optimization_result.solver_status != pb.SOLVER_STATUS_INFEASIBLE
+                    or (response.diagnostics.fallbacks_applied)
+                ), f"{condition.key}/{kind}: INFEASIBLE で fallbacks_applied が空"
                 break
     assert condition.key == "base" or altered, f"{condition.key}: 入力が基準と同一のまま"
     first = len(verdicts) - 1 if fired_response is not None else None
     return {
         "condition": condition.key,
         "timeline": kind,
-        "variant": variant,
         "first_optimized_cycle": None if first is None else first + 1,
         "minutes_after_onset": None if first is None else first - ONSET,
         "verdict_counts": dict(sorted(Counter(verdicts).items())),
@@ -644,10 +548,39 @@ def run(condition: Condition, kind: str, variant: str) -> dict:
         "diagnostics_warnings": sorted(warnings),
         "hot_edge_alerts_seen": flags,
         "fallbacks_applied": fallbacks,
-        "degraded_short_tenant": short_tenant,
+        "hot_at_probe": hot_at_probe,
+        "hot_partial_held": sorted(hot_partial),
         "at_fire": None if fired_response is None else _at_fire(fired_response),
         "response_digest": digest.hexdigest(),
     }
+
+
+def _hot_record(response: pb.OptimizeResponse) -> dict | None:
+    record = next(
+        (r for r in response.diagnostics.element_states if r.target_key == f"edge:{HOT}"), None
+    )
+    if record is None:
+        return None
+    return {
+        "observation": pb.ObservationState.Name(record.observation).removeprefix(
+            "OBSERVATION_STATE_"
+        ),
+        "history": pb.HistoryTier.Name(record.history).removeprefix("HISTORY_TIER_"),
+        "line_points": record.line_points,
+        "skipped": [pb.Judgement.Name(item).removeprefix("JUDGEMENT_") for item in record.skipped],
+    }
+
+
+def _hot_state_cell(record: dict) -> str:
+    hot = record["hot_at_probe"]
+    if hot is None:
+        return "-"
+    return f"{hot['observation']}/{hot['history']}/{hot['line_points']} 点"
+
+
+def _hot_skipped(record: dict) -> list[str]:
+    hot = record["hot_at_probe"]
+    return [] if hot is None else hot["skipped"]
 
 
 def _at_fire(response: pb.OptimizeResponse) -> dict:
@@ -682,36 +615,35 @@ def _at_fire(response: pb.OptimizeResponse) -> dict:
 
 
 def judge(condition: Condition, runs: dict[str, dict]) -> dict:
-    fired = runs["surge"]["first_optimized_cycle"] is not None
+    surge = runs["surge"]
+    fired = surge["first_optimized_cycle"] is not None
     false_alarm_stagnation = runs["stagnation_only"]["first_optimized_cycle"] is not None
     false_alarm_flat = runs["flat"]["first_optimized_cycle"] is not None
-    if condition.spec_fire is None:
-        surge_match = "仕様外"
-    else:
-        ok = fired == condition.spec_fire and (
-            runs["surge"]["degraded_short_tenant"] == condition.spec_short_tenant
-        )
-        surge_match = "一致" if ok else "不一致"
-    control_ok = false_alarm_stagnation == condition.spec_stagnation_only and not false_alarm_flat
     return {
         "fired": fired,
-        "silent_miss": not fired,
+        "silent_miss": not fired and not _hot_skipped(surge) and not surge["hot_partial_held"],
         "false_alarm_stagnation_only": false_alarm_stagnation,
         "false_alarm_flat": false_alarm_flat,
-        "surge_match": surge_match,
-        "control_match": "一致" if control_ok else "不一致",
+        "surge_match": "一致" if fired == condition.spec_fire else "不一致",
+        "control_match": "一致" if not (false_alarm_stagnation or false_alarm_flat) else "不一致",
     }
 
 
-def assert_premises(matrix: dict) -> None:
-    base = matrix["baseline"]["base"]
+def assert_premises(matrix: dict, verdicts: dict) -> None:
+    base = matrix["base"]
     assert base["surge"]["first_optimized_cycle"] is not None, "基準: 急増で発火しない"
     assert base["stagnation_only"]["first_optimized_cycle"] is None, "基準: 停滞のみで誤発火"
     assert base["flat"]["first_optimized_cycle"] is None, "基準: 平坦で誤発火"
-    short = matrix["baseline"]["short_term"]["surge"]
+    short = matrix["short_term"]["surge"]
     assert short["response_digest"] == base["surge"]["response_digest"], (
-        "短期テナント: event_context を変えると応答が変わった（D4 の前提が崩れた）"
+        "短期テナント: event_context を変えると応答が変わった（§6.3 の前提が崩れた）"
     )
+    silent = [key for key, judged in verdicts.items() if judged["silent_miss"]]
+    assert not silent, f"判定不能を出さずに発火しない行がある: {silent}"
+    alarms = [key for key, judged in verdicts.items() if judged["control_match"] != "一致"]
+    assert not alarms, f"対照で誤発火した行がある: {alarms}"
+    mismatched = [key for key, judged in verdicts.items() if judged["surge_match"] != "一致"]
+    assert not mismatched, f"急増の系列が状態の表と食い違う行がある: {mismatched}"
 
 
 def _cell(value) -> str:
@@ -746,8 +678,8 @@ NOTES = [
     "",
     "tolo-observation は verdict、`updated_detection_state`、`optimization_result`、`feedback_values` を保存し、`Diagnostics` を捨てる。",
     "",
-    "- `SURGE_PROXY_FALLBACK` と `DEGRADED_COMBINED_TRIGGER` は `Diagnostics.warnings` にしか出ないので、Observation からは見えない。",
-    "- `fallbacks_applied`、`trigger_evidences`、`degraded_short_tenant` は Observation が捨てる以前に、`handle_request` が詰めない。",
+    "- `element_states` と `PARTIAL_COMBINED_TRIGGER` の警告は `Diagnostics` にしか出ないので、Observation が保存するまで（O3）見えない。",
+    "- `fallbacks_applied` は配分 LP がフォールバックしたサイクルで記録する。`trigger_evidences` は `handle_request` が詰めない。",
     "- `feedback_values.warnings` は空のまま、`quality_metrics.low_confidence_arc_ratio` は 0.0 固定である。HOLD/INVALID を送っても feedback には現れない。",
     "- feedback から読めるのは `estimation_resolution` の解像度と補完アーク、`reference_usage.used_default` だけである。",
     "",
@@ -755,7 +687,7 @@ NOTES = [
     "",
     "- 端末脱落の行は依頼どおり今回値を送らない形にした。Observation の `NewSnapshot` は欠損 15 分以内を HOLD（最後の値を保持）、それより長いと INVALID として送るので、本番の形は HOLD（凍結）と INVALID の行に当たる。",
     "- HOLD（凍結）の行は急増開始 +3 分から最後まで HOLD のままにした。本番では 15 分で INVALID に変わるが、HOLD の間に一度も発火していないので結論は変わらない。",
-    "- 古い観測の行は `observed_at` だけを 10 分戻し、値は今回のものを使った。値ごと 10 分遅れる場合は、基準の発火が 10 分遅れるだけになる（推測。未実行）。",
+    "- 古い観測の行は `observed_at` だけを 10 分戻し、値は今回のものを使った。古いとみなすのは観測分解能の 2 倍（下限 60 秒）以上の遅れで、分解能 60 秒では 120 秒になる。",
     "- `devtools/observation_shaped_request.md` は、両方向の `ArcFlow` を送ると OD が空になり throughput が 0 になると書く。今回は両方向を送っても throughput は発火時の急増エッジ流量に等しかった（原因は未調査）。発火が遅い行で INFEASIBLE になるのは、`e_in_j1` の需要が capacity_hint 80 を超えるためと推測する。",
     "- ラインなし（0 人/分）の行は、ラインのない観測点でも Observation が `RouteScore` の両方向 0 を送るという推測に基づく（`appendArcObservations` は常に 2 本の `ArcFlow` を足す）。",
     "",
@@ -763,7 +695,7 @@ NOTES = [
 
 
 def render(matrix: dict, verdicts: dict) -> str:
-    every = [run for rows in matrix.values() for runs in rows.values() for run in runs.values()]
+    every = [run for runs in matrix.values() for run in runs.values()]
     lines = [
         "# 縮退入力ごとの Flow エンジンの出力",
         "",
@@ -794,29 +726,33 @@ def render(matrix: dict, verdicts: dict) -> str:
         ),
         "- 対照は 2 本。停滞のみ上昇（流量は平坦）と、全て平坦。どちらも発火すべきでない。",
         "",
-        "## 現状（プロトタイプなし）",
+        "## 結果",
         "",
         (
             "列の意味。P/Δ/急 は急増エッジで (a).1・(a).2・急増が一度でも成立したか。"
-            "警告は `Diagnostics.warnings` で、tolo-observation は捨てる。"
+            f"状態と省いた判定は、急増の系列の {PROBE + 1} サイクル目（急増開始 +5 分。それより前に発火した行は発火の直前）に"
+            "急増エッジへ出た `Diagnostics.element_states` の観測/履歴/ラインの点数と省いた判定。"
+            "記録がなければ通常の状態。片側成立は急増開始後の `PARTIAL_COMBINED_TRIGGER` の held。"
+            "黙った不発は、発火せず、省いた判定も片側成立も出ない行。"
         ),
         "",
         (
-            "| 条件 | 急増: 初回 OPTIMIZED | 発火エッジ | P/Δ/急 | 警告（Observation では不可視） "
-            "| 対照 誤発火（停滞のみ / 平坦） | degraded_short_tenant | 仕様の期待 | 急増 | 対照 |"
+            "| 条件 | 急増: 初回 OPTIMIZED | 発火エッジ | P/Δ/急 | 状態 | 省いた判定 | 片側成立 "
+            "| 対照 誤発火（停滞のみ / 平坦） | 状態の表 | 急増 | 対照 | 黙った不発 |"
         ),
-        "|---|---|---|---|---|---|---|---|---|---|",
+        "|---|---|---|---|---|---|---|---|---|---|---|---|",
     ]
     for condition in CONDITIONS:
-        runs = matrix["baseline"][condition.key]
+        runs = matrix[condition.key]
         surge = runs["surge"]
-        judged = verdicts["baseline"][condition.key]
+        judged = verdicts[condition.key]
         lines.append(
             f"| {condition.label} | {_fire_cell(surge)} | {_cell(surge['triggered_edges'])} "
-            f"| {_flags_cell(surge)} | {_cell(surge['diagnostics_warnings'])} "
+            f"| {_flags_cell(surge)} | {_hot_state_cell(surge)} "
+            f"| {_cell(_hot_skipped(surge))} | {_cell(surge['hot_partial_held'])} "
             f"| {_cell(judged['false_alarm_stagnation_only'])} / {_cell(judged['false_alarm_flat'])} "
-            f"| {_cell(surge['degraded_short_tenant'])} | {condition.spec} "
-            f"| {judged['surge_match']} | {judged['control_match']} |"
+            f"| {condition.spec} | {judged['surge_match']} | {judged['control_match']} "
+            f"| {_cell(judged['silent_miss'])} |"
         )
     lines += [
         "",
@@ -824,6 +760,7 @@ def render(matrix: dict, verdicts: dict) -> str:
         "",
         (
             f"全 {len(every)} 実行で `fallbacks_applied` は計 {sum(r['fallbacks_applied'] for r in every)} 件だった。"
+            "INFEASIBLE で発火したサイクルに記録がないと、スクリプトが止まる。"
         ),
         "",
         (
@@ -833,7 +770,7 @@ def render(matrix: dict, verdicts: dict) -> str:
         "|---|---|---|---|---|---|---|---|---|---|",
     ]
     for condition in CONDITIONS:
-        fire = matrix["baseline"][condition.key]["surge"]["at_fire"]
+        fire = matrix[condition.key]["surge"]["at_fire"]
         if fire is None:
             continue
         lines.append(
@@ -842,36 +779,6 @@ def render(matrix: dict, verdicts: dict) -> str:
             f"| {_cell(fire['estimation_resolution'])} | {_cell(fire['imputed_arcs'])} "
             f"| {_cell(fire['reference_used_default'])} | {fire['low_confidence_arc_ratio']} |"
         )
-    lines += [
-        "",
-        "## プロトタイプ適用後に変わった行",
-        "",
-        (
-            "- D5: 直近窓に停滞サンプルがなく、履歴統計に baseline_stagnation があるとき、それを直近平均の代わりに使う。"
-            "baseline がなければ従来どおり (a).2 を不成立とする。"
-        ),
-        "- D6: ラインがあるのに傾きを計算できないとき、そのエッジをラインなし規則で判定する。",
-        "- D6 の「傾きを計算できない」には流量平均が 0 のエッジも入る。試作は急増エッジに限らず、流量 0 の全エッジをラインなし規則に回す。停滞が上がれば単独で発火するので、停滞のみの対照で誤発火が出る。窓の点が 2 点未満のときだけに絞れば、この誤発火は出ないはずである（推測。未実行）。",
-        "- どちらも `detection.detector.detect_metric_triggers` を入力書換えのラッパーで差し替えた試作で、src は変えていない。",
-        "",
-        "| 試作 | 条件 | 系列 | 現状 | 試作後 |",
-        "|---|---|---|---|---|",
-    ]
-    changed = 0
-    for variant in ("D5", "D6", "D5+D6"):
-        for condition in CONDITIONS:
-            for kind in TIMELINES:
-                before = matrix["baseline"][condition.key][kind]
-                after = matrix[variant][condition.key][kind]
-                if before["first_optimized_cycle"] == after["first_optimized_cycle"]:
-                    continue
-                changed += 1
-                lines.append(
-                    f"| {variant} | {condition.label} | {TIMELINE_LABELS[kind]} "
-                    f"| {_fire_cell(before)} | {_fire_cell(after)} |"
-                )
-    if not changed:
-        lines.append("| - | 変化なし | - | - | - |")
     lines += NOTES
     return "\n".join(lines)
 
@@ -879,15 +786,11 @@ def render(matrix: dict, verdicts: dict) -> str:
 def main() -> None:
     matrix: dict = {}
     verdicts: dict = {}
-    for variant in VARIANTS:
-        matrix[variant] = {}
-        verdicts[variant] = {}
-        for condition in CONDITIONS:
-            runs = {kind: run(condition, kind, variant) for kind in TIMELINES}
-            matrix[variant][condition.key] = runs
-            verdicts[variant][condition.key] = judge(condition, runs)
-        if variant == "baseline":
-            assert_premises(matrix)
+    for condition in CONDITIONS:
+        runs = {kind: run(condition, kind) for kind in TIMELINES}
+        matrix[condition.key] = runs
+        verdicts[condition.key] = judge(condition, runs)
+    assert_premises(matrix, verdicts)
     RESULTS.mkdir(parents=True, exist_ok=True)
     payload = {
         "setup": {
@@ -906,8 +809,6 @@ def main() -> None:
                 "label": c.label,
                 "spec": c.spec,
                 "spec_fire": c.spec_fire,
-                "spec_stagnation_only": c.spec_stagnation_only,
-                "spec_short_tenant": c.spec_short_tenant,
             }
             for c in CONDITIONS
         ],
