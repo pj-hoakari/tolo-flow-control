@@ -352,6 +352,7 @@ def _stale_previous_result(now: datetime) -> OptimizationResult:
                 RestrictionAction.LIMIT,
                 limit_value=3.0,
                 reason=RestrictionReason.PUNCTURE,
+                limit_ratio=0.75,
             ),
         ),
         detour_paths=(

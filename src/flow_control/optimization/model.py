@@ -58,6 +58,7 @@ class Commodity:
 @dataclass(frozen=True)
 class MilpInputs:
     s_obs: dict[EdgeID, float]  # 停滞観測（INVALID 除外済み）
+    v_obs: dict[EdgeID, float]
     s_bar: dict[EdgeID, float]  # 基準停滞量（履歴 → 窓の平均 → 観測停滞量の順で補完済み）
     eta: dict[EdgeID, float]  # フロー感度
     c_e: dict[EdgeID, float]  # 信頼度重み（下限クリップ済み）

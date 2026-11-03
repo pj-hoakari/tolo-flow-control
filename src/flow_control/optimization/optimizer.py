@@ -47,6 +47,7 @@ from .restriction import (
     build_restriction_proposals,
     build_resume_proposals,
     evaluate_detour_gate,
+    limit_ratio,
 )
 from .results import (
     ConstraintReport,
@@ -860,6 +861,13 @@ def _build_inputs(
         if st.edge_id in active_edge_ids:
             s_obs[st.edge_id] = st.stagnation
 
+    v_obs: dict[EdgeID, float] = {}
+    for af in observations.arc_flows:
+        if af.confidence_flag == ConfidenceFlag.INVALID:
+            continue
+        if af.edge_id in active_edge_ids:
+            v_obs[af.edge_id] = v_obs.get(af.edge_id, 0.0) + af.flow_rate
+
     sigma: dict[EdgeID, float] = {}
     for sf in observations.arc_scalar_flows:
         if sf.confidence_flag == ConfidenceFlag.INVALID:
@@ -911,6 +919,7 @@ def _build_inputs(
 
     return MilpInputs(
         s_obs=s_obs,
+        v_obs=v_obs,
         s_bar=s_bar,
         eta=eta,
         c_e=c_e,
@@ -998,6 +1007,7 @@ def _overload_limits(
                     action=RestrictionAction.LIMIT,
                     limit_value=cap,
                     reason=RestrictionReason.OVERLOAD,
+                    limit_ratio=limit_ratio(cap, inputs.v_obs.get(eid)),
                 )
             )
     return tuple(sorted(proposals, key=lambda p: p.edge_id.value))

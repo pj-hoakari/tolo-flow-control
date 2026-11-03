@@ -207,6 +207,12 @@ def compute_limit_value(
     return LimitValue(value=None, confidence=low_confidence, derived_from_drain_bound=False)
 
 
+def limit_ratio(limit_value: float | None, observed_flow: float | None) -> float | None:
+    if limit_value is None or observed_flow is None or observed_flow <= _EPSILON_FLOW:
+        return None
+    return limit_value / observed_flow
+
+
 def select_feeder_candidates(
     arc_model: ArcModel,
     *,
@@ -366,6 +372,7 @@ def build_restriction_proposals(
                 limit_value=limit_value,
                 reason=_reason_for(edge_id, residual, node_danger_upstream),
                 confidence=confidence,
+                limit_ratio=limit_ratio(limit_value, inputs.v_obs.get(edge_id)),
             )
         )
     return tuple(proposals)

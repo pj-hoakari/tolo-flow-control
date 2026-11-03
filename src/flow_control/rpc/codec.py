@@ -1298,6 +1298,8 @@ def _encode_optimization_result(value: OptimizationResult) -> pb.OptimizationRes
         )
         if item.limit_value is not None:
             encoded.limit_value = _finite(item.limit_value, "restriction_proposal.limit_value")
+        if item.limit_ratio is not None:
+            encoded.limit_ratio = _finite(item.limit_ratio, "restriction_proposal.limit_ratio")
         result.restriction_proposal.append(encoded)
     for item in value.detour_paths:
         result.detour_paths.append(
@@ -1373,6 +1375,7 @@ def _decode_optimization_result(value: pb.OptimizationResult) -> OptimizationRes
                 ),
                 confidence=_finite(item.confidence, "restriction_proposal.confidence"),
                 scope_note=item.scope_note,
+                limit_ratio=_optional_float(item, "limit_ratio"),
             )
             for item in value.restriction_proposal
         ),

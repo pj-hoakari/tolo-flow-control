@@ -1063,20 +1063,22 @@ class DirectionProposal(_message.Message):
     def __init__(self, edge_id: _Optional[str] = ..., proposed_direction: _Optional[_Union[ProposedDirection, str]] = ..., confidence: _Optional[float] = ..., change_type: _Optional[_Union[DirectionChangeType, str]] = ...) -> None: ...
 
 class RestrictionProposal(_message.Message):
-    __slots__ = ("edge_id", "action", "limit_value", "reason", "confidence", "scope_note")
+    __slots__ = ("edge_id", "action", "limit_value", "reason", "confidence", "scope_note", "limit_ratio")
     EDGE_ID_FIELD_NUMBER: _ClassVar[int]
     ACTION_FIELD_NUMBER: _ClassVar[int]
     LIMIT_VALUE_FIELD_NUMBER: _ClassVar[int]
     REASON_FIELD_NUMBER: _ClassVar[int]
     CONFIDENCE_FIELD_NUMBER: _ClassVar[int]
     SCOPE_NOTE_FIELD_NUMBER: _ClassVar[int]
+    LIMIT_RATIO_FIELD_NUMBER: _ClassVar[int]
     edge_id: str
     action: RestrictionAction
     limit_value: float
     reason: RestrictionReason
     confidence: float
     scope_note: str
-    def __init__(self, edge_id: _Optional[str] = ..., action: _Optional[_Union[RestrictionAction, str]] = ..., limit_value: _Optional[float] = ..., reason: _Optional[_Union[RestrictionReason, str]] = ..., confidence: _Optional[float] = ..., scope_note: _Optional[str] = ...) -> None: ...
+    limit_ratio: float
+    def __init__(self, edge_id: _Optional[str] = ..., action: _Optional[_Union[RestrictionAction, str]] = ..., limit_value: _Optional[float] = ..., reason: _Optional[_Union[RestrictionReason, str]] = ..., confidence: _Optional[float] = ..., scope_note: _Optional[str] = ..., limit_ratio: _Optional[float] = ...) -> None: ...
 
 class DetourPathProposal(_message.Message):
     __slots__ = ("origin_edge_id", "edge_ids", "confidence")

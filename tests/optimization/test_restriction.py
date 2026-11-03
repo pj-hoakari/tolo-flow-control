@@ -11,6 +11,7 @@ from flow_control.optimization.restriction import (
     evaluate_detour_gate,
     select_feeder_candidates,
 )
+from flow_control.optimization.results import RestrictionProposal
 
 _E_HOT = EdgeID("e_hot")
 _E_SCALAR = EdgeID("e_scalar")
@@ -30,9 +31,11 @@ def _inputs(
     s_obs: dict[EdgeID, float] | None = None,
     s_bar: dict[EdgeID, float] | None = None,
     eta: dict[EdgeID, float] | None = None,
+    v_obs: dict[EdgeID, float] | None = None,
 ) -> MilpInputs:
     return MilpInputs(
         s_obs=s_obs if s_obs is not None else {_E_HOT: 30.0, _E_D1: 10.0, _E_D2: 10.0},
+        v_obs=v_obs if v_obs is not None else {},
         s_bar=s_bar if s_bar is not None else {_E_HOT: 10.0, _E_D1: 10.0, _E_D2: 10.0},
         eta=eta if eta is not None else {_E_HOT: 0.5, _E_D1: 0.5, _E_D2: 0.5},
         c_e={},
@@ -513,6 +516,86 @@ def test_build_restriction_downgrades_close_to_limit_when_connectivity_breaks():
     assert got[0].edge_id == EdgeID("e0")
     assert got[0].action == RestrictionAction.LIMIT
     assert got[0].limit_value == pytest.approx(40.0)  # s_obs/η = 20/0.5
+
+
+def _limit_on_feeder(
+    *, gain: float, outflow_average: float | None, v_obs: dict[EdgeID, float]
+) -> tuple[RestrictionProposal, ...]:
+    from flow_control.optimization.restriction import build_restriction_proposals
+
+    arc_model = _chain_arc_model()
+    zone = frozenset({EdgeID("e0"), EdgeID("e1"), EdgeID("e2")})
+    inputs = _inputs(
+        s_obs={EdgeID("e0"): 20.0 * gain, EdgeID("e1"): 30.0},
+        s_bar={EdgeID("e0"): 10.0 * gain, EdgeID("e1"): 10.0},
+        eta={EdgeID("e0"): 0.5, EdgeID("e1"): 0.5},
+        v_obs={edge: value * gain for edge, value in v_obs.items()},
+    )
+    residual = assess_residual(
+        inputs,
+        zone_edges=zone,
+        tau_zone=3.0,
+        flow={},
+        arc_keys_of_edge={},
+        undrainable=frozenset(),
+        tau_danger_threshold=1.0,
+    )
+    gate = evaluate_detour_gate(
+        inputs,
+        detour_edges=frozenset(),
+        k_effective=0,
+        flow={},
+        arc_keys_of_edge={},
+        triggered_edges=frozenset(),
+        watched_edges=frozenset(),
+        tau_danger_threshold=1.0,
+    )
+    return build_restriction_proposals(
+        arc_model,
+        inputs,
+        residual=residual,
+        gate=gate,
+        danger_edges=frozenset({EdgeID("e1")}),
+        zone_edges=zone,
+        flow={"e0|A_TO_B": 20.0, "e1|A_TO_B": 20.0},
+        direction=_all_directions(arc_model),
+        importance={},
+        outflow_averages={} if outflow_average is None else {EdgeID("e0"): outflow_average * gain},
+        is_open=True,
+    )
+
+
+@pytest.mark.parametrize("gain", [0.5, 1.0, 2.0])
+@pytest.mark.parametrize(
+    ("outflow_average", "base_limit", "ratio"),
+    [(12.0, 12.0, 0.75), (None, 40.0, 2.5)],
+    ids=["measured_outflow", "drain_bound"],
+)
+def test_limit_ratio_cancels_the_gain_of_the_restricted_edge(
+    gain: float, outflow_average: float | None, base_limit: float, ratio: float
+):
+    from flow_control.optimization.results import RestrictionAction
+
+    v_obs = {EdgeID("e0"): 16.0, EdgeID("e1"): 40.0}
+    scaled = _limit_on_feeder(gain=gain, outflow_average=outflow_average, v_obs=v_obs)
+
+    assert [(p.edge_id, p.action) for p in scaled] == [(EdgeID("e0"), RestrictionAction.LIMIT)]
+    assert scaled[0].limit_value == pytest.approx(gain * base_limit)
+    assert scaled[0].limit_ratio == pytest.approx(ratio)
+
+
+@pytest.mark.parametrize(
+    "v_obs",
+    [{}, {EdgeID("e0"): 0.0, EdgeID("e1"): 40.0}],
+    ids=["unobserved", "zero_flow"],
+)
+def test_limit_ratio_absent_without_observed_flow_on_the_restricted_edge(
+    v_obs: dict[EdgeID, float],
+):
+    got = _limit_on_feeder(gain=1.0, outflow_average=12.0, v_obs=v_obs)
+
+    assert got[0].limit_value == pytest.approx(12.0)
+    assert got[0].limit_ratio is None
 
 
 def test_build_restriction_quiet_when_gate_closed():

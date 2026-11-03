@@ -86,6 +86,7 @@ class RestrictionProposal:
     reason: RestrictionReason
     confidence: float = 1.0
     scope_note: str = "operator review required"
+    limit_ratio: float | None = None
 
 
 @dataclass(frozen=True)

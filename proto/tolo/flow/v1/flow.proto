@@ -384,6 +384,7 @@ message RestrictionProposal {
   RestrictionReason reason = 4;
   double confidence = 5;
   string scope_note = 6;
+  optional double limit_ratio = 7;
 }
 
 message DetourPathProposal {
