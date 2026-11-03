@@ -54,7 +54,7 @@
     {
       "key": "no_line_zero",
       "label": "急増エッジにラインなし（Observation の形: 0 人/分を送る）",
-      "spec": "Q4: 0 人/分は観測値。平均 0 では傾きを求められず急増は判定不能",
+      "spec": "Q4: 0 人/分は観測値。平均 0 は急増なし。停滞警戒の成立を流量 0 の理由つきで警告する",
       "spec_fire": false
     },
     {
@@ -349,7 +349,7 @@
           "low_confidence_arc_ratio": 0.0,
           "feedback_warnings": 0
         },
-        "response_digest": "58d0be822933770e6d3f469aee953d7d87daddea7b012eb3f0c5fec57d31755a"
+        "response_digest": "b148a5fc634d48d65f32c860c311b6fb55722040e4b3b2584acfe255ba71cec8"
       },
       "stagnation_only": {
         "condition": "base",
@@ -422,7 +422,7 @@
         "hot_at_probe": null,
         "hot_partial_held": [],
         "at_fire": null,
-        "response_digest": "7bdbe859f3cd8de4f1c53435e7f644a318226a23744569b550d0b2e062a93a0c"
+        "response_digest": "7dbce0123c116aa7fec69f016810591a5a03f6ceb9a9709a7337c4ab4e0e0c9a"
       },
       "flat": {
         "condition": "base",
@@ -495,7 +495,7 @@
         "hot_at_probe": null,
         "hot_partial_held": [],
         "at_fire": null,
-        "response_digest": "57834c5c60358dc94b2a0ab4c395819904b45c0782d411f6061a62375c184f01"
+        "response_digest": "7f9b6cc60b2f6afecb7e9efdc928a0025cf0b2f5ff4fee00d3fcecbbf07d790a"
       }
     },
     "no_history": {
@@ -829,7 +829,7 @@
           "low_confidence_arc_ratio": 0.0,
           "feedback_warnings": 0
         },
-        "response_digest": "7d6b48121297c330a6513b60977855420c9c688cd157d5bac49e14038c9b03c7"
+        "response_digest": "0b7fe615b0c0e2237e5567b04ee00df3eb01de03e4a71a7390acfc12ae4910de"
       },
       "stagnation_only": {
         "condition": "short_span",
@@ -907,7 +907,7 @@
         },
         "hot_partial_held": [],
         "at_fire": null,
-        "response_digest": "3a729fd2e7ab82864ae06fb023a9d9b167a588b925bf5920e15bff5449565ef0"
+        "response_digest": "1a0c8c27380a1649f78badfa78f7e1d65144505c1a77a2a1a325cf09cbe2cdef"
       },
       "flat": {
         "condition": "short_span",
@@ -985,7 +985,7 @@
         },
         "hot_partial_held": [],
         "at_fire": null,
-        "response_digest": "75603b160f1c3b560ec288d05dcfde4c5bc52013fa4628a2a5ebc2add37aafe5"
+        "response_digest": "588d1601fd9811b67c42a05439b5be7dd3c351afe618db2530a5b8803ccc1f4d"
       }
     },
     "empty_window": {
@@ -1316,7 +1316,7 @@
           "low_confidence_arc_ratio": 0.0,
           "feedback_warnings": 0
         },
-        "response_digest": "1afa338305af0eb38c5927acdee53a4dc9dad83d4cea1f079c3e777ff16d706e"
+        "response_digest": "60d368206f5937ecac634d0bae51a982f9803f577863b42cf6c6f8fdb3c7e8a6"
       },
       "stagnation_only": {
         "condition": "restart",
@@ -1389,7 +1389,7 @@
         "hot_at_probe": null,
         "hot_partial_held": [],
         "at_fire": null,
-        "response_digest": "e8acef1ba26d20237a3c7fa569fcef9643d18dfe65b9e617be3a675b195cca67"
+        "response_digest": "f534bb9afdc9ee3b31aab78f81a4265fb2847dadd7b98ea0383c998c1cd71f61"
       },
       "flat": {
         "condition": "restart",
@@ -1462,7 +1462,7 @@
         "hot_at_probe": null,
         "hot_partial_held": [],
         "at_fire": null,
-        "response_digest": "79343ea2a9bc48bcb9f44bcdac90081f2859e5ff3e85d18a31036b1719377afd"
+        "response_digest": "e0ecc9f4085fc19705fe6c7c31eacffa43456caebad53d60fa022b53ba03f7a1"
       }
     },
     "no_line": {
@@ -1549,7 +1549,7 @@
           "HIGH_STAGNATION"
         ],
         "at_fire": null,
-        "response_digest": "6056b4e66bb8f107e9d976d2c6f31998eb276cd2b16fb3d94f6b4a161816a3a8"
+        "response_digest": "596906d1642134cbd55e9a740470c1a66fb1fa9a81b6b5f65440e45ca813f548"
       },
       "stagnation_only": {
         "condition": "no_line",
@@ -1634,7 +1634,7 @@
           "HIGH_STAGNATION"
         ],
         "at_fire": null,
-        "response_digest": "30d70e49d39e00c48ef49c9f32e4df4cc9cddbf72660fa913963457ae5a05b3f"
+        "response_digest": "c514aa8b4354976b496ad6aa364581ac77c3199c363b5ef3172e49e0101d8d3f"
       },
       "flat": {
         "condition": "no_line",
@@ -1715,7 +1715,7 @@
         },
         "hot_partial_held": [],
         "at_fire": null,
-        "response_digest": "9afee5978561e6efbcdbf8c6aee5d2aeeafec38ff61e31fea03e7c9283b88a42"
+        "response_digest": "84040d668d36ac9fc92d72bde002f1497c7ec46dd5d1d4d24b0a41fa1a7b795b"
       }
     },
     "no_line_zero": {
@@ -1789,20 +1789,12 @@
           "surge": false
         },
         "fallbacks_applied": 0,
-        "hot_at_probe": {
-          "observation": "OK",
-          "history": "ESTABLISHED",
-          "line_points": 31,
-          "skipped": [
-            "SURGE",
-            "COMBINED"
-          ]
-        },
+        "hot_at_probe": null,
         "hot_partial_held": [
-          "HIGH_STAGNATION"
+          "HIGH_STAGNATION (zero_flow)"
         ],
         "at_fire": null,
-        "response_digest": "e5cdae878a89eef9189728a94b498fe1c739ff728bdfb2d86a1e9540011b0ba9"
+        "response_digest": "dfddec25fbe2e0a0d7a816c2ae33ede2934a1450f1d1b7ec78f37bb64c9bbe01"
       },
       "stagnation_only": {
         "condition": "no_line_zero",
@@ -1874,20 +1866,12 @@
           "surge": false
         },
         "fallbacks_applied": 0,
-        "hot_at_probe": {
-          "observation": "OK",
-          "history": "ESTABLISHED",
-          "line_points": 31,
-          "skipped": [
-            "SURGE",
-            "COMBINED"
-          ]
-        },
+        "hot_at_probe": null,
         "hot_partial_held": [
-          "HIGH_STAGNATION"
+          "HIGH_STAGNATION (zero_flow)"
         ],
         "at_fire": null,
-        "response_digest": "420398d3ead7f4e6f04d54469aa3ca3517c505ab901628fa74db1ce59dfe9729"
+        "response_digest": "ebcec4484c5aaa7b8e9032aeef2a95c6d08a981cbe6486d8b3dffedc2f545337"
       },
       "flat": {
         "condition": "no_line_zero",
@@ -1957,18 +1941,10 @@
           "surge": false
         },
         "fallbacks_applied": 0,
-        "hot_at_probe": {
-          "observation": "OK",
-          "history": "ESTABLISHED",
-          "line_points": 31,
-          "skipped": [
-            "SURGE",
-            "COMBINED"
-          ]
-        },
+        "hot_at_probe": null,
         "hot_partial_held": [],
         "at_fire": null,
-        "response_digest": "b828d68a22bfcb6682e3b56ef2eb9d994ff848e8c0f89f3b94c7a515f21ab0ed"
+        "response_digest": "7f9b6cc60b2f6afecb7e9efdc928a0025cf0b2f5ff4fee00d3fcecbbf07d790a"
       }
     },
     "intermittent_0": {
@@ -2055,7 +2031,7 @@
           "HIGH_STAGNATION"
         ],
         "at_fire": null,
-        "response_digest": "c86fc448982047b8a5f90234c4cbb64587ffc1feb12e1e553321658288001477"
+        "response_digest": "3f6bebd449025fe31e36876c36188b7b29bb5489fcdcd045482996889cb25bcb"
       },
       "stagnation_only": {
         "condition": "intermittent_0",
@@ -2140,7 +2116,7 @@
           "HIGH_STAGNATION"
         ],
         "at_fire": null,
-        "response_digest": "9a669526280119dcb59d38bec7f5963e14bf27f3d6c5fab69b4dffb3064615ca"
+        "response_digest": "9410abdd8bed2aeaad9adab216ccb54fd94aaa79bae58061bd24b8fd872944f7"
       },
       "flat": {
         "condition": "intermittent_0",
@@ -2221,7 +2197,7 @@
         },
         "hot_partial_held": [],
         "at_fire": null,
-        "response_digest": "47a603ae232252ade53d7fb48b141b134c59f6d89b814345cddc515fd47d0415"
+        "response_digest": "9b5e6ba8889aab81f14b2e59b9d3049499cfe984bacbf7ef36cf819612de1868"
       }
     },
     "intermittent_1": {
@@ -2299,7 +2275,7 @@
           "low_confidence_arc_ratio": 0.0,
           "feedback_warnings": 0
         },
-        "response_digest": "f04033472547347ce9a40c66871c21149c8e54a21b761d91079d5ccab98b56f1"
+        "response_digest": "656ab087ea43b72ede86f36fbda55d1992c400bfdd31c0efae39816a80e2126a"
       },
       "stagnation_only": {
         "condition": "intermittent_1",
@@ -2372,7 +2348,7 @@
         "hot_at_probe": null,
         "hot_partial_held": [],
         "at_fire": null,
-        "response_digest": "7bdbe859f3cd8de4f1c53435e7f644a318226a23744569b550d0b2e062a93a0c"
+        "response_digest": "7dbce0123c116aa7fec69f016810591a5a03f6ceb9a9709a7337c4ab4e0e0c9a"
       },
       "flat": {
         "condition": "intermittent_1",
@@ -2445,7 +2421,7 @@
         "hot_at_probe": null,
         "hot_partial_held": [],
         "at_fire": null,
-        "response_digest": "57834c5c60358dc94b2a0ab4c395819904b45c0782d411f6061a62375c184f01"
+        "response_digest": "7f9b6cc60b2f6afecb7e9efdc928a0025cf0b2f5ff4fee00d3fcecbbf07d790a"
       }
     },
     "sparse": {
@@ -2526,7 +2502,7 @@
           "low_confidence_arc_ratio": 0.0,
           "feedback_warnings": 0
         },
-        "response_digest": "8700e9418c9ad7c4ffb9757dd216c89edc5d1c82f81191cc25779fa7b2eab349"
+        "response_digest": "6dab4a6d2749a5fada45461df0222d08b392e8cde9bb203384d6b17d1a464157"
       },
       "stagnation_only": {
         "condition": "sparse",
@@ -2599,7 +2575,7 @@
         "hot_at_probe": null,
         "hot_partial_held": [],
         "at_fire": null,
-        "response_digest": "d602296634d1eb24daaf633ace9699e545857220cedf1652e010f88d78280740"
+        "response_digest": "8699994ef207da459fd698ca4e6a28842af7aa7b087b8399b86a604f535ac97d"
       },
       "flat": {
         "condition": "sparse",
@@ -2672,7 +2648,7 @@
         "hot_at_probe": null,
         "hot_partial_held": [],
         "at_fire": null,
-        "response_digest": "f2646ef140722e33edd49531f383cd40163ff0d7bcc87d05e193bf0e9a35707e"
+        "response_digest": "f50de69da8163ecefa1f2e1dfc3ae315c8941faf6e474a355b31d4513998906d"
       }
     },
     "point_missing": {
@@ -2752,7 +2728,7 @@
         },
         "hot_partial_held": [],
         "at_fire": null,
-        "response_digest": "76be586eb5adfe7cd4e5eaa9c9601b3b85fb947002bcc3bb92e8357bdcc58536"
+        "response_digest": "5630aa435b18183d10f97512fdf97754867ddb89f2b001362aaf05b6fb1d17b4"
       },
       "stagnation_only": {
         "condition": "point_missing",
@@ -2830,7 +2806,7 @@
         },
         "hot_partial_held": [],
         "at_fire": null,
-        "response_digest": "c845029c2324a7b29b1a842ce19b5918d75e5f66dd9595aebe506623e81995cd"
+        "response_digest": "a4697981b308e853fc8b13f6a991871ece6810b8983ee9c0815d4030619d5c23"
       },
       "flat": {
         "condition": "point_missing",
@@ -2908,7 +2884,7 @@
         },
         "hot_partial_held": [],
         "at_fire": null,
-        "response_digest": "c845029c2324a7b29b1a842ce19b5918d75e5f66dd9595aebe506623e81995cd"
+        "response_digest": "a4697981b308e853fc8b13f6a991871ece6810b8983ee9c0815d4030619d5c23"
       }
     },
     "node_missing": {
@@ -2989,7 +2965,7 @@
           "low_confidence_arc_ratio": 0.0,
           "feedback_warnings": 0
         },
-        "response_digest": "58d0be822933770e6d3f469aee953d7d87daddea7b012eb3f0c5fec57d31755a"
+        "response_digest": "b148a5fc634d48d65f32c860c311b6fb55722040e4b3b2584acfe255ba71cec8"
       },
       "stagnation_only": {
         "condition": "node_missing",
@@ -3062,7 +3038,7 @@
         "hot_at_probe": null,
         "hot_partial_held": [],
         "at_fire": null,
-        "response_digest": "7bdbe859f3cd8de4f1c53435e7f644a318226a23744569b550d0b2e062a93a0c"
+        "response_digest": "7dbce0123c116aa7fec69f016810591a5a03f6ceb9a9709a7337c4ab4e0e0c9a"
       },
       "flat": {
         "condition": "node_missing",
@@ -3135,7 +3111,7 @@
         "hot_at_probe": null,
         "hot_partial_held": [],
         "at_fire": null,
-        "response_digest": "57834c5c60358dc94b2a0ab4c395819904b45c0782d411f6061a62375c184f01"
+        "response_digest": "7f9b6cc60b2f6afecb7e9efdc928a0025cf0b2f5ff4fee00d3fcecbbf07d790a"
       }
     },
     "invalid": {
@@ -3215,7 +3191,7 @@
         },
         "hot_partial_held": [],
         "at_fire": null,
-        "response_digest": "bc841faff8d7fdbbe6b9935882534fcb99f1a7cfaacaeb119960da7c05c3e7b6"
+        "response_digest": "585d83cc56e7f183081ddc33af04e386bb251067e94524958503b10e5e347363"
       },
       "stagnation_only": {
         "condition": "invalid",
@@ -3293,7 +3269,7 @@
         },
         "hot_partial_held": [],
         "at_fire": null,
-        "response_digest": "9727f0b2b1ad25f595eeb9f55383acd17d8646473af20ea90523c9b7eed0c85f"
+        "response_digest": "f1f20d0aa53e6faf0d6d403f6b25b9f028f350426dcf79635b401d53f47a2e59"
       },
       "flat": {
         "condition": "invalid",
@@ -3371,7 +3347,7 @@
         },
         "hot_partial_held": [],
         "at_fire": null,
-        "response_digest": "84204cba56cc7a609154ad16c4181fedef455aaefd8f628a29ad98e8ed937a2d"
+        "response_digest": "40f185cc18015d71c627c0e02cd32a7c73eec3d66ab222d1f6a3383bd154dc8b"
       }
     },
     "hold_flag": {
@@ -3455,7 +3431,7 @@
         },
         "hot_partial_held": [],
         "at_fire": null,
-        "response_digest": "d505bde3dd7471eee684795957ddbce3483c302fb07e5ca6f9a5672550c7969e"
+        "response_digest": "1ab13e05f98e8ea326c99d816a52265419c26db2c9afce42e15f4e4f855f9aac"
       },
       "stagnation_only": {
         "condition": "hold_flag",
@@ -3537,7 +3513,7 @@
         },
         "hot_partial_held": [],
         "at_fire": null,
-        "response_digest": "31394a1f6799ef2f1cb721556c38c6ebc7d599dce66f37f582e94a98f2784016"
+        "response_digest": "eb10d584c7af6ae077eab4d8e114dc3e6b883b0736d761f7fcf12f633a55bd34"
       },
       "flat": {
         "condition": "hold_flag",
@@ -3619,7 +3595,7 @@
         },
         "hot_partial_held": [],
         "at_fire": null,
-        "response_digest": "cfe45deffe1af10825237f32b10c17890667cf5eb87e4cbc2ff225b947bd2112"
+        "response_digest": "f38082fa0455cfb49b2f9a2b1d576bc9695e05df227e26e1cb30ba50232c2f73"
       }
     },
     "hold_frozen": {
@@ -3703,7 +3679,7 @@
         },
         "hot_partial_held": [],
         "at_fire": null,
-        "response_digest": "b3543f7dbc353df9135457ac43f62d97d85960a3edd6e2dc176900648df2df8b"
+        "response_digest": "54e967f865e47fbd7d26d4ca8e6ef9a497c49256d6158663fef5e42589b84586"
       },
       "stagnation_only": {
         "condition": "hold_frozen",
@@ -3785,7 +3761,7 @@
         },
         "hot_partial_held": [],
         "at_fire": null,
-        "response_digest": "f77a651d0cf36c641bc012a057537698da0f74e1233b9b9d67cb19d600b66f17"
+        "response_digest": "489ec840e8b1516d846100692f7d9ccb3a6baffd2b200f470c2c4062e7bc145a"
       },
       "flat": {
         "condition": "hold_frozen",
@@ -3867,7 +3843,7 @@
         },
         "hot_partial_held": [],
         "at_fire": null,
-        "response_digest": "325f2b1c7954c576566e68043b30422e007afb5f66b8967aef9ce78ba691270a"
+        "response_digest": "cb681b4a0f6561f3e9c5bb2a708ffa4ec74cb5b0b43a4564ec362e45b4fe71a3"
       }
     },
     "dropout": {
@@ -3947,7 +3923,7 @@
         },
         "hot_partial_held": [],
         "at_fire": null,
-        "response_digest": "c5c77e09d2d8196963772c3045d249a213b49a12eb42b4fb34bee284ddbe5890"
+        "response_digest": "c777edee763cd170c77e75792d972e94fe24d5d3ee575755cd1b97252d69f626"
       },
       "stagnation_only": {
         "condition": "dropout",
@@ -4025,7 +4001,7 @@
         },
         "hot_partial_held": [],
         "at_fire": null,
-        "response_digest": "48992c3de01ed464cd1889dadfc97ba268c8e263d5ddfd74b93ba7ed950c1a86"
+        "response_digest": "1681762971cfd40a4c86d077a4e9fb17b9b573279a76ca8bb892d496a5d8a2d3"
       },
       "flat": {
         "condition": "dropout",
@@ -4103,7 +4079,7 @@
         },
         "hot_partial_held": [],
         "at_fire": null,
-        "response_digest": "72eb00aba394759fffe17962a5393015d73d5db595d4979d2da33812b24c74f6"
+        "response_digest": "fdd6833d3b667b557d53e587fc2f3d6cc97563f32beb6678e98176080a21a552"
       }
     },
     "stale": {
@@ -4432,7 +4408,7 @@
           "low_confidence_arc_ratio": 0.0,
           "feedback_warnings": 0
         },
-        "response_digest": "58d0be822933770e6d3f469aee953d7d87daddea7b012eb3f0c5fec57d31755a"
+        "response_digest": "b148a5fc634d48d65f32c860c311b6fb55722040e4b3b2584acfe255ba71cec8"
       },
       "stagnation_only": {
         "condition": "short_term",
@@ -4505,7 +4481,7 @@
         "hot_at_probe": null,
         "hot_partial_held": [],
         "at_fire": null,
-        "response_digest": "7bdbe859f3cd8de4f1c53435e7f644a318226a23744569b550d0b2e062a93a0c"
+        "response_digest": "7dbce0123c116aa7fec69f016810591a5a03f6ceb9a9709a7337c4ab4e0e0c9a"
       },
       "flat": {
         "condition": "short_term",
@@ -4578,7 +4554,7 @@
         "hot_at_probe": null,
         "hot_partial_held": [],
         "at_fire": null,
-        "response_digest": "57834c5c60358dc94b2a0ab4c395819904b45c0782d411f6061a62375c184f01"
+        "response_digest": "7f9b6cc60b2f6afecb7e9efdc928a0025cf0b2f5ff4fee00d3fcecbbf07d790a"
       }
     }
   }

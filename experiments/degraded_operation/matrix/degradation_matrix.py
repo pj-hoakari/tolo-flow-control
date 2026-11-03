@@ -349,7 +349,7 @@ CONDITIONS = (
         alter_no_line_zero,
         lambda r: all(f.flow_rate == 0 for f in _hot_flows(r)) and len(_hot_flows(r)) == 2,
         False,
-        "Q4: 0 人/分は観測値。平均 0 では傾きを求められず急増は判定不能",
+        "Q4: 0 人/分は観測値。平均 0 は急増なし。停滞警戒の成立を流量 0 の理由つきで警告する",
     ),
     Condition(
         "intermittent_0",
@@ -513,7 +513,10 @@ def run(condition: Condition, kind: str) -> dict:
                     and warning.code == pb.WARNING_CODE_PARTIAL_COMBINED_TRIGGER
                     and context.get("edge_id") == HOT
                 ):
-                    hot_partial.add(context["held"])
+                    reason = context.get("reason")
+                    hot_partial.add(
+                        context["held"] if reason is None else f"{context['held']} ({reason})"
+                    )
             for watch in response.updated_detection_state.arc_watch_states:
                 if watch.edge_id == HOT:
                     flags["percentile"] |= watch.percentile_breached
@@ -646,6 +649,11 @@ def assert_premises(matrix: dict, verdicts: dict) -> None:
     assert short["response_digest"] == base["surge"]["response_digest"], (
         "短期テナント: event_context を変えると応答が変わった（§6.3 の前提が崩れた）"
     )
+    zero = matrix["no_line_zero"]["surge"]
+    assert not _hot_skipped(zero), "流量 0: 急増を判定不能として省いた"
+    assert zero["hot_partial_held"] == ["HIGH_STAGNATION (zero_flow)"], (
+        "流量 0: 停滞警戒の成立を流量 0 の理由つきで警告していない"
+    )
     silent = [key for key, judged in verdicts.items() if judged["silent_miss"]]
     assert not silent, f"判定不能を出さずに発火しない行がある: {silent}"
     alarms = [key for key, judged in verdicts.items() if judged["control_match"] != "一致"]
@@ -740,7 +748,7 @@ def render(matrix: dict, verdicts: dict) -> str:
             "列の意味。P/Δ/急 は急増エッジで (a).1・(a).2・急増が一度でも成立したか。"
             f"状態と省いた判定は、急増の系列の {PROBE + 1} サイクル目（急増開始 +5 分。それより前に発火した行は発火の直前）に"
             "急増エッジへ出た `Diagnostics.element_states` の観測/履歴/ラインの点数と省いた判定。"
-            "記録がなければ通常の状態。片側成立は急増開始後の `PARTIAL_COMBINED_TRIGGER` の held。"
+            "記録がなければ通常の状態。片側成立は急増開始後の `PARTIAL_COMBINED_TRIGGER` の held（reason があれば括弧に添える）。"
             "黙った不発は、発火せず、省いた判定も片側成立も出ない行。"
         ),
         "",

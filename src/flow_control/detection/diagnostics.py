@@ -82,6 +82,7 @@ class QueueExpiredEvidence:
 class PartialCombinedTrigger:
     edge_id: EdgeID
     held: Judgement
+    reason: str | None = None
 
 
 @dataclass(frozen=True)

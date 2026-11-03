@@ -319,7 +319,8 @@ def _detection_warnings(det: DetectionResult) -> tuple[Warning, ...]:
     return tuple(
         Warning(
             WarningCode.PARTIAL_COMBINED_TRIGGER,
-            (("edge_id", item.edge_id.value), ("held", item.held.value)),
+            (("edge_id", item.edge_id.value), ("held", item.held.value))
+            + ((("reason", item.reason),) if item.reason is not None else ()),
         )
         for item in det.warnings
     )
