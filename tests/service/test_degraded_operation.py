@@ -177,14 +177,14 @@ NO_SURGE = (Judgement.SURGE, Judgement.COMBINED)
             _request(flag=ConfidenceFlag.INVALID),
             Verdict.SKIPPED_NO_TRIGGER,
             (),
-            _record(ObservationState.INVALID, ESTABLISHED_TIER, 10, *UNDETERMINABLE),
+            _record(ObservationState.INVALID, ESTABLISHED_TIER, 10),
             id="invalid",
         ),
         pytest.param(
             _request(observed=False),
             Verdict.SKIPPED_NO_TRIGGER,
             (),
-            _record(ObservationState.UNOBSERVED, ESTABLISHED_TIER, 10, *UNDETERMINABLE),
+            _record(ObservationState.UNOBSERVED, ESTABLISHED_TIER, 10),
             id="unobserved",
         ),
         pytest.param(

@@ -86,6 +86,10 @@ class ElementState:
     def judgeable(self) -> bool:
         return self.observation is ObservationState.OK
 
+    @property
+    def out_of_scope(self) -> bool:
+        return self.observation in (ObservationState.UNOBSERVED, ObservationState.INVALID)
+
     def surge_line(self) -> Series | None:
         if not self.judgeable or self.line_points < MIN_SERIES_POINTS:
             return None

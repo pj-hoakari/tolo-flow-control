@@ -583,6 +583,11 @@ def _hot_skipped(record: dict) -> list[str]:
     return [] if hot is None else hot["skipped"]
 
 
+def _hot_out_of_scope(record: dict) -> bool:
+    hot = record["hot_at_probe"]
+    return hot is not None and hot["observation"] in ("INVALID", "UNOBSERVED")
+
+
 def _at_fire(response: pb.OptimizeResponse) -> dict:
     result = response.optimization_result
     feedback = response.feedback_values
@@ -621,7 +626,10 @@ def judge(condition: Condition, runs: dict[str, dict]) -> dict:
     false_alarm_flat = runs["flat"]["first_optimized_cycle"] is not None
     return {
         "fired": fired,
-        "silent_miss": not fired and not _hot_skipped(surge) and not surge["hot_partial_held"],
+        "silent_miss": not fired
+        and not _hot_skipped(surge)
+        and not surge["hot_partial_held"]
+        and not _hot_out_of_scope(surge),
         "false_alarm_stagnation_only": false_alarm_stagnation,
         "false_alarm_flat": false_alarm_flat,
         "surge_match": "一致" if fired == condition.spec_fire else "不一致",

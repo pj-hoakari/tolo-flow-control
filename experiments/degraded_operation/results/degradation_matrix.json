@@ -2748,15 +2748,11 @@
           "observation": "UNOBSERVED",
           "history": "NONE",
           "line_points": 0,
-          "skipped": [
-            "SURGE",
-            "HIGH_STAGNATION",
-            "COMBINED"
-          ]
+          "skipped": []
         },
         "hot_partial_held": [],
         "at_fire": null,
-        "response_digest": "12d5228df48eb95df760332b48a7e91d377278c1a75aaa971345f0cf01eba8a7"
+        "response_digest": "76be586eb5adfe7cd4e5eaa9c9601b3b85fb947002bcc3bb92e8357bdcc58536"
       },
       "stagnation_only": {
         "condition": "point_missing",
@@ -2830,15 +2826,11 @@
           "observation": "UNOBSERVED",
           "history": "NONE",
           "line_points": 0,
-          "skipped": [
-            "SURGE",
-            "HIGH_STAGNATION",
-            "COMBINED"
-          ]
+          "skipped": []
         },
         "hot_partial_held": [],
         "at_fire": null,
-        "response_digest": "1fa153e13fbe93656a255e19b825068b643405f45542e68e67b84b47e2de395e"
+        "response_digest": "c845029c2324a7b29b1a842ce19b5918d75e5f66dd9595aebe506623e81995cd"
       },
       "flat": {
         "condition": "point_missing",
@@ -2912,15 +2904,11 @@
           "observation": "UNOBSERVED",
           "history": "NONE",
           "line_points": 0,
-          "skipped": [
-            "SURGE",
-            "HIGH_STAGNATION",
-            "COMBINED"
-          ]
+          "skipped": []
         },
         "hot_partial_held": [],
         "at_fire": null,
-        "response_digest": "1fa153e13fbe93656a255e19b825068b643405f45542e68e67b84b47e2de395e"
+        "response_digest": "c845029c2324a7b29b1a842ce19b5918d75e5f66dd9595aebe506623e81995cd"
       }
     },
     "node_missing": {
@@ -3223,15 +3211,11 @@
           "observation": "INVALID",
           "history": "ESTABLISHED",
           "line_points": 28,
-          "skipped": [
-            "SURGE",
-            "HIGH_STAGNATION",
-            "COMBINED"
-          ]
+          "skipped": []
         },
         "hot_partial_held": [],
         "at_fire": null,
-        "response_digest": "b3fd44eb5d891c52fe084b8d4e94c5fffa3670d406d81d7b5fa62b7bef5a653b"
+        "response_digest": "a5b78ebf07c4134b67f2b189bb0e4d842ceb47cb7bad8cc26e8ea430d1688dfe"
       },
       "stagnation_only": {
         "condition": "invalid",
@@ -3305,15 +3289,11 @@
           "observation": "INVALID",
           "history": "ESTABLISHED",
           "line_points": 28,
-          "skipped": [
-            "SURGE",
-            "HIGH_STAGNATION",
-            "COMBINED"
-          ]
+          "skipped": []
         },
         "hot_partial_held": [],
         "at_fire": null,
-        "response_digest": "0449e4fa76c236249500ca063cb89fbb9908b3158228e323ca45b9f497a92a8e"
+        "response_digest": "4b69162acf7cea2dea03fe9a0febfc17634b0c17c091d54364aaf95a375c1aeb"
       },
       "flat": {
         "condition": "invalid",
@@ -3387,15 +3367,11 @@
           "observation": "INVALID",
           "history": "ESTABLISHED",
           "line_points": 28,
-          "skipped": [
-            "SURGE",
-            "HIGH_STAGNATION",
-            "COMBINED"
-          ]
+          "skipped": []
         },
         "hot_partial_held": [],
         "at_fire": null,
-        "response_digest": "db5c5552b987a8313e7c3e46f89ac8b54b5ad6f0f9c8d37438d6dfc748a5bc25"
+        "response_digest": "84204cba56cc7a609154ad16c4181fedef455aaefd8f628a29ad98e8ed937a2d"
       }
     },
     "hold_flag": {
@@ -3479,7 +3455,7 @@
         },
         "hot_partial_held": [],
         "at_fire": null,
-        "response_digest": "cfec33b3099ccc396fe5433fb7b810d3e7e61a7609a4b54e68a7206df1834d50"
+        "response_digest": "34084daf677792da8c7214b2e8c4e5f5cd9826314e1f008d64c02963d7855229"
       },
       "stagnation_only": {
         "condition": "hold_flag",
@@ -3561,7 +3537,7 @@
         },
         "hot_partial_held": [],
         "at_fire": null,
-        "response_digest": "41f5e9da4641ee9827cacd5a94f22e3cc0a8a65b1d35ffd20fbb92c72b489992"
+        "response_digest": "637fab8925f74c3fbedfb7835c036b8e1db46a48ea94cc35b137a67ad5fbcaf0"
       },
       "flat": {
         "condition": "hold_flag",
@@ -3727,7 +3703,7 @@
         },
         "hot_partial_held": [],
         "at_fire": null,
-        "response_digest": "89514af8b86ab57e7dccdd184d76d743efdd09b543df4cffd688b7678f1c0830"
+        "response_digest": "7c4c5fc603339567b9f04e38d5b7b7d73e756db0f109b3191b0479191f512990"
       },
       "stagnation_only": {
         "condition": "hold_frozen",
@@ -3809,7 +3785,7 @@
         },
         "hot_partial_held": [],
         "at_fire": null,
-        "response_digest": "9d70e087027a2a00aa5367ff861724f58c437f6e23e738d03be2e1dc336adfab"
+        "response_digest": "4b413a0888a151c52009c17e0696f85d98983f58365df066779aa65e84954db1"
       },
       "flat": {
         "condition": "hold_frozen",
@@ -3967,15 +3943,11 @@
           "observation": "UNOBSERVED",
           "history": "ESTABLISHED",
           "line_points": 28,
-          "skipped": [
-            "SURGE",
-            "HIGH_STAGNATION",
-            "COMBINED"
-          ]
+          "skipped": []
         },
         "hot_partial_held": [],
         "at_fire": null,
-        "response_digest": "5c5712f8ae97a1b7ad75819c97dc99c9b5924e55c0ed3058334408f0d1a3e6b2"
+        "response_digest": "c36d36092bf745f531d837ff502eb481f8d1d935feaaf3e4928301f78a5e6bd3"
       },
       "stagnation_only": {
         "condition": "dropout",
@@ -4049,15 +4021,11 @@
           "observation": "UNOBSERVED",
           "history": "ESTABLISHED",
           "line_points": 28,
-          "skipped": [
-            "SURGE",
-            "HIGH_STAGNATION",
-            "COMBINED"
-          ]
+          "skipped": []
         },
         "hot_partial_held": [],
         "at_fire": null,
-        "response_digest": "df79bfbea18d7824b296f461e65462e4e760c5ec8b536008cb908389c70c3e81"
+        "response_digest": "597cf4d77bd854c00a4d4f854ff4fcec2f4041ed006d5258e343dc1695a80bf8"
       },
       "flat": {
         "condition": "dropout",
@@ -4131,15 +4099,11 @@
           "observation": "UNOBSERVED",
           "history": "ESTABLISHED",
           "line_points": 28,
-          "skipped": [
-            "SURGE",
-            "HIGH_STAGNATION",
-            "COMBINED"
-          ]
+          "skipped": []
         },
         "hot_partial_held": [],
         "at_fire": null,
-        "response_digest": "27d81b1071f80dbca6edc30d47a35c19450dde8bb2a92e2658f074bd5ff60c47"
+        "response_digest": "72eb00aba394759fffe17962a5393015d73d5db595d4979d2da33812b24c74f6"
       }
     },
     "stale": {

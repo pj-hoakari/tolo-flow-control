@@ -203,7 +203,7 @@ def detect_metric_triggers(
             else:
                 skipped.add(Judgement.PUNCTURE)
 
-        if skipped:
+        if skipped and not state.out_of_scope:
             skipped_by_edge.append(
                 SkippedJudgements(edge_id=edge.edge_id, judgements=frozenset(skipped))
             )

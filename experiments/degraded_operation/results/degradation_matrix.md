@@ -28,12 +28,12 @@
 | 間欠ライン（今回値あり・窓の流量 0 点） | 発火せず | - | P/Δ/- | OK/ESTABLISHED/1 点 | SURGE, COMBINED | HIGH_STAGNATION | なし / なし | §6.2 ライン間欠（今回値の 1 点のみ）: 急増は判定不能 | 一致 | 一致 | なし |
 | 間欠ライン（今回値あり・窓の流量 1 点） | 36（+5 分） | e_j1_hallA | P/Δ/急 | - | - | - | なし / なし | §6.2 窓と今回値で 2 点: 通常 | 一致 | 一致 | なし |
 | 疎なライン（窓の点を 5 分に 1 点へ間引く） | 39（+8 分） | e_j1_hallA | P/Δ/急 | - | - | - | なし / なし | §6.2 窓に 2 点以上: 通常 | 一致 | 一致 | なし |
-| 観測点なし（急増エッジが無観測） | 発火せず | - | -/-/- | UNOBSERVED/NONE/0 点 | SURGE, HIGH_STAGNATION, COMBINED | - | なし / なし | §6.2 観測なし: 対象外 | 一致 | 一致 | なし |
+| 観測点なし（急増エッジが無観測） | 発火せず | - | -/-/- | UNOBSERVED/NONE/0 点 | - | - | なし / なし | §6.2 観測なし: 対象外 | 一致 | 一致 | なし |
 | ノード占有なし | 39（+8 分） | e_j1_hallA | P/Δ/急 | - | - | - | なし / なし | 検知はノード占有を使わない（発火は変わらない） | 一致 | 一致 | なし |
-| 急増エッジが INVALID（急増開始 +3 分から。Observation の形） | 発火せず | - | P/Δ/- | INVALID/ESTABLISHED/28 点 | SURGE, HIGH_STAGNATION, COMBINED | - | なし / なし | §6.2 INVALID: 対象外 | 一致 | 一致 | なし |
+| 急増エッジが INVALID（急増開始 +3 分から。Observation の形） | 発火せず | - | P/Δ/- | INVALID/ESTABLISHED/28 点 | - | - | なし / なし | §6.2 INVALID: 対象外 | 一致 | 一致 | なし |
 | 急増エッジが HOLD（フラグのみ。値は実測のまま） | 発火せず | - | P/Δ/- | HOLD/ESTABLISHED/31 点 | SURGE, HIGH_STAGNATION, COMBINED | - | なし / なし | §6.2 HOLD: 値が実測でもフラグで判定不能 | 一致 | 一致 | なし |
 | 急増エッジが HOLD（Observation の形: 値を凍結し窓から外す） | 発火せず | - | P/Δ/- | HOLD/ESTABLISHED/29 点 | SURGE, HIGH_STAGNATION, COMBINED | - | なし / なし | §6.2 HOLD: 判定不能 | 一致 | 一致 | なし |
-| 端末脱落（急増開始 +3 分から今回値なし・窓も途切れる） | 発火せず | - | P/Δ/- | UNOBSERVED/ESTABLISHED/28 点 | SURGE, HIGH_STAGNATION, COMBINED | - | なし / なし | §6.2 今回値なしは観測なしとして対象外 | 一致 | 一致 | なし |
+| 端末脱落（急増開始 +3 分から今回値なし・窓も途切れる） | 発火せず | - | P/Δ/- | UNOBSERVED/ESTABLISHED/28 点 | - | - | なし / なし | §6.2 今回値なしは観測なしとして対象外 | 一致 | 一致 | なし |
 | 観測が 10 分古い（observed_at だけ遅れる） | 発火せず | - | -/-/- | STALE/ESTABLISHED/31 点 | SURGE, HIGH_STAGNATION, COMBINED | - | なし / なし | §6.2 観測が古い（2 分解能以上、下限 60 秒）: HOLD と同じ | 一致 | 一致 | なし |
 | 短期テナント（term=SHORT・available_history_hours=1） | 39（+8 分） | e_j1_hallA | P/Δ/急 | - | - | - | なし / なし | §6.3 term は縮退に使わない: 基準と同じ応答 | 一致 | 一致 | なし |
 
