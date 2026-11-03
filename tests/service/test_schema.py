@@ -60,6 +60,7 @@ def test_unified_config_defaults_are_noharm() -> None:
     # 拡張ロードマップ連動フラグは既定で無効（現状動作と同一）
     assert cfg.restriction_proposal_enabled is False
     assert cfg.puncture_trigger_enabled is False
+    assert cfg.puncture_dwell_ratio_threshold == 1.5
     assert cfg.two_stage_optimization is False
     assert cfg.fallback_eta == 0.25
     # 主要フィールドが揃っている

@@ -144,6 +144,8 @@ message ArcHistoryStat {
   optional double baseline_stagnation = 3;
   optional double flow_sensitivity_eta = 4;
   optional double available_span_hours = 5;
+  optional double flow_p90 = 6;
+  optional double free_flow_dwell_min = 7;
 }
 
 message ArcWindowSeries {
@@ -287,7 +289,8 @@ message ResolvedConfig {
   optional bool restriction_proposal_enabled = 18;
   optional double tau_danger_threshold = 19;
   optional bool puncture_trigger_enabled = 20;
-  optional double puncture_ratio_threshold = 21;
+  reserved 21;
+  reserved "puncture_ratio_threshold";
   optional double forecasting_budget_sec = 22;
   optional double detour_budget_sec = 23;
   optional double lightweight_opt_budget_sec = 24;
@@ -334,6 +337,7 @@ message ResolvedConfig {
   optional double delta_min_fraction = 63;
   optional double stale_observation_resolutions = 64;
   optional double stale_observation_floor_s = 65;
+  optional double puncture_dwell_ratio_threshold = 66;
 }
 
 message ThroughputWeights {

@@ -41,7 +41,7 @@ Detection の通常トリガーは、停滞警戒が `high_stagnation_duration_m
 - 停滞警戒の相対増分 (a).2 は、`HistoryDigest.window_series[].stagnation_samples` の平均と比べる。履歴が空なので、`arc_stagnations` だけを送っても成立しない。
 - 急増の判定は、`flow_samples` と今回のライン通過から傾きを求める。サンプルが今回の 1 点だけになり、傾きを計算できない。
 
-パンクトリガーも発火しない。`puncture_trigger_enabled=false` で、全エッジが `VECTOR` だからである。
+パンクトリガーも発火しない。`puncture_trigger_enabled=false` で、履歴に流量の自己 P90 と自由流の滞在時間もないからである。
 `EventContext.Term=EVENT_TERM_SHORT` と `EventContext.AvailableHistoryHours=0` は、今の実装の判定に使われていない。
 
 ## 提案を出すために Observation 側で埋める値

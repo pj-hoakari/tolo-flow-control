@@ -66,7 +66,7 @@ class ResolvedConfig:
     tau_danger_threshold: float | None = None  # 残留危険判定。None = 機能2 無効
     # ── 前処理 P（パンクトリガー (d)） ──
     puncture_trigger_enabled: bool = False
-    puncture_ratio_threshold: float = 1.0  # σ_e ≥ ρ·C_e で発火
+    puncture_dwell_ratio_threshold: float = 1.5
 
     # ── 計算時間予算 ─────────
     forecasting_budget_sec: float = 30.0

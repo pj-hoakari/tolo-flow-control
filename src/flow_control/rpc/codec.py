@@ -745,6 +745,8 @@ def _encode_history_stat(value: ArcHistoryStat) -> pb.ArcHistoryStat:
         ("baseline_stagnation", value.baseline_stagnation),
         ("flow_sensitivity_eta", value.flow_sensitivity_eta),
         ("available_span_hours", value.available_span_hours),
+        ("flow_p90", value.flow_p90),
+        ("free_flow_dwell_min", value.free_flow_dwell_min),
     ):
         if number is not None:
             setattr(result, field, _finite(number, f"history.{field}"))
@@ -758,6 +760,8 @@ def _decode_history_stat(value: pb.ArcHistoryStat) -> ArcHistoryStat:
         baseline_stagnation=_optional_float(value, "baseline_stagnation"),
         flow_sensitivity_eta=_optional_float(value, "flow_sensitivity_eta"),
         available_span_hours=_optional_float(value, "available_span_hours"),
+        flow_p90=_optional_float(value, "flow_p90"),
+        free_flow_dwell_min=_optional_float(value, "free_flow_dwell_min"),
     )
 
 
@@ -1114,7 +1118,7 @@ def _encode_config(value: ResolvedConfig) -> pb.ResolvedConfig:
         ("restriction_proposal_enabled", value.restriction_proposal_enabled),
         ("tau_danger_threshold", value.tau_danger_threshold),
         ("puncture_trigger_enabled", value.puncture_trigger_enabled),
-        ("puncture_ratio_threshold", value.puncture_ratio_threshold),
+        ("puncture_dwell_ratio_threshold", value.puncture_dwell_ratio_threshold),
         ("forecasting_budget_sec", value.forecasting_budget_sec),
         ("detour_budget_sec", value.detour_budget_sec),
         ("lightweight_opt_budget_sec", value.lightweight_opt_budget_sec),
@@ -1209,7 +1213,7 @@ def _decode_config(value: pb.ResolvedConfig) -> ResolvedConfig:
         restriction_proposal_enabled=_required_bool(value, "restriction_proposal_enabled"),
         tau_danger_threshold=_optional_float(value, "tau_danger_threshold"),
         puncture_trigger_enabled=_required_bool(value, "puncture_trigger_enabled"),
-        puncture_ratio_threshold=_required_float(value, "puncture_ratio_threshold"),
+        puncture_dwell_ratio_threshold=_required_float(value, "puncture_dwell_ratio_threshold"),
         forecasting_budget_sec=_required_float(value, "forecasting_budget_sec"),
         detour_budget_sec=_required_float(value, "detour_budget_sec"),
         lightweight_opt_budget_sec=_required_float(value, "lightweight_opt_budget_sec"),

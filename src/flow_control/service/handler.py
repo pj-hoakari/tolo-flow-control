@@ -386,7 +386,7 @@ def _validation_errors(req: Request) -> tuple[str, ...]:
         cfg.detour_budget_sec,
         cfg.lightweight_opt_budget_sec,
         cfg.milp_time_limit_sec,
-        cfg.puncture_ratio_threshold,
+        cfg.puncture_dwell_ratio_threshold,
         cfg.stale_observation_resolutions,
         cfg.stale_observation_floor_s,
     )
@@ -418,7 +418,7 @@ def _detection_config(cfg: ServiceConfig) -> DetectionConfig:
         retrigger_reset_quiet_cycles=cfg.retrigger_reset_quiet_cycles,
         max_consecutive_skips=cfg.max_consecutive_skips,
         puncture_trigger_enabled=cfg.puncture_trigger_enabled,
-        puncture_ratio_threshold=cfg.puncture_ratio_threshold,
+        puncture_dwell_ratio_threshold=cfg.puncture_dwell_ratio_threshold,
         epsilon_0=cfg.epsilon_0,
     )
 

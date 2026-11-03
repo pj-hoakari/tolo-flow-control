@@ -13,6 +13,7 @@ from .observations import ConfidenceFlag, Observations
 SHORT_HISTORY_HOURS = 4.0
 MIN_SERIES_POINTS = 2
 DEFAULT_SURGE_WINDOW_MINUTE = 30.0
+PUNCTURE_SPAN_MINUTE = 3.0
 DEFAULT_STALE_AFTER_RESOLUTIONS = 2.0
 DEFAULT_STALE_FLOOR_S = 60.0
 
@@ -57,12 +58,21 @@ class StagnationBasis:
 
 
 @dataclass(frozen=True)
+class PunctureBasis:
+    flow: float
+    stagnation: float
+    flow_p90: float
+    free_flow_dwell_min: float
+
+
+@dataclass(frozen=True)
 class ElementState:
     edge_id: EdgeID
     observation: ObservationState
     history: HistoryTier
     line: Series
     stagnation: StagnationBasis | None
+    puncture: PunctureBasis | None
 
     @property
     def line_points(self) -> int:
@@ -98,6 +108,9 @@ class ElementState:
     def stagnation_basis(self) -> StagnationBasis | None:
         return self.stagnation if self.judgeable else None
 
+    def puncture_basis(self) -> PunctureBasis | None:
+        return self.puncture if self.nominal else None
+
 
 ElementStates = Mapping[EdgeID, ElementState]
 
@@ -122,18 +135,27 @@ def assess_elements(
         )
         tier = _history_tier(stat, stagnation_window)
         stale_after_s = max(stale_after_resolutions * edge.time_resolution_s, stale_floor_s)
+        line = _line(
+            edge,
+            observations,
+            window.flow_samples if window is not None else (),
+            server_time,
+            surge_window_minute,
+        )
         states[edge.edge_id] = ElementState(
             edge_id=edge.edge_id,
             observation=_observation_state(edge.edge_id, observations, lag_s >= stale_after_s),
             history=tier,
-            line=_line(
-                edge,
-                observations,
-                window.flow_samples if window is not None else (),
-                server_time,
-                surge_window_minute,
-            ),
+            line=line,
             stagnation=_stagnation_basis(edge.edge_id, observations, stat, stagnation_window, tier),
+            puncture=_puncture_basis(
+                edge.edge_id,
+                observations,
+                stat,
+                line,
+                window.stagnation_samples if window is not None else (),
+                server_time,
+            ),
         )
     return states
 
@@ -209,4 +231,34 @@ def _stagnation_basis(
         baseline=baseline,
         baseline_source=source,
         p90=stat.p90_stagnation if stat is not None and tier is HistoryTier.ESTABLISHED else None,
+    )
+
+
+def _puncture_basis(
+    edge_id: EdgeID,
+    observations: Observations,
+    stat: ArcHistoryStat | None,
+    line: Series,
+    stagnation_samples: Series,
+    server_time: datetime,
+) -> PunctureBasis | None:
+    observed = observations.stagnation_of(edge_id)
+    if (
+        observed is None
+        or stat is None
+        or stat.flow_p90 is None
+        or stat.free_flow_dwell_min is None
+        or stat.free_flow_dwell_min <= 0
+    ):
+        return None
+    start = server_time - timedelta(minutes=PUNCTURE_SPAN_MINUTE)
+    flows = [v for t, v in line if t >= start]
+    if not flows:
+        return None
+    stagnations = [v for t, v in stagnation_samples if t >= start] + [observed.stagnation]
+    return PunctureBasis(
+        flow=statistics.mean(flows),
+        stagnation=statistics.mean(stagnations),
+        flow_p90=stat.flow_p90,
+        free_flow_dwell_min=stat.free_flow_dwell_min,
     )

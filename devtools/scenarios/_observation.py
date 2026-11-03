@@ -154,7 +154,7 @@ def observation_config() -> pb.ResolvedConfig:
         greedy_improve_margin=0.05,
         restriction_proposal_enabled=False,
         puncture_trigger_enabled=False,
-        puncture_ratio_threshold=1,
+        puncture_dwell_ratio_threshold=1.5,
         forecasting_budget_sec=30,
         detour_budget_sec=30,
         lightweight_opt_budget_sec=120,

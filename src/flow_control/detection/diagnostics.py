@@ -10,7 +10,7 @@ from ..domain.element_state import Judgement
 class EvidenceSource(str, Enum):
     SURGE = "SURGE"
     HIGH_STAGNATION = "HIGH_STAGNATION"
-    PUNCTURE = "PUNCTURE"  # スカラー型パンク（前処理 P）由来
+    PUNCTURE = "PUNCTURE"  # パンク（前処理 P）由来
     DANGER = "DANGER"
     QUEUE_SCORE = "QUEUE_SCORE"
     QUEUE_DIVERSITY = "QUEUE_DIVERSITY"
@@ -41,8 +41,10 @@ class PunctureEvidence:
     source: ClassVar[EvidenceSource] = EvidenceSource.PUNCTURE
     edge_id: EdgeID
     occurred_at: datetime
-    observed_count: float  # スカラー通過カウント σ_e
-    capacity_threshold: float  # ρ·C_e
+    flow: float
+    flow_p90: float
+    dwell_ratio: float
+    dwell_ratio_threshold: float
 
 
 @dataclass(frozen=True)

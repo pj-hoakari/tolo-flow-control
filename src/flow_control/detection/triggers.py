@@ -7,9 +7,13 @@ from enum import Enum
 from typing import Protocol
 
 from ..domain import EdgeID, Graph, NodeID
-from ..domain.element_state import ElementStates, Judgement, Series, StagnationBasis
-from ..domain.enums import ObservationType
-from ..domain.graph import Edge
+from ..domain.element_state import (
+    ElementStates,
+    Judgement,
+    PunctureBasis,
+    Series,
+    StagnationBasis,
+)
 from ..domain.observations import Observations
 from .config import ResolvedConfig
 from .diagnostics import (
@@ -189,19 +193,34 @@ def detect_metric_triggers(
                 new_watch_states.append(next_watch)
 
         # ── パンクトリガー (d)（前処理 P・独立） ──
-        if _puncture_applies(edge, config):
-            if state.judgeable:
-                _detect_puncture(
-                    edge,
-                    observations,
-                    config,
-                    server_time,
-                    triggered_edges,
-                    fired_triggers,
-                    evidences,
-                )
-            else:
+        if config.puncture_trigger_enabled:
+            puncture = state.puncture_basis()
+            dwell_ratio = None if puncture is None else _puncture_dwell_ratio(puncture)
+            kappa = config.puncture_dwell_ratio_threshold
+            if puncture is None:
                 skipped.add(Judgement.PUNCTURE)
+            elif dwell_ratio is not None and dwell_ratio >= kappa:
+                fired_triggers.append(
+                    FiredTrigger(
+                        kind=QueuedTriggerKind.PUNCTURE,
+                        fired_at=server_time,
+                        origin_edge_id=edge.edge_id,
+                        score=dwell_ratio / kappa,
+                        snapshot_ref=observations.snapshot_ref,
+                    )
+                )
+                if edge.edge_id not in triggered_edges:
+                    triggered_edges.append(edge.edge_id)
+                evidences.append(
+                    PunctureEvidence(
+                        edge_id=edge.edge_id,
+                        occurred_at=server_time,
+                        flow=puncture.flow,
+                        flow_p90=puncture.flow_p90,
+                        dwell_ratio=dwell_ratio,
+                        dwell_ratio_threshold=kappa,
+                    )
+                )
 
         if skipped and not state.out_of_scope:
             skipped_by_edge.append(
@@ -304,49 +323,10 @@ def _demand_ratio(surge_rate: float, surge_threshold: float) -> float | None:
     return None
 
 
-def _puncture_applies(edge: Edge, config: ResolvedConfig) -> bool:
-    return (
-        config.puncture_trigger_enabled
-        and edge.observation_type == ObservationType.SCALAR
-        and edge.capacity_hint is not None
-    )
-
-
-def _detect_puncture(
-    edge: Edge,
-    observations: Observations,
-    config: ResolvedConfig,
-    server_time: datetime,
-    triggered_edges: list[EdgeID],
-    fired_triggers: list[FiredTrigger],
-    evidences: list[TriggerEvidence],
-) -> None:
-    # スカラー型のパンク前処理。capacity_hint 未設定では発火しない（ノーハーム）
-    scalar = observations.scalar_flow_of(edge.edge_id)
-    if scalar is None or edge.capacity_hint is None:
-        return
-    threshold = config.puncture_ratio_threshold * edge.capacity_hint
-    if threshold <= EPSILON_FLOW or scalar.observed_count < threshold:
-        return
-    fired_triggers.append(
-        FiredTrigger(
-            kind=QueuedTriggerKind.PUNCTURE,
-            fired_at=server_time,
-            origin_edge_id=edge.edge_id,
-            score=scalar.observed_count / threshold,
-            snapshot_ref=observations.snapshot_ref,
-        )
-    )
-    if edge.edge_id not in triggered_edges:
-        triggered_edges.append(edge.edge_id)
-    evidences.append(
-        PunctureEvidence(
-            edge_id=edge.edge_id,
-            occurred_at=server_time,
-            observed_count=scalar.observed_count,
-            capacity_threshold=threshold,
-        )
-    )
+def _puncture_dwell_ratio(basis: PunctureBasis) -> float | None:
+    if basis.flow <= EPSILON_FLOW or basis.flow < basis.flow_p90:
+        return None
+    return basis.stagnation / basis.flow / basis.free_flow_dwell_min
 
 
 @dataclass(frozen=True)

@@ -14,6 +14,8 @@ class ArcHistoryStat:
     flow_sensitivity_eta: float | None = None
     # 履歴の利用可能スパン（時間）。縮退モード要否判定に使用（None = 未提供）
     available_span_hours: float | None = None
+    flow_p90: float | None = None
+    free_flow_dwell_min: float | None = None
 
 
 @dataclass(frozen=True)

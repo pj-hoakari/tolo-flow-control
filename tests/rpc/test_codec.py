@@ -24,7 +24,7 @@ from flow_control.domain.enums import (
     ObservationType,
 )
 from flow_control.domain.graph import Boundary, Edge, EdgeID, Graph, Node, NodeID
-from flow_control.domain.history import HistoryDigest
+from flow_control.domain.history import ArcHistoryStat, HistoryDigest
 from flow_control.domain.observations import ArcFlow, NodeOccupancy, Observations
 from flow_control.domain.references import Reference
 from flow_control.optimization.results import (
@@ -179,7 +179,9 @@ def test_request_round_trip_uses_explicit_event_id() -> None:
         event_context=EventContext(EventTerm.LONG, available_history_hours=6.5),
         graph=graph,
         observations=Observations(observed_at=now),
-        history_digest=HistoryDigest(),
+        history_digest=HistoryDigest(
+            arc_stats=(ArcHistoryStat(EdgeID("e1"), flow_p90=12.0, free_flow_dwell_min=0.25),)
+        ),
         detection_state=DetectionState(),
         references=Reference(),
         config=ResolvedConfig(),

@@ -23,7 +23,7 @@ class ResolvedConfig:
 
     # パンクトリガー（前処理 P）。既定は無効（ノーハーム）
     puncture_trigger_enabled: bool = False
-    puncture_ratio_threshold: float = 1.0  # σ_e ≥ ρ·C_e で発火
+    puncture_dwell_ratio_threshold: float = 1.5
 
     # ゼロ除算回避の微小値（相対閾値の分母）
     epsilon_0: float = 1e-6

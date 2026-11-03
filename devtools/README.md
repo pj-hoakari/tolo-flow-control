@@ -123,7 +123,7 @@ uv run python -m devtools graph ./_devout/venue.yaml --out ./_devout   # 読み�
     - Forecasting モード: `open-mode` / `closed-mode`
     - 状態遷移: `cooldown-skip`（**SKIPPED_COOLDOWN**）/ `cooldown-queued`（**QUEUED**）/
       `queue-burst-fire`（キュー累積の**統合発火**）/ `warmup-skip`（**SKIPPED_WARMUP**）
-    - パンク: `puncture-scalar-corridor`（スカラー容量超過→**パンクトリガー**。
+    - パンク: `puncture-scalar-corridor`（流量が自己 P90 超・滞在の伸び→**パンクトリガー**。
       スカラー区間が OD 推定の盲点であることも同時に示す）
     - 迂回・方向提案: `crossing-detour`（**並行バイパス 2 本へ迂回**）/
       `crossing-oneway`（**direction_proposal が有向/双方向を提示**）/
