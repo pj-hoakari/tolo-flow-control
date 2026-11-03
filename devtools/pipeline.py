@@ -22,6 +22,7 @@ from flow_control.detection import DetectionResult, VerdictHint, detect
 from flow_control.detection.state import DetectionState
 from flow_control.detour_routing import DetourResult, route_detour
 from flow_control.domain import Mode
+from flow_control.domain.element_state import assess_elements
 from flow_control.forecasting import ForecastResult, forecast
 from flow_control.optimization import OptimizeResult, optimize
 
@@ -66,7 +67,9 @@ def run_pipeline(
     detection = detect(
         graph=graph,
         observations=scenario.observations,
-        history_digest=scenario.history_digest,
+        element_states=assess_elements(
+            graph, scenario.observations, scenario.history_digest, scenario.server_time
+        ),
         previous_state=scenario.previous_state,
         events=scenario.events,
         config=cfg.detection,

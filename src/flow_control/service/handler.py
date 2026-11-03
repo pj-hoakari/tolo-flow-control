@@ -11,6 +11,7 @@ from ..detection.config import ResolvedConfig as DetectionConfig
 from ..detection.state import DetectionState, QueuedTrigger, QueuedTriggerKind
 from ..detour_routing import route_detour
 from ..detour_routing.config import ResolvedConfig as DetourConfig
+from ..domain.element_state import assess_elements
 from ..domain.enums import Mode
 from ..forecasting import forecast
 from ..forecasting.config import ResolvedConfig as ForecastConfig
@@ -71,10 +72,18 @@ def handle_request(
     mode = Mode.OPEN if req.graph.boundary_nodes() else Mode.CLOSED
     steps = [_step(StepKind.VALIDATION, started), _step(StepKind.MODE_DECISION, started)]
     detection_started = time.monotonic()
-    detection = detect(
+    element_states = assess_elements(
         req.graph,
         req.observations,
         req.history_digest,
+        req.server_time,
+        stale_after_resolutions=req.config.stale_observation_resolutions,
+        stale_floor_s=req.config.stale_observation_floor_s,
+    )
+    detection = detect(
+        req.graph,
+        req.observations,
+        element_states,
         req.detection_state,
         req.events,
         _detection_config(req.config),
@@ -288,13 +297,13 @@ def _verdict_of(hint: VerdictHint) -> Verdict | None:
 
 
 def _detection_warnings(det: DetectionResult) -> tuple[Warning, ...]:
-    result: list[Warning] = []
-    for item in det.warnings:
-        code = WarningCode[item.code.value]
-        result.append(
-            Warning(code=code, context=(("edge_id", item.edge_id.value if item.edge_id else ""),))
+    return tuple(
+        Warning(
+            WarningCode.PARTIAL_COMBINED_TRIGGER,
+            (("edge_id", item.edge_id.value), ("held", item.held.value)),
         )
-    return tuple(result)
+        for item in det.warnings
+    )
 
 
 def _validation_errors(req: Request) -> tuple[str, ...]:
@@ -322,6 +331,8 @@ def _validation_errors(req: Request) -> tuple[str, ...]:
         cfg.lightweight_opt_budget_sec,
         cfg.milp_time_limit_sec,
         cfg.puncture_ratio_threshold,
+        cfg.stale_observation_resolutions,
+        cfg.stale_observation_floor_s,
     )
     if (
         cfg.cooldown_duration_min < 10

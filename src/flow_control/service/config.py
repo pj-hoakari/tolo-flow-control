@@ -17,6 +17,7 @@ ResolvedConfig を受け取ることを正典とする。本クラスはその�
 from dataclasses import dataclass, field
 from enum import Enum
 
+from ..domain.element_state import DEFAULT_STALE_AFTER_RESOLUTIONS, DEFAULT_STALE_FLOOR_S
 from ..domain.graph import EdgeID
 
 
@@ -48,6 +49,8 @@ class ResolvedConfig:
     queue_diversity_threshold: int = 3  # クールタイム中多様性超過判定
     # キュー統合発火の鮮度ガード X 分。None = cooldown_duration_min / 2 を使用
     queue_freshness_min: float | None = None
+    stale_observation_resolutions: float = DEFAULT_STALE_AFTER_RESOLUTIONS
+    stale_observation_floor_s: float = DEFAULT_STALE_FLOOR_S
 
     # ── 最適化対象設定 ─────────
     throughput_target_edges: tuple[EdgeID, ...] = ()  # 特定ルート (B)

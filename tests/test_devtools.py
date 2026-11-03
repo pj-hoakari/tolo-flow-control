@@ -14,6 +14,7 @@ from devtools.graph_builder import resolve_positions
 from devtools.pipeline import run_pipeline
 from devtools.serialize import to_jsonable
 from flow_control.domain import CurrentDirection, DirectionConstraint, NodeID, NodeKind
+from flow_control.domain.element_state import assess_elements
 
 
 def _index(
@@ -175,7 +176,9 @@ def test_scenarios_trigger_as_expected(name: str) -> None:
     detection = detect(
         graph=scen.graph,
         observations=scen.observations,
-        history_digest=scen.history_digest,
+        element_states=assess_elements(
+            scen.graph, scen.observations, scen.history_digest, scen.server_time
+        ),
         previous_state=scen.previous_state,
         events=scen.events,
         config=scen.configs.detection,
@@ -306,7 +309,9 @@ def test_puncture_scenario_fires_puncture_evidence() -> None:
     detection = detect(
         graph=scen.graph,
         observations=scen.observations,
-        history_digest=scen.history_digest,
+        element_states=assess_elements(
+            scen.graph, scen.observations, scen.history_digest, scen.server_time
+        ),
         previous_state=scen.previous_state,
         events=scen.events,
         config=scen.configs.detection,
@@ -335,7 +340,9 @@ def test_state_transition_scenarios_reach_expected_verdict(
     detection = detect(
         graph=scen.graph,
         observations=scen.observations,
-        history_digest=scen.history_digest,
+        element_states=assess_elements(
+            scen.graph, scen.observations, scen.history_digest, scen.server_time
+        ),
         previous_state=scen.previous_state,
         events=scen.events,
         config=scen.configs.detection,
@@ -352,7 +359,9 @@ def test_queue_burst_fire_reports_queue_score_evidence() -> None:
     detection = detect(
         graph=scen.graph,
         observations=scen.observations,
-        history_digest=scen.history_digest,
+        element_states=assess_elements(
+            scen.graph, scen.observations, scen.history_digest, scen.server_time
+        ),
         previous_state=scen.previous_state,
         events=scen.events,
         config=scen.configs.detection,

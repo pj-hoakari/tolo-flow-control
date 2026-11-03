@@ -33,6 +33,7 @@ from flow_control.domain import (
     NodeKind,
     ObservationType,
 )
+from flow_control.domain.element_state import assess_elements
 from flow_control.domain.history import HistoryDigest
 from flow_control.domain.observations import ArcScalarFlow, Observations
 
@@ -74,7 +75,7 @@ def _run(
     return detect_metric_triggers(
         graph=graph,
         observations=observations,
-        history_digest=HistoryDigest(),
+        element_states=assess_elements(graph, observations, HistoryDigest(), server_time),
         previous_state=DetectionState(),
         server_time=server_time,
         config=config,

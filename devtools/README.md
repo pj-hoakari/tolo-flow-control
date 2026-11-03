@@ -118,7 +118,7 @@ uv run python -m devtools graph ./_devout/venue.yaml --out ./_devout   # 読み�
   通常運営時の誘導のみを扱う）:
   - **A. 機能・モジュール検証**
     - Detection 判定・配分の基本: `single-route-surge`（組合せ発火ベースライン）/
-      `multi-route-surge` / `high-stagnation`（lineless 縮退発火）/ `normal-no-trigger` /
+      `multi-route-surge` / `high-stagnation`（lineless で急増が判定不能）/ `normal-no-trigger` /
       `danger-flag-edge` / `danger-flag-node`
     - Forecasting モード: `open-mode` / `closed-mode`
     - 状態遷移: `cooldown-skip`（**SKIPPED_COOLDOWN**）/ `cooldown-queued`（**QUEUED**）/

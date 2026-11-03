@@ -331,6 +331,8 @@ message ResolvedConfig {
   optional bool scheduled_inflow_prior_enabled = 61;
   optional bool log_tenant_id = 62;
   optional double delta_min_fraction = 63;
+  optional double stale_observation_resolutions = 64;
+  optional double stale_observation_floor_s = 65;
 }
 
 message ThroughputWeights {
@@ -726,8 +728,9 @@ enum WarningCode {
   WARNING_CODE_MANY_TRIGGER_ZONES = 9;
   WARNING_CODE_LOW_CONFIDENCE_PROPOSAL = 10;
   WARNING_CODE_INSUFFICIENT_WINDOW_SAMPLES = 11;
-  WARNING_CODE_SURGE_PROXY_FALLBACK = 12;
-  WARNING_CODE_DEGRADED_COMBINED_TRIGGER = 13;
+  reserved 12, 13;
+  reserved "WARNING_CODE_SURGE_PROXY_FALLBACK", "WARNING_CODE_DEGRADED_COMBINED_TRIGGER";
+  WARNING_CODE_PARTIAL_COMBINED_TRIGGER = 14;
 }
 
 enum TriggerEvidenceSource {

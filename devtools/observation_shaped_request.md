@@ -49,7 +49,7 @@ Detection の通常トリガーは、停滞警戒が `high_stagnation_duration_m
 `observation-with-history` は、次の 4 点を変えると 17 サイクル目で `OPTIMIZED` になる。
 
 1. ルートごとの停滞量を `ArcStagnation` で送る。Observation の `RouteScore.StagnationScore` は今は常に 0 で、送ってもいない。
-2. ルートごとに、直近のサイクルの値を `ArcWindowSeries` で送る。`flow_samples` には両方向のライン通過の合計を、`stagnation_samples` には停滞量を入れる。シナリオでは直近 30 サイクル分を入れた。急増の評価窓が `surge_evaluate_window_minute`（既定 30 分）だからである。
+2. ルートごとに、直近のサイクルの値を `ArcWindowSeries` で送る。`flow_samples` には両方向のライン通過の合計を、`stagnation_samples` には停滞量を入れる。シナリオでは直近 30 サイクル分を入れた。急増の評価窓が 30 分だからである。
 3. `surge_rate_threshold_percent_per_min` を下げる。50 では発火しない。
 4. 流量が 0 の方向の `ArcFlow` を送らない。
 

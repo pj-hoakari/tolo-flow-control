@@ -146,6 +146,8 @@ def observation_config() -> pb.ResolvedConfig:
         retrigger_reset_quiet_cycles=3,
         queue_score_threshold=5,
         queue_diversity_threshold=3,
+        stale_observation_resolutions=2,
+        stale_observation_floor_s=60,
         optimization_mode=pb.OPTIMIZATION_MODE_LIGHTWEIGHT,
         local_radius_hops=2,
         max_trigger_zones=4,

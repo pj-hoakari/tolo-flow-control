@@ -320,8 +320,7 @@ _WARNING_CODE_TO_WIRE = {
     WarningCode.MANY_TRIGGER_ZONES: pb.WARNING_CODE_MANY_TRIGGER_ZONES,
     WarningCode.LOW_CONFIDENCE_PROPOSAL: pb.WARNING_CODE_LOW_CONFIDENCE_PROPOSAL,
     WarningCode.INSUFFICIENT_WINDOW_SAMPLES: pb.WARNING_CODE_INSUFFICIENT_WINDOW_SAMPLES,
-    WarningCode.SURGE_PROXY_FALLBACK: pb.WARNING_CODE_SURGE_PROXY_FALLBACK,
-    WarningCode.DEGRADED_COMBINED_TRIGGER: pb.WARNING_CODE_DEGRADED_COMBINED_TRIGGER,
+    WarningCode.PARTIAL_COMBINED_TRIGGER: pb.WARNING_CODE_PARTIAL_COMBINED_TRIGGER,
 }
 _WARNING_CODE_FROM_WIRE = {v: k for k, v in _WARNING_CODE_TO_WIRE.items()}
 _TRIGGER_EVIDENCE_SOURCE_TO_WIRE = {
@@ -1081,6 +1080,8 @@ def _encode_config(value: ResolvedConfig) -> pb.ResolvedConfig:
         ("queue_score_threshold", value.queue_score_threshold),
         ("queue_diversity_threshold", value.queue_diversity_threshold),
         ("queue_freshness_min", value.queue_freshness_min),
+        ("stale_observation_resolutions", value.stale_observation_resolutions),
+        ("stale_observation_floor_s", value.stale_observation_floor_s),
         (
             "optimization_mode",
             _enum_to_wire(value.optimization_mode, _OPTIMIZATION_MODE_TO_WIRE, "optimization mode"),
@@ -1174,6 +1175,8 @@ def _decode_config(value: pb.ResolvedConfig) -> ResolvedConfig:
         queue_score_threshold=_required_float(value, "queue_score_threshold"),
         queue_diversity_threshold=_required_int(value, "queue_diversity_threshold"),
         queue_freshness_min=_optional_float(value, "queue_freshness_min"),
+        stale_observation_resolutions=_required_float(value, "stale_observation_resolutions"),
+        stale_observation_floor_s=_required_float(value, "stale_observation_floor_s"),
         throughput_target_edges=tuple(EdgeID(edge) for edge in value.throughput_target_edges),
         optimization_mode=_required_enum(
             value, "optimization_mode", _OPTIMIZATION_MODE_FROM_WIRE, "optimization mode"

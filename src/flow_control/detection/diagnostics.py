@@ -4,6 +4,7 @@ from enum import Enum
 from typing import ClassVar
 
 from ..domain import EdgeID, NodeID
+from ..domain.element_state import Judgement
 
 
 class EvidenceSource(str, Enum):
@@ -14,13 +15,6 @@ class EvidenceSource(str, Enum):
     QUEUE_SCORE = "QUEUE_SCORE"
     QUEUE_DIVERSITY = "QUEUE_DIVERSITY"
     QUEUE_EXPIRED = "QUEUE_EXPIRED"  # 鮮度切れによるキュー破棄
-
-
-class DetectionWarningCode(str, Enum):
-    # ラインなしエッジで急増判定を停滞プロキシ傾きで代替した
-    SURGE_PROXY_FALLBACK = "SURGE_PROXY_FALLBACK"
-    # 需要警戒が全面縮退したため停滞警戒単独で発火した
-    DEGRADED_COMBINED_TRIGGER = "DEGRADED_COMBINED_TRIGGER"
 
 
 @dataclass(frozen=True)
@@ -83,11 +77,15 @@ class QueueExpiredEvidence:
 
 
 @dataclass(frozen=True)
-class DetectionWarning:
-    # トリガー発火根拠ではない縮退・代替の記録（RequestHandler が Diagnostics.warnings へ集約）
-    code: DetectionWarningCode
-    occurred_at: datetime
-    edge_id: EdgeID | None = None
+class PartialCombinedTrigger:
+    edge_id: EdgeID
+    held: Judgement
+
+
+@dataclass(frozen=True)
+class SkippedJudgements:
+    edge_id: EdgeID
+    judgements: frozenset[Judgement]
 
 
 TriggerEvidence = (
