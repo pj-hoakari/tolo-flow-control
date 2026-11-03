@@ -10,7 +10,6 @@ from google.protobuf import empty_pb2, timestamp_pb2
 from google.protobuf.message import Message
 
 from flow_control.detection.state import (
-    ArcDemandDigestEntry,
     ArcWatchState,
     DetectionState,
     QueuedTrigger,
@@ -829,15 +828,10 @@ def _encode_arc_watch(value: ArcWatchState) -> pb.ArcWatchState:
         percentile_breached=value.percentile_breached,
         delta_breached=value.delta_breached,
         surge_breached=value.surge_breached,
-        demand_excess_breached=value.demand_excess_breached,
     )
     if value.stagnation_watch_since is not None:
         _copy_timestamp(
             result, "stagnation_watch_since", value.stagnation_watch_since, "stagnation_watch_since"
-        )
-    if value.demand_watch_since is not None:
-        _copy_timestamp(
-            result, "demand_watch_since", value.demand_watch_since, "demand_watch_since"
         )
     return result
 
@@ -849,8 +843,6 @@ def _decode_arc_watch(value: pb.ArcWatchState) -> ArcWatchState:
         delta_breached=value.delta_breached,
         stagnation_watch_since=_decode_optional_datetime(value, "stagnation_watch_since"),
         surge_breached=value.surge_breached,
-        demand_excess_breached=value.demand_excess_breached,
-        demand_watch_since=_decode_optional_datetime(value, "demand_watch_since"),
     )
 
 
@@ -860,16 +852,6 @@ def _encode_detection_state(value: DetectionState) -> pb.DetectionState:
         _copy_timestamp(result, "cooldown_until", value.cooldown_until, "cooldown_until")
     result.trigger_queue.extend(_encode_queued_trigger(item) for item in value.trigger_queue)
     result.arc_watch_states.extend(_encode_arc_watch(item) for item in value.arc_watch_states)
-    if value.arc_demand_digest is not None:
-        digest = result.arc_demand_digest
-        digest.SetInParent()
-        digest.entries.extend(
-            pb.ArcDemandDigestEntry(
-                edge_id=_required_id(item.edge_id.value, "demand_digest.edge_id"),
-                demand=_finite(item.demand, "demand_digest.demand"),
-            )
-            for item in value.arc_demand_digest
-        )
     result.warmup_states.extend(
         pb.WarmupState(
             target_key=item.target_key,
@@ -888,22 +870,10 @@ def _encode_detection_state(value: DetectionState) -> pb.DetectionState:
 
 
 def _decode_detection_state(value: pb.DetectionState) -> DetectionState:
-    digest: tuple[ArcDemandDigestEntry, ...] | None
-    if value.HasField("arc_demand_digest"):
-        digest = tuple(
-            ArcDemandDigestEntry(
-                edge_id=EdgeID(_required_id(item.edge_id, "demand_digest.edge_id")),
-                demand=_finite(item.demand, "demand_digest.demand"),
-            )
-            for item in value.arc_demand_digest.entries
-        )
-    else:
-        digest = None
     return DetectionState(
         cooldown_until=_decode_optional_datetime(value, "cooldown_until"),
         trigger_queue=tuple(_decode_queued_trigger(item) for item in value.trigger_queue),
         arc_watch_states=tuple(_decode_arc_watch(item) for item in value.arc_watch_states),
-        arc_demand_digest=digest,
         warmup_states=tuple(
             WarmupState(
                 target_key=item.target_key,
@@ -1025,7 +995,6 @@ def _encode_threshold_set(value: ThresholdSet) -> pb.ThresholdSet:
         ("surge_rate_threshold_percent_per_min", value.surge_rate_threshold_percent_per_min),
         ("high_stagnation_duration_min", value.high_stagnation_duration_min),
         ("beta", value.beta),
-        ("theta_demand", value.theta_demand),
         ("warmup_duration_min", value.warmup_duration_min),
     ):
         if number is not None:
@@ -1040,7 +1009,6 @@ def _decode_threshold_set(value: pb.ThresholdSet) -> ThresholdSet:
         ),
         high_stagnation_duration_min=_optional_float(value, "high_stagnation_duration_min"),
         beta=_optional_float(value, "beta"),
-        theta_demand=_optional_float(value, "theta_demand"),
         warmup_duration_min=_optional_float(value, "warmup_duration_min"),
     )
 
@@ -1105,7 +1073,6 @@ def _encode_config(value: ResolvedConfig) -> pb.ResolvedConfig:
         ("surge_rate_threshold_percent_per_min", value.surge_rate_threshold_percent_per_min),
         ("high_stagnation_duration_min", value.high_stagnation_duration_min),
         ("beta", value.beta),
-        ("theta_demand", value.theta_demand),
         ("min_window_samples", value.min_window_samples),
         ("cooldown_duration_min", value.cooldown_duration_min),
         ("warmup_duration_min", value.warmup_duration_min),
@@ -1200,7 +1167,6 @@ def _decode_config(value: pb.ResolvedConfig) -> ResolvedConfig:
         ),
         high_stagnation_duration_min=_required_float(value, "high_stagnation_duration_min"),
         beta=_required_float(value, "beta"),
-        theta_demand=_optional_float(value, "theta_demand"),
         min_window_samples=_required_int(value, "min_window_samples"),
         cooldown_duration_min=_required_float(value, "cooldown_duration_min"),
         warmup_duration_min=_required_float(value, "warmup_duration_min"),

@@ -124,7 +124,7 @@ def test_established_stagnation_without_surge_does_not_fire(
     make_stagnation_observation,
     make_established_watch,
 ):
-    # established 停滞 はあるが、ラインは平坦で急増せず、需要超過も無効（theta_demand None）
+    # established 停滞 はあるが、ラインは平坦で急増しない
     # → demand_warning 偽で発火しない（AND 否定）。ラインが存在するため縮退もしない
     flat_line = make_line_samples(base_time, sample_count=11, start_value=100.0, slope_per_min=0.0)
     history = make_history((edge_id, 5.0, 5.0, 5.0), flow={edge_id: flat_line})

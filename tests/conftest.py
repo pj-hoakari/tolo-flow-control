@@ -157,7 +157,6 @@ def high_stagnation_config() -> ResolvedConfig:
     """高停滞判定の閾値: M=5 分, beta=1.0
 
     急増判定の閾値は十分に高く設定し、需要警戒側（急増）が発火しないようにする。
-    需要超過 (b).2 は theta_demand 既定 None のため無効。
     """
     return ResolvedConfig(
         surge_rate_threshold_percent_per_min=1_000.0,
@@ -297,7 +296,7 @@ def make_combined_firing(make_history, make_line_samples, make_established_watch
             → (a).1 (15>=5) と (a).2 ((15-5)/5=2.0>=1.0) が成立
     - 先行警戒: 両フラグ true, watch_since = base_time - 6 分（M=5 分超）
 
-    → surge 閾値 10・M=5 分・beta=1.0・theta_demand None の構成で組合せ発火する。
+    → surge 閾値 10・M=5 分・beta=1.0 の構成で組合せ発火する。
     """
 
     def _make(

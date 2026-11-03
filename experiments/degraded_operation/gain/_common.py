@@ -219,7 +219,6 @@ def scale_configs(scen: Scenario, groups: Sequence[str], k: float) -> Scenario:
 
 def assert_no_unscaled_people_inputs(scen: Scenario) -> None:
     assert not scen.references.by_attribute_tag, f"{scen.name}: references carry people values"
-    assert scen.previous_state.arc_demand_digest is None, f"{scen.name}: demand digest present"
     assert all(e.kind != EventKind.SCHEDULED_INFLOW for e in scen.events), (
         f"{scen.name}: SCHEDULED_INFLOW params present"
     )

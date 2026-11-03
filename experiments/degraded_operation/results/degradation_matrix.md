@@ -8,7 +8,7 @@
 - グラフは devtools の `venue`、急増エッジは `e_j1_hallA`。1 分ごとに 50 サイクルを `decode_request` → `handle_request` に通し、`updated_detection_state` と `optimization_result` を次へ渡す。
 - 平坦 30 サイクルのあと 31 サイクル目から急増する。「+N 分」は急増開始からの経過で、初回 OPTIMIZED で打ち切る。
 - 設定は tolo-observation `defaultFlowConfig()`（急増閾値 10%/分、fallback_eta 0.25）。devtools の `observation_config()` は急増閾値 50 で、本番と食い違う。
-- 入力の形は本番に合わせた。両方向の `ArcFlow` を常に送る、`completeness=0`、`references` 空、`theta_demand` なし、`directional_flow_samples` なし、全エッジ VECTOR。
+- 入力の形は本番に合わせた。両方向の `ArcFlow` を常に送る、`completeness=0`、`references` 空、`directional_flow_samples` なし、全エッジ VECTOR。
 - 長期統計は p90=1.5、baseline=1.0、eta=0.5、スパン 24.0 時間。基準の event_context は LONG・720 時間。
 - 対照は 2 本。停滞のみ上昇（流量は平坦）と、全て平坦。どちらも発火すべきでない。
 
@@ -39,7 +39,7 @@
 
 ## 発火したサイクルの提案（急増の行のみ）
 
-全 216 実行で `fallbacks_applied` は計 0 件、`arc_demand_digest`（λ̂）の件数は最大 0 件だった。
+全 216 実行で `fallbacks_applied` は計 0 件だった。
 
 | 条件 | solver | route_importance | detour_paths | 方向変更 | throughput | estimation_resolution | 補完アーク | 参照値の既定使用 | low_confidence_arc_ratio |
 |---|---|---|---|---|---|---|---|---|---|

@@ -678,36 +678,20 @@ class TimedValue(_message.Message):
     def __init__(self, at: _Optional[_Union[datetime.datetime, _timestamp_pb2.Timestamp, _Mapping]] = ..., value: _Optional[float] = ...) -> None: ...
 
 class DetectionState(_message.Message):
-    __slots__ = ("cooldown_until", "trigger_queue", "arc_watch_states", "arc_demand_digest", "warmup_states", "arc_retrigger_counts", "consecutive_skip_count")
+    __slots__ = ("cooldown_until", "trigger_queue", "arc_watch_states", "warmup_states", "arc_retrigger_counts", "consecutive_skip_count")
     COOLDOWN_UNTIL_FIELD_NUMBER: _ClassVar[int]
     TRIGGER_QUEUE_FIELD_NUMBER: _ClassVar[int]
     ARC_WATCH_STATES_FIELD_NUMBER: _ClassVar[int]
-    ARC_DEMAND_DIGEST_FIELD_NUMBER: _ClassVar[int]
     WARMUP_STATES_FIELD_NUMBER: _ClassVar[int]
     ARC_RETRIGGER_COUNTS_FIELD_NUMBER: _ClassVar[int]
     CONSECUTIVE_SKIP_COUNT_FIELD_NUMBER: _ClassVar[int]
     cooldown_until: _timestamp_pb2.Timestamp
     trigger_queue: _containers.RepeatedCompositeFieldContainer[QueuedTrigger]
     arc_watch_states: _containers.RepeatedCompositeFieldContainer[ArcWatchState]
-    arc_demand_digest: ArcDemandDigest
     warmup_states: _containers.RepeatedCompositeFieldContainer[WarmupState]
     arc_retrigger_counts: _containers.RepeatedCompositeFieldContainer[RetriggerEntry]
     consecutive_skip_count: int
-    def __init__(self, cooldown_until: _Optional[_Union[datetime.datetime, _timestamp_pb2.Timestamp, _Mapping]] = ..., trigger_queue: _Optional[_Iterable[_Union[QueuedTrigger, _Mapping]]] = ..., arc_watch_states: _Optional[_Iterable[_Union[ArcWatchState, _Mapping]]] = ..., arc_demand_digest: _Optional[_Union[ArcDemandDigest, _Mapping]] = ..., warmup_states: _Optional[_Iterable[_Union[WarmupState, _Mapping]]] = ..., arc_retrigger_counts: _Optional[_Iterable[_Union[RetriggerEntry, _Mapping]]] = ..., consecutive_skip_count: _Optional[int] = ...) -> None: ...
-
-class ArcDemandDigest(_message.Message):
-    __slots__ = ("entries",)
-    ENTRIES_FIELD_NUMBER: _ClassVar[int]
-    entries: _containers.RepeatedCompositeFieldContainer[ArcDemandDigestEntry]
-    def __init__(self, entries: _Optional[_Iterable[_Union[ArcDemandDigestEntry, _Mapping]]] = ...) -> None: ...
-
-class ArcDemandDigestEntry(_message.Message):
-    __slots__ = ("edge_id", "demand")
-    EDGE_ID_FIELD_NUMBER: _ClassVar[int]
-    DEMAND_FIELD_NUMBER: _ClassVar[int]
-    edge_id: str
-    demand: float
-    def __init__(self, edge_id: _Optional[str] = ..., demand: _Optional[float] = ...) -> None: ...
+    def __init__(self, cooldown_until: _Optional[_Union[datetime.datetime, _timestamp_pb2.Timestamp, _Mapping]] = ..., trigger_queue: _Optional[_Iterable[_Union[QueuedTrigger, _Mapping]]] = ..., arc_watch_states: _Optional[_Iterable[_Union[ArcWatchState, _Mapping]]] = ..., warmup_states: _Optional[_Iterable[_Union[WarmupState, _Mapping]]] = ..., arc_retrigger_counts: _Optional[_Iterable[_Union[RetriggerEntry, _Mapping]]] = ..., consecutive_skip_count: _Optional[int] = ...) -> None: ...
 
 class QueuedTrigger(_message.Message):
     __slots__ = ("kind", "first_fired_at", "last_fired_at", "accumulated_score", "origin_edge_id", "origin_node_id", "snapshot_ref")
@@ -728,22 +712,18 @@ class QueuedTrigger(_message.Message):
     def __init__(self, kind: _Optional[_Union[QueuedTriggerKind, str]] = ..., first_fired_at: _Optional[_Union[datetime.datetime, _timestamp_pb2.Timestamp, _Mapping]] = ..., last_fired_at: _Optional[_Union[datetime.datetime, _timestamp_pb2.Timestamp, _Mapping]] = ..., accumulated_score: _Optional[float] = ..., origin_edge_id: _Optional[str] = ..., origin_node_id: _Optional[str] = ..., snapshot_ref: _Optional[str] = ...) -> None: ...
 
 class ArcWatchState(_message.Message):
-    __slots__ = ("edge_id", "percentile_breached", "delta_breached", "stagnation_watch_since", "surge_breached", "demand_excess_breached", "demand_watch_since")
+    __slots__ = ("edge_id", "percentile_breached", "delta_breached", "stagnation_watch_since", "surge_breached")
     EDGE_ID_FIELD_NUMBER: _ClassVar[int]
     PERCENTILE_BREACHED_FIELD_NUMBER: _ClassVar[int]
     DELTA_BREACHED_FIELD_NUMBER: _ClassVar[int]
     STAGNATION_WATCH_SINCE_FIELD_NUMBER: _ClassVar[int]
     SURGE_BREACHED_FIELD_NUMBER: _ClassVar[int]
-    DEMAND_EXCESS_BREACHED_FIELD_NUMBER: _ClassVar[int]
-    DEMAND_WATCH_SINCE_FIELD_NUMBER: _ClassVar[int]
     edge_id: str
     percentile_breached: bool
     delta_breached: bool
     stagnation_watch_since: _timestamp_pb2.Timestamp
     surge_breached: bool
-    demand_excess_breached: bool
-    demand_watch_since: _timestamp_pb2.Timestamp
-    def __init__(self, edge_id: _Optional[str] = ..., percentile_breached: bool = ..., delta_breached: bool = ..., stagnation_watch_since: _Optional[_Union[datetime.datetime, _timestamp_pb2.Timestamp, _Mapping]] = ..., surge_breached: bool = ..., demand_excess_breached: bool = ..., demand_watch_since: _Optional[_Union[datetime.datetime, _timestamp_pb2.Timestamp, _Mapping]] = ...) -> None: ...
+    def __init__(self, edge_id: _Optional[str] = ..., percentile_breached: bool = ..., delta_breached: bool = ..., stagnation_watch_since: _Optional[_Union[datetime.datetime, _timestamp_pb2.Timestamp, _Mapping]] = ..., surge_breached: bool = ...) -> None: ...
 
 class WarmupState(_message.Message):
     __slots__ = ("target_key", "until")
@@ -838,25 +818,22 @@ class ThresholdDefaults(_message.Message):
     def __init__(self, short_term: _Optional[_Union[ThresholdSet, _Mapping]] = ..., long_term: _Optional[_Union[ThresholdSet, _Mapping]] = ...) -> None: ...
 
 class ThresholdSet(_message.Message):
-    __slots__ = ("surge_rate_threshold_percent_per_min", "high_stagnation_duration_min", "beta", "theta_demand", "warmup_duration_min")
+    __slots__ = ("surge_rate_threshold_percent_per_min", "high_stagnation_duration_min", "beta", "warmup_duration_min")
     SURGE_RATE_THRESHOLD_PERCENT_PER_MIN_FIELD_NUMBER: _ClassVar[int]
     HIGH_STAGNATION_DURATION_MIN_FIELD_NUMBER: _ClassVar[int]
     BETA_FIELD_NUMBER: _ClassVar[int]
-    THETA_DEMAND_FIELD_NUMBER: _ClassVar[int]
     WARMUP_DURATION_MIN_FIELD_NUMBER: _ClassVar[int]
     surge_rate_threshold_percent_per_min: float
     high_stagnation_duration_min: float
     beta: float
-    theta_demand: float
     warmup_duration_min: float
-    def __init__(self, surge_rate_threshold_percent_per_min: _Optional[float] = ..., high_stagnation_duration_min: _Optional[float] = ..., beta: _Optional[float] = ..., theta_demand: _Optional[float] = ..., warmup_duration_min: _Optional[float] = ...) -> None: ...
+    def __init__(self, surge_rate_threshold_percent_per_min: _Optional[float] = ..., high_stagnation_duration_min: _Optional[float] = ..., beta: _Optional[float] = ..., warmup_duration_min: _Optional[float] = ...) -> None: ...
 
 class ResolvedConfig(_message.Message):
-    __slots__ = ("surge_rate_threshold_percent_per_min", "high_stagnation_duration_min", "beta", "theta_demand", "min_window_samples", "cooldown_duration_min", "warmup_duration_min", "retrigger_warning_threshold", "retrigger_reset_quiet_cycles", "queue_score_threshold", "queue_diversity_threshold", "queue_freshness_min", "throughput_target_edges", "optimization_mode", "local_radius_hops", "max_trigger_zones", "greedy_improve_margin", "restriction_proposal_enabled", "tau_danger_threshold", "puncture_trigger_enabled", "puncture_ratio_threshold", "forecasting_budget_sec", "detour_budget_sec", "lightweight_opt_budget_sec", "milp_time_limit_sec", "max_consecutive_skips", "solver_seed", "epsilon", "epsilon_0", "big_m_factor", "delta_min", "confidence_weight_floor", "mip_rel_gap", "gravity_alpha", "ipf_max_iter", "ipf_tolerance", "transit_time_prior_sec", "dwell_time_prior_sec", "min_reference_sample_count", "k_shortest_paths", "fallback_eta", "fallback_baseline_stagnation", "scalar_direction_enabled", "k_shortest_paths_auto", "k_shortest_paths_max", "phase_feedback_enabled", "phase_feedback_candidates", "attribute_tag_priority", "full_weight_hours", "eta_mixing_ratio", "throughput_weights", "throughput_max_per_edge", "two_stage_optimization", "backoff_enabled", "improvement_threshold", "backoff_max_factor", "shadow_extensions", "delta_objective_enabled", "node_detour_enabled", "milp_boundary_control_enabled", "scheduled_inflow_prior_enabled", "log_tenant_id")
+    __slots__ = ("surge_rate_threshold_percent_per_min", "high_stagnation_duration_min", "beta", "min_window_samples", "cooldown_duration_min", "warmup_duration_min", "retrigger_warning_threshold", "retrigger_reset_quiet_cycles", "queue_score_threshold", "queue_diversity_threshold", "queue_freshness_min", "throughput_target_edges", "optimization_mode", "local_radius_hops", "max_trigger_zones", "greedy_improve_margin", "restriction_proposal_enabled", "tau_danger_threshold", "puncture_trigger_enabled", "puncture_ratio_threshold", "forecasting_budget_sec", "detour_budget_sec", "lightweight_opt_budget_sec", "milp_time_limit_sec", "max_consecutive_skips", "solver_seed", "epsilon", "epsilon_0", "big_m_factor", "delta_min", "confidence_weight_floor", "mip_rel_gap", "gravity_alpha", "ipf_max_iter", "ipf_tolerance", "transit_time_prior_sec", "dwell_time_prior_sec", "min_reference_sample_count", "k_shortest_paths", "fallback_eta", "fallback_baseline_stagnation", "scalar_direction_enabled", "k_shortest_paths_auto", "k_shortest_paths_max", "phase_feedback_enabled", "phase_feedback_candidates", "attribute_tag_priority", "full_weight_hours", "eta_mixing_ratio", "throughput_weights", "throughput_max_per_edge", "two_stage_optimization", "backoff_enabled", "improvement_threshold", "backoff_max_factor", "shadow_extensions", "delta_objective_enabled", "node_detour_enabled", "milp_boundary_control_enabled", "scheduled_inflow_prior_enabled", "log_tenant_id")
     SURGE_RATE_THRESHOLD_PERCENT_PER_MIN_FIELD_NUMBER: _ClassVar[int]
     HIGH_STAGNATION_DURATION_MIN_FIELD_NUMBER: _ClassVar[int]
     BETA_FIELD_NUMBER: _ClassVar[int]
-    THETA_DEMAND_FIELD_NUMBER: _ClassVar[int]
     MIN_WINDOW_SAMPLES_FIELD_NUMBER: _ClassVar[int]
     COOLDOWN_DURATION_MIN_FIELD_NUMBER: _ClassVar[int]
     WARMUP_DURATION_MIN_FIELD_NUMBER: _ClassVar[int]
@@ -918,7 +895,6 @@ class ResolvedConfig(_message.Message):
     surge_rate_threshold_percent_per_min: float
     high_stagnation_duration_min: float
     beta: float
-    theta_demand: float
     min_window_samples: int
     cooldown_duration_min: float
     warmup_duration_min: float
@@ -977,7 +953,7 @@ class ResolvedConfig(_message.Message):
     milp_boundary_control_enabled: bool
     scheduled_inflow_prior_enabled: bool
     log_tenant_id: bool
-    def __init__(self, surge_rate_threshold_percent_per_min: _Optional[float] = ..., high_stagnation_duration_min: _Optional[float] = ..., beta: _Optional[float] = ..., theta_demand: _Optional[float] = ..., min_window_samples: _Optional[int] = ..., cooldown_duration_min: _Optional[float] = ..., warmup_duration_min: _Optional[float] = ..., retrigger_warning_threshold: _Optional[int] = ..., retrigger_reset_quiet_cycles: _Optional[int] = ..., queue_score_threshold: _Optional[float] = ..., queue_diversity_threshold: _Optional[int] = ..., queue_freshness_min: _Optional[float] = ..., throughput_target_edges: _Optional[_Iterable[str]] = ..., optimization_mode: _Optional[_Union[OptimizationMode, str]] = ..., local_radius_hops: _Optional[int] = ..., max_trigger_zones: _Optional[int] = ..., greedy_improve_margin: _Optional[float] = ..., restriction_proposal_enabled: bool = ..., tau_danger_threshold: _Optional[float] = ..., puncture_trigger_enabled: bool = ..., puncture_ratio_threshold: _Optional[float] = ..., forecasting_budget_sec: _Optional[float] = ..., detour_budget_sec: _Optional[float] = ..., lightweight_opt_budget_sec: _Optional[float] = ..., milp_time_limit_sec: _Optional[float] = ..., max_consecutive_skips: _Optional[int] = ..., solver_seed: _Optional[int] = ..., epsilon: _Optional[float] = ..., epsilon_0: _Optional[float] = ..., big_m_factor: _Optional[float] = ..., delta_min: _Optional[float] = ..., confidence_weight_floor: _Optional[float] = ..., mip_rel_gap: _Optional[float] = ..., gravity_alpha: _Optional[float] = ..., ipf_max_iter: _Optional[int] = ..., ipf_tolerance: _Optional[float] = ..., transit_time_prior_sec: _Optional[float] = ..., dwell_time_prior_sec: _Optional[float] = ..., min_reference_sample_count: _Optional[int] = ..., k_shortest_paths: _Optional[int] = ..., fallback_eta: _Optional[float] = ..., fallback_baseline_stagnation: _Optional[float] = ..., scalar_direction_enabled: bool = ..., k_shortest_paths_auto: bool = ..., k_shortest_paths_max: _Optional[int] = ..., phase_feedback_enabled: bool = ..., phase_feedback_candidates: _Optional[int] = ..., attribute_tag_priority: _Optional[_Iterable[str]] = ..., full_weight_hours: _Optional[float] = ..., eta_mixing_ratio: _Optional[float] = ..., throughput_weights: _Optional[_Union[ThroughputWeights, _Mapping]] = ..., throughput_max_per_edge: _Optional[_Iterable[_Union[EdgeFloat, _Mapping]]] = ..., two_stage_optimization: bool = ..., backoff_enabled: bool = ..., improvement_threshold: _Optional[float] = ..., backoff_max_factor: _Optional[int] = ..., shadow_extensions: _Optional[_Iterable[str]] = ..., delta_objective_enabled: bool = ..., node_detour_enabled: bool = ..., milp_boundary_control_enabled: bool = ..., scheduled_inflow_prior_enabled: bool = ..., log_tenant_id: bool = ...) -> None: ...
+    def __init__(self, surge_rate_threshold_percent_per_min: _Optional[float] = ..., high_stagnation_duration_min: _Optional[float] = ..., beta: _Optional[float] = ..., min_window_samples: _Optional[int] = ..., cooldown_duration_min: _Optional[float] = ..., warmup_duration_min: _Optional[float] = ..., retrigger_warning_threshold: _Optional[int] = ..., retrigger_reset_quiet_cycles: _Optional[int] = ..., queue_score_threshold: _Optional[float] = ..., queue_diversity_threshold: _Optional[int] = ..., queue_freshness_min: _Optional[float] = ..., throughput_target_edges: _Optional[_Iterable[str]] = ..., optimization_mode: _Optional[_Union[OptimizationMode, str]] = ..., local_radius_hops: _Optional[int] = ..., max_trigger_zones: _Optional[int] = ..., greedy_improve_margin: _Optional[float] = ..., restriction_proposal_enabled: bool = ..., tau_danger_threshold: _Optional[float] = ..., puncture_trigger_enabled: bool = ..., puncture_ratio_threshold: _Optional[float] = ..., forecasting_budget_sec: _Optional[float] = ..., detour_budget_sec: _Optional[float] = ..., lightweight_opt_budget_sec: _Optional[float] = ..., milp_time_limit_sec: _Optional[float] = ..., max_consecutive_skips: _Optional[int] = ..., solver_seed: _Optional[int] = ..., epsilon: _Optional[float] = ..., epsilon_0: _Optional[float] = ..., big_m_factor: _Optional[float] = ..., delta_min: _Optional[float] = ..., confidence_weight_floor: _Optional[float] = ..., mip_rel_gap: _Optional[float] = ..., gravity_alpha: _Optional[float] = ..., ipf_max_iter: _Optional[int] = ..., ipf_tolerance: _Optional[float] = ..., transit_time_prior_sec: _Optional[float] = ..., dwell_time_prior_sec: _Optional[float] = ..., min_reference_sample_count: _Optional[int] = ..., k_shortest_paths: _Optional[int] = ..., fallback_eta: _Optional[float] = ..., fallback_baseline_stagnation: _Optional[float] = ..., scalar_direction_enabled: bool = ..., k_shortest_paths_auto: bool = ..., k_shortest_paths_max: _Optional[int] = ..., phase_feedback_enabled: bool = ..., phase_feedback_candidates: _Optional[int] = ..., attribute_tag_priority: _Optional[_Iterable[str]] = ..., full_weight_hours: _Optional[float] = ..., eta_mixing_ratio: _Optional[float] = ..., throughput_weights: _Optional[_Union[ThroughputWeights, _Mapping]] = ..., throughput_max_per_edge: _Optional[_Iterable[_Union[EdgeFloat, _Mapping]]] = ..., two_stage_optimization: bool = ..., backoff_enabled: bool = ..., improvement_threshold: _Optional[float] = ..., backoff_max_factor: _Optional[int] = ..., shadow_extensions: _Optional[_Iterable[str]] = ..., delta_objective_enabled: bool = ..., node_detour_enabled: bool = ..., milp_boundary_control_enabled: bool = ..., scheduled_inflow_prior_enabled: bool = ..., log_tenant_id: bool = ...) -> None: ...
 
 class ThroughputWeights(_message.Message):
     __slots__ = ("trigger_origin", "detour_path", "operator_set")

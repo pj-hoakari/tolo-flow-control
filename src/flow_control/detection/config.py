@@ -8,8 +8,6 @@ class ResolvedConfig:
     high_stagnation_duration_min: float = 5.0
     # 停滞警戒 (a).2 の相対閾値（停滞プロキシ基準値 s̄_e に対する比率）
     beta: float = 1.0
-    # 需要超過比 ρ̂ の閾値（需要警戒 (b).2）。None = 需要超過判定を無効化（急増のみ）
-    theta_demand: float | None = None
 
     cooldown_duration_min: float = 60.0
     queue_score_threshold: float = 5.0
@@ -32,5 +30,5 @@ class ResolvedConfig:
     fallback_baseline_stagnation: float = 1.0
     # 参照値（属性タグ別 baseline）採用の集約元テナント数しきい値
     min_reference_sample_count: int = 5
-    # ゼロ除算回避の微小値（相対閾値・需要超過比の分母）
+    # ゼロ除算回避の微小値（相対閾値の分母）
     epsilon_0: float = 1e-6

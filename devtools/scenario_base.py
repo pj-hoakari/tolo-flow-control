@@ -61,7 +61,7 @@ def established_watch_state(
     """組合せ発火の「停滞警戒 M 分継続」を満たした前サイクル状態を組む
 
     現行 Detection は停滞警戒（p90 かつ相対増分）が M 分継続し、かつ需要警戒
-    （急増または需要超過）が同時成立して初めてメトリクス発火する。単発リクエストの
+    （急増）が同時成立して初めてメトリクス発火する。単発リクエストの
     devtools では継続時間を再現できないため、前サイクルで両条件成立・計時開始済みの
     watch を previous_state として与える。``build_observations_and_history`` の
     ``stagnation_edges``（当該サイクルでも両条件を満たす観測）と併用すること。

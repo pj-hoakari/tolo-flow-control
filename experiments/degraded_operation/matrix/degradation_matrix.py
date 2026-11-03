@@ -591,7 +591,6 @@ def run(condition: Condition, kind: str, variant: str) -> dict:
     altered = False
     fallbacks = 0
     short_tenant = False
-    demand_digest = 0
     fired_response = None
     digest = hashlib.sha256()
     with patch.object(handler, "detect", spy), patched_detect_metric_triggers(VARIANTS[variant]):
@@ -623,9 +622,6 @@ def run(condition: Condition, kind: str, variant: str) -> dict:
                 if getattr(evidence, "edge_id", None) is not None and evidence.edge_id.value == HOT:
                     flags["surge"] |= type(evidence).__name__ == "SurgeEvidence"
                     flags["percentile"] |= type(evidence).__name__ == "HighStagnationEvidence"
-            demand_digest = max(
-                demand_digest, len(response.updated_detection_state.arc_demand_digest.entries)
-            )
             state = response.updated_detection_state
             previous = (
                 response.optimization_result if response.HasField("optimization_result") else None
@@ -649,7 +645,6 @@ def run(condition: Condition, kind: str, variant: str) -> dict:
         "hot_edge_alerts_seen": flags,
         "fallbacks_applied": fallbacks,
         "degraded_short_tenant": short_tenant,
-        "lambda_hat_entries_max": demand_digest,
         "at_fire": None if fired_response is None else _at_fire(fired_response),
         "response_digest": digest.hexdigest(),
     }
@@ -791,7 +786,7 @@ def render(matrix: dict, verdicts: dict) -> str:
         ),
         (
             "- 入力の形は本番に合わせた。両方向の `ArcFlow` を常に送る、`completeness=0`、"
-            "`references` 空、`theta_demand` なし、`directional_flow_samples` なし、全エッジ VECTOR。"
+            "`references` 空、`directional_flow_samples` なし、全エッジ VECTOR。"
         ),
         (
             f"- 長期統計は p90={P90}、baseline={BASELINE}、eta={ETA}、スパン {LONG_SPAN_H} 時間。"
@@ -828,8 +823,7 @@ def render(matrix: dict, verdicts: dict) -> str:
         "## 発火したサイクルの提案（急増の行のみ）",
         "",
         (
-            f"全 {len(every)} 実行で `fallbacks_applied` は計 {sum(r['fallbacks_applied'] for r in every)} 件、"
-            f"`arc_demand_digest`（λ̂）の件数は最大 {max(r['lambda_hat_entries_max'] for r in every)} 件だった。"
+            f"全 {len(every)} 実行で `fallbacks_applied` は計 {sum(r['fallbacks_applied'] for r in every)} 件だった。"
         ),
         "",
         (

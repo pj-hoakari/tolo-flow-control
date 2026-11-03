@@ -181,9 +181,7 @@ def handle_request(
         mode,
     )
     steps.append(_step(StepKind.FEEDBACK, feedback_started))
-    state = _with_demand_digest(
-        finalize_detection_state(detection, Verdict.OPTIMIZED, req), forecast_result
-    )
+    state = finalize_detection_state(detection, Verdict.OPTIMIZED, req)
     return _response(
         req,
         Verdict.OPTIMIZED,
@@ -232,16 +230,6 @@ def _requeued_triggers(det: DetectionResult, req: Request) -> tuple[QueuedTrigge
         )
         for node_id in det.triggered_nodes
     )
-
-
-def _with_demand_digest(state: DetectionState, forecast_result: object) -> DetectionState:
-    # ForecastResult currently exposes node demand and OD demand, but not the
-    # edge-arrival demand lambda_hat required by DetectionState.  Preserve the
-    # previous digest rather than writing an unrelated quantity such as eta.
-    # The adapter is deliberately isolated here for the Forecasting contract's
-    # future edge-demand output.
-    del forecast_result
-    return state
 
 
 def _response(
@@ -355,7 +343,6 @@ def _detection_config(cfg: ServiceConfig) -> DetectionConfig:
         surge_rate_threshold_percent_per_min=cfg.surge_rate_threshold_percent_per_min,
         high_stagnation_duration_min=cfg.high_stagnation_duration_min,
         beta=cfg.beta,
-        theta_demand=cfg.theta_demand,
         cooldown_duration_min=cfg.cooldown_duration_min,
         queue_score_threshold=cfg.queue_score_threshold,
         queue_diversity_threshold=cfg.queue_diversity_threshold,

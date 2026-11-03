@@ -7,7 +7,7 @@ from enum import Enum
 from typing import Protocol
 
 from ..domain import EdgeID, Graph, NodeID
-from ..domain.enums import CurrentDirection, FlowDirection, ObservationType
+from ..domain.enums import ObservationType
 from ..domain.graph import Edge
 from ..domain.history import ArcHistoryStat, ArcWindowSeries, HistoryDigest
 from ..domain.observations import ArcStagnation, ConfidenceFlag, Observations
@@ -145,18 +145,6 @@ def detect_metric_triggers(
         surge_threshold = config.surge_rate_threshold_percent_per_min
         surge_breached = surge_rate is not None and surge_rate > surge_threshold
 
-        # ── 需要警戒 (b).2 需要超過 ──
-        # ρ̂ = λ̂ /(μ̂ + ε0)。λ̂ は前回リクエストの Forecasting 由来（arc_demand_digest）。
-        lambda_hat = previous_state.demand_digest_of(edge.edge_id)
-        mu_hat = _downstream_outflow_average(window, edge.current_direction)
-        rho_hat: float | None = None
-        demand_excess_breached = False
-        if config.theta_demand is not None and lambda_hat is not None and mu_hat is not None:
-            rho_hat = lambda_hat / (mu_hat + config.epsilon_0)
-            demand_excess_breached = rho_hat > config.theta_demand
-
-        demand_warning = surge_breached or demand_excess_breached
-
         # ── 停滞警戒 (a) ──
         baseline = _resolve_baseline(history_stat, edge, references, config)
         recent_ma = _recent_stagnation_average(window)
@@ -173,18 +161,12 @@ def detect_metric_triggers(
             config.epsilon_0,
         )
 
-        demand_watch_since = _advance_watch_since(
-            previous_watch.demand_watch_since if previous_watch is not None else None,
-            demand_warning,
-            server_time,
-        )
-
         # ── 組合せ発火 (c) と縮退（ラインなし → 停滞警戒単独） ──
         degraded = False
         fired = False
         if stag.established:
             if line_present:
-                fired = demand_warning
+                fired = surge_breached
             else:
                 fired = True
                 degraded = True
@@ -203,16 +185,7 @@ def detect_metric_triggers(
                 observed_stagnation, p90, recent_ma, baseline, config.beta, config.epsilon_0
             )
             demand_ratio = (
-                None
-                if degraded
-                else _demand_ratio(
-                    surge_breached,
-                    surge_rate,
-                    surge_threshold,
-                    demand_excess_breached,
-                    rho_hat,
-                    config.theta_demand,
-                )
+                None if degraded else _demand_ratio(surge_breached, surge_rate, surge_threshold)
             )
             score = stag_ratio if demand_ratio is None else max(stag_ratio, demand_ratio)
             fired_triggers.append(
@@ -254,9 +227,7 @@ def detect_metric_triggers(
                 )
             # 発火 → クールタイム開始のため警戒状態はリセット（保持しない）
         else:
-            next_watch = _build_watch_state(
-                edge.edge_id, stag, surge_breached, demand_excess_breached, demand_watch_since
-            )
+            next_watch = _build_watch_state(edge.edge_id, stag, surge_breached)
             if next_watch is not None:
                 new_watch_states.append(next_watch)
 
@@ -335,29 +306,6 @@ def _slope_percent_per_min(
     return (num / den / y_mean) * 100.0
 
 
-def _downstream_outflow_average(
-    window: ArcWindowSeries | None,
-    current_direction: CurrentDirection,
-) -> float | None:
-    # 排出実績 μ̂_e：現在の流下方向のライン流出カウント直近平均
-    if window is None or window.directional_flow_samples is None:
-        return None
-    wanted: FlowDirection | None
-    if current_direction == CurrentDirection.A_TO_B:
-        wanted = FlowDirection.A_TO_B
-    elif current_direction == CurrentDirection.B_TO_A:
-        wanted = FlowDirection.B_TO_A
-    else:
-        wanted = None  # BIDIRECTIONAL は両方向を合算平均する
-    values: list[float] = []
-    for direction, samples in window.directional_flow_samples:
-        if wanted is None or direction == wanted:
-            values.extend(v for (_, v) in samples)
-    if not values:
-        return None
-    return statistics.mean(values)
-
-
 def _resolve_baseline(
     history_stat: ArcHistoryStat | None,
     edge: Edge,
@@ -432,16 +380,12 @@ def _build_watch_state(
     edge_id: EdgeID,
     stag: _StagnationEval,
     surge_breached: bool,
-    demand_excess_breached: bool,
-    demand_watch_since: datetime | None,
 ) -> ArcWatchState | None:
     if not (
         stag.percentile_breached
         or stag.delta_breached
         or stag.watch_since is not None
         or surge_breached
-        or demand_excess_breached
-        or demand_watch_since is not None
     ):
         return None
     return ArcWatchState(
@@ -450,19 +394,7 @@ def _build_watch_state(
         delta_breached=stag.delta_breached,
         stagnation_watch_since=stag.watch_since,
         surge_breached=surge_breached,
-        demand_excess_breached=demand_excess_breached,
-        demand_watch_since=demand_watch_since,
     )
-
-
-def _advance_watch_since(
-    previous_since: datetime | None,
-    condition_now: bool,
-    server_time: datetime,
-) -> datetime | None:
-    if not condition_now:
-        return None
-    return previous_since if previous_since is not None else server_time
 
 
 def _stagnation_ratio(
@@ -488,22 +420,11 @@ def _demand_ratio(
     surge_breached: bool,
     surge_rate: float | None,
     surge_threshold: float,
-    demand_excess_breached: bool,
-    rho_hat: float | None,
-    theta_demand: float | None,
 ) -> float | None:
-    # 組合せ発火の需要系スコア。急増・需要超過のうち成立したものの最大値
-    candidates: list[float] = []
+    # 組合せ発火の需要系スコア。急増が成立したときの傾き比
     if surge_breached and surge_rate is not None and surge_threshold > EPSILON_FLOW:
-        candidates.append(surge_rate / surge_threshold)
-    if (
-        demand_excess_breached
-        and rho_hat is not None
-        and theta_demand is not None
-        and theta_demand > EPSILON_FLOW
-    ):
-        candidates.append(rho_hat / theta_demand)
-    return max(candidates) if candidates else None
+        return surge_rate / surge_threshold
+    return None
 
 
 def _detect_puncture(

@@ -39,8 +39,6 @@ class ResolvedConfig:
     surge_rate_threshold_percent_per_min: float = 50.0
     high_stagnation_duration_min: float = 5.0  # M 分
     beta: float = 1.0  # 停滞警戒 (a).2 の相対閾値（停滞プロキシ基準値 s̄_e 比）
-    # 需要超過比 ρ̂ の閾値（需要警戒 (b).2）。None = 需要超過判定を無効化（急増 (b).1 のみ）
-    theta_demand: float | None = None
     min_window_samples: int = 5  # 窓内有効サンプル数の下限（未満は警戒どまり）
     cooldown_duration_min: float = 60.0  # >= 10
     warmup_duration_min: float = 60.0

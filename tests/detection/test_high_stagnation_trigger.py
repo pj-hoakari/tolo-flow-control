@@ -27,14 +27,13 @@ from flow_control.detection.diagnostics import (
     SurgeEvidence,
 )
 from flow_control.detection.state import (
-    ArcDemandDigestEntry,
     ArcWatchState,
     DetectionState,
     QueuedTriggerKind,
 )
 from flow_control.detection.triggers import detect_metric_triggers
-from flow_control.domain import EdgeID, FlowDirection, Graph
-from flow_control.domain.history import ArcHistoryStat, ArcWindowSeries, HistoryDigest
+from flow_control.domain import EdgeID, Graph
+from flow_control.domain.history import HistoryDigest
 from flow_control.domain.observations import ArcStagnation, Observations
 
 _TS = datetime(2026, 1, 1, tzinfo=UTC)
@@ -389,7 +388,7 @@ def test_no_fire_when_established_but_no_demand_and_line_present(
     make_stagnation_observation,
     make_established_watch,
 ):
-    # established だがラインは平坦（急増なし）・需要超過も無効 → demand_warning 偽で非発火
+    # established だがラインは平坦（急増なし） → demand_warning 偽で非発火
     # ラインが存在するため縮退もしない。警戒は保持される（AND 否定）
     flat_line = make_line_samples(base_time, sample_count=11, start_value=100.0, slope_per_min=0.0)
     history = make_history((edge_id, 5.0, 5.0, 5.0), flow={edge_id: flat_line})
@@ -470,99 +469,6 @@ def test_p90_missing_uses_delta_only_and_degraded_fires(
     assert [e for e in result.evidences if isinstance(e, HighStagnationEvidence)] == []
     codes = {w.code for w in result.warnings}
     assert DetectionWarningCode.DEGRADED_COMBINED_TRIGGER in codes
-
-
-def test_fires_on_demand_excess(
-    base_time: datetime,
-    basic_graph: Graph,
-    edge_id: EdgeID,
-    make_stagnation_observation,
-    make_established_watch,
-):
-    # established 停滞 ＋ 需要超過 (b).2（ρ̂ = λ̂/(μ̂+eps) > theta_demand）→ 組合せ発火
-    # ラインは平坦で急増しないため、発火根拠は需要超過側
-    flat_line = tuple((base_time - timedelta(minutes=10 - i), 100.0) for i in range(11))
-    window = ArcWindowSeries(
-        edge_id=edge_id,
-        flow_samples=flat_line,
-        stagnation_samples=((_TS, 5.0),),
-        directional_flow_samples=((FlowDirection.A_TO_B, ((_TS, 10.0),)),),
-    )
-    history = HistoryDigest(
-        arc_stats=(ArcHistoryStat(edge_id=edge_id, p90_stagnation=5.0, baseline_stagnation=5.0),),
-        window_series=(window,),
-    )
-    observations = make_stagnation_observation(edge_id, observed_at=base_time, stagnation=15.0)
-    previous = DetectionState(
-        arc_watch_states=(make_established_watch(edge_id, base_time),),
-        # λ̂ = 100, μ̂ = 10 → ρ̂ = 10 > theta_demand=2
-        arc_demand_digest=(ArcDemandDigestEntry(edge_id=edge_id, demand=100.0),),
-    )
-    config = ResolvedConfig(
-        surge_rate_threshold_percent_per_min=1_000.0,  # 急増は成立させない
-        high_stagnation_duration_min=5.0,
-        beta=1.0,
-        theta_demand=2.0,
-    )
-
-    result = _run(
-        graph=basic_graph,
-        history=history,
-        observations=observations,
-        previous_state=previous,
-        server_time=base_time,
-        config=config,
-    )
-
-    assert result.triggered_edges == (edge_id,)
-    assert result.fired_triggers[0].kind == QueuedTriggerKind.HIGH_STAGNATION
-    # 需要超過での発火のため急増根拠は付かない
-    assert [e for e in result.evidences if isinstance(e, SurgeEvidence)] == []
-    # 発火根拠に停滞（p90 あり）が含まれる
-    assert [e for e in result.evidences if isinstance(e, HighStagnationEvidence)]
-
-
-def test_demand_excess_disabled_without_theta_demand(
-    base_time: datetime,
-    basic_graph: Graph,
-    edge_id: EdgeID,
-    make_stagnation_observation,
-    make_established_watch,
-):
-    # theta_demand 未設定なら需要超過は無効。established＋平坦ライン→非発火
-    flat_line = tuple((base_time - timedelta(minutes=10 - i), 100.0) for i in range(11))
-    window = ArcWindowSeries(
-        edge_id=edge_id,
-        flow_samples=flat_line,
-        stagnation_samples=((_TS, 5.0),),
-        directional_flow_samples=((FlowDirection.A_TO_B, ((_TS, 10.0),)),),
-    )
-    history = HistoryDigest(
-        arc_stats=(ArcHistoryStat(edge_id=edge_id, p90_stagnation=5.0, baseline_stagnation=5.0),),
-        window_series=(window,),
-    )
-    observations = make_stagnation_observation(edge_id, observed_at=base_time, stagnation=15.0)
-    previous = DetectionState(
-        arc_watch_states=(make_established_watch(edge_id, base_time),),
-        arc_demand_digest=(ArcDemandDigestEntry(edge_id=edge_id, demand=100.0),),
-    )
-    config = ResolvedConfig(
-        surge_rate_threshold_percent_per_min=1_000.0,
-        high_stagnation_duration_min=5.0,
-        beta=1.0,
-        theta_demand=None,  # 需要超過を無効化
-    )
-
-    result = _run(
-        graph=basic_graph,
-        history=history,
-        observations=observations,
-        previous_state=previous,
-        server_time=base_time,
-        config=config,
-    )
-
-    assert result.triggered_edges == ()
 
 
 # ---------------------------------------------------------------------------

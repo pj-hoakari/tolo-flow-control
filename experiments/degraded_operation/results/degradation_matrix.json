@@ -811,7 +811,6 @@
           },
           "fallbacks_applied": 0,
           "degraded_short_tenant": false,
-          "lambda_hat_entries_max": 0,
           "at_fire": {
             "solver_status": "INFEASIBLE",
             "route_importance": 7,
@@ -899,7 +898,6 @@
           },
           "fallbacks_applied": 0,
           "degraded_short_tenant": false,
-          "lambda_hat_entries_max": 0,
           "at_fire": null,
           "response_digest": "b01db6dc9da478a27ce51ef903aa79fd1b2b2f9a8b853f94e6108556e845843e"
         },
@@ -973,7 +971,6 @@
           },
           "fallbacks_applied": 0,
           "degraded_short_tenant": false,
-          "lambda_hat_entries_max": 0,
           "at_fire": null,
           "response_digest": "0e0542c53368ba23480643008eb7df431a95cfefc9da77a9ebfcc76fdcc306aa"
         }
@@ -1049,7 +1046,6 @@
           },
           "fallbacks_applied": 0,
           "degraded_short_tenant": false,
-          "lambda_hat_entries_max": 0,
           "at_fire": null,
           "response_digest": "0e0542c53368ba23480643008eb7df431a95cfefc9da77a9ebfcc76fdcc306aa"
         },
@@ -1123,7 +1119,6 @@
           },
           "fallbacks_applied": 0,
           "degraded_short_tenant": false,
-          "lambda_hat_entries_max": 0,
           "at_fire": null,
           "response_digest": "0e0542c53368ba23480643008eb7df431a95cfefc9da77a9ebfcc76fdcc306aa"
         },
@@ -1197,7 +1192,6 @@
           },
           "fallbacks_applied": 0,
           "degraded_short_tenant": false,
-          "lambda_hat_entries_max": 0,
           "at_fire": null,
           "response_digest": "0e0542c53368ba23480643008eb7df431a95cfefc9da77a9ebfcc76fdcc306aa"
         }
@@ -1265,7 +1259,6 @@
           },
           "fallbacks_applied": 0,
           "degraded_short_tenant": false,
-          "lambda_hat_entries_max": 0,
           "at_fire": {
             "solver_status": "INFEASIBLE",
             "route_importance": 7,
@@ -1353,7 +1346,6 @@
           },
           "fallbacks_applied": 0,
           "degraded_short_tenant": false,
-          "lambda_hat_entries_max": 0,
           "at_fire": null,
           "response_digest": "e3038d5268265b495ca08051008ff1e22245cc4b47b21fee1e8b97da5c36ba73"
         },
@@ -1427,7 +1419,6 @@
           },
           "fallbacks_applied": 0,
           "degraded_short_tenant": false,
-          "lambda_hat_entries_max": 0,
           "at_fire": null,
           "response_digest": "0e0542c53368ba23480643008eb7df431a95cfefc9da77a9ebfcc76fdcc306aa"
         }
@@ -1503,7 +1494,6 @@
           },
           "fallbacks_applied": 0,
           "degraded_short_tenant": false,
-          "lambda_hat_entries_max": 0,
           "at_fire": null,
           "response_digest": "1745c53ea1561151884e4f4f6892783a87c6d46964b7d778d5ecd6511ebfa78e"
         },
@@ -1577,7 +1567,6 @@
           },
           "fallbacks_applied": 0,
           "degraded_short_tenant": false,
-          "lambda_hat_entries_max": 0,
           "at_fire": null,
           "response_digest": "1745c53ea1561151884e4f4f6892783a87c6d46964b7d778d5ecd6511ebfa78e"
         },
@@ -1651,7 +1640,6 @@
           },
           "fallbacks_applied": 0,
           "degraded_short_tenant": false,
-          "lambda_hat_entries_max": 0,
           "at_fire": null,
           "response_digest": "0e0542c53368ba23480643008eb7df431a95cfefc9da77a9ebfcc76fdcc306aa"
         }
@@ -1717,7 +1705,6 @@
           },
           "fallbacks_applied": 0,
           "degraded_short_tenant": false,
-          "lambda_hat_entries_max": 0,
           "at_fire": {
             "solver_status": "INFEASIBLE",
             "route_importance": 7,
@@ -1733,7 +1720,7 @@
             "low_confidence_arc_ratio": 0.0,
             "feedback_warnings": 0
           },
-          "response_digest": "100ea13cf57b56ebb1bbc74f476223126e51c34a5fe9adbcd79fc548010e5bb1"
+          "response_digest": "0580b7b58deac4c82fc158a5580185bf9d4a97ac3eee9c5f9443dc9f19deca4f"
         },
         "stagnation_only": {
           "condition": "restart",
@@ -1805,7 +1792,6 @@
           },
           "fallbacks_applied": 0,
           "degraded_short_tenant": false,
-          "lambda_hat_entries_max": 0,
           "at_fire": null,
           "response_digest": "a28f50a1b3d92dd112154de0eb21bd6715c7ef42b5f700987fcee932a4ab842a"
         },
@@ -1879,7 +1865,6 @@
           },
           "fallbacks_applied": 0,
           "degraded_short_tenant": false,
-          "lambda_hat_entries_max": 0,
           "at_fire": null,
           "response_digest": "0e0542c53368ba23480643008eb7df431a95cfefc9da77a9ebfcc76fdcc306aa"
         }
@@ -1947,7 +1932,6 @@
           },
           "fallbacks_applied": 0,
           "degraded_short_tenant": false,
-          "lambda_hat_entries_max": 0,
           "at_fire": {
             "solver_status": "LIGHTWEIGHT",
             "route_importance": 7,
@@ -2030,7 +2014,6 @@
           },
           "fallbacks_applied": 0,
           "degraded_short_tenant": false,
-          "lambda_hat_entries_max": 0,
           "at_fire": {
             "solver_status": "LIGHTWEIGHT",
             "route_importance": 7,
@@ -2123,7 +2106,6 @@
           },
           "fallbacks_applied": 0,
           "degraded_short_tenant": false,
-          "lambda_hat_entries_max": 0,
           "at_fire": null,
           "response_digest": "f70da45447f7a00113507d91189e9eaf93ef3cc900cb715791e3de676d908633"
         }
@@ -2199,9 +2181,8 @@
           },
           "fallbacks_applied": 0,
           "degraded_short_tenant": false,
-          "lambda_hat_entries_max": 0,
           "at_fire": null,
-          "response_digest": "91bad0f75024e27bb0925522e1923246cee41f1c3660f176742956fc57cc185b"
+          "response_digest": "bac4a90b29f404286215e6131f8c0a4af8509c45ce441cb9a570aeff0e66b942"
         },
         "stagnation_only": {
           "condition": "no_line_zero",
@@ -2273,7 +2254,6 @@
           },
           "fallbacks_applied": 0,
           "degraded_short_tenant": false,
-          "lambda_hat_entries_max": 0,
           "at_fire": null,
           "response_digest": "b01db6dc9da478a27ce51ef903aa79fd1b2b2f9a8b853f94e6108556e845843e"
         },
@@ -2347,7 +2327,6 @@
           },
           "fallbacks_applied": 0,
           "degraded_short_tenant": false,
-          "lambda_hat_entries_max": 0,
           "at_fire": null,
           "response_digest": "0e0542c53368ba23480643008eb7df431a95cfefc9da77a9ebfcc76fdcc306aa"
         }
@@ -2423,9 +2402,8 @@
           },
           "fallbacks_applied": 0,
           "degraded_short_tenant": false,
-          "lambda_hat_entries_max": 0,
           "at_fire": null,
-          "response_digest": "91bad0f75024e27bb0925522e1923246cee41f1c3660f176742956fc57cc185b"
+          "response_digest": "bac4a90b29f404286215e6131f8c0a4af8509c45ce441cb9a570aeff0e66b942"
         },
         "stagnation_only": {
           "condition": "intermittent_0",
@@ -2497,7 +2475,6 @@
           },
           "fallbacks_applied": 0,
           "degraded_short_tenant": false,
-          "lambda_hat_entries_max": 0,
           "at_fire": null,
           "response_digest": "b01db6dc9da478a27ce51ef903aa79fd1b2b2f9a8b853f94e6108556e845843e"
         },
@@ -2571,7 +2548,6 @@
           },
           "fallbacks_applied": 0,
           "degraded_short_tenant": false,
-          "lambda_hat_entries_max": 0,
           "at_fire": null,
           "response_digest": "0e0542c53368ba23480643008eb7df431a95cfefc9da77a9ebfcc76fdcc306aa"
         }
@@ -2636,7 +2612,6 @@
           },
           "fallbacks_applied": 0,
           "degraded_short_tenant": false,
-          "lambda_hat_entries_max": 0,
           "at_fire": {
             "solver_status": "LIGHTWEIGHT",
             "route_importance": 7,
@@ -2652,7 +2627,7 @@
             "low_confidence_arc_ratio": 0.0,
             "feedback_warnings": 0
           },
-          "response_digest": "63846500ba3105a36f56dbdd1797c34967eb089eb800a3ede8f00950ee01c6b8"
+          "response_digest": "96d5c6e430fbd78adf5a13249b5dfa55e3339c1783f12bf0a59740572505230c"
         },
         "stagnation_only": {
           "condition": "intermittent_1",
@@ -2724,7 +2699,6 @@
           },
           "fallbacks_applied": 0,
           "degraded_short_tenant": false,
-          "lambda_hat_entries_max": 0,
           "at_fire": null,
           "response_digest": "b01db6dc9da478a27ce51ef903aa79fd1b2b2f9a8b853f94e6108556e845843e"
         },
@@ -2798,7 +2772,6 @@
           },
           "fallbacks_applied": 0,
           "degraded_short_tenant": false,
-          "lambda_hat_entries_max": 0,
           "at_fire": null,
           "response_digest": "0e0542c53368ba23480643008eb7df431a95cfefc9da77a9ebfcc76fdcc306aa"
         }
@@ -2866,7 +2839,6 @@
           },
           "fallbacks_applied": 0,
           "degraded_short_tenant": false,
-          "lambda_hat_entries_max": 0,
           "at_fire": {
             "solver_status": "INFEASIBLE",
             "route_importance": 7,
@@ -2954,7 +2926,6 @@
           },
           "fallbacks_applied": 0,
           "degraded_short_tenant": false,
-          "lambda_hat_entries_max": 0,
           "at_fire": null,
           "response_digest": "b01db6dc9da478a27ce51ef903aa79fd1b2b2f9a8b853f94e6108556e845843e"
         },
@@ -3028,7 +2999,6 @@
           },
           "fallbacks_applied": 0,
           "degraded_short_tenant": false,
-          "lambda_hat_entries_max": 0,
           "at_fire": null,
           "response_digest": "0e0542c53368ba23480643008eb7df431a95cfefc9da77a9ebfcc76fdcc306aa"
         }
@@ -3104,9 +3074,8 @@
           },
           "fallbacks_applied": 0,
           "degraded_short_tenant": false,
-          "lambda_hat_entries_max": 0,
           "at_fire": null,
-          "response_digest": "e478dda588124f0e5be25bc46bd25ceb6adbfe1e882405a3c3aefd173a9291c8"
+          "response_digest": "31300c6514ecadc9fab1383b771bcf21c1c0304ebdc5885746fc0246be6548f8"
         },
         "stagnation_only": {
           "condition": "point_missing",
@@ -3178,7 +3147,6 @@
           },
           "fallbacks_applied": 0,
           "degraded_short_tenant": false,
-          "lambda_hat_entries_max": 0,
           "at_fire": null,
           "response_digest": "0e0542c53368ba23480643008eb7df431a95cfefc9da77a9ebfcc76fdcc306aa"
         },
@@ -3252,7 +3220,6 @@
           },
           "fallbacks_applied": 0,
           "degraded_short_tenant": false,
-          "lambda_hat_entries_max": 0,
           "at_fire": null,
           "response_digest": "0e0542c53368ba23480643008eb7df431a95cfefc9da77a9ebfcc76fdcc306aa"
         }
@@ -3320,7 +3287,6 @@
           },
           "fallbacks_applied": 0,
           "degraded_short_tenant": false,
-          "lambda_hat_entries_max": 0,
           "at_fire": {
             "solver_status": "INFEASIBLE",
             "route_importance": 7,
@@ -3408,7 +3374,6 @@
           },
           "fallbacks_applied": 0,
           "degraded_short_tenant": false,
-          "lambda_hat_entries_max": 0,
           "at_fire": null,
           "response_digest": "b01db6dc9da478a27ce51ef903aa79fd1b2b2f9a8b853f94e6108556e845843e"
         },
@@ -3482,7 +3447,6 @@
           },
           "fallbacks_applied": 0,
           "degraded_short_tenant": false,
-          "lambda_hat_entries_max": 0,
           "at_fire": null,
           "response_digest": "0e0542c53368ba23480643008eb7df431a95cfefc9da77a9ebfcc76fdcc306aa"
         }
@@ -3558,9 +3522,8 @@
           },
           "fallbacks_applied": 0,
           "degraded_short_tenant": false,
-          "lambda_hat_entries_max": 0,
           "at_fire": null,
-          "response_digest": "21dd320aed0288c70e6ac09a19016ddbe3d06af78e297b3c5aef7fd0a829cce0"
+          "response_digest": "69f93d080324a4ac8cca52b6249116504c7ee31618b413596bacd75c1b3b96e9"
         },
         "stagnation_only": {
           "condition": "invalid",
@@ -3632,7 +3595,6 @@
           },
           "fallbacks_applied": 0,
           "degraded_short_tenant": false,
-          "lambda_hat_entries_max": 0,
           "at_fire": null,
           "response_digest": "f46b303b34076b2261f59219f135a179526f38ed592ffc0f5b596cd459d5c41f"
         },
@@ -3706,7 +3668,6 @@
           },
           "fallbacks_applied": 0,
           "degraded_short_tenant": false,
-          "lambda_hat_entries_max": 0,
           "at_fire": null,
           "response_digest": "0e0542c53368ba23480643008eb7df431a95cfefc9da77a9ebfcc76fdcc306aa"
         }
@@ -3774,7 +3735,6 @@
           },
           "fallbacks_applied": 0,
           "degraded_short_tenant": false,
-          "lambda_hat_entries_max": 0,
           "at_fire": {
             "solver_status": "INFEASIBLE",
             "route_importance": 7,
@@ -3862,7 +3822,6 @@
           },
           "fallbacks_applied": 0,
           "degraded_short_tenant": false,
-          "lambda_hat_entries_max": 0,
           "at_fire": null,
           "response_digest": "b01db6dc9da478a27ce51ef903aa79fd1b2b2f9a8b853f94e6108556e845843e"
         },
@@ -3936,7 +3895,6 @@
           },
           "fallbacks_applied": 0,
           "degraded_short_tenant": false,
-          "lambda_hat_entries_max": 0,
           "at_fire": null,
           "response_digest": "0e0542c53368ba23480643008eb7df431a95cfefc9da77a9ebfcc76fdcc306aa"
         }
@@ -4012,9 +3970,8 @@
           },
           "fallbacks_applied": 0,
           "degraded_short_tenant": false,
-          "lambda_hat_entries_max": 0,
           "at_fire": null,
-          "response_digest": "91bad0f75024e27bb0925522e1923246cee41f1c3660f176742956fc57cc185b"
+          "response_digest": "bac4a90b29f404286215e6131f8c0a4af8509c45ce441cb9a570aeff0e66b942"
         },
         "stagnation_only": {
           "condition": "hold_frozen",
@@ -4086,7 +4043,6 @@
           },
           "fallbacks_applied": 0,
           "degraded_short_tenant": false,
-          "lambda_hat_entries_max": 0,
           "at_fire": null,
           "response_digest": "b01db6dc9da478a27ce51ef903aa79fd1b2b2f9a8b853f94e6108556e845843e"
         },
@@ -4160,7 +4116,6 @@
           },
           "fallbacks_applied": 0,
           "degraded_short_tenant": false,
-          "lambda_hat_entries_max": 0,
           "at_fire": null,
           "response_digest": "0e0542c53368ba23480643008eb7df431a95cfefc9da77a9ebfcc76fdcc306aa"
         }
@@ -4236,9 +4191,8 @@
           },
           "fallbacks_applied": 0,
           "degraded_short_tenant": false,
-          "lambda_hat_entries_max": 0,
           "at_fire": null,
-          "response_digest": "21dd320aed0288c70e6ac09a19016ddbe3d06af78e297b3c5aef7fd0a829cce0"
+          "response_digest": "69f93d080324a4ac8cca52b6249116504c7ee31618b413596bacd75c1b3b96e9"
         },
         "stagnation_only": {
           "condition": "dropout",
@@ -4310,7 +4264,6 @@
           },
           "fallbacks_applied": 0,
           "degraded_short_tenant": false,
-          "lambda_hat_entries_max": 0,
           "at_fire": null,
           "response_digest": "f46b303b34076b2261f59219f135a179526f38ed592ffc0f5b596cd459d5c41f"
         },
@@ -4384,7 +4337,6 @@
           },
           "fallbacks_applied": 0,
           "degraded_short_tenant": false,
-          "lambda_hat_entries_max": 0,
           "at_fire": null,
           "response_digest": "0e0542c53368ba23480643008eb7df431a95cfefc9da77a9ebfcc76fdcc306aa"
         }
@@ -4453,7 +4405,6 @@
           },
           "fallbacks_applied": 0,
           "degraded_short_tenant": false,
-          "lambda_hat_entries_max": 0,
           "at_fire": {
             "solver_status": "INFEASIBLE",
             "route_importance": 7,
@@ -4541,7 +4492,6 @@
           },
           "fallbacks_applied": 0,
           "degraded_short_tenant": false,
-          "lambda_hat_entries_max": 0,
           "at_fire": null,
           "response_digest": "b01db6dc9da478a27ce51ef903aa79fd1b2b2f9a8b853f94e6108556e845843e"
         },
@@ -4615,7 +4565,6 @@
           },
           "fallbacks_applied": 0,
           "degraded_short_tenant": false,
-          "lambda_hat_entries_max": 0,
           "at_fire": null,
           "response_digest": "0e0542c53368ba23480643008eb7df431a95cfefc9da77a9ebfcc76fdcc306aa"
         }
@@ -4683,7 +4632,6 @@
           },
           "fallbacks_applied": 0,
           "degraded_short_tenant": false,
-          "lambda_hat_entries_max": 0,
           "at_fire": {
             "solver_status": "INFEASIBLE",
             "route_importance": 7,
@@ -4771,7 +4719,6 @@
           },
           "fallbacks_applied": 0,
           "degraded_short_tenant": false,
-          "lambda_hat_entries_max": 0,
           "at_fire": null,
           "response_digest": "b01db6dc9da478a27ce51ef903aa79fd1b2b2f9a8b853f94e6108556e845843e"
         },
@@ -4845,7 +4792,6 @@
           },
           "fallbacks_applied": 0,
           "degraded_short_tenant": false,
-          "lambda_hat_entries_max": 0,
           "at_fire": null,
           "response_digest": "0e0542c53368ba23480643008eb7df431a95cfefc9da77a9ebfcc76fdcc306aa"
         }
@@ -4915,7 +4861,6 @@
           },
           "fallbacks_applied": 0,
           "degraded_short_tenant": false,
-          "lambda_hat_entries_max": 0,
           "at_fire": {
             "solver_status": "INFEASIBLE",
             "route_importance": 7,
@@ -5003,7 +4948,6 @@
           },
           "fallbacks_applied": 0,
           "degraded_short_tenant": false,
-          "lambda_hat_entries_max": 0,
           "at_fire": null,
           "response_digest": "b01db6dc9da478a27ce51ef903aa79fd1b2b2f9a8b853f94e6108556e845843e"
         },
@@ -5077,7 +5021,6 @@
           },
           "fallbacks_applied": 0,
           "degraded_short_tenant": false,
-          "lambda_hat_entries_max": 0,
           "at_fire": null,
           "response_digest": "0e0542c53368ba23480643008eb7df431a95cfefc9da77a9ebfcc76fdcc306aa"
         }
@@ -5153,7 +5096,6 @@
           },
           "fallbacks_applied": 0,
           "degraded_short_tenant": false,
-          "lambda_hat_entries_max": 0,
           "at_fire": null,
           "response_digest": "0e0542c53368ba23480643008eb7df431a95cfefc9da77a9ebfcc76fdcc306aa"
         },
@@ -5227,7 +5169,6 @@
           },
           "fallbacks_applied": 0,
           "degraded_short_tenant": false,
-          "lambda_hat_entries_max": 0,
           "at_fire": null,
           "response_digest": "0e0542c53368ba23480643008eb7df431a95cfefc9da77a9ebfcc76fdcc306aa"
         },
@@ -5301,7 +5242,6 @@
           },
           "fallbacks_applied": 0,
           "degraded_short_tenant": false,
-          "lambda_hat_entries_max": 0,
           "at_fire": null,
           "response_digest": "0e0542c53368ba23480643008eb7df431a95cfefc9da77a9ebfcc76fdcc306aa"
         }
@@ -5369,7 +5309,6 @@
           },
           "fallbacks_applied": 0,
           "degraded_short_tenant": false,
-          "lambda_hat_entries_max": 0,
           "at_fire": {
             "solver_status": "INFEASIBLE",
             "route_importance": 7,
@@ -5457,7 +5396,6 @@
           },
           "fallbacks_applied": 0,
           "degraded_short_tenant": false,
-          "lambda_hat_entries_max": 0,
           "at_fire": null,
           "response_digest": "e3038d5268265b495ca08051008ff1e22245cc4b47b21fee1e8b97da5c36ba73"
         },
@@ -5531,7 +5469,6 @@
           },
           "fallbacks_applied": 0,
           "degraded_short_tenant": false,
-          "lambda_hat_entries_max": 0,
           "at_fire": null,
           "response_digest": "0e0542c53368ba23480643008eb7df431a95cfefc9da77a9ebfcc76fdcc306aa"
         }
@@ -5607,7 +5544,6 @@
           },
           "fallbacks_applied": 0,
           "degraded_short_tenant": false,
-          "lambda_hat_entries_max": 0,
           "at_fire": null,
           "response_digest": "b01db6dc9da478a27ce51ef903aa79fd1b2b2f9a8b853f94e6108556e845843e"
         },
@@ -5681,7 +5617,6 @@
           },
           "fallbacks_applied": 0,
           "degraded_short_tenant": false,
-          "lambda_hat_entries_max": 0,
           "at_fire": null,
           "response_digest": "b01db6dc9da478a27ce51ef903aa79fd1b2b2f9a8b853f94e6108556e845843e"
         },
@@ -5755,7 +5690,6 @@
           },
           "fallbacks_applied": 0,
           "degraded_short_tenant": false,
-          "lambda_hat_entries_max": 0,
           "at_fire": null,
           "response_digest": "0e0542c53368ba23480643008eb7df431a95cfefc9da77a9ebfcc76fdcc306aa"
         }
@@ -5820,7 +5754,6 @@
           },
           "fallbacks_applied": 0,
           "degraded_short_tenant": false,
-          "lambda_hat_entries_max": 0,
           "at_fire": {
             "solver_status": "LIGHTWEIGHT",
             "route_importance": 7,
@@ -5836,7 +5769,7 @@
             "low_confidence_arc_ratio": 0.0,
             "feedback_warnings": 0
           },
-          "response_digest": "1d9c2e243e83aaca1d5eb133ba967b86d28be1d57af21f8b5c4bf97a22a4846a"
+          "response_digest": "89309bf3b023ca7762e01f517aeb5a54f19d5a20a395ee9b37d0832e7d4c7667"
         },
         "stagnation_only": {
           "condition": "restart",
@@ -5908,7 +5841,6 @@
           },
           "fallbacks_applied": 0,
           "degraded_short_tenant": false,
-          "lambda_hat_entries_max": 0,
           "at_fire": null,
           "response_digest": "b01db6dc9da478a27ce51ef903aa79fd1b2b2f9a8b853f94e6108556e845843e"
         },
@@ -5982,7 +5914,6 @@
           },
           "fallbacks_applied": 0,
           "degraded_short_tenant": false,
-          "lambda_hat_entries_max": 0,
           "at_fire": null,
           "response_digest": "0e0542c53368ba23480643008eb7df431a95cfefc9da77a9ebfcc76fdcc306aa"
         }
@@ -6050,7 +5981,6 @@
           },
           "fallbacks_applied": 0,
           "degraded_short_tenant": false,
-          "lambda_hat_entries_max": 0,
           "at_fire": {
             "solver_status": "LIGHTWEIGHT",
             "route_importance": 7,
@@ -6133,7 +6063,6 @@
           },
           "fallbacks_applied": 0,
           "degraded_short_tenant": false,
-          "lambda_hat_entries_max": 0,
           "at_fire": {
             "solver_status": "LIGHTWEIGHT",
             "route_importance": 7,
@@ -6226,7 +6155,6 @@
           },
           "fallbacks_applied": 0,
           "degraded_short_tenant": false,
-          "lambda_hat_entries_max": 0,
           "at_fire": null,
           "response_digest": "f70da45447f7a00113507d91189e9eaf93ef3cc900cb715791e3de676d908633"
         }
@@ -6302,9 +6230,8 @@
           },
           "fallbacks_applied": 0,
           "degraded_short_tenant": false,
-          "lambda_hat_entries_max": 0,
           "at_fire": null,
-          "response_digest": "91bad0f75024e27bb0925522e1923246cee41f1c3660f176742956fc57cc185b"
+          "response_digest": "bac4a90b29f404286215e6131f8c0a4af8509c45ce441cb9a570aeff0e66b942"
         },
         "stagnation_only": {
           "condition": "no_line_zero",
@@ -6376,7 +6303,6 @@
           },
           "fallbacks_applied": 0,
           "degraded_short_tenant": false,
-          "lambda_hat_entries_max": 0,
           "at_fire": null,
           "response_digest": "b01db6dc9da478a27ce51ef903aa79fd1b2b2f9a8b853f94e6108556e845843e"
         },
@@ -6450,7 +6376,6 @@
           },
           "fallbacks_applied": 0,
           "degraded_short_tenant": false,
-          "lambda_hat_entries_max": 0,
           "at_fire": null,
           "response_digest": "0e0542c53368ba23480643008eb7df431a95cfefc9da77a9ebfcc76fdcc306aa"
         }
@@ -6526,9 +6451,8 @@
           },
           "fallbacks_applied": 0,
           "degraded_short_tenant": false,
-          "lambda_hat_entries_max": 0,
           "at_fire": null,
-          "response_digest": "91bad0f75024e27bb0925522e1923246cee41f1c3660f176742956fc57cc185b"
+          "response_digest": "bac4a90b29f404286215e6131f8c0a4af8509c45ce441cb9a570aeff0e66b942"
         },
         "stagnation_only": {
           "condition": "intermittent_0",
@@ -6600,7 +6524,6 @@
           },
           "fallbacks_applied": 0,
           "degraded_short_tenant": false,
-          "lambda_hat_entries_max": 0,
           "at_fire": null,
           "response_digest": "b01db6dc9da478a27ce51ef903aa79fd1b2b2f9a8b853f94e6108556e845843e"
         },
@@ -6674,7 +6597,6 @@
           },
           "fallbacks_applied": 0,
           "degraded_short_tenant": false,
-          "lambda_hat_entries_max": 0,
           "at_fire": null,
           "response_digest": "0e0542c53368ba23480643008eb7df431a95cfefc9da77a9ebfcc76fdcc306aa"
         }
@@ -6739,7 +6661,6 @@
           },
           "fallbacks_applied": 0,
           "degraded_short_tenant": false,
-          "lambda_hat_entries_max": 0,
           "at_fire": {
             "solver_status": "LIGHTWEIGHT",
             "route_importance": 7,
@@ -6755,7 +6676,7 @@
             "low_confidence_arc_ratio": 0.0,
             "feedback_warnings": 0
           },
-          "response_digest": "63846500ba3105a36f56dbdd1797c34967eb089eb800a3ede8f00950ee01c6b8"
+          "response_digest": "96d5c6e430fbd78adf5a13249b5dfa55e3339c1783f12bf0a59740572505230c"
         },
         "stagnation_only": {
           "condition": "intermittent_1",
@@ -6827,7 +6748,6 @@
           },
           "fallbacks_applied": 0,
           "degraded_short_tenant": false,
-          "lambda_hat_entries_max": 0,
           "at_fire": null,
           "response_digest": "b01db6dc9da478a27ce51ef903aa79fd1b2b2f9a8b853f94e6108556e845843e"
         },
@@ -6901,7 +6821,6 @@
           },
           "fallbacks_applied": 0,
           "degraded_short_tenant": false,
-          "lambda_hat_entries_max": 0,
           "at_fire": null,
           "response_digest": "0e0542c53368ba23480643008eb7df431a95cfefc9da77a9ebfcc76fdcc306aa"
         }
@@ -6969,7 +6888,6 @@
           },
           "fallbacks_applied": 0,
           "degraded_short_tenant": false,
-          "lambda_hat_entries_max": 0,
           "at_fire": {
             "solver_status": "INFEASIBLE",
             "route_importance": 7,
@@ -7057,7 +6975,6 @@
           },
           "fallbacks_applied": 0,
           "degraded_short_tenant": false,
-          "lambda_hat_entries_max": 0,
           "at_fire": null,
           "response_digest": "b01db6dc9da478a27ce51ef903aa79fd1b2b2f9a8b853f94e6108556e845843e"
         },
@@ -7131,7 +7048,6 @@
           },
           "fallbacks_applied": 0,
           "degraded_short_tenant": false,
-          "lambda_hat_entries_max": 0,
           "at_fire": null,
           "response_digest": "0e0542c53368ba23480643008eb7df431a95cfefc9da77a9ebfcc76fdcc306aa"
         }
@@ -7207,9 +7123,8 @@
           },
           "fallbacks_applied": 0,
           "degraded_short_tenant": false,
-          "lambda_hat_entries_max": 0,
           "at_fire": null,
-          "response_digest": "e478dda588124f0e5be25bc46bd25ceb6adbfe1e882405a3c3aefd173a9291c8"
+          "response_digest": "31300c6514ecadc9fab1383b771bcf21c1c0304ebdc5885746fc0246be6548f8"
         },
         "stagnation_only": {
           "condition": "point_missing",
@@ -7281,7 +7196,6 @@
           },
           "fallbacks_applied": 0,
           "degraded_short_tenant": false,
-          "lambda_hat_entries_max": 0,
           "at_fire": null,
           "response_digest": "0e0542c53368ba23480643008eb7df431a95cfefc9da77a9ebfcc76fdcc306aa"
         },
@@ -7355,7 +7269,6 @@
           },
           "fallbacks_applied": 0,
           "degraded_short_tenant": false,
-          "lambda_hat_entries_max": 0,
           "at_fire": null,
           "response_digest": "0e0542c53368ba23480643008eb7df431a95cfefc9da77a9ebfcc76fdcc306aa"
         }
@@ -7423,7 +7336,6 @@
           },
           "fallbacks_applied": 0,
           "degraded_short_tenant": false,
-          "lambda_hat_entries_max": 0,
           "at_fire": {
             "solver_status": "INFEASIBLE",
             "route_importance": 7,
@@ -7511,7 +7423,6 @@
           },
           "fallbacks_applied": 0,
           "degraded_short_tenant": false,
-          "lambda_hat_entries_max": 0,
           "at_fire": null,
           "response_digest": "b01db6dc9da478a27ce51ef903aa79fd1b2b2f9a8b853f94e6108556e845843e"
         },
@@ -7585,7 +7496,6 @@
           },
           "fallbacks_applied": 0,
           "degraded_short_tenant": false,
-          "lambda_hat_entries_max": 0,
           "at_fire": null,
           "response_digest": "0e0542c53368ba23480643008eb7df431a95cfefc9da77a9ebfcc76fdcc306aa"
         }
@@ -7661,9 +7571,8 @@
           },
           "fallbacks_applied": 0,
           "degraded_short_tenant": false,
-          "lambda_hat_entries_max": 0,
           "at_fire": null,
-          "response_digest": "21dd320aed0288c70e6ac09a19016ddbe3d06af78e297b3c5aef7fd0a829cce0"
+          "response_digest": "69f93d080324a4ac8cca52b6249116504c7ee31618b413596bacd75c1b3b96e9"
         },
         "stagnation_only": {
           "condition": "invalid",
@@ -7735,7 +7644,6 @@
           },
           "fallbacks_applied": 0,
           "degraded_short_tenant": false,
-          "lambda_hat_entries_max": 0,
           "at_fire": null,
           "response_digest": "f46b303b34076b2261f59219f135a179526f38ed592ffc0f5b596cd459d5c41f"
         },
@@ -7809,7 +7717,6 @@
           },
           "fallbacks_applied": 0,
           "degraded_short_tenant": false,
-          "lambda_hat_entries_max": 0,
           "at_fire": null,
           "response_digest": "0e0542c53368ba23480643008eb7df431a95cfefc9da77a9ebfcc76fdcc306aa"
         }
@@ -7877,7 +7784,6 @@
           },
           "fallbacks_applied": 0,
           "degraded_short_tenant": false,
-          "lambda_hat_entries_max": 0,
           "at_fire": {
             "solver_status": "INFEASIBLE",
             "route_importance": 7,
@@ -7965,7 +7871,6 @@
           },
           "fallbacks_applied": 0,
           "degraded_short_tenant": false,
-          "lambda_hat_entries_max": 0,
           "at_fire": null,
           "response_digest": "b01db6dc9da478a27ce51ef903aa79fd1b2b2f9a8b853f94e6108556e845843e"
         },
@@ -8039,7 +7944,6 @@
           },
           "fallbacks_applied": 0,
           "degraded_short_tenant": false,
-          "lambda_hat_entries_max": 0,
           "at_fire": null,
           "response_digest": "0e0542c53368ba23480643008eb7df431a95cfefc9da77a9ebfcc76fdcc306aa"
         }
@@ -8115,9 +8019,8 @@
           },
           "fallbacks_applied": 0,
           "degraded_short_tenant": false,
-          "lambda_hat_entries_max": 0,
           "at_fire": null,
-          "response_digest": "91bad0f75024e27bb0925522e1923246cee41f1c3660f176742956fc57cc185b"
+          "response_digest": "bac4a90b29f404286215e6131f8c0a4af8509c45ce441cb9a570aeff0e66b942"
         },
         "stagnation_only": {
           "condition": "hold_frozen",
@@ -8189,7 +8092,6 @@
           },
           "fallbacks_applied": 0,
           "degraded_short_tenant": false,
-          "lambda_hat_entries_max": 0,
           "at_fire": null,
           "response_digest": "b01db6dc9da478a27ce51ef903aa79fd1b2b2f9a8b853f94e6108556e845843e"
         },
@@ -8263,7 +8165,6 @@
           },
           "fallbacks_applied": 0,
           "degraded_short_tenant": false,
-          "lambda_hat_entries_max": 0,
           "at_fire": null,
           "response_digest": "0e0542c53368ba23480643008eb7df431a95cfefc9da77a9ebfcc76fdcc306aa"
         }
@@ -8339,9 +8240,8 @@
           },
           "fallbacks_applied": 0,
           "degraded_short_tenant": false,
-          "lambda_hat_entries_max": 0,
           "at_fire": null,
-          "response_digest": "21dd320aed0288c70e6ac09a19016ddbe3d06af78e297b3c5aef7fd0a829cce0"
+          "response_digest": "69f93d080324a4ac8cca52b6249116504c7ee31618b413596bacd75c1b3b96e9"
         },
         "stagnation_only": {
           "condition": "dropout",
@@ -8413,7 +8313,6 @@
           },
           "fallbacks_applied": 0,
           "degraded_short_tenant": false,
-          "lambda_hat_entries_max": 0,
           "at_fire": null,
           "response_digest": "f46b303b34076b2261f59219f135a179526f38ed592ffc0f5b596cd459d5c41f"
         },
@@ -8487,7 +8386,6 @@
           },
           "fallbacks_applied": 0,
           "degraded_short_tenant": false,
-          "lambda_hat_entries_max": 0,
           "at_fire": null,
           "response_digest": "0e0542c53368ba23480643008eb7df431a95cfefc9da77a9ebfcc76fdcc306aa"
         }
@@ -8556,7 +8454,6 @@
           },
           "fallbacks_applied": 0,
           "degraded_short_tenant": false,
-          "lambda_hat_entries_max": 0,
           "at_fire": {
             "solver_status": "INFEASIBLE",
             "route_importance": 7,
@@ -8644,7 +8541,6 @@
           },
           "fallbacks_applied": 0,
           "degraded_short_tenant": false,
-          "lambda_hat_entries_max": 0,
           "at_fire": null,
           "response_digest": "b01db6dc9da478a27ce51ef903aa79fd1b2b2f9a8b853f94e6108556e845843e"
         },
@@ -8718,7 +8614,6 @@
           },
           "fallbacks_applied": 0,
           "degraded_short_tenant": false,
-          "lambda_hat_entries_max": 0,
           "at_fire": null,
           "response_digest": "0e0542c53368ba23480643008eb7df431a95cfefc9da77a9ebfcc76fdcc306aa"
         }
@@ -8786,7 +8681,6 @@
           },
           "fallbacks_applied": 0,
           "degraded_short_tenant": false,
-          "lambda_hat_entries_max": 0,
           "at_fire": {
             "solver_status": "INFEASIBLE",
             "route_importance": 7,
@@ -8874,7 +8768,6 @@
           },
           "fallbacks_applied": 0,
           "degraded_short_tenant": false,
-          "lambda_hat_entries_max": 0,
           "at_fire": null,
           "response_digest": "b01db6dc9da478a27ce51ef903aa79fd1b2b2f9a8b853f94e6108556e845843e"
         },
@@ -8948,7 +8841,6 @@
           },
           "fallbacks_applied": 0,
           "degraded_short_tenant": false,
-          "lambda_hat_entries_max": 0,
           "at_fire": null,
           "response_digest": "0e0542c53368ba23480643008eb7df431a95cfefc9da77a9ebfcc76fdcc306aa"
         }
@@ -9020,7 +8912,6 @@
           },
           "fallbacks_applied": 0,
           "degraded_short_tenant": false,
-          "lambda_hat_entries_max": 0,
           "at_fire": {
             "solver_status": "INFEASIBLE",
             "route_importance": 7,
@@ -9110,7 +9001,6 @@
           },
           "fallbacks_applied": 0,
           "degraded_short_tenant": false,
-          "lambda_hat_entries_max": 0,
           "at_fire": null,
           "response_digest": "1945e6312a98155925938d5d888ddba343ef8686990aa84e802046156e8e6b0c"
         },
@@ -9186,7 +9076,6 @@
           },
           "fallbacks_applied": 0,
           "degraded_short_tenant": false,
-          "lambda_hat_entries_max": 0,
           "at_fire": null,
           "response_digest": "5b673624d4465081c3f22a89e43af67e12dd52bec521d12092dbc2e787e7ec4c"
         }
@@ -9262,7 +9151,6 @@
           },
           "fallbacks_applied": 0,
           "degraded_short_tenant": false,
-          "lambda_hat_entries_max": 0,
           "at_fire": null,
           "response_digest": "0e0542c53368ba23480643008eb7df431a95cfefc9da77a9ebfcc76fdcc306aa"
         },
@@ -9336,7 +9224,6 @@
           },
           "fallbacks_applied": 0,
           "degraded_short_tenant": false,
-          "lambda_hat_entries_max": 0,
           "at_fire": null,
           "response_digest": "0e0542c53368ba23480643008eb7df431a95cfefc9da77a9ebfcc76fdcc306aa"
         },
@@ -9410,7 +9297,6 @@
           },
           "fallbacks_applied": 0,
           "degraded_short_tenant": false,
-          "lambda_hat_entries_max": 0,
           "at_fire": null,
           "response_digest": "0e0542c53368ba23480643008eb7df431a95cfefc9da77a9ebfcc76fdcc306aa"
         }
@@ -9480,7 +9366,6 @@
           },
           "fallbacks_applied": 0,
           "degraded_short_tenant": false,
-          "lambda_hat_entries_max": 0,
           "at_fire": {
             "solver_status": "INFEASIBLE",
             "route_importance": 7,
@@ -9570,7 +9455,6 @@
           },
           "fallbacks_applied": 0,
           "degraded_short_tenant": false,
-          "lambda_hat_entries_max": 0,
           "at_fire": null,
           "response_digest": "e2066b750c04d0bdbe40dbc898fd52f769d7d10e1ff75246429553db76fe0bfc"
         },
@@ -9646,7 +9530,6 @@
           },
           "fallbacks_applied": 0,
           "degraded_short_tenant": false,
-          "lambda_hat_entries_max": 0,
           "at_fire": null,
           "response_digest": "5b673624d4465081c3f22a89e43af67e12dd52bec521d12092dbc2e787e7ec4c"
         }
@@ -9722,7 +9605,6 @@
           },
           "fallbacks_applied": 0,
           "degraded_short_tenant": false,
-          "lambda_hat_entries_max": 0,
           "at_fire": null,
           "response_digest": "1745c53ea1561151884e4f4f6892783a87c6d46964b7d778d5ecd6511ebfa78e"
         },
@@ -9796,7 +9678,6 @@
           },
           "fallbacks_applied": 0,
           "degraded_short_tenant": false,
-          "lambda_hat_entries_max": 0,
           "at_fire": null,
           "response_digest": "1745c53ea1561151884e4f4f6892783a87c6d46964b7d778d5ecd6511ebfa78e"
         },
@@ -9870,7 +9751,6 @@
           },
           "fallbacks_applied": 0,
           "degraded_short_tenant": false,
-          "lambda_hat_entries_max": 0,
           "at_fire": null,
           "response_digest": "0e0542c53368ba23480643008eb7df431a95cfefc9da77a9ebfcc76fdcc306aa"
         }
@@ -9938,7 +9818,6 @@
           },
           "fallbacks_applied": 0,
           "degraded_short_tenant": false,
-          "lambda_hat_entries_max": 0,
           "at_fire": {
             "solver_status": "INFEASIBLE",
             "route_importance": 7,
@@ -9954,7 +9833,7 @@
             "low_confidence_arc_ratio": 0.0,
             "feedback_warnings": 0
           },
-          "response_digest": "673bd382ec2b4d330154699db52af1536adac4c14ed0776e0549bbcfaaae69b7"
+          "response_digest": "a8ed01b0bc624728120a629d6ccee1aabd11e9af70b2a5fdce1c30985e47a904"
         },
         "stagnation_only": {
           "condition": "restart",
@@ -10028,7 +9907,6 @@
           },
           "fallbacks_applied": 0,
           "degraded_short_tenant": false,
-          "lambda_hat_entries_max": 0,
           "at_fire": null,
           "response_digest": "3f935647ef5469c42e5b86ec903306a16e8627d7506578d0b0a3d30663fd5b61"
         },
@@ -10104,7 +9982,6 @@
           },
           "fallbacks_applied": 0,
           "degraded_short_tenant": false,
-          "lambda_hat_entries_max": 0,
           "at_fire": null,
           "response_digest": "b1aba8a30d9d94bf9f125061b1d34aa23452f527e9c106f3f31830cf931c86be"
         }
@@ -10172,7 +10049,6 @@
           },
           "fallbacks_applied": 0,
           "degraded_short_tenant": false,
-          "lambda_hat_entries_max": 0,
           "at_fire": {
             "solver_status": "LIGHTWEIGHT",
             "route_importance": 7,
@@ -10255,7 +10131,6 @@
           },
           "fallbacks_applied": 0,
           "degraded_short_tenant": false,
-          "lambda_hat_entries_max": 0,
           "at_fire": {
             "solver_status": "LIGHTWEIGHT",
             "route_importance": 7,
@@ -10348,7 +10223,6 @@
           },
           "fallbacks_applied": 0,
           "degraded_short_tenant": false,
-          "lambda_hat_entries_max": 0,
           "at_fire": null,
           "response_digest": "fe528403a1795d63d4fd271182450c421657f2ddcf192ba7cdd9f291902d7cc1"
         }
@@ -10416,7 +10290,6 @@
           },
           "fallbacks_applied": 0,
           "degraded_short_tenant": false,
-          "lambda_hat_entries_max": 0,
           "at_fire": {
             "solver_status": "LIGHTWEIGHT",
             "route_importance": 7,
@@ -10496,7 +10369,6 @@
           },
           "fallbacks_applied": 0,
           "degraded_short_tenant": false,
-          "lambda_hat_entries_max": 0,
           "at_fire": {
             "solver_status": "LIGHTWEIGHT",
             "route_importance": 7,
@@ -10586,7 +10458,6 @@
           },
           "fallbacks_applied": 0,
           "degraded_short_tenant": false,
-          "lambda_hat_entries_max": 0,
           "at_fire": null,
           "response_digest": "fe528403a1795d63d4fd271182450c421657f2ddcf192ba7cdd9f291902d7cc1"
         }
@@ -10654,7 +10525,6 @@
           },
           "fallbacks_applied": 0,
           "degraded_short_tenant": false,
-          "lambda_hat_entries_max": 0,
           "at_fire": {
             "solver_status": "LIGHTWEIGHT",
             "route_importance": 7,
@@ -10734,7 +10604,6 @@
           },
           "fallbacks_applied": 0,
           "degraded_short_tenant": false,
-          "lambda_hat_entries_max": 0,
           "at_fire": {
             "solver_status": "LIGHTWEIGHT",
             "route_importance": 7,
@@ -10824,7 +10693,6 @@
           },
           "fallbacks_applied": 0,
           "degraded_short_tenant": false,
-          "lambda_hat_entries_max": 0,
           "at_fire": null,
           "response_digest": "fe528403a1795d63d4fd271182450c421657f2ddcf192ba7cdd9f291902d7cc1"
         }
@@ -10891,7 +10759,6 @@
           },
           "fallbacks_applied": 0,
           "degraded_short_tenant": false,
-          "lambda_hat_entries_max": 0,
           "at_fire": {
             "solver_status": "LIGHTWEIGHT",
             "route_importance": 7,
@@ -10907,7 +10774,7 @@
             "low_confidence_arc_ratio": 0.0,
             "feedback_warnings": 0
           },
-          "response_digest": "6df27f53b867917941fd3c8e8bb907b31387fb4811045e9af982dfce4efc351b"
+          "response_digest": "90cd4d302f18794ee887474c296fbd2678f3cb09fdf61088ee93b51e7759b127"
         },
         "stagnation_only": {
           "condition": "intermittent_1",
@@ -10981,7 +10848,6 @@
           },
           "fallbacks_applied": 0,
           "degraded_short_tenant": false,
-          "lambda_hat_entries_max": 0,
           "at_fire": null,
           "response_digest": "1945e6312a98155925938d5d888ddba343ef8686990aa84e802046156e8e6b0c"
         },
@@ -11057,7 +10923,6 @@
           },
           "fallbacks_applied": 0,
           "degraded_short_tenant": false,
-          "lambda_hat_entries_max": 0,
           "at_fire": null,
           "response_digest": "5b673624d4465081c3f22a89e43af67e12dd52bec521d12092dbc2e787e7ec4c"
         }
@@ -11127,7 +10992,6 @@
           },
           "fallbacks_applied": 0,
           "degraded_short_tenant": false,
-          "lambda_hat_entries_max": 0,
           "at_fire": {
             "solver_status": "INFEASIBLE",
             "route_importance": 7,
@@ -11217,7 +11081,6 @@
           },
           "fallbacks_applied": 0,
           "degraded_short_tenant": false,
-          "lambda_hat_entries_max": 0,
           "at_fire": null,
           "response_digest": "1945e6312a98155925938d5d888ddba343ef8686990aa84e802046156e8e6b0c"
         },
@@ -11293,7 +11156,6 @@
           },
           "fallbacks_applied": 0,
           "degraded_short_tenant": false,
-          "lambda_hat_entries_max": 0,
           "at_fire": null,
           "response_digest": "5b673624d4465081c3f22a89e43af67e12dd52bec521d12092dbc2e787e7ec4c"
         }
@@ -11371,9 +11233,8 @@
           },
           "fallbacks_applied": 0,
           "degraded_short_tenant": false,
-          "lambda_hat_entries_max": 0,
           "at_fire": null,
-          "response_digest": "109a6b6a7b5ddd915bbb8ee72c3f93e90a03934d04c91e312a67f0f7d8a569d3"
+          "response_digest": "2840945064fd10d2b54770530ecc5cd12739b8bd9ae45b7cec80283356cb3919"
         },
         "stagnation_only": {
           "condition": "point_missing",
@@ -11447,7 +11308,6 @@
           },
           "fallbacks_applied": 0,
           "degraded_short_tenant": false,
-          "lambda_hat_entries_max": 0,
           "at_fire": null,
           "response_digest": "5b673624d4465081c3f22a89e43af67e12dd52bec521d12092dbc2e787e7ec4c"
         },
@@ -11523,7 +11383,6 @@
           },
           "fallbacks_applied": 0,
           "degraded_short_tenant": false,
-          "lambda_hat_entries_max": 0,
           "at_fire": null,
           "response_digest": "5b673624d4465081c3f22a89e43af67e12dd52bec521d12092dbc2e787e7ec4c"
         }
@@ -11593,7 +11452,6 @@
           },
           "fallbacks_applied": 0,
           "degraded_short_tenant": false,
-          "lambda_hat_entries_max": 0,
           "at_fire": {
             "solver_status": "INFEASIBLE",
             "route_importance": 7,
@@ -11683,7 +11541,6 @@
           },
           "fallbacks_applied": 0,
           "degraded_short_tenant": false,
-          "lambda_hat_entries_max": 0,
           "at_fire": null,
           "response_digest": "1945e6312a98155925938d5d888ddba343ef8686990aa84e802046156e8e6b0c"
         },
@@ -11759,7 +11616,6 @@
           },
           "fallbacks_applied": 0,
           "degraded_short_tenant": false,
-          "lambda_hat_entries_max": 0,
           "at_fire": null,
           "response_digest": "5b673624d4465081c3f22a89e43af67e12dd52bec521d12092dbc2e787e7ec4c"
         }
@@ -11837,9 +11693,8 @@
           },
           "fallbacks_applied": 0,
           "degraded_short_tenant": false,
-          "lambda_hat_entries_max": 0,
           "at_fire": null,
-          "response_digest": "3c06252e2bee8deeba6ac8ab377bd2260f33a6d9037f3d0f5fa8ff292444d98c"
+          "response_digest": "b386a30bc157cec8b1f988dd7305198f32ac350778ff7d549dcc6357baba9dde"
         },
         "stagnation_only": {
           "condition": "invalid",
@@ -11913,7 +11768,6 @@
           },
           "fallbacks_applied": 0,
           "degraded_short_tenant": false,
-          "lambda_hat_entries_max": 0,
           "at_fire": null,
           "response_digest": "2b324b0b28a066e7d4582f2269158e12de8a62a69c434b1e4dc78094aec7418a"
         },
@@ -11989,7 +11843,6 @@
           },
           "fallbacks_applied": 0,
           "degraded_short_tenant": false,
-          "lambda_hat_entries_max": 0,
           "at_fire": null,
           "response_digest": "5b673624d4465081c3f22a89e43af67e12dd52bec521d12092dbc2e787e7ec4c"
         }
@@ -12059,7 +11912,6 @@
           },
           "fallbacks_applied": 0,
           "degraded_short_tenant": false,
-          "lambda_hat_entries_max": 0,
           "at_fire": {
             "solver_status": "INFEASIBLE",
             "route_importance": 7,
@@ -12149,7 +12001,6 @@
           },
           "fallbacks_applied": 0,
           "degraded_short_tenant": false,
-          "lambda_hat_entries_max": 0,
           "at_fire": null,
           "response_digest": "1945e6312a98155925938d5d888ddba343ef8686990aa84e802046156e8e6b0c"
         },
@@ -12225,7 +12076,6 @@
           },
           "fallbacks_applied": 0,
           "degraded_short_tenant": false,
-          "lambda_hat_entries_max": 0,
           "at_fire": null,
           "response_digest": "5b673624d4465081c3f22a89e43af67e12dd52bec521d12092dbc2e787e7ec4c"
         }
@@ -12303,9 +12153,8 @@
           },
           "fallbacks_applied": 0,
           "degraded_short_tenant": false,
-          "lambda_hat_entries_max": 0,
           "at_fire": null,
-          "response_digest": "b6b675bdeb56e7c9ccafc0f6db33d96549aa0dbd01d2ce0727c14bc47e19340a"
+          "response_digest": "d4212596c962729bf45636916283655ffa47fb810da194c78c4b1b6ef14d4178"
         },
         "stagnation_only": {
           "condition": "hold_frozen",
@@ -12379,7 +12228,6 @@
           },
           "fallbacks_applied": 0,
           "degraded_short_tenant": false,
-          "lambda_hat_entries_max": 0,
           "at_fire": null,
           "response_digest": "1945e6312a98155925938d5d888ddba343ef8686990aa84e802046156e8e6b0c"
         },
@@ -12455,7 +12303,6 @@
           },
           "fallbacks_applied": 0,
           "degraded_short_tenant": false,
-          "lambda_hat_entries_max": 0,
           "at_fire": null,
           "response_digest": "5b673624d4465081c3f22a89e43af67e12dd52bec521d12092dbc2e787e7ec4c"
         }
@@ -12533,9 +12380,8 @@
           },
           "fallbacks_applied": 0,
           "degraded_short_tenant": false,
-          "lambda_hat_entries_max": 0,
           "at_fire": null,
-          "response_digest": "3c06252e2bee8deeba6ac8ab377bd2260f33a6d9037f3d0f5fa8ff292444d98c"
+          "response_digest": "b386a30bc157cec8b1f988dd7305198f32ac350778ff7d549dcc6357baba9dde"
         },
         "stagnation_only": {
           "condition": "dropout",
@@ -12609,7 +12455,6 @@
           },
           "fallbacks_applied": 0,
           "degraded_short_tenant": false,
-          "lambda_hat_entries_max": 0,
           "at_fire": null,
           "response_digest": "2b324b0b28a066e7d4582f2269158e12de8a62a69c434b1e4dc78094aec7418a"
         },
@@ -12685,7 +12530,6 @@
           },
           "fallbacks_applied": 0,
           "degraded_short_tenant": false,
-          "lambda_hat_entries_max": 0,
           "at_fire": null,
           "response_digest": "5b673624d4465081c3f22a89e43af67e12dd52bec521d12092dbc2e787e7ec4c"
         }
@@ -12756,7 +12600,6 @@
           },
           "fallbacks_applied": 0,
           "degraded_short_tenant": false,
-          "lambda_hat_entries_max": 0,
           "at_fire": {
             "solver_status": "INFEASIBLE",
             "route_importance": 7,
@@ -12846,7 +12689,6 @@
           },
           "fallbacks_applied": 0,
           "degraded_short_tenant": false,
-          "lambda_hat_entries_max": 0,
           "at_fire": null,
           "response_digest": "1945e6312a98155925938d5d888ddba343ef8686990aa84e802046156e8e6b0c"
         },
@@ -12922,7 +12764,6 @@
           },
           "fallbacks_applied": 0,
           "degraded_short_tenant": false,
-          "lambda_hat_entries_max": 0,
           "at_fire": null,
           "response_digest": "5b673624d4465081c3f22a89e43af67e12dd52bec521d12092dbc2e787e7ec4c"
         }
@@ -12992,7 +12833,6 @@
           },
           "fallbacks_applied": 0,
           "degraded_short_tenant": false,
-          "lambda_hat_entries_max": 0,
           "at_fire": {
             "solver_status": "INFEASIBLE",
             "route_importance": 7,
@@ -13082,7 +12922,6 @@
           },
           "fallbacks_applied": 0,
           "degraded_short_tenant": false,
-          "lambda_hat_entries_max": 0,
           "at_fire": null,
           "response_digest": "1945e6312a98155925938d5d888ddba343ef8686990aa84e802046156e8e6b0c"
         },
@@ -13158,7 +12997,6 @@
           },
           "fallbacks_applied": 0,
           "degraded_short_tenant": false,
-          "lambda_hat_entries_max": 0,
           "at_fire": null,
           "response_digest": "5b673624d4465081c3f22a89e43af67e12dd52bec521d12092dbc2e787e7ec4c"
         }
@@ -13230,7 +13068,6 @@
           },
           "fallbacks_applied": 0,
           "degraded_short_tenant": false,
-          "lambda_hat_entries_max": 0,
           "at_fire": {
             "solver_status": "INFEASIBLE",
             "route_importance": 7,
@@ -13320,7 +13157,6 @@
           },
           "fallbacks_applied": 0,
           "degraded_short_tenant": false,
-          "lambda_hat_entries_max": 0,
           "at_fire": null,
           "response_digest": "1945e6312a98155925938d5d888ddba343ef8686990aa84e802046156e8e6b0c"
         },
@@ -13396,7 +13232,6 @@
           },
           "fallbacks_applied": 0,
           "degraded_short_tenant": false,
-          "lambda_hat_entries_max": 0,
           "at_fire": null,
           "response_digest": "5b673624d4465081c3f22a89e43af67e12dd52bec521d12092dbc2e787e7ec4c"
         }
@@ -13472,7 +13307,6 @@
           },
           "fallbacks_applied": 0,
           "degraded_short_tenant": false,
-          "lambda_hat_entries_max": 0,
           "at_fire": null,
           "response_digest": "0e0542c53368ba23480643008eb7df431a95cfefc9da77a9ebfcc76fdcc306aa"
         },
@@ -13546,7 +13380,6 @@
           },
           "fallbacks_applied": 0,
           "degraded_short_tenant": false,
-          "lambda_hat_entries_max": 0,
           "at_fire": null,
           "response_digest": "0e0542c53368ba23480643008eb7df431a95cfefc9da77a9ebfcc76fdcc306aa"
         },
@@ -13620,7 +13453,6 @@
           },
           "fallbacks_applied": 0,
           "degraded_short_tenant": false,
-          "lambda_hat_entries_max": 0,
           "at_fire": null,
           "response_digest": "0e0542c53368ba23480643008eb7df431a95cfefc9da77a9ebfcc76fdcc306aa"
         }
@@ -13690,7 +13522,6 @@
           },
           "fallbacks_applied": 0,
           "degraded_short_tenant": false,
-          "lambda_hat_entries_max": 0,
           "at_fire": {
             "solver_status": "INFEASIBLE",
             "route_importance": 7,
@@ -13780,7 +13611,6 @@
           },
           "fallbacks_applied": 0,
           "degraded_short_tenant": false,
-          "lambda_hat_entries_max": 0,
           "at_fire": null,
           "response_digest": "e2066b750c04d0bdbe40dbc898fd52f769d7d10e1ff75246429553db76fe0bfc"
         },
@@ -13856,7 +13686,6 @@
           },
           "fallbacks_applied": 0,
           "degraded_short_tenant": false,
-          "lambda_hat_entries_max": 0,
           "at_fire": null,
           "response_digest": "5b673624d4465081c3f22a89e43af67e12dd52bec521d12092dbc2e787e7ec4c"
         }
@@ -13923,7 +13752,6 @@
           },
           "fallbacks_applied": 0,
           "degraded_short_tenant": false,
-          "lambda_hat_entries_max": 0,
           "at_fire": {
             "solver_status": "LIGHTWEIGHT",
             "route_importance": 7,
@@ -14002,7 +13830,6 @@
           },
           "fallbacks_applied": 0,
           "degraded_short_tenant": false,
-          "lambda_hat_entries_max": 0,
           "at_fire": {
             "solver_status": "LIGHTWEIGHT",
             "route_importance": 7,
@@ -14090,7 +13917,6 @@
           },
           "fallbacks_applied": 0,
           "degraded_short_tenant": false,
-          "lambda_hat_entries_max": 0,
           "at_fire": null,
           "response_digest": "0e0542c53368ba23480643008eb7df431a95cfefc9da77a9ebfcc76fdcc306aa"
         }
@@ -14157,7 +13983,6 @@
           },
           "fallbacks_applied": 0,
           "degraded_short_tenant": false,
-          "lambda_hat_entries_max": 0,
           "at_fire": {
             "solver_status": "LIGHTWEIGHT",
             "route_importance": 7,
@@ -14173,7 +13998,7 @@
             "low_confidence_arc_ratio": 0.0,
             "feedback_warnings": 0
           },
-          "response_digest": "89e2be036f3e8ff9b6ecc3362d512e0965db2bba650f3b34414044f82651e255"
+          "response_digest": "73b4156d4f34eb94b6d340e5b1816d170f2c5c0a17bd1c1efa2bd112b37b574f"
         },
         "stagnation_only": {
           "condition": "restart",
@@ -14247,7 +14072,6 @@
           },
           "fallbacks_applied": 0,
           "degraded_short_tenant": false,
-          "lambda_hat_entries_max": 0,
           "at_fire": null,
           "response_digest": "588ced14945f66b15d9e52e4df95b4e4db1a46f11104b326c6d10c18fafe5f4a"
         },
@@ -14323,7 +14147,6 @@
           },
           "fallbacks_applied": 0,
           "degraded_short_tenant": false,
-          "lambda_hat_entries_max": 0,
           "at_fire": null,
           "response_digest": "b1aba8a30d9d94bf9f125061b1d34aa23452f527e9c106f3f31830cf931c86be"
         }
@@ -14391,7 +14214,6 @@
           },
           "fallbacks_applied": 0,
           "degraded_short_tenant": false,
-          "lambda_hat_entries_max": 0,
           "at_fire": {
             "solver_status": "LIGHTWEIGHT",
             "route_importance": 7,
@@ -14474,7 +14296,6 @@
           },
           "fallbacks_applied": 0,
           "degraded_short_tenant": false,
-          "lambda_hat_entries_max": 0,
           "at_fire": {
             "solver_status": "LIGHTWEIGHT",
             "route_importance": 7,
@@ -14567,7 +14388,6 @@
           },
           "fallbacks_applied": 0,
           "degraded_short_tenant": false,
-          "lambda_hat_entries_max": 0,
           "at_fire": null,
           "response_digest": "fe528403a1795d63d4fd271182450c421657f2ddcf192ba7cdd9f291902d7cc1"
         }
@@ -14635,7 +14455,6 @@
           },
           "fallbacks_applied": 0,
           "degraded_short_tenant": false,
-          "lambda_hat_entries_max": 0,
           "at_fire": {
             "solver_status": "LIGHTWEIGHT",
             "route_importance": 7,
@@ -14715,7 +14534,6 @@
           },
           "fallbacks_applied": 0,
           "degraded_short_tenant": false,
-          "lambda_hat_entries_max": 0,
           "at_fire": {
             "solver_status": "LIGHTWEIGHT",
             "route_importance": 7,
@@ -14805,7 +14623,6 @@
           },
           "fallbacks_applied": 0,
           "degraded_short_tenant": false,
-          "lambda_hat_entries_max": 0,
           "at_fire": null,
           "response_digest": "fe528403a1795d63d4fd271182450c421657f2ddcf192ba7cdd9f291902d7cc1"
         }
@@ -14873,7 +14690,6 @@
           },
           "fallbacks_applied": 0,
           "degraded_short_tenant": false,
-          "lambda_hat_entries_max": 0,
           "at_fire": {
             "solver_status": "LIGHTWEIGHT",
             "route_importance": 7,
@@ -14953,7 +14769,6 @@
           },
           "fallbacks_applied": 0,
           "degraded_short_tenant": false,
-          "lambda_hat_entries_max": 0,
           "at_fire": {
             "solver_status": "LIGHTWEIGHT",
             "route_importance": 7,
@@ -15043,7 +14858,6 @@
           },
           "fallbacks_applied": 0,
           "degraded_short_tenant": false,
-          "lambda_hat_entries_max": 0,
           "at_fire": null,
           "response_digest": "fe528403a1795d63d4fd271182450c421657f2ddcf192ba7cdd9f291902d7cc1"
         }
@@ -15110,7 +14924,6 @@
           },
           "fallbacks_applied": 0,
           "degraded_short_tenant": false,
-          "lambda_hat_entries_max": 0,
           "at_fire": {
             "solver_status": "LIGHTWEIGHT",
             "route_importance": 7,
@@ -15126,7 +14939,7 @@
             "low_confidence_arc_ratio": 0.0,
             "feedback_warnings": 0
           },
-          "response_digest": "6df27f53b867917941fd3c8e8bb907b31387fb4811045e9af982dfce4efc351b"
+          "response_digest": "90cd4d302f18794ee887474c296fbd2678f3cb09fdf61088ee93b51e7759b127"
         },
         "stagnation_only": {
           "condition": "intermittent_1",
@@ -15200,7 +15013,6 @@
           },
           "fallbacks_applied": 0,
           "degraded_short_tenant": false,
-          "lambda_hat_entries_max": 0,
           "at_fire": null,
           "response_digest": "1945e6312a98155925938d5d888ddba343ef8686990aa84e802046156e8e6b0c"
         },
@@ -15276,7 +15088,6 @@
           },
           "fallbacks_applied": 0,
           "degraded_short_tenant": false,
-          "lambda_hat_entries_max": 0,
           "at_fire": null,
           "response_digest": "5b673624d4465081c3f22a89e43af67e12dd52bec521d12092dbc2e787e7ec4c"
         }
@@ -15346,7 +15157,6 @@
           },
           "fallbacks_applied": 0,
           "degraded_short_tenant": false,
-          "lambda_hat_entries_max": 0,
           "at_fire": {
             "solver_status": "INFEASIBLE",
             "route_importance": 7,
@@ -15436,7 +15246,6 @@
           },
           "fallbacks_applied": 0,
           "degraded_short_tenant": false,
-          "lambda_hat_entries_max": 0,
           "at_fire": null,
           "response_digest": "1945e6312a98155925938d5d888ddba343ef8686990aa84e802046156e8e6b0c"
         },
@@ -15512,7 +15321,6 @@
           },
           "fallbacks_applied": 0,
           "degraded_short_tenant": false,
-          "lambda_hat_entries_max": 0,
           "at_fire": null,
           "response_digest": "5b673624d4465081c3f22a89e43af67e12dd52bec521d12092dbc2e787e7ec4c"
         }
@@ -15590,9 +15398,8 @@
           },
           "fallbacks_applied": 0,
           "degraded_short_tenant": false,
-          "lambda_hat_entries_max": 0,
           "at_fire": null,
-          "response_digest": "109a6b6a7b5ddd915bbb8ee72c3f93e90a03934d04c91e312a67f0f7d8a569d3"
+          "response_digest": "2840945064fd10d2b54770530ecc5cd12739b8bd9ae45b7cec80283356cb3919"
         },
         "stagnation_only": {
           "condition": "point_missing",
@@ -15666,7 +15473,6 @@
           },
           "fallbacks_applied": 0,
           "degraded_short_tenant": false,
-          "lambda_hat_entries_max": 0,
           "at_fire": null,
           "response_digest": "5b673624d4465081c3f22a89e43af67e12dd52bec521d12092dbc2e787e7ec4c"
         },
@@ -15742,7 +15548,6 @@
           },
           "fallbacks_applied": 0,
           "degraded_short_tenant": false,
-          "lambda_hat_entries_max": 0,
           "at_fire": null,
           "response_digest": "5b673624d4465081c3f22a89e43af67e12dd52bec521d12092dbc2e787e7ec4c"
         }
@@ -15812,7 +15617,6 @@
           },
           "fallbacks_applied": 0,
           "degraded_short_tenant": false,
-          "lambda_hat_entries_max": 0,
           "at_fire": {
             "solver_status": "INFEASIBLE",
             "route_importance": 7,
@@ -15902,7 +15706,6 @@
           },
           "fallbacks_applied": 0,
           "degraded_short_tenant": false,
-          "lambda_hat_entries_max": 0,
           "at_fire": null,
           "response_digest": "1945e6312a98155925938d5d888ddba343ef8686990aa84e802046156e8e6b0c"
         },
@@ -15978,7 +15781,6 @@
           },
           "fallbacks_applied": 0,
           "degraded_short_tenant": false,
-          "lambda_hat_entries_max": 0,
           "at_fire": null,
           "response_digest": "5b673624d4465081c3f22a89e43af67e12dd52bec521d12092dbc2e787e7ec4c"
         }
@@ -16056,9 +15858,8 @@
           },
           "fallbacks_applied": 0,
           "degraded_short_tenant": false,
-          "lambda_hat_entries_max": 0,
           "at_fire": null,
-          "response_digest": "3c06252e2bee8deeba6ac8ab377bd2260f33a6d9037f3d0f5fa8ff292444d98c"
+          "response_digest": "b386a30bc157cec8b1f988dd7305198f32ac350778ff7d549dcc6357baba9dde"
         },
         "stagnation_only": {
           "condition": "invalid",
@@ -16132,7 +15933,6 @@
           },
           "fallbacks_applied": 0,
           "degraded_short_tenant": false,
-          "lambda_hat_entries_max": 0,
           "at_fire": null,
           "response_digest": "2b324b0b28a066e7d4582f2269158e12de8a62a69c434b1e4dc78094aec7418a"
         },
@@ -16208,7 +16008,6 @@
           },
           "fallbacks_applied": 0,
           "degraded_short_tenant": false,
-          "lambda_hat_entries_max": 0,
           "at_fire": null,
           "response_digest": "5b673624d4465081c3f22a89e43af67e12dd52bec521d12092dbc2e787e7ec4c"
         }
@@ -16278,7 +16077,6 @@
           },
           "fallbacks_applied": 0,
           "degraded_short_tenant": false,
-          "lambda_hat_entries_max": 0,
           "at_fire": {
             "solver_status": "INFEASIBLE",
             "route_importance": 7,
@@ -16368,7 +16166,6 @@
           },
           "fallbacks_applied": 0,
           "degraded_short_tenant": false,
-          "lambda_hat_entries_max": 0,
           "at_fire": null,
           "response_digest": "1945e6312a98155925938d5d888ddba343ef8686990aa84e802046156e8e6b0c"
         },
@@ -16444,7 +16241,6 @@
           },
           "fallbacks_applied": 0,
           "degraded_short_tenant": false,
-          "lambda_hat_entries_max": 0,
           "at_fire": null,
           "response_digest": "5b673624d4465081c3f22a89e43af67e12dd52bec521d12092dbc2e787e7ec4c"
         }
@@ -16522,9 +16318,8 @@
           },
           "fallbacks_applied": 0,
           "degraded_short_tenant": false,
-          "lambda_hat_entries_max": 0,
           "at_fire": null,
-          "response_digest": "b6b675bdeb56e7c9ccafc0f6db33d96549aa0dbd01d2ce0727c14bc47e19340a"
+          "response_digest": "d4212596c962729bf45636916283655ffa47fb810da194c78c4b1b6ef14d4178"
         },
         "stagnation_only": {
           "condition": "hold_frozen",
@@ -16598,7 +16393,6 @@
           },
           "fallbacks_applied": 0,
           "degraded_short_tenant": false,
-          "lambda_hat_entries_max": 0,
           "at_fire": null,
           "response_digest": "1945e6312a98155925938d5d888ddba343ef8686990aa84e802046156e8e6b0c"
         },
@@ -16674,7 +16468,6 @@
           },
           "fallbacks_applied": 0,
           "degraded_short_tenant": false,
-          "lambda_hat_entries_max": 0,
           "at_fire": null,
           "response_digest": "5b673624d4465081c3f22a89e43af67e12dd52bec521d12092dbc2e787e7ec4c"
         }
@@ -16752,9 +16545,8 @@
           },
           "fallbacks_applied": 0,
           "degraded_short_tenant": false,
-          "lambda_hat_entries_max": 0,
           "at_fire": null,
-          "response_digest": "3c06252e2bee8deeba6ac8ab377bd2260f33a6d9037f3d0f5fa8ff292444d98c"
+          "response_digest": "b386a30bc157cec8b1f988dd7305198f32ac350778ff7d549dcc6357baba9dde"
         },
         "stagnation_only": {
           "condition": "dropout",
@@ -16828,7 +16620,6 @@
           },
           "fallbacks_applied": 0,
           "degraded_short_tenant": false,
-          "lambda_hat_entries_max": 0,
           "at_fire": null,
           "response_digest": "2b324b0b28a066e7d4582f2269158e12de8a62a69c434b1e4dc78094aec7418a"
         },
@@ -16904,7 +16695,6 @@
           },
           "fallbacks_applied": 0,
           "degraded_short_tenant": false,
-          "lambda_hat_entries_max": 0,
           "at_fire": null,
           "response_digest": "5b673624d4465081c3f22a89e43af67e12dd52bec521d12092dbc2e787e7ec4c"
         }
@@ -16975,7 +16765,6 @@
           },
           "fallbacks_applied": 0,
           "degraded_short_tenant": false,
-          "lambda_hat_entries_max": 0,
           "at_fire": {
             "solver_status": "INFEASIBLE",
             "route_importance": 7,
@@ -17065,7 +16854,6 @@
           },
           "fallbacks_applied": 0,
           "degraded_short_tenant": false,
-          "lambda_hat_entries_max": 0,
           "at_fire": null,
           "response_digest": "1945e6312a98155925938d5d888ddba343ef8686990aa84e802046156e8e6b0c"
         },
@@ -17141,7 +16929,6 @@
           },
           "fallbacks_applied": 0,
           "degraded_short_tenant": false,
-          "lambda_hat_entries_max": 0,
           "at_fire": null,
           "response_digest": "5b673624d4465081c3f22a89e43af67e12dd52bec521d12092dbc2e787e7ec4c"
         }
@@ -17211,7 +16998,6 @@
           },
           "fallbacks_applied": 0,
           "degraded_short_tenant": false,
-          "lambda_hat_entries_max": 0,
           "at_fire": {
             "solver_status": "INFEASIBLE",
             "route_importance": 7,
@@ -17301,7 +17087,6 @@
           },
           "fallbacks_applied": 0,
           "degraded_short_tenant": false,
-          "lambda_hat_entries_max": 0,
           "at_fire": null,
           "response_digest": "1945e6312a98155925938d5d888ddba343ef8686990aa84e802046156e8e6b0c"
         },
@@ -17377,7 +17162,6 @@
           },
           "fallbacks_applied": 0,
           "degraded_short_tenant": false,
-          "lambda_hat_entries_max": 0,
           "at_fire": null,
           "response_digest": "5b673624d4465081c3f22a89e43af67e12dd52bec521d12092dbc2e787e7ec4c"
         }

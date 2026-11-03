@@ -6,7 +6,6 @@ import pytest
 from google.protobuf import json_format
 
 from flow_control.detection.state import (
-    ArcDemandDigestEntry,
     ArcWatchState,
     DetectionState,
     QueuedTrigger,
@@ -110,16 +109,6 @@ def test_event_round_trip_preserves_scalar_kinds() -> None:
     assert codec._decode_event(encoded) == event
 
 
-def test_detection_state_round_trip_preserves_missing_vs_empty_digest() -> None:
-    missing = codec._decode_detection_state(codec._encode_detection_state(DetectionState()))
-    empty = codec._decode_detection_state(
-        codec._encode_detection_state(DetectionState(arc_demand_digest=()))
-    )
-
-    assert missing.arc_demand_digest is None
-    assert empty.arc_demand_digest == ()
-
-
 def test_codec_rejects_missing_and_nonfinite_values() -> None:
     with pytest.raises(ValueError, match="missing node_id"):
         _ = codec._decode_node(pb.Node())
@@ -204,20 +193,15 @@ def test_request_round_trip_uses_explicit_event_id() -> None:
         ),
     )
 
-    for state in (DetectionState(), DetectionState(arc_demand_digest=())):
-        request = replace(base, detection_state=state)
-        encoded = codec.encode_request(request, event_id="event-1")
-        binary = pb.OptimizeRequest()
-        _ = binary.ParseFromString(encoded.SerializeToString())
-        json_wire = pb.OptimizeRequest()
-        _ = json_format.Parse(json_format.MessageToJson(encoded), json_wire)
+    encoded = codec.encode_request(base, event_id="event-1")
+    binary = pb.OptimizeRequest()
+    _ = binary.ParseFromString(encoded.SerializeToString())
+    json_wire = pb.OptimizeRequest()
+    _ = json_format.Parse(json_format.MessageToJson(encoded), json_wire)
 
-        assert encoded.event_id == "event-1"
-        assert encoded.detection_state.HasField("arc_demand_digest") is (
-            state.arc_demand_digest is not None
-        )
-        assert codec.decode_request(binary) == request
-        assert codec.decode_request(json_wire) == request
+    assert encoded.event_id == "event-1"
+    assert codec.decode_request(binary) == base
+    assert codec.decode_request(json_wire) == base
 
 
 @pytest.mark.parametrize("verdict", tuple(Verdict))
@@ -238,7 +222,7 @@ def test_response_round_trip_preserves_nondefault_feedback_and_diagnostics() -> 
     response = Response(
         request_id="r1",
         verdict=Verdict.OPTIMIZED,
-        updated_detection_state=DetectionState(arc_demand_digest=()),
+        updated_detection_state=DetectionState(),
         feedback_values=replace(
             FeedbackValues(),
             objective_values=FeedbackObjectiveValues(tau_star=0.0, throughput=None),
@@ -319,14 +303,8 @@ def _stale_detection_state(now: datetime) -> DetectionState:
                 delta_breached=True,
                 stagnation_watch_since=now - timedelta(minutes=3),
                 surge_breached=True,
-                demand_excess_breached=True,
-                demand_watch_since=now - timedelta(minutes=2),
             ),
             ArcWatchState(edge_id=EdgeID("e1")),
-        ),
-        arc_demand_digest=(
-            ArcDemandDigestEntry(edge_id=EdgeID("gone"), demand=4.0),
-            ArcDemandDigestEntry(edge_id=EdgeID("e1"), demand=1.0),
         ),
         warmup_states=(
             WarmupState(target_key="edge:gone", until=now + timedelta(minutes=4)),

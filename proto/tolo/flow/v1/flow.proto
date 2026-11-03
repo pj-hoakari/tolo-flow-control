@@ -171,19 +171,11 @@ message DetectionState {
   optional google.protobuf.Timestamp cooldown_until = 1;
   repeated QueuedTrigger trigger_queue = 2;
   repeated ArcWatchState arc_watch_states = 3;
-  optional ArcDemandDigest arc_demand_digest = 4;
+  reserved 4;
+  reserved "arc_demand_digest";
   repeated WarmupState warmup_states = 5;
   repeated RetriggerEntry arc_retrigger_counts = 6;
   int32 consecutive_skip_count = 7;
-}
-
-message ArcDemandDigest {
-  repeated ArcDemandDigestEntry entries = 1;
-}
-
-message ArcDemandDigestEntry {
-  string edge_id = 1;
-  double demand = 2;
 }
 
 message QueuedTrigger {
@@ -202,8 +194,8 @@ message ArcWatchState {
   bool delta_breached = 3;
   optional google.protobuf.Timestamp stagnation_watch_since = 4;
   bool surge_breached = 5;
-  bool demand_excess_breached = 6;
-  optional google.protobuf.Timestamp demand_watch_since = 7;
+  reserved 6, 7;
+  reserved "demand_excess_breached", "demand_watch_since";
 }
 
 message WarmupState {
@@ -267,7 +259,8 @@ message ThresholdSet {
   optional double surge_rate_threshold_percent_per_min = 1;
   optional double high_stagnation_duration_min = 2;
   optional double beta = 3;
-  optional double theta_demand = 4;
+  reserved 4;
+  reserved "theta_demand";
   optional double warmup_duration_min = 5;
 }
 
@@ -275,7 +268,8 @@ message ResolvedConfig {
   optional double surge_rate_threshold_percent_per_min = 1;
   optional double high_stagnation_duration_min = 2;
   optional double beta = 3;
-  optional double theta_demand = 4;
+  reserved 4;
+  reserved "theta_demand";
   optional int32 min_window_samples = 5;
   optional double cooldown_duration_min = 6;
   optional double warmup_duration_min = 7;

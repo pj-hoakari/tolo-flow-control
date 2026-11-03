@@ -19,7 +19,6 @@ class ThresholdSet:
     surge_rate_threshold_percent_per_min: float | None = None
     high_stagnation_duration_min: float | None = None
     beta: float | None = None
-    theta_demand: float | None = None
     warmup_duration_min: float | None = None
 
 
