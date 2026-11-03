@@ -113,10 +113,6 @@ OBS_FIELDS = frozenset(
 CAP_FIELDS = frozenset({"capacity_hint", "danger_capacity"})
 
 CONST_GROUPS: dict[str, tuple[tuple[str, str], ...]] = {
-    "fallback_baseline": (
-        ("detection", "fallback_baseline_stagnation"),
-        ("optimization", "fallback_baseline_stagnation"),
-    ),
     "ipf_tolerance": (("forecasting", "ipf_tolerance"),),
     "epsilon_0": (
         ("detection", "epsilon_0"),

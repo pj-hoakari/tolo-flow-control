@@ -479,12 +479,12 @@
         "control_match": "一致"
       },
       "empty_window": {
-        "fired": false,
-        "silent_miss": true,
-        "false_alarm_stagnation_only": false,
+        "fired": true,
+        "silent_miss": false,
+        "false_alarm_stagnation_only": true,
         "false_alarm_flat": false,
         "surge_match": "仕様外",
-        "control_match": "一致"
+        "control_match": "不一致"
       },
       "restart": {
         "fired": true,
@@ -1489,13 +1489,13 @@
           "diagnostics_warnings": [],
           "hot_edge_alerts_seen": {
             "percentile": true,
-            "delta": false,
+            "delta": true,
             "surge": false
           },
           "fallbacks_applied": 0,
           "degraded_short_tenant": false,
           "at_fire": null,
-          "response_digest": "1745c53ea1561151884e4f4f6892783a87c6d46964b7d778d5ecd6511ebfa78e"
+          "response_digest": "b01db6dc9da478a27ce51ef903aa79fd1b2b2f9a8b853f94e6108556e845843e"
         },
         "stagnation_only": {
           "condition": "empty_window",
@@ -1562,13 +1562,13 @@
           "diagnostics_warnings": [],
           "hot_edge_alerts_seen": {
             "percentile": true,
-            "delta": false,
+            "delta": true,
             "surge": false
           },
           "fallbacks_applied": 0,
           "degraded_short_tenant": false,
           "at_fire": null,
-          "response_digest": "1745c53ea1561151884e4f4f6892783a87c6d46964b7d778d5ecd6511ebfa78e"
+          "response_digest": "b01db6dc9da478a27ce51ef903aa79fd1b2b2f9a8b853f94e6108556e845843e"
         },
         "flat": {
           "condition": "empty_window",
@@ -1649,14 +1649,13 @@
           "condition": "restart",
           "timeline": "surge",
           "variant": "baseline",
-          "first_optimized_cycle": 37,
-          "minutes_after_onset": 6,
+          "first_optimized_cycle": 36,
+          "minutes_after_onset": 5,
           "verdict_counts": {
             "OPTIMIZED": 1,
-            "SKIPPED_NO_TRIGGER": 36
+            "SKIPPED_NO_TRIGGER": 35
           },
           "verdicts": [
-            "SKIPPED_NO_TRIGGER",
             "SKIPPED_NO_TRIGGER",
             "SKIPPED_NO_TRIGGER",
             "SKIPPED_NO_TRIGGER",
@@ -1706,12 +1705,12 @@
           "fallbacks_applied": 0,
           "degraded_short_tenant": false,
           "at_fire": {
-            "solver_status": "INFEASIBLE",
+            "solver_status": "LIGHTWEIGHT",
             "route_importance": 7,
-            "detour_paths": 0,
+            "detour_paths": 2,
             "direction_changes": 0,
             "proposal_non_empty": true,
-            "throughput": 105.413504,
+            "throughput": 75.29536,
             "estimation_resolution": {
               "TURNING_EXACT": 6
             },
@@ -1720,7 +1719,7 @@
             "low_confidence_arc_ratio": 0.0,
             "feedback_warnings": 0
           },
-          "response_digest": "0580b7b58deac4c82fc158a5580185bf9d4a97ac3eee9c5f9443dc9f19deca4f"
+          "response_digest": "89309bf3b023ca7762e01f517aeb5a54f19d5a20a395ee9b37d0832e7d4c7667"
         },
         "stagnation_only": {
           "condition": "restart",
@@ -1793,7 +1792,7 @@
           "fallbacks_applied": 0,
           "degraded_short_tenant": false,
           "at_fire": null,
-          "response_digest": "a28f50a1b3d92dd112154de0eb21bd6715c7ef42b5f700987fcee932a4ab842a"
+          "response_digest": "b01db6dc9da478a27ce51ef903aa79fd1b2b2f9a8b853f94e6108556e845843e"
         },
         "flat": {
           "condition": "restart",
@@ -9539,10 +9538,11 @@
           "condition": "empty_window",
           "timeline": "surge",
           "variant": "D6",
-          "first_optimized_cycle": null,
-          "minutes_after_onset": null,
+          "first_optimized_cycle": 36,
+          "minutes_after_onset": 5,
           "verdict_counts": {
-            "SKIPPED_NO_TRIGGER": 50
+            "OPTIMIZED": 1,
+            "SKIPPED_NO_TRIGGER": 35
           },
           "verdicts": [
             "SKIPPED_NO_TRIGGER",
@@ -9580,42 +9580,47 @@
             "SKIPPED_NO_TRIGGER",
             "SKIPPED_NO_TRIGGER",
             "SKIPPED_NO_TRIGGER",
-            "SKIPPED_NO_TRIGGER",
-            "SKIPPED_NO_TRIGGER",
-            "SKIPPED_NO_TRIGGER",
-            "SKIPPED_NO_TRIGGER",
-            "SKIPPED_NO_TRIGGER",
-            "SKIPPED_NO_TRIGGER",
-            "SKIPPED_NO_TRIGGER",
-            "SKIPPED_NO_TRIGGER",
-            "SKIPPED_NO_TRIGGER",
-            "SKIPPED_NO_TRIGGER",
-            "SKIPPED_NO_TRIGGER",
-            "SKIPPED_NO_TRIGGER",
-            "SKIPPED_NO_TRIGGER",
-            "SKIPPED_NO_TRIGGER",
-            "SKIPPED_NO_TRIGGER"
+            "OPTIMIZED"
           ],
-          "triggered_edges": [],
-          "diagnostics_warnings": [],
+          "triggered_edges": [
+            "e_j1_hallA"
+          ],
+          "diagnostics_warnings": [
+            "WARNING_CODE_DEGRADED_COMBINED_TRIGGER"
+          ],
           "hot_edge_alerts_seen": {
             "percentile": true,
-            "delta": false,
+            "delta": true,
             "surge": false
           },
           "fallbacks_applied": 0,
           "degraded_short_tenant": false,
-          "at_fire": null,
-          "response_digest": "1745c53ea1561151884e4f4f6892783a87c6d46964b7d778d5ecd6511ebfa78e"
+          "at_fire": {
+            "solver_status": "LIGHTWEIGHT",
+            "route_importance": 7,
+            "detour_paths": 2,
+            "direction_changes": 0,
+            "proposal_non_empty": true,
+            "throughput": 75.29536,
+            "estimation_resolution": {
+              "TURNING_EXACT": 6
+            },
+            "imputed_arcs": [],
+            "reference_used_default": false,
+            "low_confidence_arc_ratio": 0.0,
+            "feedback_warnings": 0
+          },
+          "response_digest": "00e4132cc4709b710cd6b1c9356ec837ca05f6cbb76a721ad67a07064f8811c5"
         },
         "stagnation_only": {
           "condition": "empty_window",
           "timeline": "stagnation_only",
           "variant": "D6",
-          "first_optimized_cycle": null,
-          "minutes_after_onset": null,
+          "first_optimized_cycle": 36,
+          "minutes_after_onset": 5,
           "verdict_counts": {
-            "SKIPPED_NO_TRIGGER": 50
+            "OPTIMIZED": 1,
+            "SKIPPED_NO_TRIGGER": 35
           },
           "verdicts": [
             "SKIPPED_NO_TRIGGER",
@@ -9653,33 +9658,37 @@
             "SKIPPED_NO_TRIGGER",
             "SKIPPED_NO_TRIGGER",
             "SKIPPED_NO_TRIGGER",
-            "SKIPPED_NO_TRIGGER",
-            "SKIPPED_NO_TRIGGER",
-            "SKIPPED_NO_TRIGGER",
-            "SKIPPED_NO_TRIGGER",
-            "SKIPPED_NO_TRIGGER",
-            "SKIPPED_NO_TRIGGER",
-            "SKIPPED_NO_TRIGGER",
-            "SKIPPED_NO_TRIGGER",
-            "SKIPPED_NO_TRIGGER",
-            "SKIPPED_NO_TRIGGER",
-            "SKIPPED_NO_TRIGGER",
-            "SKIPPED_NO_TRIGGER",
-            "SKIPPED_NO_TRIGGER",
-            "SKIPPED_NO_TRIGGER",
-            "SKIPPED_NO_TRIGGER"
+            "OPTIMIZED"
           ],
-          "triggered_edges": [],
-          "diagnostics_warnings": [],
+          "triggered_edges": [
+            "e_j1_hallA"
+          ],
+          "diagnostics_warnings": [
+            "WARNING_CODE_DEGRADED_COMBINED_TRIGGER"
+          ],
           "hot_edge_alerts_seen": {
             "percentile": true,
-            "delta": false,
+            "delta": true,
             "surge": false
           },
           "fallbacks_applied": 0,
           "degraded_short_tenant": false,
-          "at_fire": null,
-          "response_digest": "1745c53ea1561151884e4f4f6892783a87c6d46964b7d778d5ecd6511ebfa78e"
+          "at_fire": {
+            "solver_status": "LIGHTWEIGHT",
+            "route_importance": 7,
+            "detour_paths": 2,
+            "direction_changes": 0,
+            "proposal_non_empty": true,
+            "throughput": 10.0,
+            "estimation_resolution": {
+              "TURNING_EXACT": 6
+            },
+            "imputed_arcs": [],
+            "reference_used_default": false,
+            "low_confidence_arc_ratio": 0.0,
+            "feedback_warnings": 0
+          },
+          "response_digest": "73e813d91a24385b1d0d964aca312648055881cf3aa11719b027b0a05b9dd2aa"
         },
         "flat": {
           "condition": "empty_window",
@@ -9760,14 +9769,13 @@
           "condition": "restart",
           "timeline": "surge",
           "variant": "D6",
-          "first_optimized_cycle": 37,
-          "minutes_after_onset": 6,
+          "first_optimized_cycle": 36,
+          "minutes_after_onset": 5,
           "verdict_counts": {
             "OPTIMIZED": 1,
-            "SKIPPED_NO_TRIGGER": 36
+            "SKIPPED_NO_TRIGGER": 35
           },
           "verdicts": [
-            "SKIPPED_NO_TRIGGER",
             "SKIPPED_NO_TRIGGER",
             "SKIPPED_NO_TRIGGER",
             "SKIPPED_NO_TRIGGER",
@@ -9819,12 +9827,12 @@
           "fallbacks_applied": 0,
           "degraded_short_tenant": false,
           "at_fire": {
-            "solver_status": "INFEASIBLE",
+            "solver_status": "LIGHTWEIGHT",
             "route_importance": 7,
-            "detour_paths": 0,
+            "detour_paths": 2,
             "direction_changes": 0,
             "proposal_non_empty": true,
-            "throughput": 105.413504,
+            "throughput": 75.29536,
             "estimation_resolution": {
               "TURNING_EXACT": 6
             },
@@ -9833,7 +9841,7 @@
             "low_confidence_arc_ratio": 0.0,
             "feedback_warnings": 0
           },
-          "response_digest": "a8ed01b0bc624728120a629d6ccee1aabd11e9af70b2a5fdce1c30985e47a904"
+          "response_digest": "73b4156d4f34eb94b6d340e5b1816d170f2c5c0a17bd1c1efa2bd112b37b574f"
         },
         "stagnation_only": {
           "condition": "restart",
@@ -9908,7 +9916,7 @@
           "fallbacks_applied": 0,
           "degraded_short_tenant": false,
           "at_fire": null,
-          "response_digest": "3f935647ef5469c42e5b86ec903306a16e8627d7506578d0b0a3d30663fd5b61"
+          "response_digest": "588ced14945f66b15d9e52e4df95b4e4db1a46f11104b326c6d10c18fafe5f4a"
         },
         "flat": {
           "condition": "restart",

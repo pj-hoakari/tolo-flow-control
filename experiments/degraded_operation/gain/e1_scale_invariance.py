@@ -18,10 +18,9 @@ KS = (0.01, 0.1, 1.0, 10.0, 100.0)
 PROBE_EPS = (0.0, 2.0)
 VARIANTS = {"history": True, "no_history": False}
 ATTRIBUTION_SETS = (
-    ("fallback_baseline",),
-    ("fallback_baseline", "ipf_tolerance"),
-    ("fallback_baseline", "epsilon_0"),
-    ("fallback_baseline", "ipf_tolerance", "epsilon_0"),
+    ("ipf_tolerance",),
+    ("epsilon_0",),
+    ("ipf_tolerance", "epsilon_0"),
 )
 
 
@@ -149,7 +148,7 @@ def render(payload: dict[str, Any]) -> str:
     out: list[str] = ["# E1: 共通スケール k に対する決定の不変性", ""]
     out.append(
         f"対象は {n_scen} シナリオ、k ∈ {list(payload['ks'])}、変種は 3 つ（history: 履歴あり、"
-        "no_history: p90・baseline・η を None にしてフォールバック定数を使わせる、"
+        "no_history: p90・baseline・η を None にする。s̄ は窓の平均、η は fallback_eta になる、"
         "obs_only: 観測と履歴だけを k 倍し capacity_hint・danger_capacity は据え置く）。"
         "各実行は決定的で、k=1 を 2 回走らせて署名の一致を確かめた（シード数の概念はない）。"
     )
@@ -245,10 +244,10 @@ def render(payload: dict[str, Any]) -> str:
     )
     out.append("")
     out.append(
-        "定数集合の中身は fallback_baseline = detection と optimization の fallback_baseline_stagnation、"
-        "ipf_tolerance = forecasting.ipf_tolerance、epsilon_0 = 3 モジュールの epsilon_0 である。"
+        "定数集合の中身は ipf_tolerance = forecasting.ipf_tolerance、epsilon_0 = 3 モジュールの epsilon_0 である。"
         "fallback_eta はどの集合にも入れていない（η は 停滞/流量 で人数次元が打ち消し合う）。"
         "delta_min_fraction も入れていない（総需要に対する割合なので倍率に依存しない）。"
+        "基準停滞量には固定の既定値がない（履歴 → 窓の平均 → Optimization では観測停滞量）。"
     )
     out.append("")
     out.append("## 退化の検査: k=1 のまま epsilon_0 だけを 0 倍・2 倍する")
@@ -256,11 +255,8 @@ def render(payload: dict[str, Any]) -> str:
     out.append(
         "epsilon_0 は 1e-6 の零除算よけで、決定に効くはずがない。k=1 でこれを動かして決定が変わるなら、"
         "そのシナリオの決定は 1e-6 程度の摂動で入れ替わる境目（LP の代替最適解など）に乗っている。"
-        "上の帰属で epsilon_0 が要った組は 2 種類ある。station-transfer-peak（history）は k=1 でも ε0 の摂動で"
+        "上の帰属で epsilon_0 が要った組は station-transfer-peak（history）だけである。k=1 でも ε0 の摂動で"
         "重要度順位が入れ替わるので、LP の代替最適解の揺れであってスケールの効果ではない。"
-        "reversible-corridor-flip（no_history）は k=1 の摂動では変わらない。k=0.1 では fallback を k 倍した s̄=0.1 に対して"
-        "ε0 の比が 10 倍になり、重要度 5e-4 の e_service が重要度 1e-9 の採用しきい値を割って順位から消える。"
-        "流量のごく小さいエッジが表示のしきい値をまたぐ効果である。"
     )
     out.append("")
     out.append(

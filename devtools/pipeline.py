@@ -71,7 +71,6 @@ def run_pipeline(
         events=scenario.events,
         config=cfg.detection,
         server_time=scenario.server_time,
-        references=scenario.references,
     )
     timings["detection"] = (time.perf_counter() - t0) * 1000.0
 

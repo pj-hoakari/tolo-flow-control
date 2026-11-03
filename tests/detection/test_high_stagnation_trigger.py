@@ -5,8 +5,9 @@
 停滞警戒 (a) は 2 条件からなり、M 分以上継続したとき established となる:
   (a).1 パーセンタイル:  ``s >= p90``（p90 が None なら省略＝縮退）
   (a).2 相対増分:        ``(s - recent_ma) / (baseline + eps) >= beta``
-        recent_ma は ``window_series.stagnation_samples`` の平均、
-        baseline は ``ArcHistoryStat.baseline_stagnation``（別の役割の値）
+        recent_ma は ``window_series.stagnation_samples`` の平均（なければ baseline）、
+        baseline は ``ArcHistoryStat.baseline_stagnation``（なければ窓の平均）。
+        どちらもなければ (a).2 は判定不能で、停滞警戒は成立しない
 
 established は片方だけでは成立せず、両条件（p90 欠損時は (a).2 のみ）が M 分継続した
 ときに成立する。継続は先行 ``ArcWatchState.stagnation_watch_since`` で計時する。
@@ -326,23 +327,82 @@ def test_does_not_fire_when_history_stat_missing(
     edge_id: EdgeID,
     high_stagnation_config: ResolvedConfig,
     make_stagnation_observation,
+    make_established_watch,
 ):
-    # 観測は揃っているが履歴統計が無い
-    # → p90 欠損で (a).1 は縮退、recent_ma も無く (a).2 も評価不能 → 発火も警戒もなし
+    # 観測は揃っているが履歴統計も窓も無い
+    # → 基準停滞量が決まらず (a).2 は判定不能 → 継続中の警戒があっても発火も警戒もなし
     history = HistoryDigest()
     observations = make_stagnation_observation(edge_id, observed_at=base_time, stagnation=10.0)
+    previous = DetectionState(arc_watch_states=(make_established_watch(edge_id, base_time),))
 
     result = _run(
         graph=basic_graph,
         history=history,
         observations=observations,
-        previous_state=DetectionState(),
+        previous_state=previous,
         server_time=base_time,
         config=high_stagnation_config,
     )
 
     assert result.triggered_edges == ()
     assert result.new_state.watch_state_of(edge_id) is None
+
+
+@pytest.mark.parametrize("scale", [0.1, 1.0, 10.0])
+def test_window_mean_is_the_baseline_when_history_has_none(
+    scale: float,
+    base_time: datetime,
+    basic_graph: Graph,
+    edge_id: EdgeID,
+    high_stagnation_config: ResolvedConfig,
+    make_stagnation_observation,
+    make_history,
+    make_established_watch,
+):
+    history = make_history((edge_id, None, 5.0 * scale, None))
+    previous = DetectionState(arc_watch_states=(make_established_watch(edge_id, base_time),))
+
+    def run(stagnation: float):
+        return _run(
+            graph=basic_graph,
+            history=history,
+            observations=make_stagnation_observation(
+                edge_id, observed_at=base_time, stagnation=stagnation * scale
+            ),
+            previous_state=previous,
+            server_time=base_time,
+            config=high_stagnation_config,
+        )
+
+    calm = run(8.0)
+    assert calm.triggered_edges == ()
+    assert calm.new_state.watch_state_of(edge_id) is None
+    assert run(15.0).triggered_edges == (edge_id,)
+
+
+def test_history_baseline_replaces_recent_average_when_window_is_empty(
+    base_time: datetime,
+    basic_graph: Graph,
+    edge_id: EdgeID,
+    high_stagnation_config: ResolvedConfig,
+    make_stagnation_observation,
+    make_history,
+    make_established_watch,
+):
+    history = make_history((edge_id, 5.0, None, 5.0))
+    observations = make_stagnation_observation(edge_id, observed_at=base_time, stagnation=15.0)
+    previous = DetectionState(arc_watch_states=(make_established_watch(edge_id, base_time),))
+
+    result = _run(
+        graph=basic_graph,
+        history=history,
+        observations=observations,
+        previous_state=previous,
+        server_time=base_time,
+        config=high_stagnation_config,
+    )
+
+    assert result.triggered_edges == (edge_id,)
 
 
 # ---------------------------------------------------------------------------

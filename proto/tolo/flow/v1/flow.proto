@@ -308,7 +308,8 @@ message ResolvedConfig {
   optional int32 min_reference_sample_count = 39;
   optional int32 k_shortest_paths = 40;
   optional double fallback_eta = 41;
-  optional double fallback_baseline_stagnation = 42;
+  reserved 42;
+  reserved "fallback_baseline_stagnation";
   optional bool scalar_direction_enabled = 43;
   optional bool k_shortest_paths_auto = 44;
   optional int32 k_shortest_paths_max = 45;

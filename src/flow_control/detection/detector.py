@@ -4,7 +4,6 @@ from datetime import datetime
 from ..domain.graph import EdgeID, Graph, NodeID
 from ..domain.history import HistoryDigest
 from ..domain.observations import Observations
-from ..domain.references import Reference
 from .config import ResolvedConfig
 from .diagnostics import DangerEvidence, DetectionWarning, TriggerEvidence
 from .state import DetectionState, QueuedTriggerKind
@@ -48,7 +47,6 @@ def detect(
     events: tuple[Event, ...],
     config: ResolvedConfig,
     server_time: datetime,
-    references: Reference | None = None,
 ) -> DetectionResult:
     # イベント適用: ENABLE/ADD_* で対象別ウォームアップを設定
     state = apply_warmup_events(previous_state, events, server_time, config)
@@ -76,7 +74,6 @@ def detect(
         previous_state=state,
         server_time=server_time,
         config=config,
-        references=references,
     )
 
     manual_result = detect_manual_triggers(events=events)

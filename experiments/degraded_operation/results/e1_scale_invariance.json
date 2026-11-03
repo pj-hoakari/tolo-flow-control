@@ -145,21 +145,18 @@
    "scenario": "reversible-corridor-flip",
    "variant": "history",
    "k": 0.01,
-   "diff": [
-    "direction",
-    "emphasis"
-   ],
+   "diff": [],
    "cont": {
-    "od": 1.0,
-    "throughput": 1.0,
-    "tau": 1.0,
-    "importance": 0.9999999596774208
+    "od": 0.0,
+    "throughput": 2.661290294937639e-07,
+    "tau": 3.299890003680836e-05,
+    "importance": 3.991920310197905e-06
    },
    "diag": {
     "solver": "LIGHTWEIGHT",
     "degraded": false,
-    "od_pairs_input": 0,
-    "commodities": 0,
+    "od_pairs_input": 1,
+    "commodities": 1,
     "demand_all_cut": false,
     "resolution_modes": [
      "DOUBLY_CONSTRAINED"
@@ -186,37 +183,28 @@
     ]
    },
    "attribution": {
-    "delta_min": [],
-    "fallback_baseline": [
-     "direction",
-     "emphasis"
-    ],
-    "delta_min+fallback_baseline": [],
-    "delta_min+fallback_baseline+ipf_tolerance": [],
-    "delta_min+fallback_baseline+epsilon_0": [],
-    "delta_min+fallback_baseline+ipf_tolerance+epsilon_0": []
+    "ipf_tolerance": [],
+    "epsilon_0": [],
+    "ipf_tolerance+epsilon_0": []
    }
   },
   {
    "scenario": "reversible-corridor-flip",
    "variant": "history",
    "k": 0.1,
-   "diff": [
-    "direction",
-    "emphasis"
-   ],
+   "diff": [],
    "cont": {
     "od": 0.0,
-    "throughput": 1.0,
-    "tau": 1.0,
-    "importance": 0.9999999596774208
+    "throughput": 2.4193549594388847e-08,
+    "tau": 2.9999900000170074e-06,
+    "importance": 3.629030755902818e-07
    },
    "diag": {
     "solver": "LIGHTWEIGHT",
     "degraded": false,
     "od_pairs_input": 1,
-    "commodities": 0,
-    "demand_all_cut": true,
+    "commodities": 1,
+    "demand_all_cut": false,
     "resolution_modes": [
      "DOUBLY_CONSTRAINED"
     ]
@@ -242,15 +230,9 @@
     ]
    },
    "attribution": {
-    "delta_min": [],
-    "fallback_baseline": [
-     "direction",
-     "emphasis"
-    ],
-    "delta_min+fallback_baseline": [],
-    "delta_min+fallback_baseline+ipf_tolerance": [],
-    "delta_min+fallback_baseline+epsilon_0": [],
-    "delta_min+fallback_baseline+ipf_tolerance+epsilon_0": []
+    "ipf_tolerance": [],
+    "epsilon_0": [],
+    "ipf_tolerance+epsilon_0": []
    }
   },
   {
@@ -336,12 +318,9 @@
     ]
    },
    "attribution": {
-    "delta_min": [],
-    "fallback_baseline": [],
-    "delta_min+fallback_baseline": [],
-    "delta_min+fallback_baseline+ipf_tolerance": [],
-    "delta_min+fallback_baseline+epsilon_0": [],
-    "delta_min+fallback_baseline+ipf_tolerance+epsilon_0": []
+    "ipf_tolerance": [],
+    "epsilon_0": [],
+    "ipf_tolerance+epsilon_0": []
    }
   },
   {
@@ -386,35 +365,27 @@
     ]
    },
    "attribution": {
-    "delta_min": [],
-    "fallback_baseline": [],
-    "delta_min+fallback_baseline": [],
-    "delta_min+fallback_baseline+ipf_tolerance": [],
-    "delta_min+fallback_baseline+epsilon_0": [],
-    "delta_min+fallback_baseline+ipf_tolerance+epsilon_0": []
+    "ipf_tolerance": [],
+    "epsilon_0": [],
+    "ipf_tolerance+epsilon_0": []
    }
   },
   {
    "scenario": "reversible-corridor-flip",
    "variant": "no_history",
    "k": 0.01,
-   "diff": [
-    "verdict",
-    "triggered",
-    "direction",
-    "emphasis"
-   ],
+   "diff": [],
    "cont": {
-    "od": 1.0,
-    "throughput": 1.0,
-    "tau": 1.0,
-    "importance": 0.9999999599786569
+    "od": 0.0,
+    "throughput": 5.2941177174570166e-08,
+    "tau": 1.9799604007995246e-05,
+    "importance": 3.970572365674663e-06
    },
    "diag": {
     "solver": "LIGHTWEIGHT",
     "degraded": false,
-    "od_pairs_input": 0,
-    "commodities": 0,
+    "od_pairs_input": 1,
+    "commodities": 1,
     "demand_all_cut": false,
     "resolution_modes": [
      "DOUBLY_CONSTRAINED"
@@ -438,48 +409,28 @@
     ]
    },
    "attribution": {
-    "delta_min": [
-     "verdict",
-     "triggered",
-     "direction",
-     "emphasis"
-    ],
-    "fallback_baseline": [
-     "direction",
-     "emphasis"
-    ],
-    "delta_min+fallback_baseline": [
-     "emphasis"
-    ],
-    "delta_min+fallback_baseline+ipf_tolerance": [
-     "emphasis"
-    ],
-    "delta_min+fallback_baseline+epsilon_0": [],
-    "delta_min+fallback_baseline+ipf_tolerance+epsilon_0": []
+    "ipf_tolerance": [],
+    "epsilon_0": [],
+    "ipf_tolerance+epsilon_0": []
    }
   },
   {
    "scenario": "reversible-corridor-flip",
    "variant": "no_history",
    "k": 0.1,
-   "diff": [
-    "verdict",
-    "triggered",
-    "direction",
-    "emphasis"
-   ],
+   "diff": [],
    "cont": {
     "od": 0.0,
-    "throughput": 1.0,
-    "tau": 1.0,
-    "importance": 0.9999999599786569
+    "throughput": 4.812834340411293e-09,
+    "tau": 1.7999963999380287e-06,
+    "importance": 3.609624097400399e-07
    },
    "diag": {
     "solver": "LIGHTWEIGHT",
     "degraded": false,
     "od_pairs_input": 1,
-    "commodities": 0,
-    "demand_all_cut": true,
+    "commodities": 1,
+    "demand_all_cut": false,
     "resolution_modes": [
      "DOUBLY_CONSTRAINED"
     ]
@@ -502,24 +453,9 @@
     ]
    },
    "attribution": {
-    "delta_min": [
-     "verdict",
-     "triggered",
-     "direction",
-     "emphasis"
-    ],
-    "fallback_baseline": [
-     "direction",
-     "emphasis"
-    ],
-    "delta_min+fallback_baseline": [
-     "emphasis"
-    ],
-    "delta_min+fallback_baseline+ipf_tolerance": [
-     "emphasis"
-    ],
-    "delta_min+fallback_baseline+epsilon_0": [],
-    "delta_min+fallback_baseline+ipf_tolerance+epsilon_0": []
+    "ipf_tolerance": [],
+    "epsilon_0": [],
+    "ipf_tolerance+epsilon_0": []
    }
   },
   {
@@ -567,9 +503,9 @@
    "diff": [],
    "cont": {
     "od": 0.0,
-    "throughput": 0.0004800260814159579,
-    "tau": 0.9,
-    "importance": 0.0004802822110531749
+    "throughput": 4.812838897727483e-10,
+    "tau": 1.799999639559946e-07,
+    "importance": 3.6096255207063166e-08
    },
    "diag": {
     "solver": "LIGHTWEIGHT",
@@ -599,12 +535,9 @@
     ]
    },
    "attribution": {
-    "delta_min": [],
-    "fallback_baseline": [],
-    "delta_min+fallback_baseline": [],
-    "delta_min+fallback_baseline+ipf_tolerance": [],
-    "delta_min+fallback_baseline+epsilon_0": [],
-    "delta_min+fallback_baseline+ipf_tolerance+epsilon_0": []
+    "ipf_tolerance": [],
+    "epsilon_0": [],
+    "ipf_tolerance+epsilon_0": []
    }
   },
   {
@@ -614,9 +547,9 @@
    "diff": [],
    "cont": {
     "od": 0.0,
-    "throughput": 0.0005280033440208849,
-    "tau": 0.99,
-    "importance": 0.0005282850750001167
+    "throughput": 5.294116660239226e-10,
+    "tau": 1.979999603714727e-07,
+    "importance": 3.9705880805485094e-08
    },
    "diag": {
     "solver": "LIGHTWEIGHT",
@@ -646,12 +579,9 @@
     ]
    },
    "attribution": {
-    "delta_min": [],
-    "fallback_baseline": [],
-    "delta_min+fallback_baseline": [],
-    "delta_min+fallback_baseline+ipf_tolerance": [],
-    "delta_min+fallback_baseline+epsilon_0": [],
-    "delta_min+fallback_baseline+ipf_tolerance+epsilon_0": []
+    "ipf_tolerance": [],
+    "epsilon_0": [],
+    "ipf_tolerance+epsilon_0": []
    }
   },
   {
@@ -663,16 +593,16 @@
     "emphasis"
    ],
    "cont": {
-    "od": 1.0,
+    "od": 0.0,
     "throughput": 1.0,
-    "tau": 1.0,
+    "tau": 0.04163504167720822,
     "importance": 0.9999999596774208
    },
    "diag": {
     "solver": "LIGHTWEIGHT",
     "degraded": false,
-    "od_pairs_input": 0,
-    "commodities": 0,
+    "od_pairs_input": 1,
+    "commodities": 1,
     "demand_all_cut": false,
     "resolution_modes": [
      "DOUBLY_CONSTRAINED"
@@ -710,15 +640,15 @@
    "cont": {
     "od": 0.0,
     "throughput": 1.0,
-    "tau": 1.0,
+    "tau": 0.041663791667624996,
     "importance": 0.9999999596774208
    },
    "diag": {
     "solver": "LIGHTWEIGHT",
     "degraded": false,
     "od_pairs_input": 1,
-    "commodities": 0,
-    "demand_all_cut": true,
+    "commodities": 1,
+    "demand_all_cut": false,
     "resolution_modes": [
      "DOUBLY_CONSTRAINED"
     ]
@@ -879,22 +809,18 @@
    "scenario": "stadium-egress-concourse",
    "variant": "history",
    "k": 0.01,
-   "diff": [
-    "direction",
-    "detour",
-    "emphasis"
-   ],
+   "diff": [],
    "cont": {
-    "od": 1.0,
-    "throughput": 1.0,
-    "tau": 1.0,
-    "importance": 0.9999999795361533
+    "od": 0.0,
+    "throughput": 0.0,
+    "tau": 3.299890003664671e-05,
+    "importance": 2.025916871928324e-06
    },
    "diag": {
     "solver": "LIGHTWEIGHT",
     "degraded": false,
-    "od_pairs_input": 0,
-    "commodities": 0,
+    "od_pairs_input": 1,
+    "commodities": 1,
     "demand_all_cut": false,
     "resolution_modes": [
      "DOUBLY_CONSTRAINED"
@@ -921,39 +847,28 @@
     ]
    },
    "attribution": {
-    "delta_min": [],
-    "fallback_baseline": [
-     "direction",
-     "detour",
-     "emphasis"
-    ],
-    "delta_min+fallback_baseline": [],
-    "delta_min+fallback_baseline+ipf_tolerance": [],
-    "delta_min+fallback_baseline+epsilon_0": [],
-    "delta_min+fallback_baseline+ipf_tolerance+epsilon_0": []
+    "ipf_tolerance": [],
+    "epsilon_0": [],
+    "ipf_tolerance+epsilon_0": []
    }
   },
   {
    "scenario": "stadium-egress-concourse",
    "variant": "history",
    "k": 0.1,
-   "diff": [
-    "direction",
-    "detour",
-    "emphasis"
-   ],
+   "diff": [],
    "cont": {
     "od": 0.0,
-    "throughput": 1.0,
-    "tau": 1.0,
-    "importance": 0.9999999795361533
+    "throughput": 0.0,
+    "tau": 2.999990000150497e-06,
+    "importance": 1.841745853603527e-07
    },
    "diag": {
     "solver": "LIGHTWEIGHT",
     "degraded": false,
     "od_pairs_input": 1,
-    "commodities": 0,
-    "demand_all_cut": true,
+    "commodities": 1,
+    "demand_all_cut": false,
     "resolution_modes": [
      "DOUBLY_CONSTRAINED"
     ]
@@ -979,16 +894,9 @@
     ]
    },
    "attribution": {
-    "delta_min": [],
-    "fallback_baseline": [
-     "direction",
-     "detour",
-     "emphasis"
-    ],
-    "delta_min+fallback_baseline": [],
-    "delta_min+fallback_baseline+ipf_tolerance": [],
-    "delta_min+fallback_baseline+epsilon_0": [],
-    "delta_min+fallback_baseline+ipf_tolerance+epsilon_0": []
+    "ipf_tolerance": [],
+    "epsilon_0": [],
+    "ipf_tolerance+epsilon_0": []
    }
   },
   {
@@ -1074,12 +982,9 @@
     ]
    },
    "attribution": {
-    "delta_min": [],
-    "fallback_baseline": [],
-    "delta_min+fallback_baseline": [],
-    "delta_min+fallback_baseline+ipf_tolerance": [],
-    "delta_min+fallback_baseline+epsilon_0": [],
-    "delta_min+fallback_baseline+ipf_tolerance+epsilon_0": []
+    "ipf_tolerance": [],
+    "epsilon_0": [],
+    "ipf_tolerance+epsilon_0": []
    }
   },
   {
@@ -1124,36 +1029,27 @@
     ]
    },
    "attribution": {
-    "delta_min": [],
-    "fallback_baseline": [],
-    "delta_min+fallback_baseline": [],
-    "delta_min+fallback_baseline+ipf_tolerance": [],
-    "delta_min+fallback_baseline+epsilon_0": [],
-    "delta_min+fallback_baseline+ipf_tolerance+epsilon_0": []
+    "ipf_tolerance": [],
+    "epsilon_0": [],
+    "ipf_tolerance+epsilon_0": []
    }
   },
   {
    "scenario": "stadium-egress-concourse",
    "variant": "no_history",
    "k": 0.01,
-   "diff": [
-    "verdict",
-    "triggered",
-    "direction",
-    "detour",
-    "emphasis"
-   ],
+   "diff": [],
    "cont": {
-    "od": 1.0,
-    "throughput": 1.0,
-    "tau": 1.0,
-    "importance": 0.9999999795862824
+    "od": 0.0,
+    "throughput": 0.0,
+    "tau": 1.9799604008098398e-05,
+    "importance": 2.0231566427719727e-06
    },
    "diag": {
     "solver": "LIGHTWEIGHT",
     "degraded": false,
-    "od_pairs_input": 0,
-    "commodities": 0,
+    "od_pairs_input": 1,
+    "commodities": 1,
     "demand_all_cut": false,
     "resolution_modes": [
      "DOUBLY_CONSTRAINED"
@@ -1177,47 +1073,28 @@
     ]
    },
    "attribution": {
-    "delta_min": [
-     "verdict",
-     "triggered",
-     "direction",
-     "detour",
-     "emphasis"
-    ],
-    "fallback_baseline": [
-     "direction",
-     "detour",
-     "emphasis"
-    ],
-    "delta_min+fallback_baseline": [],
-    "delta_min+fallback_baseline+ipf_tolerance": [],
-    "delta_min+fallback_baseline+epsilon_0": [],
-    "delta_min+fallback_baseline+ipf_tolerance+epsilon_0": []
+    "ipf_tolerance": [],
+    "epsilon_0": [],
+    "ipf_tolerance+epsilon_0": []
    }
   },
   {
    "scenario": "stadium-egress-concourse",
    "variant": "no_history",
    "k": 0.1,
-   "diff": [
-    "verdict",
-    "triggered",
-    "direction",
-    "detour",
-    "emphasis"
-   ],
+   "diff": [],
    "cont": {
     "od": 0.0,
-    "throughput": 1.0,
-    "tau": 1.0,
-    "importance": 0.9999999795862824
+    "throughput": 0.0,
+    "tau": 1.799996399751483e-06,
+    "importance": 1.839236650758025e-07
    },
    "diag": {
     "solver": "LIGHTWEIGHT",
     "degraded": false,
     "od_pairs_input": 1,
-    "commodities": 0,
-    "demand_all_cut": true,
+    "commodities": 1,
+    "demand_all_cut": false,
     "resolution_modes": [
      "DOUBLY_CONSTRAINED"
     ]
@@ -1240,22 +1117,9 @@
     ]
    },
    "attribution": {
-    "delta_min": [
-     "verdict",
-     "triggered",
-     "direction",
-     "detour",
-     "emphasis"
-    ],
-    "fallback_baseline": [
-     "direction",
-     "detour",
-     "emphasis"
-    ],
-    "delta_min+fallback_baseline": [],
-    "delta_min+fallback_baseline+ipf_tolerance": [],
-    "delta_min+fallback_baseline+epsilon_0": [],
-    "delta_min+fallback_baseline+ipf_tolerance+epsilon_0": []
+    "ipf_tolerance": [],
+    "epsilon_0": [],
+    "ipf_tolerance+epsilon_0": []
    }
   },
   {
@@ -1304,8 +1168,8 @@
    "cont": {
     "od": 0.0,
     "throughput": 0.0,
-    "tau": 0.8999999999999999,
-    "importance": 3.9992350825385214e-05
+    "tau": 1.7999996407670084e-07,
+    "importance": 0.00022242933388108566
    },
    "diag": {
     "solver": "LIGHTWEIGHT",
@@ -1335,12 +1199,9 @@
     ]
    },
    "attribution": {
-    "delta_min": [],
-    "fallback_baseline": [],
-    "delta_min+fallback_baseline": [],
-    "delta_min+fallback_baseline+ipf_tolerance": [],
-    "delta_min+fallback_baseline+epsilon_0": [],
-    "delta_min+fallback_baseline+ipf_tolerance+epsilon_0": []
+    "ipf_tolerance": [],
+    "epsilon_0": [],
+    "ipf_tolerance+epsilon_0": []
    }
   },
   {
@@ -1351,8 +1212,8 @@
    "cont": {
     "od": 0.0,
     "throughput": 0.0,
-    "tau": 0.99,
-    "importance": 4.399050863976295e-05
+    "tau": 1.9799996048559495e-07,
+    "importance": 2.0231607056331313e-08
    },
    "diag": {
     "solver": "LIGHTWEIGHT",
@@ -1382,12 +1243,9 @@
     ]
    },
    "attribution": {
-    "delta_min": [],
-    "fallback_baseline": [],
-    "delta_min+fallback_baseline": [],
-    "delta_min+fallback_baseline+ipf_tolerance": [],
-    "delta_min+fallback_baseline+epsilon_0": [],
-    "delta_min+fallback_baseline+ipf_tolerance+epsilon_0": []
+    "ipf_tolerance": [],
+    "epsilon_0": [],
+    "ipf_tolerance+epsilon_0": []
    }
   },
   {
@@ -1396,20 +1254,19 @@
    "k": 0.01,
    "diff": [
     "direction",
-    "detour",
     "emphasis"
    ],
    "cont": {
-    "od": 1.0,
-    "throughput": 1.0,
-    "tau": 1.0,
+    "od": 0.0,
+    "throughput": 0.0,
+    "tau": 0.12247104250965249,
     "importance": 0.9999999795361533
    },
    "diag": {
     "solver": "LIGHTWEIGHT",
     "degraded": false,
-    "od_pairs_input": 0,
-    "commodities": 0,
+    "od_pairs_input": 1,
+    "commodities": 1,
     "demand_all_cut": false,
     "resolution_modes": [
      "DOUBLY_CONSTRAINED"
@@ -1442,21 +1299,20 @@
    "k": 0.1,
    "diff": [
     "direction",
-    "detour",
     "emphasis"
    ],
    "cont": {
     "od": 0.0,
-    "throughput": 1.0,
-    "tau": 1.0,
+    "throughput": 0.0,
+    "tau": 0.12249736750087759,
     "importance": 0.9999999795361533
    },
    "diag": {
     "solver": "LIGHTWEIGHT",
     "degraded": false,
     "od_pairs_input": 1,
-    "commodities": 0,
-    "demand_all_cut": true,
+    "commodities": 1,
+    "demand_all_cut": false,
     "resolution_modes": [
      "DOUBLY_CONSTRAINED"
     ]
@@ -1619,21 +1475,18 @@
    "scenario": "station-transfer-peak",
    "variant": "history",
    "k": 0.01,
-   "diff": [
-    "direction",
-    "emphasis"
-   ],
+   "diff": [],
    "cont": {
-    "od": 1.0,
-    "throughput": 1.0,
-    "tau": 1.0,
-    "importance": 0.9999999803921573
+    "od": 0.0,
+    "throughput": 0.0,
+    "tau": 3.299890003669768e-05,
+    "importance": 2.3571371888797543e-06
    },
    "diag": {
     "solver": "LIGHTWEIGHT",
     "degraded": false,
-    "od_pairs_input": 0,
-    "commodities": 0,
+    "od_pairs_input": 3,
+    "commodities": 2,
     "demand_all_cut": false,
     "resolution_modes": [
      "DOUBLY_CONSTRAINED"
@@ -1660,15 +1513,9 @@
     ]
    },
    "attribution": {
-    "delta_min": [],
-    "fallback_baseline": [
-     "direction",
-     "emphasis"
-    ],
-    "delta_min+fallback_baseline": [],
-    "delta_min+fallback_baseline+ipf_tolerance": [],
-    "delta_min+fallback_baseline+epsilon_0": [],
-    "delta_min+fallback_baseline+ipf_tolerance+epsilon_0": []
+    "ipf_tolerance": [],
+    "epsilon_0": [],
+    "ipf_tolerance+epsilon_0": []
    }
   },
   {
@@ -1676,21 +1523,20 @@
    "variant": "history",
    "k": 0.1,
    "diff": [
-    "direction",
     "emphasis"
    ],
    "cont": {
     "od": 1.480297366166875e-16,
-    "throughput": 1.0,
-    "tau": 1.0,
-    "importance": 0.9999999803921573
+    "throughput": 0.0,
+    "tau": 2.9999900000389587e-06,
+    "importance": 0.37823129280854934
    },
    "diag": {
     "solver": "LIGHTWEIGHT",
     "degraded": false,
     "od_pairs_input": 3,
-    "commodities": 0,
-    "demand_all_cut": true,
+    "commodities": 2,
+    "demand_all_cut": false,
     "resolution_modes": [
      "DOUBLY_CONSTRAINED"
     ]
@@ -1716,21 +1562,11 @@
     ]
    },
    "attribution": {
-    "delta_min": [
+    "ipf_tolerance": [
      "emphasis"
     ],
-    "fallback_baseline": [
-     "direction",
-     "emphasis"
-    ],
-    "delta_min+fallback_baseline": [
-     "emphasis"
-    ],
-    "delta_min+fallback_baseline+ipf_tolerance": [
-     "emphasis"
-    ],
-    "delta_min+fallback_baseline+epsilon_0": [],
-    "delta_min+fallback_baseline+ipf_tolerance+epsilon_0": []
+    "epsilon_0": [],
+    "ipf_tolerance+epsilon_0": []
    }
   },
   {
@@ -1748,7 +1584,7 @@
     "solver": "LIGHTWEIGHT",
     "degraded": false,
     "od_pairs_input": 3,
-    "commodities": 3,
+    "commodities": 2,
     "demand_all_cut": false,
     "resolution_modes": [
      "DOUBLY_CONSTRAINED"
@@ -1783,13 +1619,13 @@
     "od": 0.0,
     "throughput": 0.0,
     "tau": 2.999998999677926e-07,
-    "importance": 1.764705837015157e-08
+    "importance": 2.142857080666971e-08
    },
    "diag": {
     "solver": "LIGHTWEIGHT",
     "degraded": false,
     "od_pairs_input": 3,
-    "commodities": 3,
+    "commodities": 2,
     "demand_all_cut": false,
     "resolution_modes": [
      "DOUBLY_CONSTRAINED"
@@ -1816,12 +1652,9 @@
     ]
    },
    "attribution": {
-    "delta_min": [],
-    "fallback_baseline": [],
-    "delta_min+fallback_baseline": [],
-    "delta_min+fallback_baseline+ipf_tolerance": [],
-    "delta_min+fallback_baseline+epsilon_0": [],
-    "delta_min+fallback_baseline+ipf_tolerance+epsilon_0": []
+    "ipf_tolerance": [],
+    "epsilon_0": [],
+    "ipf_tolerance+epsilon_0": []
    }
   },
   {
@@ -1835,13 +1668,13 @@
     "od": 0.0,
     "throughput": 0.0,
     "tau": 3.2999989009561074e-07,
-    "importance": 0.31148458622178277
+    "importance": 0.37823128148202145
    },
    "diag": {
     "solver": "LIGHTWEIGHT",
     "degraded": false,
     "od_pairs_input": 3,
-    "commodities": 3,
+    "commodities": 2,
     "demand_all_cut": false,
     "resolution_modes": [
      "DOUBLY_CONSTRAINED"
@@ -1868,44 +1701,29 @@
     ]
    },
    "attribution": {
-    "delta_min": [
+    "ipf_tolerance": [
      "emphasis"
     ],
-    "fallback_baseline": [
-     "emphasis"
-    ],
-    "delta_min+fallback_baseline": [
-     "emphasis"
-    ],
-    "delta_min+fallback_baseline+ipf_tolerance": [
-     "emphasis"
-    ],
-    "delta_min+fallback_baseline+epsilon_0": [],
-    "delta_min+fallback_baseline+ipf_tolerance+epsilon_0": []
+    "epsilon_0": [],
+    "ipf_tolerance+epsilon_0": []
    }
   },
   {
    "scenario": "station-transfer-peak",
    "variant": "no_history",
    "k": 0.01,
-   "diff": [
-    "verdict",
-    "triggered",
-    "direction",
-    "detour",
-    "emphasis"
-   ],
+   "diff": [],
    "cont": {
-    "od": 1.0,
-    "throughput": 1.0,
-    "tau": 1.0,
-    "importance": 0.9999999803921573
+    "od": 0.0,
+    "throughput": 0.0,
+    "tau": 1.9799604007933707e-05,
+    "importance": 2.3571371888797543e-06
    },
    "diag": {
     "solver": "LIGHTWEIGHT",
     "degraded": false,
-    "od_pairs_input": 0,
-    "commodities": 0,
+    "od_pairs_input": 3,
+    "commodities": 2,
     "demand_all_cut": false,
     "resolution_modes": [
      "DOUBLY_CONSTRAINED"
@@ -1929,46 +1747,28 @@
     ]
    },
    "attribution": {
-    "delta_min": [
-     "verdict",
-     "triggered",
-     "direction",
-     "detour",
-     "emphasis"
-    ],
-    "fallback_baseline": [
-     "direction",
-     "emphasis"
-    ],
-    "delta_min+fallback_baseline": [],
-    "delta_min+fallback_baseline+ipf_tolerance": [],
-    "delta_min+fallback_baseline+epsilon_0": [],
-    "delta_min+fallback_baseline+ipf_tolerance+epsilon_0": []
+    "ipf_tolerance": [],
+    "epsilon_0": [],
+    "ipf_tolerance+epsilon_0": []
    }
   },
   {
    "scenario": "station-transfer-peak",
    "variant": "no_history",
    "k": 0.1,
-   "diff": [
-    "verdict",
-    "triggered",
-    "direction",
-    "detour",
-    "emphasis"
-   ],
+   "diff": [],
    "cont": {
     "od": 1.480297366166875e-16,
-    "throughput": 1.0,
-    "tau": 1.0,
-    "importance": 0.9999999803921573
+    "throughput": 0.0,
+    "tau": 1.7999963999249349e-06,
+    "importance": 2.142856583287056e-07
    },
    "diag": {
     "solver": "LIGHTWEIGHT",
     "degraded": false,
     "od_pairs_input": 3,
-    "commodities": 0,
-    "demand_all_cut": true,
+    "commodities": 2,
+    "demand_all_cut": false,
     "resolution_modes": [
      "DOUBLY_CONSTRAINED"
     ]
@@ -1991,21 +1791,9 @@
     ]
    },
    "attribution": {
-    "delta_min": [
-     "verdict",
-     "triggered",
-     "direction",
-     "detour",
-     "emphasis"
-    ],
-    "fallback_baseline": [
-     "direction",
-     "emphasis"
-    ],
-    "delta_min+fallback_baseline": [],
-    "delta_min+fallback_baseline+ipf_tolerance": [],
-    "delta_min+fallback_baseline+epsilon_0": [],
-    "delta_min+fallback_baseline+ipf_tolerance+epsilon_0": []
+    "ipf_tolerance": [],
+    "epsilon_0": [],
+    "ipf_tolerance+epsilon_0": []
    }
   },
   {
@@ -2023,7 +1811,7 @@
     "solver": "LIGHTWEIGHT",
     "degraded": false,
     "od_pairs_input": 3,
-    "commodities": 3,
+    "commodities": 2,
     "demand_all_cut": false,
     "resolution_modes": [
      "DOUBLY_CONSTRAINED"
@@ -2054,14 +1842,14 @@
    "cont": {
     "od": 0.0,
     "throughput": 0.0,
-    "tau": 0.9000000000000001,
-    "importance": 0.00020168709797252493
+    "tau": 1.7999996413276606e-07,
+    "importance": 2.142857080666971e-08
    },
    "diag": {
     "solver": "LIGHTWEIGHT",
     "degraded": false,
     "od_pairs_input": 3,
-    "commodities": 3,
+    "commodities": 2,
     "demand_all_cut": false,
     "resolution_modes": [
      "DOUBLY_CONSTRAINED"
@@ -2085,12 +1873,9 @@
     ]
    },
    "attribution": {
-    "delta_min": [],
-    "fallback_baseline": [],
-    "delta_min+fallback_baseline": [],
-    "delta_min+fallback_baseline+ipf_tolerance": [],
-    "delta_min+fallback_baseline+epsilon_0": [],
-    "delta_min+fallback_baseline+ipf_tolerance+epsilon_0": []
+    "ipf_tolerance": [],
+    "epsilon_0": [],
+    "ipf_tolerance+epsilon_0": []
    }
   },
   {
@@ -2101,14 +1886,14 @@
    "cont": {
     "od": 0.0,
     "throughput": 0.0,
-    "tau": 0.99,
-    "importance": 0.00022185580816153072
+    "tau": 1.979999605521724e-07,
+    "importance": 2.357142780962107e-08
    },
    "diag": {
     "solver": "LIGHTWEIGHT",
     "degraded": false,
     "od_pairs_input": 3,
-    "commodities": 3,
+    "commodities": 2,
     "demand_all_cut": false,
     "resolution_modes": [
      "DOUBLY_CONSTRAINED"
@@ -2132,12 +1917,9 @@
     ]
    },
    "attribution": {
-    "delta_min": [],
-    "fallback_baseline": [],
-    "delta_min+fallback_baseline": [],
-    "delta_min+fallback_baseline+ipf_tolerance": [],
-    "delta_min+fallback_baseline+epsilon_0": [],
-    "delta_min+fallback_baseline+ipf_tolerance+epsilon_0": []
+    "ipf_tolerance": [],
+    "epsilon_0": [],
+    "ipf_tolerance+epsilon_0": []
    }
   },
   {
@@ -2145,20 +1927,19 @@
    "variant": "obs_only",
    "k": 0.01,
    "diff": [
-    "direction",
     "emphasis"
    ],
    "cont": {
-    "od": 1.0,
-    "throughput": 1.0,
-    "tau": 1.0,
-    "importance": 0.9999999803921573
+    "od": 0.0,
+    "throughput": 0.0,
+    "tau": 0.06285815080160498,
+    "importance": 0.5687197204775359
    },
    "diag": {
     "solver": "LIGHTWEIGHT",
     "degraded": false,
-    "od_pairs_input": 0,
-    "commodities": 0,
+    "od_pairs_input": 3,
+    "commodities": 2,
     "demand_all_cut": false,
     "resolution_modes": [
      "DOUBLY_CONSTRAINED"
@@ -2190,21 +1971,20 @@
    "variant": "obs_only",
    "k": 0.1,
    "diff": [
-    "direction",
     "emphasis"
    ],
    "cont": {
     "od": 1.480297366166875e-16,
-    "throughput": 1.0,
-    "tau": 1.0,
-    "importance": 0.9999999803921573
+    "throughput": 0.0,
+    "tau": 0.06283003663984288,
+    "importance": 0.5687220082951977
    },
    "diag": {
     "solver": "LIGHTWEIGHT",
     "degraded": false,
     "od_pairs_input": 3,
-    "commodities": 0,
-    "demand_all_cut": true,
+    "commodities": 2,
+    "demand_all_cut": false,
     "resolution_modes": [
      "DOUBLY_CONSTRAINED"
     ]
@@ -2245,7 +2025,7 @@
     "solver": "LIGHTWEIGHT",
     "degraded": false,
     "od_pairs_input": 3,
-    "commodities": 3,
+    "commodities": 2,
     "demand_all_cut": false,
     "resolution_modes": [
      "DOUBLY_CONSTRAINED"
@@ -2284,13 +2064,13 @@
     "od": 0.0,
     "throughput": 0.0,
     "tau": 0.04068336162722698,
-    "importance": 0.3154061549107486
+    "importance": 0.38299318633462914
    },
    "diag": {
     "solver": "INFEASIBLE",
     "degraded": true,
     "od_pairs_input": 3,
-    "commodities": 3,
+    "commodities": 2,
     "demand_all_cut": false,
     "resolution_modes": [
      "DOUBLY_CONSTRAINED"
@@ -2330,13 +2110,13 @@
     "od": 0.0,
     "throughput": 0.0,
     "tau": 0.044570371817212864,
-    "importance": 0.3471708607245894
+    "importance": 0.4215646148050373
    },
    "diag": {
     "solver": "INFEASIBLE",
     "degraded": true,
     "od_pairs_input": 3,
-    "commodities": 3,
+    "commodities": 2,
     "demand_all_cut": false,
     "resolution_modes": [
      "DOUBLY_CONSTRAINED"
@@ -2367,20 +2147,18 @@
    "scenario": "expo-gate-overcrowded",
    "variant": "history",
    "k": 0.01,
-   "diff": [
-    "emphasis"
-   ],
+   "diff": [],
    "cont": {
-    "od": 1.0,
-    "throughput": 1.0,
-    "tau": 1.0,
-    "importance": 0.9999999777777784
+    "od": 0.0,
+    "throughput": 1.5789838572446671e-16,
+    "tau": 3.2998900036480124e-05,
+    "importance": 2.199995062235338e-06
    },
    "diag": {
     "solver": "LIGHTWEIGHT",
     "degraded": false,
-    "od_pairs_input": 0,
-    "commodities": 0,
+    "od_pairs_input": 3,
+    "commodities": 3,
     "demand_all_cut": false,
     "resolution_modes": [
      "DOUBLY_CONSTRAINED"
@@ -2408,35 +2186,28 @@
     ]
    },
    "attribution": {
-    "delta_min": [],
-    "fallback_baseline": [
-     "emphasis"
-    ],
-    "delta_min+fallback_baseline": [],
-    "delta_min+fallback_baseline+ipf_tolerance": [],
-    "delta_min+fallback_baseline+epsilon_0": [],
-    "delta_min+fallback_baseline+ipf_tolerance+epsilon_0": []
+    "ipf_tolerance": [],
+    "epsilon_0": [],
+    "ipf_tolerance+epsilon_0": []
    }
   },
   {
    "scenario": "expo-gate-overcrowded",
    "variant": "history",
    "k": 0.1,
-   "diff": [
-    "emphasis"
-   ],
+   "diff": [],
    "cont": {
     "od": 0.0,
-    "throughput": 1.0,
-    "tau": 1.0,
-    "importance": 0.9999999777777784
+    "throughput": 0.0,
+    "tau": 2.999989999854095e-06,
+    "importance": 1.9999995126696035e-07
    },
    "diag": {
     "solver": "LIGHTWEIGHT",
     "degraded": false,
     "od_pairs_input": 3,
-    "commodities": 0,
-    "demand_all_cut": true,
+    "commodities": 3,
+    "demand_all_cut": false,
     "resolution_modes": [
      "DOUBLY_CONSTRAINED"
     ]
@@ -2463,14 +2234,9 @@
     ]
    },
    "attribution": {
-    "delta_min": [],
-    "fallback_baseline": [
-     "emphasis"
-    ],
-    "delta_min+fallback_baseline": [],
-    "delta_min+fallback_baseline+ipf_tolerance": [],
-    "delta_min+fallback_baseline+epsilon_0": [],
-    "delta_min+fallback_baseline+ipf_tolerance+epsilon_0": []
+    "ipf_tolerance": [],
+    "epsilon_0": [],
+    "ipf_tolerance+epsilon_0": []
    }
   },
   {
@@ -2558,12 +2324,9 @@
     ]
    },
    "attribution": {
-    "delta_min": [],
-    "fallback_baseline": [],
-    "delta_min+fallback_baseline": [],
-    "delta_min+fallback_baseline+ipf_tolerance": [],
-    "delta_min+fallback_baseline+epsilon_0": [],
-    "delta_min+fallback_baseline+ipf_tolerance+epsilon_0": []
+    "ipf_tolerance": [],
+    "epsilon_0": [],
+    "ipf_tolerance+epsilon_0": []
    }
   },
   {
@@ -2609,32 +2372,27 @@
     ]
    },
    "attribution": {
-    "delta_min": [],
-    "fallback_baseline": [],
-    "delta_min+fallback_baseline": [],
-    "delta_min+fallback_baseline+ipf_tolerance": [],
-    "delta_min+fallback_baseline+epsilon_0": [],
-    "delta_min+fallback_baseline+ipf_tolerance+epsilon_0": []
+    "ipf_tolerance": [],
+    "epsilon_0": [],
+    "ipf_tolerance+epsilon_0": []
    }
   },
   {
    "scenario": "expo-gate-overcrowded",
    "variant": "no_history",
    "k": 0.01,
-   "diff": [
-    "emphasis"
-   ],
+   "diff": [],
    "cont": {
-    "od": 1.0,
-    "throughput": 1.0,
-    "tau": 1.0,
-    "importance": 0.9999999777777784
+    "od": 0.0,
+    "throughput": 1.5789838572446671e-16,
+    "tau": 1.9799604008029334e-05,
+    "importance": 2.199995062235338e-06
    },
    "diag": {
     "solver": "LIGHTWEIGHT",
     "degraded": false,
-    "od_pairs_input": 0,
-    "commodities": 0,
+    "od_pairs_input": 3,
+    "commodities": 3,
     "demand_all_cut": false,
     "resolution_modes": [
      "DOUBLY_CONSTRAINED"
@@ -2659,35 +2417,28 @@
     ]
    },
    "attribution": {
-    "delta_min": [],
-    "fallback_baseline": [
-     "emphasis"
-    ],
-    "delta_min+fallback_baseline": [],
-    "delta_min+fallback_baseline+ipf_tolerance": [],
-    "delta_min+fallback_baseline+epsilon_0": [],
-    "delta_min+fallback_baseline+ipf_tolerance+epsilon_0": []
+    "ipf_tolerance": [],
+    "epsilon_0": [],
+    "ipf_tolerance+epsilon_0": []
    }
   },
   {
    "scenario": "expo-gate-overcrowded",
    "variant": "no_history",
    "k": 0.1,
-   "diff": [
-    "emphasis"
-   ],
+   "diff": [],
    "cont": {
     "od": 0.0,
-    "throughput": 1.0,
-    "tau": 1.0,
-    "importance": 0.9999999777777784
+    "throughput": 0.0,
+    "tau": 1.7999963999964617e-06,
+    "importance": 1.9999995126696035e-07
    },
    "diag": {
     "solver": "LIGHTWEIGHT",
     "degraded": false,
     "od_pairs_input": 3,
-    "commodities": 0,
-    "demand_all_cut": true,
+    "commodities": 3,
+    "demand_all_cut": false,
     "resolution_modes": [
      "DOUBLY_CONSTRAINED"
     ]
@@ -2711,14 +2462,9 @@
     ]
    },
    "attribution": {
-    "delta_min": [],
-    "fallback_baseline": [
-     "emphasis"
-    ],
-    "delta_min+fallback_baseline": [],
-    "delta_min+fallback_baseline+ipf_tolerance": [],
-    "delta_min+fallback_baseline+epsilon_0": [],
-    "delta_min+fallback_baseline+ipf_tolerance+epsilon_0": []
+    "ipf_tolerance": [],
+    "epsilon_0": [],
+    "ipf_tolerance+epsilon_0": []
    }
   },
   {
@@ -2768,7 +2514,7 @@
    "cont": {
     "od": 0.0,
     "throughput": 0.0,
-    "tau": 0.8999999999999999,
+    "tau": 1.7999996409233776e-07,
     "importance": 1.999999943436137e-08
    },
    "diag": {
@@ -2800,12 +2546,9 @@
     ]
    },
    "attribution": {
-    "delta_min": [],
-    "fallback_baseline": [],
-    "delta_min+fallback_baseline": [],
-    "delta_min+fallback_baseline+ipf_tolerance": [],
-    "delta_min+fallback_baseline+epsilon_0": [],
-    "delta_min+fallback_baseline+ipf_tolerance+epsilon_0": []
+    "ipf_tolerance": [],
+    "epsilon_0": [],
+    "ipf_tolerance+epsilon_0": []
    }
   },
   {
@@ -2816,7 +2559,7 @@
    "cont": {
     "od": 0.0,
     "throughput": 0.0,
-    "tau": 0.99,
+    "tau": 1.9799996043477488e-07,
     "importance": 2.1999999266775205e-08
    },
    "diag": {
@@ -2848,32 +2591,27 @@
     ]
    },
    "attribution": {
-    "delta_min": [],
-    "fallback_baseline": [],
-    "delta_min+fallback_baseline": [],
-    "delta_min+fallback_baseline+ipf_tolerance": [],
-    "delta_min+fallback_baseline+epsilon_0": [],
-    "delta_min+fallback_baseline+ipf_tolerance+epsilon_0": []
+    "ipf_tolerance": [],
+    "epsilon_0": [],
+    "ipf_tolerance+epsilon_0": []
    }
   },
   {
    "scenario": "expo-gate-overcrowded",
    "variant": "obs_only",
    "k": 0.01,
-   "diff": [
-    "emphasis"
-   ],
+   "diff": [],
    "cont": {
-    "od": 1.0,
-    "throughput": 1.0,
-    "tau": 1.0,
-    "importance": 0.9999999777777784
+    "od": 0.0,
+    "throughput": 1.5789838572446671e-16,
+    "tau": 3.2998900036480124e-05,
+    "importance": 2.199995062235338e-06
    },
    "diag": {
     "solver": "LIGHTWEIGHT",
     "degraded": false,
-    "od_pairs_input": 0,
-    "commodities": 0,
+    "od_pairs_input": 3,
+    "commodities": 3,
     "demand_all_cut": false,
     "resolution_modes": [
      "DOUBLY_CONSTRAINED"
@@ -2905,21 +2643,19 @@
    "scenario": "expo-gate-overcrowded",
    "variant": "obs_only",
    "k": 0.1,
-   "diff": [
-    "emphasis"
-   ],
+   "diff": [],
    "cont": {
     "od": 0.0,
-    "throughput": 1.0,
-    "tau": 1.0,
-    "importance": 0.9999999777777784
+    "throughput": 0.0,
+    "tau": 2.999989999854095e-06,
+    "importance": 1.9999995126696035e-07
    },
    "diag": {
     "solver": "LIGHTWEIGHT",
     "degraded": false,
     "od_pairs_input": 3,
-    "commodities": 0,
-    "demand_all_cut": true,
+    "commodities": 3,
+    "demand_all_cut": false,
     "resolution_modes": [
      "DOUBLY_CONSTRAINED"
     ]
@@ -3078,20 +2814,18 @@
    "scenario": "expo-incident-resume",
    "variant": "history",
    "k": 0.01,
-   "diff": [
-    "emphasis"
-   ],
+   "diff": [],
    "cont": {
-    "od": 1.0,
-    "throughput": 1.0,
-    "tau": 1.0,
-    "importance": 0.9999999629629643
+    "od": 0.0,
+    "throughput": 0.0,
+    "tau": 3.29989000367475e-05,
+    "importance": 3.6666529505957612e-06
    },
    "diag": {
     "solver": "LIGHTWEIGHT",
     "degraded": false,
-    "od_pairs_input": 0,
-    "commodities": 0,
+    "od_pairs_input": 2,
+    "commodities": 2,
     "demand_all_cut": false,
     "resolution_modes": [
      "DOUBLY_CONSTRAINED"
@@ -3118,35 +2852,28 @@
     ]
    },
    "attribution": {
-    "delta_min": [],
-    "fallback_baseline": [
-     "emphasis"
-    ],
-    "delta_min+fallback_baseline": [],
-    "delta_min+fallback_baseline+ipf_tolerance": [],
-    "delta_min+fallback_baseline+epsilon_0": [],
-    "delta_min+fallback_baseline+ipf_tolerance+epsilon_0": []
+    "ipf_tolerance": [],
+    "epsilon_0": [],
+    "ipf_tolerance+epsilon_0": []
    }
   },
   {
    "scenario": "expo-incident-resume",
    "variant": "history",
    "k": 0.1,
-   "diff": [
-    "emphasis"
-   ],
+   "diff": [],
    "cont": {
     "od": 1.480297366166875e-16,
-    "throughput": 1.0,
-    "tau": 1.0,
-    "importance": 0.9999999629629643
+    "throughput": 0.0,
+    "tau": 2.9999900000887816e-06,
+    "importance": 3.333331975996501e-07
    },
    "diag": {
     "solver": "LIGHTWEIGHT",
     "degraded": false,
     "od_pairs_input": 2,
-    "commodities": 0,
-    "demand_all_cut": true,
+    "commodities": 2,
+    "demand_all_cut": false,
     "resolution_modes": [
      "DOUBLY_CONSTRAINED"
     ]
@@ -3172,14 +2899,9 @@
     ]
    },
    "attribution": {
-    "delta_min": [],
-    "fallback_baseline": [
-     "emphasis"
-    ],
-    "delta_min+fallback_baseline": [],
-    "delta_min+fallback_baseline+ipf_tolerance": [],
-    "delta_min+fallback_baseline+epsilon_0": [],
-    "delta_min+fallback_baseline+ipf_tolerance+epsilon_0": []
+    "ipf_tolerance": [],
+    "epsilon_0": [],
+    "ipf_tolerance+epsilon_0": []
    }
   },
   {
@@ -3265,12 +2987,9 @@
     ]
    },
    "attribution": {
-    "delta_min": [],
-    "fallback_baseline": [],
-    "delta_min+fallback_baseline": [],
-    "delta_min+fallback_baseline+ipf_tolerance": [],
-    "delta_min+fallback_baseline+epsilon_0": [],
-    "delta_min+fallback_baseline+ipf_tolerance+epsilon_0": []
+    "ipf_tolerance": [],
+    "epsilon_0": [],
+    "ipf_tolerance+epsilon_0": []
    }
   },
   {
@@ -3315,34 +3034,27 @@
     ]
    },
    "attribution": {
-    "delta_min": [],
-    "fallback_baseline": [],
-    "delta_min+fallback_baseline": [],
-    "delta_min+fallback_baseline+ipf_tolerance": [],
-    "delta_min+fallback_baseline+epsilon_0": [],
-    "delta_min+fallback_baseline+ipf_tolerance+epsilon_0": []
+    "ipf_tolerance": [],
+    "epsilon_0": [],
+    "ipf_tolerance+epsilon_0": []
    }
   },
   {
    "scenario": "expo-incident-resume",
    "variant": "no_history",
    "k": 0.01,
-   "diff": [
-    "verdict",
-    "triggered",
-    "emphasis"
-   ],
+   "diff": [],
    "cont": {
-    "od": 1.0,
-    "throughput": 1.0,
-    "tau": 1.0,
-    "importance": 0.9999999629629643
+    "od": 0.0,
+    "throughput": 0.0,
+    "tau": 1.9799604008068128e-05,
+    "importance": 3.6666529505957612e-06
    },
    "diag": {
     "solver": "LIGHTWEIGHT",
     "degraded": false,
-    "od_pairs_input": 0,
-    "commodities": 0,
+    "od_pairs_input": 2,
+    "commodities": 2,
     "demand_all_cut": false,
     "resolution_modes": [
      "DOUBLY_CONSTRAINED"
@@ -3366,40 +3078,28 @@
     ]
    },
    "attribution": {
-    "delta_min": [
-     "verdict",
-     "triggered"
-    ],
-    "fallback_baseline": [
-     "emphasis"
-    ],
-    "delta_min+fallback_baseline": [],
-    "delta_min+fallback_baseline+ipf_tolerance": [],
-    "delta_min+fallback_baseline+epsilon_0": [],
-    "delta_min+fallback_baseline+ipf_tolerance+epsilon_0": []
+    "ipf_tolerance": [],
+    "epsilon_0": [],
+    "ipf_tolerance+epsilon_0": []
    }
   },
   {
    "scenario": "expo-incident-resume",
    "variant": "no_history",
    "k": 0.1,
-   "diff": [
-    "verdict",
-    "triggered",
-    "emphasis"
-   ],
+   "diff": [],
    "cont": {
     "od": 1.480297366166875e-16,
-    "throughput": 1.0,
-    "tau": 1.0,
-    "importance": 0.9999999629629643
+    "throughput": 0.0,
+    "tau": 1.7999964000322751e-06,
+    "importance": 3.333331975996501e-07
    },
    "diag": {
     "solver": "LIGHTWEIGHT",
     "degraded": false,
     "od_pairs_input": 2,
-    "commodities": 0,
-    "demand_all_cut": true,
+    "commodities": 2,
+    "demand_all_cut": false,
     "resolution_modes": [
      "DOUBLY_CONSTRAINED"
     ]
@@ -3422,17 +3122,9 @@
     ]
    },
    "attribution": {
-    "delta_min": [
-     "verdict",
-     "triggered"
-    ],
-    "fallback_baseline": [
-     "emphasis"
-    ],
-    "delta_min+fallback_baseline": [],
-    "delta_min+fallback_baseline+ipf_tolerance": [],
-    "delta_min+fallback_baseline+epsilon_0": [],
-    "delta_min+fallback_baseline+ipf_tolerance+epsilon_0": []
+    "ipf_tolerance": [],
+    "epsilon_0": [],
+    "ipf_tolerance+epsilon_0": []
    }
   },
   {
@@ -3481,7 +3173,7 @@
    "cont": {
     "od": 0.0,
     "throughput": 0.0,
-    "tau": 0.9,
+    "tau": 1.799999639371453e-07,
     "importance": 3.333333198352051e-08
    },
    "diag": {
@@ -3512,12 +3204,9 @@
     ]
    },
    "attribution": {
-    "delta_min": [],
-    "fallback_baseline": [],
-    "delta_min+fallback_baseline": [],
-    "delta_min+fallback_baseline+ipf_tolerance": [],
-    "delta_min+fallback_baseline+epsilon_0": [],
-    "delta_min+fallback_baseline+ipf_tolerance+epsilon_0": []
+    "ipf_tolerance": [],
+    "epsilon_0": [],
+    "ipf_tolerance+epsilon_0": []
    }
   },
   {
@@ -3528,7 +3217,7 @@
    "cont": {
     "od": 0.0,
     "throughput": 0.0,
-    "tau": 0.99,
+    "tau": 1.979999603124116e-07,
     "importance": 3.6666665370610474e-08
    },
    "diag": {
@@ -3559,32 +3248,27 @@
     ]
    },
    "attribution": {
-    "delta_min": [],
-    "fallback_baseline": [],
-    "delta_min+fallback_baseline": [],
-    "delta_min+fallback_baseline+ipf_tolerance": [],
-    "delta_min+fallback_baseline+epsilon_0": [],
-    "delta_min+fallback_baseline+ipf_tolerance+epsilon_0": []
+    "ipf_tolerance": [],
+    "epsilon_0": [],
+    "ipf_tolerance+epsilon_0": []
    }
   },
   {
    "scenario": "expo-incident-resume",
    "variant": "obs_only",
    "k": 0.01,
-   "diff": [
-    "emphasis"
-   ],
+   "diff": [],
    "cont": {
-    "od": 1.0,
-    "throughput": 1.0,
-    "tau": 1.0,
-    "importance": 0.9999999629629643
+    "od": 0.0,
+    "throughput": 0.0,
+    "tau": 3.29989000367475e-05,
+    "importance": 3.6666529505957612e-06
    },
    "diag": {
     "solver": "LIGHTWEIGHT",
     "degraded": false,
-    "od_pairs_input": 0,
-    "commodities": 0,
+    "od_pairs_input": 2,
+    "commodities": 2,
     "demand_all_cut": false,
     "resolution_modes": [
      "DOUBLY_CONSTRAINED"
@@ -3615,21 +3299,19 @@
    "scenario": "expo-incident-resume",
    "variant": "obs_only",
    "k": 0.1,
-   "diff": [
-    "emphasis"
-   ],
+   "diff": [],
    "cont": {
     "od": 1.480297366166875e-16,
-    "throughput": 1.0,
-    "tau": 1.0,
-    "importance": 0.9999999629629643
+    "throughput": 0.0,
+    "tau": 2.9999900000887816e-06,
+    "importance": 3.333331975996501e-07
    },
    "diag": {
     "solver": "LIGHTWEIGHT",
     "degraded": false,
     "od_pairs_input": 2,
-    "commodities": 0,
-    "demand_all_cut": true,
+    "commodities": 2,
+    "demand_all_cut": false,
     "resolution_modes": [
      "DOUBLY_CONSTRAINED"
     ]
@@ -3784,22 +3466,18 @@
    "scenario": "museum-special-exhibit-limit",
    "variant": "history",
    "k": 0.01,
-   "diff": [
-    "restriction",
-    "restriction_limit",
-    "emphasis"
-   ],
+   "diff": [],
    "cont": {
-    "od": 1.0,
-    "throughput": 1.0,
-    "tau": 1.0,
-    "importance": 0.9999999666666678
+    "od": 3.3306690738754696e-16,
+    "throughput": 0.0,
+    "tau": 3.299890003653706e-05,
+    "importance": 3.299988889926553e-06
    },
    "diag": {
     "solver": "LIGHTWEIGHT",
     "degraded": false,
-    "od_pairs_input": 0,
-    "commodities": 0,
+    "od_pairs_input": 3,
+    "commodities": 1,
     "demand_all_cut": false,
     "resolution_modes": [
      "TURNING_EXACT"
@@ -3826,39 +3504,28 @@
     ]
    },
    "attribution": {
-    "delta_min": [],
-    "fallback_baseline": [
-     "restriction",
-     "restriction_limit",
-     "emphasis"
-    ],
-    "delta_min+fallback_baseline": [],
-    "delta_min+fallback_baseline+ipf_tolerance": [],
-    "delta_min+fallback_baseline+epsilon_0": [],
-    "delta_min+fallback_baseline+ipf_tolerance+epsilon_0": []
+    "ipf_tolerance": [],
+    "epsilon_0": [],
+    "ipf_tolerance+epsilon_0": []
    }
   },
   {
    "scenario": "museum-special-exhibit-limit",
    "variant": "history",
    "k": 0.1,
-   "diff": [
-    "restriction",
-    "restriction_limit",
-    "emphasis"
-   ],
+   "diff": [],
    "cont": {
-    "od": 1.0,
-    "throughput": 1.0,
-    "tau": 1.0,
-    "importance": 0.9999999666666678
+    "od": 2.2204460492503126e-16,
+    "throughput": 0.0,
+    "tau": 2.999989999779368e-06,
+    "importance": 2.999998900410361e-07
    },
    "diag": {
     "solver": "LIGHTWEIGHT",
     "degraded": false,
-    "od_pairs_input": 2,
-    "commodities": 0,
-    "demand_all_cut": true,
+    "od_pairs_input": 3,
+    "commodities": 1,
+    "demand_all_cut": false,
     "resolution_modes": [
      "TURNING_EXACT"
     ]
@@ -3884,16 +3551,9 @@
     ]
    },
    "attribution": {
-    "delta_min": [],
-    "fallback_baseline": [
-     "restriction",
-     "restriction_limit",
-     "emphasis"
-    ],
-    "delta_min+fallback_baseline": [],
-    "delta_min+fallback_baseline+ipf_tolerance": [],
-    "delta_min+fallback_baseline+epsilon_0": [],
-    "delta_min+fallback_baseline+ipf_tolerance+epsilon_0": []
+    "ipf_tolerance": [],
+    "epsilon_0": [],
+    "ipf_tolerance+epsilon_0": []
    }
   },
   {
@@ -3941,20 +3601,18 @@
    "scenario": "museum-special-exhibit-limit",
    "variant": "history",
    "k": 10.0,
-   "diff": [
-    "emphasis"
-   ],
+   "diff": [],
    "cont": {
     "od": 2.2204460492503126e-16,
     "throughput": 0.0,
     "tau": 2.9999990011504734e-07,
-    "importance": 0.28571425408163376
+    "importance": 2.999999892949745e-08
    },
    "diag": {
     "solver": "LIGHTWEIGHT",
     "degraded": false,
     "od_pairs_input": 3,
-    "commodities": 3,
+    "commodities": 1,
     "demand_all_cut": false,
     "resolution_modes": [
      "TURNING_EXACT"
@@ -3981,34 +3639,27 @@
     ]
    },
    "attribution": {
-    "delta_min": [],
-    "fallback_baseline": [
-     "emphasis"
-    ],
-    "delta_min+fallback_baseline": [],
-    "delta_min+fallback_baseline+ipf_tolerance": [],
-    "delta_min+fallback_baseline+epsilon_0": [],
-    "delta_min+fallback_baseline+ipf_tolerance+epsilon_0": []
+    "ipf_tolerance": [],
+    "epsilon_0": [],
+    "ipf_tolerance+epsilon_0": []
    }
   },
   {
    "scenario": "museum-special-exhibit-limit",
    "variant": "history",
    "k": 100.0,
-   "diff": [
-    "emphasis"
-   ],
+   "diff": [],
    "cont": {
     "od": 2.2204460492503126e-16,
     "throughput": 0.0,
     "tau": 3.2999989016732187e-07,
-    "importance": 0.28571425255102156
+    "importance": 3.299999895567396e-08
    },
    "diag": {
     "solver": "LIGHTWEIGHT",
     "degraded": false,
     "od_pairs_input": 3,
-    "commodities": 3,
+    "commodities": 1,
     "demand_all_cut": false,
     "resolution_modes": [
      "TURNING_EXACT"
@@ -4035,38 +3686,27 @@
     ]
    },
    "attribution": {
-    "delta_min": [],
-    "fallback_baseline": [
-     "emphasis"
-    ],
-    "delta_min+fallback_baseline": [],
-    "delta_min+fallback_baseline+ipf_tolerance": [],
-    "delta_min+fallback_baseline+epsilon_0": [],
-    "delta_min+fallback_baseline+ipf_tolerance+epsilon_0": []
+    "ipf_tolerance": [],
+    "epsilon_0": [],
+    "ipf_tolerance+epsilon_0": []
    }
   },
   {
    "scenario": "museum-special-exhibit-limit",
    "variant": "no_history",
    "k": 0.01,
-   "diff": [
-    "verdict",
-    "triggered",
-    "restriction",
-    "restriction_limit",
-    "emphasis"
-   ],
+   "diff": [],
    "cont": {
-    "od": 1.0,
-    "throughput": 1.0,
-    "tau": 1.0,
-    "importance": 0.9999999666666678
+    "od": 3.3306690738754696e-16,
+    "throughput": 0.0,
+    "tau": 1.9799604008060173e-05,
+    "importance": 3.299988889926553e-06
    },
    "diag": {
     "solver": "LIGHTWEIGHT",
     "degraded": false,
-    "od_pairs_input": 0,
-    "commodities": 0,
+    "od_pairs_input": 3,
+    "commodities": 1,
     "demand_all_cut": false,
     "resolution_modes": [
      "TURNING_EXACT"
@@ -4090,46 +3730,28 @@
     ]
    },
    "attribution": {
-    "delta_min": [
-     "verdict",
-     "triggered",
-     "restriction",
-     "restriction_limit"
-    ],
-    "fallback_baseline": [
-     "restriction",
-     "restriction_limit",
-     "emphasis"
-    ],
-    "delta_min+fallback_baseline": [],
-    "delta_min+fallback_baseline+ipf_tolerance": [],
-    "delta_min+fallback_baseline+epsilon_0": [],
-    "delta_min+fallback_baseline+ipf_tolerance+epsilon_0": []
+    "ipf_tolerance": [],
+    "epsilon_0": [],
+    "ipf_tolerance+epsilon_0": []
    }
   },
   {
    "scenario": "museum-special-exhibit-limit",
    "variant": "no_history",
    "k": 0.1,
-   "diff": [
-    "verdict",
-    "triggered",
-    "restriction",
-    "restriction_limit",
-    "emphasis"
-   ],
+   "diff": [],
    "cont": {
-    "od": 1.0,
-    "throughput": 1.0,
-    "tau": 1.0,
-    "importance": 0.9999999666666678
+    "od": 2.2204460492503126e-16,
+    "throughput": 0.0,
+    "tau": 1.7999963998731037e-06,
+    "importance": 2.999998900410361e-07
    },
    "diag": {
     "solver": "LIGHTWEIGHT",
     "degraded": false,
-    "od_pairs_input": 2,
-    "commodities": 0,
-    "demand_all_cut": true,
+    "od_pairs_input": 3,
+    "commodities": 1,
+    "demand_all_cut": false,
     "resolution_modes": [
      "TURNING_EXACT"
     ]
@@ -4152,21 +3774,9 @@
     ]
    },
    "attribution": {
-    "delta_min": [
-     "verdict",
-     "triggered",
-     "restriction",
-     "restriction_limit"
-    ],
-    "fallback_baseline": [
-     "restriction",
-     "restriction_limit",
-     "emphasis"
-    ],
-    "delta_min+fallback_baseline": [],
-    "delta_min+fallback_baseline+ipf_tolerance": [],
-    "delta_min+fallback_baseline+epsilon_0": [],
-    "delta_min+fallback_baseline+ipf_tolerance+epsilon_0": []
+    "ipf_tolerance": [],
+    "epsilon_0": [],
+    "ipf_tolerance+epsilon_0": []
    }
   },
   {
@@ -4211,20 +3821,18 @@
    "scenario": "museum-special-exhibit-limit",
    "variant": "no_history",
    "k": 10.0,
-   "diff": [
-    "emphasis"
-   ],
+   "diff": [],
    "cont": {
     "od": 2.2204460492503126e-16,
     "throughput": 0.0,
-    "tau": 0.9,
-    "importance": 0.28571425408163376
+    "tau": 1.7999996409233776e-07,
+    "importance": 2.999999892949745e-08
    },
    "diag": {
     "solver": "LIGHTWEIGHT",
     "degraded": false,
     "od_pairs_input": 3,
-    "commodities": 3,
+    "commodities": 1,
     "demand_all_cut": false,
     "resolution_modes": [
      "TURNING_EXACT"
@@ -4248,34 +3856,27 @@
     ]
    },
    "attribution": {
-    "delta_min": [],
-    "fallback_baseline": [
-     "emphasis"
-    ],
-    "delta_min+fallback_baseline": [],
-    "delta_min+fallback_baseline+ipf_tolerance": [],
-    "delta_min+fallback_baseline+epsilon_0": [],
-    "delta_min+fallback_baseline+ipf_tolerance+epsilon_0": []
+    "ipf_tolerance": [],
+    "epsilon_0": [],
+    "ipf_tolerance+epsilon_0": []
    }
   },
   {
    "scenario": "museum-special-exhibit-limit",
    "variant": "no_history",
    "k": 100.0,
-   "diff": [
-    "emphasis"
-   ],
+   "diff": [],
    "cont": {
     "od": 2.2204460492503126e-16,
     "throughput": 0.0,
-    "tau": 0.99,
-    "importance": 0.28571425255102156
+    "tau": 1.9799996040393536e-07,
+    "importance": 3.299999895567396e-08
    },
    "diag": {
     "solver": "LIGHTWEIGHT",
     "degraded": false,
     "od_pairs_input": 3,
-    "commodities": 3,
+    "commodities": 1,
     "demand_all_cut": false,
     "resolution_modes": [
      "TURNING_EXACT"
@@ -4299,36 +3900,27 @@
     ]
    },
    "attribution": {
-    "delta_min": [],
-    "fallback_baseline": [
-     "emphasis"
-    ],
-    "delta_min+fallback_baseline": [],
-    "delta_min+fallback_baseline+ipf_tolerance": [],
-    "delta_min+fallback_baseline+epsilon_0": [],
-    "delta_min+fallback_baseline+ipf_tolerance+epsilon_0": []
+    "ipf_tolerance": [],
+    "epsilon_0": [],
+    "ipf_tolerance+epsilon_0": []
    }
   },
   {
    "scenario": "museum-special-exhibit-limit",
    "variant": "obs_only",
    "k": 0.01,
-   "diff": [
-    "restriction",
-    "restriction_limit",
-    "emphasis"
-   ],
+   "diff": [],
    "cont": {
-    "od": 1.0,
-    "throughput": 1.0,
-    "tau": 1.0,
-    "importance": 0.9999999666666678
+    "od": 3.3306690738754696e-16,
+    "throughput": 0.0,
+    "tau": 3.299890003653706e-05,
+    "importance": 3.299988889926553e-06
    },
    "diag": {
     "solver": "LIGHTWEIGHT",
     "degraded": false,
-    "od_pairs_input": 0,
-    "commodities": 0,
+    "od_pairs_input": 3,
+    "commodities": 1,
     "demand_all_cut": false,
     "resolution_modes": [
      "TURNING_EXACT"
@@ -4359,23 +3951,19 @@
    "scenario": "museum-special-exhibit-limit",
    "variant": "obs_only",
    "k": 0.1,
-   "diff": [
-    "restriction",
-    "restriction_limit",
-    "emphasis"
-   ],
+   "diff": [],
    "cont": {
-    "od": 1.0,
-    "throughput": 1.0,
-    "tau": 1.0,
-    "importance": 0.9999999666666678
+    "od": 2.2204460492503126e-16,
+    "throughput": 0.0,
+    "tau": 2.999989999779368e-06,
+    "importance": 2.999998900410361e-07
    },
    "diag": {
     "solver": "LIGHTWEIGHT",
     "degraded": false,
-    "od_pairs_input": 2,
-    "commodities": 0,
-    "demand_all_cut": true,
+    "od_pairs_input": 3,
+    "commodities": 1,
+    "demand_all_cut": false,
     "resolution_modes": [
      "TURNING_EXACT"
     ]
@@ -4448,20 +4036,19 @@
    "k": 10.0,
    "diff": [
     "restriction",
-    "restriction_limit",
-    "emphasis"
+    "restriction_limit"
    ],
    "cont": {
     "od": 2.2204460492503126e-16,
     "throughput": 0.0,
     "tau": 2.9999990011504734e-07,
-    "importance": 0.28571425408163376
+    "importance": 2.999999892949745e-08
    },
    "diag": {
     "solver": "INFEASIBLE",
     "degraded": true,
     "od_pairs_input": 3,
-    "commodities": 3,
+    "commodities": 1,
     "demand_all_cut": false,
     "resolution_modes": [
      "TURNING_EXACT"
@@ -4494,20 +4081,19 @@
    "k": 100.0,
    "diff": [
     "restriction",
-    "restriction_limit",
-    "emphasis"
+    "restriction_limit"
    ],
    "cont": {
     "od": 2.2204460492503126e-16,
     "throughput": 0.0,
     "tau": 3.2999989016732187e-07,
-    "importance": 0.28571425255102156
+    "importance": 3.299999895567396e-08
    },
    "diag": {
     "solver": "INFEASIBLE",
     "degraded": true,
     "od_pairs_input": 3,
-    "commodities": 3,
+    "commodities": 1,
     "demand_all_cut": false,
     "resolution_modes": [
      "TURNING_EXACT"
@@ -4538,22 +4124,18 @@
    "scenario": "restriction-undrainable",
    "variant": "history",
    "k": 0.01,
-   "diff": [
-    "restriction",
-    "restriction_limit",
-    "emphasis"
-   ],
+   "diff": [],
    "cont": {
-    "od": 1.0,
-    "throughput": 1.0,
-    "tau": 1.0,
-    "importance": 0.9999999750000007
+    "od": 0.0,
+    "throughput": 0.0,
+    "tau": 3.299890003653706e-05,
+    "importance": 2.474993750611887e-06
    },
    "diag": {
     "solver": "LIGHTWEIGHT",
     "degraded": false,
-    "od_pairs_input": 0,
-    "commodities": 0,
+    "od_pairs_input": 2,
+    "commodities": 2,
     "demand_all_cut": false,
     "resolution_modes": [
      "TURNING_EXACT"
@@ -4580,39 +4162,28 @@
     ]
    },
    "attribution": {
-    "delta_min": [],
-    "fallback_baseline": [
-     "restriction",
-     "restriction_limit",
-     "emphasis"
-    ],
-    "delta_min+fallback_baseline": [],
-    "delta_min+fallback_baseline+ipf_tolerance": [],
-    "delta_min+fallback_baseline+epsilon_0": [],
-    "delta_min+fallback_baseline+ipf_tolerance+epsilon_0": []
+    "ipf_tolerance": [],
+    "epsilon_0": [],
+    "ipf_tolerance+epsilon_0": []
    }
   },
   {
    "scenario": "restriction-undrainable",
    "variant": "history",
    "k": 0.1,
-   "diff": [
-    "restriction",
-    "restriction_limit",
-    "emphasis"
-   ],
+   "diff": [],
    "cont": {
     "od": 0.0,
-    "throughput": 1.0,
-    "tau": 1.0,
-    "importance": 0.9999999750000007
+    "throughput": 0.0,
+    "tau": 2.999989999779368e-06,
+    "importance": 2.249999382364365e-07
    },
    "diag": {
     "solver": "LIGHTWEIGHT",
     "degraded": false,
     "od_pairs_input": 2,
-    "commodities": 0,
-    "demand_all_cut": true,
+    "commodities": 2,
+    "demand_all_cut": false,
     "resolution_modes": [
      "TURNING_EXACT"
     ]
@@ -4638,16 +4209,9 @@
     ]
    },
    "attribution": {
-    "delta_min": [],
-    "fallback_baseline": [
-     "restriction",
-     "restriction_limit",
-     "emphasis"
-    ],
-    "delta_min+fallback_baseline": [],
-    "delta_min+fallback_baseline+ipf_tolerance": [],
-    "delta_min+fallback_baseline+epsilon_0": [],
-    "delta_min+fallback_baseline+ipf_tolerance+epsilon_0": []
+    "ipf_tolerance": [],
+    "epsilon_0": [],
+    "ipf_tolerance+epsilon_0": []
    }
   },
   {
@@ -4733,12 +4297,9 @@
     ]
    },
    "attribution": {
-    "delta_min": [],
-    "fallback_baseline": [],
-    "delta_min+fallback_baseline": [],
-    "delta_min+fallback_baseline+ipf_tolerance": [],
-    "delta_min+fallback_baseline+epsilon_0": [],
-    "delta_min+fallback_baseline+ipf_tolerance+epsilon_0": []
+    "ipf_tolerance": [],
+    "epsilon_0": [],
+    "ipf_tolerance+epsilon_0": []
    }
   },
   {
@@ -4783,36 +4344,27 @@
     ]
    },
    "attribution": {
-    "delta_min": [],
-    "fallback_baseline": [],
-    "delta_min+fallback_baseline": [],
-    "delta_min+fallback_baseline+ipf_tolerance": [],
-    "delta_min+fallback_baseline+epsilon_0": [],
-    "delta_min+fallback_baseline+ipf_tolerance+epsilon_0": []
+    "ipf_tolerance": [],
+    "epsilon_0": [],
+    "ipf_tolerance+epsilon_0": []
    }
   },
   {
    "scenario": "restriction-undrainable",
    "variant": "no_history",
    "k": 0.01,
-   "diff": [
-    "verdict",
-    "triggered",
-    "restriction",
-    "restriction_limit",
-    "emphasis"
-   ],
+   "diff": [],
    "cont": {
-    "od": 1.0,
-    "throughput": 1.0,
-    "tau": 1.0,
-    "importance": 0.9999999750000007
+    "od": 0.0,
+    "throughput": 0.0,
+    "tau": 1.9799604008060173e-05,
+    "importance": 2.474993750611887e-06
    },
    "diag": {
     "solver": "LIGHTWEIGHT",
     "degraded": false,
-    "od_pairs_input": 0,
-    "commodities": 0,
+    "od_pairs_input": 2,
+    "commodities": 2,
     "demand_all_cut": false,
     "resolution_modes": [
      "TURNING_EXACT"
@@ -4836,46 +4388,28 @@
     ]
    },
    "attribution": {
-    "delta_min": [
-     "verdict",
-     "triggered",
-     "restriction",
-     "restriction_limit"
-    ],
-    "fallback_baseline": [
-     "restriction",
-     "restriction_limit",
-     "emphasis"
-    ],
-    "delta_min+fallback_baseline": [],
-    "delta_min+fallback_baseline+ipf_tolerance": [],
-    "delta_min+fallback_baseline+epsilon_0": [],
-    "delta_min+fallback_baseline+ipf_tolerance+epsilon_0": []
+    "ipf_tolerance": [],
+    "epsilon_0": [],
+    "ipf_tolerance+epsilon_0": []
    }
   },
   {
    "scenario": "restriction-undrainable",
    "variant": "no_history",
    "k": 0.1,
-   "diff": [
-    "verdict",
-    "triggered",
-    "restriction",
-    "restriction_limit",
-    "emphasis"
-   ],
+   "diff": [],
    "cont": {
     "od": 0.0,
-    "throughput": 1.0,
-    "tau": 1.0,
-    "importance": 0.9999999750000007
+    "throughput": 0.0,
+    "tau": 1.7999963998731037e-06,
+    "importance": 2.249999382364365e-07
    },
    "diag": {
     "solver": "LIGHTWEIGHT",
     "degraded": false,
     "od_pairs_input": 2,
-    "commodities": 0,
-    "demand_all_cut": true,
+    "commodities": 2,
+    "demand_all_cut": false,
     "resolution_modes": [
      "TURNING_EXACT"
     ]
@@ -4898,21 +4432,9 @@
     ]
    },
    "attribution": {
-    "delta_min": [
-     "verdict",
-     "triggered",
-     "restriction",
-     "restriction_limit"
-    ],
-    "fallback_baseline": [
-     "restriction",
-     "restriction_limit",
-     "emphasis"
-    ],
-    "delta_min+fallback_baseline": [],
-    "delta_min+fallback_baseline+ipf_tolerance": [],
-    "delta_min+fallback_baseline+epsilon_0": [],
-    "delta_min+fallback_baseline+ipf_tolerance+epsilon_0": []
+    "ipf_tolerance": [],
+    "epsilon_0": [],
+    "ipf_tolerance+epsilon_0": []
    }
   },
   {
@@ -4961,7 +4483,7 @@
    "cont": {
     "od": 0.0,
     "throughput": 0.0,
-    "tau": 0.9,
+    "tau": 1.7999996409233776e-07,
     "importance": 2.249999930814539e-08
    },
    "diag": {
@@ -4992,12 +4514,9 @@
     ]
    },
    "attribution": {
-    "delta_min": [],
-    "fallback_baseline": [],
-    "delta_min+fallback_baseline": [],
-    "delta_min+fallback_baseline+ipf_tolerance": [],
-    "delta_min+fallback_baseline+epsilon_0": [],
-    "delta_min+fallback_baseline+ipf_tolerance+epsilon_0": []
+    "ipf_tolerance": [],
+    "epsilon_0": [],
+    "ipf_tolerance+epsilon_0": []
    }
   },
   {
@@ -5008,7 +4527,7 @@
    "cont": {
     "od": 0.0,
     "throughput": 0.0,
-    "tau": 0.99,
+    "tau": 1.9799996040393536e-07,
     "importance": 2.474999927226662e-08
    },
    "diag": {
@@ -5039,34 +4558,27 @@
     ]
    },
    "attribution": {
-    "delta_min": [],
-    "fallback_baseline": [],
-    "delta_min+fallback_baseline": [],
-    "delta_min+fallback_baseline+ipf_tolerance": [],
-    "delta_min+fallback_baseline+epsilon_0": [],
-    "delta_min+fallback_baseline+ipf_tolerance+epsilon_0": []
+    "ipf_tolerance": [],
+    "epsilon_0": [],
+    "ipf_tolerance+epsilon_0": []
    }
   },
   {
    "scenario": "restriction-undrainable",
    "variant": "obs_only",
    "k": 0.01,
-   "diff": [
-    "restriction",
-    "restriction_limit",
-    "emphasis"
-   ],
+   "diff": [],
    "cont": {
-    "od": 1.0,
-    "throughput": 1.0,
-    "tau": 1.0,
-    "importance": 0.9999999750000007
+    "od": 0.0,
+    "throughput": 0.0,
+    "tau": 3.299890003653706e-05,
+    "importance": 2.474993750611887e-06
    },
    "diag": {
     "solver": "LIGHTWEIGHT",
     "degraded": false,
-    "od_pairs_input": 0,
-    "commodities": 0,
+    "od_pairs_input": 2,
+    "commodities": 2,
     "demand_all_cut": false,
     "resolution_modes": [
      "TURNING_EXACT"
@@ -5097,23 +4609,19 @@
    "scenario": "restriction-undrainable",
    "variant": "obs_only",
    "k": 0.1,
-   "diff": [
-    "restriction",
-    "restriction_limit",
-    "emphasis"
-   ],
+   "diff": [],
    "cont": {
     "od": 0.0,
-    "throughput": 1.0,
-    "tau": 1.0,
-    "importance": 0.9999999750000007
+    "throughput": 0.0,
+    "tau": 2.999989999779368e-06,
+    "importance": 2.249999382364365e-07
    },
    "diag": {
     "solver": "LIGHTWEIGHT",
     "degraded": false,
     "od_pairs_input": 2,
-    "commodities": 0,
-    "demand_all_cut": true,
+    "commodities": 2,
+    "demand_all_cut": false,
     "resolution_modes": [
      "TURNING_EXACT"
     ]
@@ -5274,22 +4782,18 @@
    "scenario": "festival-gate-split",
    "variant": "history",
    "k": 0.01,
-   "diff": [
-    "restriction",
-    "restriction_limit",
-    "emphasis"
-   ],
+   "diff": [],
    "cont": {
-    "od": 1.0,
-    "throughput": 1.0,
-    "tau": 1.0,
-    "importance": 0.9999999666666678
+    "od": 0.0,
+    "throughput": 0.0,
+    "tau": 3.299890003660348e-05,
+    "importance": 3.299988889926553e-06
    },
    "diag": {
-    "solver": "LIGHTWEIGHT",
-    "degraded": false,
-    "od_pairs_input": 0,
-    "commodities": 0,
+    "solver": "INFEASIBLE",
+    "degraded": true,
+    "od_pairs_input": 2,
+    "commodities": 2,
     "demand_all_cut": false,
     "resolution_modes": [
      "DOUBLY_CONSTRAINED"
@@ -5316,39 +4820,28 @@
     ]
    },
    "attribution": {
-    "delta_min": [],
-    "fallback_baseline": [
-     "restriction",
-     "restriction_limit",
-     "emphasis"
-    ],
-    "delta_min+fallback_baseline": [],
-    "delta_min+fallback_baseline+ipf_tolerance": [],
-    "delta_min+fallback_baseline+epsilon_0": [],
-    "delta_min+fallback_baseline+ipf_tolerance+epsilon_0": []
+    "ipf_tolerance": [],
+    "epsilon_0": [],
+    "ipf_tolerance+epsilon_0": []
    }
   },
   {
    "scenario": "festival-gate-split",
    "variant": "history",
    "k": 0.1,
-   "diff": [
-    "restriction",
-    "restriction_limit",
-    "emphasis"
-   ],
+   "diff": [],
    "cont": {
     "od": 1.480297366166875e-16,
-    "throughput": 1.0,
-    "tau": 1.0,
-    "importance": 0.9999999666666678
+    "throughput": 0.0,
+    "tau": 2.9999900000545513e-06,
+    "importance": 2.999998900410361e-07
    },
    "diag": {
-    "solver": "LIGHTWEIGHT",
-    "degraded": false,
+    "solver": "INFEASIBLE",
+    "degraded": true,
     "od_pairs_input": 2,
-    "commodities": 0,
-    "demand_all_cut": true,
+    "commodities": 2,
+    "demand_all_cut": false,
     "resolution_modes": [
      "DOUBLY_CONSTRAINED"
     ]
@@ -5374,16 +4867,9 @@
     ]
    },
    "attribution": {
-    "delta_min": [],
-    "fallback_baseline": [
-     "restriction",
-     "restriction_limit",
-     "emphasis"
-    ],
-    "delta_min+fallback_baseline": [],
-    "delta_min+fallback_baseline+ipf_tolerance": [],
-    "delta_min+fallback_baseline+epsilon_0": [],
-    "delta_min+fallback_baseline+ipf_tolerance+epsilon_0": []
+    "ipf_tolerance": [],
+    "epsilon_0": [],
+    "ipf_tolerance+epsilon_0": []
    }
   },
   {
@@ -5469,12 +4955,9 @@
     ]
    },
    "attribution": {
-    "delta_min": [],
-    "fallback_baseline": [],
-    "delta_min+fallback_baseline": [],
-    "delta_min+fallback_baseline+ipf_tolerance": [],
-    "delta_min+fallback_baseline+epsilon_0": [],
-    "delta_min+fallback_baseline+ipf_tolerance+epsilon_0": []
+    "ipf_tolerance": [],
+    "epsilon_0": [],
+    "ipf_tolerance+epsilon_0": []
    }
   },
   {
@@ -5519,36 +5002,27 @@
     ]
    },
    "attribution": {
-    "delta_min": [],
-    "fallback_baseline": [],
-    "delta_min+fallback_baseline": [],
-    "delta_min+fallback_baseline+ipf_tolerance": [],
-    "delta_min+fallback_baseline+epsilon_0": [],
-    "delta_min+fallback_baseline+ipf_tolerance+epsilon_0": []
+    "ipf_tolerance": [],
+    "epsilon_0": [],
+    "ipf_tolerance+epsilon_0": []
    }
   },
   {
    "scenario": "festival-gate-split",
    "variant": "no_history",
    "k": 0.01,
-   "diff": [
-    "verdict",
-    "triggered",
-    "restriction",
-    "restriction_limit",
-    "emphasis"
-   ],
+   "diff": [],
    "cont": {
-    "od": 1.0,
-    "throughput": 1.0,
-    "tau": 1.0,
-    "importance": 0.9999999666666678
+    "od": 0.0,
+    "throughput": 0.0,
+    "tau": 1.9799604008060173e-05,
+    "importance": 3.299988889926553e-06
    },
    "diag": {
-    "solver": "LIGHTWEIGHT",
-    "degraded": false,
-    "od_pairs_input": 0,
-    "commodities": 0,
+    "solver": "INFEASIBLE",
+    "degraded": true,
+    "od_pairs_input": 2,
+    "commodities": 2,
     "demand_all_cut": false,
     "resolution_modes": [
      "DOUBLY_CONSTRAINED"
@@ -5572,44 +5046,28 @@
     ]
    },
    "attribution": {
-    "delta_min": [
-     "verdict",
-     "triggered"
-    ],
-    "fallback_baseline": [
-     "restriction",
-     "restriction_limit",
-     "emphasis"
-    ],
-    "delta_min+fallback_baseline": [],
-    "delta_min+fallback_baseline+ipf_tolerance": [],
-    "delta_min+fallback_baseline+epsilon_0": [],
-    "delta_min+fallback_baseline+ipf_tolerance+epsilon_0": []
+    "ipf_tolerance": [],
+    "epsilon_0": [],
+    "ipf_tolerance+epsilon_0": []
    }
   },
   {
    "scenario": "festival-gate-split",
    "variant": "no_history",
    "k": 0.1,
-   "diff": [
-    "verdict",
-    "triggered",
-    "restriction",
-    "restriction_limit",
-    "emphasis"
-   ],
+   "diff": [],
    "cont": {
     "od": 1.480297366166875e-16,
-    "throughput": 1.0,
-    "tau": 1.0,
-    "importance": 0.9999999666666678
+    "throughput": 0.0,
+    "tau": 1.7999963998731037e-06,
+    "importance": 2.999998900410361e-07
    },
    "diag": {
-    "solver": "LIGHTWEIGHT",
-    "degraded": false,
+    "solver": "INFEASIBLE",
+    "degraded": true,
     "od_pairs_input": 2,
-    "commodities": 0,
-    "demand_all_cut": true,
+    "commodities": 2,
+    "demand_all_cut": false,
     "resolution_modes": [
      "DOUBLY_CONSTRAINED"
     ]
@@ -5632,19 +5090,9 @@
     ]
    },
    "attribution": {
-    "delta_min": [
-     "verdict",
-     "triggered"
-    ],
-    "fallback_baseline": [
-     "restriction",
-     "restriction_limit",
-     "emphasis"
-    ],
-    "delta_min+fallback_baseline": [],
-    "delta_min+fallback_baseline+ipf_tolerance": [],
-    "delta_min+fallback_baseline+epsilon_0": [],
-    "delta_min+fallback_baseline+ipf_tolerance+epsilon_0": []
+    "ipf_tolerance": [],
+    "epsilon_0": [],
+    "ipf_tolerance+epsilon_0": []
    }
   },
   {
@@ -5693,7 +5141,7 @@
    "cont": {
     "od": 0.0,
     "throughput": 0.0,
-    "tau": 0.9,
+    "tau": 1.7999996409233776e-07,
     "importance": 2.999999892949745e-08
    },
    "diag": {
@@ -5724,12 +5172,9 @@
     ]
    },
    "attribution": {
-    "delta_min": [],
-    "fallback_baseline": [],
-    "delta_min+fallback_baseline": [],
-    "delta_min+fallback_baseline+ipf_tolerance": [],
-    "delta_min+fallback_baseline+epsilon_0": [],
-    "delta_min+fallback_baseline+ipf_tolerance+epsilon_0": []
+    "ipf_tolerance": [],
+    "epsilon_0": [],
+    "ipf_tolerance+epsilon_0": []
    }
   },
   {
@@ -5740,7 +5185,7 @@
    "cont": {
     "od": 0.0,
     "throughput": 0.0,
-    "tau": 0.99,
+    "tau": 1.9799996040393536e-07,
     "importance": 3.299999895567396e-08
    },
    "diag": {
@@ -5771,12 +5216,9 @@
     ]
    },
    "attribution": {
-    "delta_min": [],
-    "fallback_baseline": [],
-    "delta_min+fallback_baseline": [],
-    "delta_min+fallback_baseline+ipf_tolerance": [],
-    "delta_min+fallback_baseline+epsilon_0": [],
-    "delta_min+fallback_baseline+ipf_tolerance+epsilon_0": []
+    "ipf_tolerance": [],
+    "epsilon_0": [],
+    "ipf_tolerance+epsilon_0": []
    }
   },
   {
@@ -5785,20 +5227,19 @@
    "k": 0.01,
    "diff": [
     "restriction",
-    "restriction_limit",
-    "emphasis"
+    "restriction_limit"
    ],
    "cont": {
-    "od": 1.0,
-    "throughput": 1.0,
-    "tau": 1.0,
-    "importance": 0.9999999666666678
+    "od": 0.0,
+    "throughput": 0.0,
+    "tau": 3.299890003660348e-05,
+    "importance": 3.299988889926553e-06
    },
    "diag": {
     "solver": "LIGHTWEIGHT",
     "degraded": false,
-    "od_pairs_input": 0,
-    "commodities": 0,
+    "od_pairs_input": 2,
+    "commodities": 2,
     "demand_all_cut": false,
     "resolution_modes": [
      "DOUBLY_CONSTRAINED"
@@ -5831,21 +5272,20 @@
    "k": 0.1,
    "diff": [
     "restriction",
-    "restriction_limit",
-    "emphasis"
+    "restriction_limit"
    ],
    "cont": {
     "od": 1.480297366166875e-16,
-    "throughput": 1.0,
-    "tau": 1.0,
-    "importance": 0.9999999666666678
+    "throughput": 0.0,
+    "tau": 2.9999900000545513e-06,
+    "importance": 2.999998900410361e-07
    },
    "diag": {
     "solver": "LIGHTWEIGHT",
     "degraded": false,
     "od_pairs_input": 2,
-    "commodities": 0,
-    "demand_all_cut": true,
+    "commodities": 2,
+    "demand_all_cut": false,
     "resolution_modes": [
      "DOUBLY_CONSTRAINED"
     ]
@@ -6004,75 +5444,19 @@
    "scenario": "crossing-detour",
    "variant": "history",
    "k": 0.01,
-   "diff": [
-    "emphasis"
-   ],
-   "cont": {
-    "od": 1.0,
-    "throughput": 1.0,
-    "tau": 1.0,
-    "importance": 0.9999999666666678
-   },
-   "diag": {
-    "solver": "LIGHTWEIGHT",
-    "degraded": false,
-    "od_pairs_input": 0,
-    "commodities": 0,
-    "demand_all_cut": false,
-    "resolution_modes": [
-     "DOUBLY_CONSTRAINED"
-    ]
-   },
-   "census": {
-    "scaled": {
-     "flow_rate": 2,
-     "stagnation": 7,
-     "observed_count": 2,
-     "occupancy": 1,
-     "occupancy_delta": 1,
-     "p90_stagnation": 7,
-     "baseline_stagnation": 7,
-     "flow_samples": 14,
-     "stagnation_samples": 7,
-     "directional_flow_samples": 14,
-     "capacity_hint": 1
-    },
-    "unchanged_fields": [
-     "completeness",
-     "flow_sensitivity_eta",
-     "time_resolution_s"
-    ]
-   },
-   "attribution": {
-    "delta_min": [],
-    "fallback_baseline": [
-     "emphasis"
-    ],
-    "delta_min+fallback_baseline": [],
-    "delta_min+fallback_baseline+ipf_tolerance": [],
-    "delta_min+fallback_baseline+epsilon_0": [],
-    "delta_min+fallback_baseline+ipf_tolerance+epsilon_0": []
-   }
-  },
-  {
-   "scenario": "crossing-detour",
-   "variant": "history",
-   "k": 0.1,
-   "diff": [
-    "emphasis"
-   ],
+   "diff": [],
    "cont": {
     "od": 0.0,
-    "throughput": 1.0,
-    "tau": 1.0,
-    "importance": 0.9999999666666678
+    "throughput": 0.0,
+    "tau": 3.299890003669841e-05,
+    "importance": 3.299988889926553e-06
    },
    "diag": {
     "solver": "LIGHTWEIGHT",
     "degraded": false,
     "od_pairs_input": 1,
-    "commodities": 0,
-    "demand_all_cut": true,
+    "commodities": 1,
+    "demand_all_cut": false,
     "resolution_modes": [
      "DOUBLY_CONSTRAINED"
     ]
@@ -6098,14 +5482,56 @@
     ]
    },
    "attribution": {
-    "delta_min": [],
-    "fallback_baseline": [
-     "emphasis"
-    ],
-    "delta_min+fallback_baseline": [],
-    "delta_min+fallback_baseline+ipf_tolerance": [],
-    "delta_min+fallback_baseline+epsilon_0": [],
-    "delta_min+fallback_baseline+ipf_tolerance+epsilon_0": []
+    "ipf_tolerance": [],
+    "epsilon_0": [],
+    "ipf_tolerance+epsilon_0": []
+   }
+  },
+  {
+   "scenario": "crossing-detour",
+   "variant": "history",
+   "k": 0.1,
+   "diff": [],
+   "cont": {
+    "od": 0.0,
+    "throughput": 0.0,
+    "tau": 2.999989999904431e-06,
+    "importance": 2.999998900410361e-07
+   },
+   "diag": {
+    "solver": "LIGHTWEIGHT",
+    "degraded": false,
+    "od_pairs_input": 1,
+    "commodities": 1,
+    "demand_all_cut": false,
+    "resolution_modes": [
+     "DOUBLY_CONSTRAINED"
+    ]
+   },
+   "census": {
+    "scaled": {
+     "flow_rate": 2,
+     "stagnation": 7,
+     "observed_count": 2,
+     "occupancy": 1,
+     "occupancy_delta": 1,
+     "p90_stagnation": 7,
+     "baseline_stagnation": 7,
+     "flow_samples": 14,
+     "stagnation_samples": 7,
+     "directional_flow_samples": 14,
+     "capacity_hint": 1
+    },
+    "unchanged_fields": [
+     "completeness",
+     "flow_sensitivity_eta",
+     "time_resolution_s"
+    ]
+   },
+   "attribution": {
+    "ipf_tolerance": [],
+    "epsilon_0": [],
+    "ipf_tolerance+epsilon_0": []
    }
   },
   {
@@ -6191,12 +5617,9 @@
     ]
    },
    "attribution": {
-    "delta_min": [],
-    "fallback_baseline": [],
-    "delta_min+fallback_baseline": [],
-    "delta_min+fallback_baseline+ipf_tolerance": [],
-    "delta_min+fallback_baseline+epsilon_0": [],
-    "delta_min+fallback_baseline+ipf_tolerance+epsilon_0": []
+    "ipf_tolerance": [],
+    "epsilon_0": [],
+    "ipf_tolerance+epsilon_0": []
    }
   },
   {
@@ -6241,35 +5664,27 @@
     ]
    },
    "attribution": {
-    "delta_min": [],
-    "fallback_baseline": [],
-    "delta_min+fallback_baseline": [],
-    "delta_min+fallback_baseline+ipf_tolerance": [],
-    "delta_min+fallback_baseline+epsilon_0": [],
-    "delta_min+fallback_baseline+ipf_tolerance+epsilon_0": []
+    "ipf_tolerance": [],
+    "epsilon_0": [],
+    "ipf_tolerance+epsilon_0": []
    }
   },
   {
    "scenario": "crossing-detour",
    "variant": "no_history",
    "k": 0.01,
-   "diff": [
-    "verdict",
-    "triggered",
-    "detour",
-    "emphasis"
-   ],
+   "diff": [],
    "cont": {
-    "od": 1.0,
-    "throughput": 1.0,
-    "tau": 1.0,
-    "importance": 0.9999999666666678
+    "od": 0.0,
+    "throughput": 0.0,
+    "tau": 1.97996040081454e-05,
+    "importance": 3.299988889926553e-06
    },
    "diag": {
     "solver": "LIGHTWEIGHT",
     "degraded": false,
-    "od_pairs_input": 0,
-    "commodities": 0,
+    "od_pairs_input": 1,
+    "commodities": 1,
     "demand_all_cut": false,
     "resolution_modes": [
      "DOUBLY_CONSTRAINED"
@@ -6293,43 +5708,28 @@
     ]
    },
    "attribution": {
-    "delta_min": [
-     "verdict",
-     "triggered",
-     "detour",
-     "emphasis"
-    ],
-    "fallback_baseline": [
-     "emphasis"
-    ],
-    "delta_min+fallback_baseline": [],
-    "delta_min+fallback_baseline+ipf_tolerance": [],
-    "delta_min+fallback_baseline+epsilon_0": [],
-    "delta_min+fallback_baseline+ipf_tolerance+epsilon_0": []
+    "ipf_tolerance": [],
+    "epsilon_0": [],
+    "ipf_tolerance+epsilon_0": []
    }
   },
   {
    "scenario": "crossing-detour",
    "variant": "no_history",
    "k": 0.1,
-   "diff": [
-    "verdict",
-    "triggered",
-    "detour",
-    "emphasis"
-   ],
+   "diff": [],
    "cont": {
     "od": 0.0,
-    "throughput": 1.0,
-    "tau": 1.0,
-    "importance": 0.9999999666666678
+    "throughput": 0.0,
+    "tau": 1.7999964000570193e-06,
+    "importance": 2.999998900410361e-07
    },
    "diag": {
     "solver": "LIGHTWEIGHT",
     "degraded": false,
     "od_pairs_input": 1,
-    "commodities": 0,
-    "demand_all_cut": true,
+    "commodities": 1,
+    "demand_all_cut": false,
     "resolution_modes": [
      "DOUBLY_CONSTRAINED"
     ]
@@ -6352,19 +5752,9 @@
     ]
    },
    "attribution": {
-    "delta_min": [
-     "verdict",
-     "triggered",
-     "detour",
-     "emphasis"
-    ],
-    "fallback_baseline": [
-     "emphasis"
-    ],
-    "delta_min+fallback_baseline": [],
-    "delta_min+fallback_baseline+ipf_tolerance": [],
-    "delta_min+fallback_baseline+epsilon_0": [],
-    "delta_min+fallback_baseline+ipf_tolerance+epsilon_0": []
+    "ipf_tolerance": [],
+    "epsilon_0": [],
+    "ipf_tolerance+epsilon_0": []
    }
   },
   {
@@ -6413,7 +5803,7 @@
    "cont": {
     "od": 0.0,
     "throughput": 0.0,
-    "tau": 0.9,
+    "tau": 1.799999640721519e-07,
     "importance": 2.999999892949745e-08
    },
    "diag": {
@@ -6444,12 +5834,9 @@
     ]
    },
    "attribution": {
-    "delta_min": [],
-    "fallback_baseline": [],
-    "delta_min+fallback_baseline": [],
-    "delta_min+fallback_baseline+ipf_tolerance": [],
-    "delta_min+fallback_baseline+epsilon_0": [],
-    "delta_min+fallback_baseline+ipf_tolerance+epsilon_0": []
+    "ipf_tolerance": [],
+    "epsilon_0": [],
+    "ipf_tolerance+epsilon_0": []
    }
   },
   {
@@ -6460,7 +5847,7 @@
    "cont": {
     "od": 0.0,
     "throughput": 0.0,
-    "tau": 0.99,
+    "tau": 1.979999604196355e-07,
     "importance": 3.299999895567396e-08
    },
    "diag": {
@@ -6491,12 +5878,9 @@
     ]
    },
    "attribution": {
-    "delta_min": [],
-    "fallback_baseline": [],
-    "delta_min+fallback_baseline": [],
-    "delta_min+fallback_baseline+ipf_tolerance": [],
-    "delta_min+fallback_baseline+epsilon_0": [],
-    "delta_min+fallback_baseline+ipf_tolerance+epsilon_0": []
+    "ipf_tolerance": [],
+    "epsilon_0": [],
+    "ipf_tolerance+epsilon_0": []
    }
   },
   {
@@ -6507,16 +5891,16 @@
     "emphasis"
    ],
    "cont": {
-    "od": 1.0,
-    "throughput": 1.0,
-    "tau": 1.0,
-    "importance": 0.9999999666666678
+    "od": 0.0,
+    "throughput": 0.4,
+    "tau": 0.033930185378001514,
+    "importance": 0.6666633444555553
    },
    "diag": {
     "solver": "LIGHTWEIGHT",
     "degraded": false,
-    "od_pairs_input": 0,
-    "commodities": 0,
+    "od_pairs_input": 1,
+    "commodities": 1,
     "demand_all_cut": false,
     "resolution_modes": [
      "DOUBLY_CONSTRAINED"
@@ -6552,16 +5936,16 @@
    ],
    "cont": {
     "od": 0.0,
-    "throughput": 1.0,
-    "tau": 1.0,
-    "importance": 0.9999999666666678
+    "throughput": 0.4,
+    "tau": 0.033901203380169324,
+    "importance": 0.6666663444445552
    },
    "diag": {
     "solver": "LIGHTWEIGHT",
     "degraded": false,
     "od_pairs_input": 1,
-    "commodities": 0,
-    "demand_all_cut": true,
+    "commodities": 1,
+    "demand_all_cut": false,
     "resolution_modes": [
      "DOUBLY_CONSTRAINED"
     ]
@@ -6720,20 +6104,18 @@
    "scenario": "school-north-stair-peak",
    "variant": "history",
    "k": 0.01,
-   "diff": [
-    "emphasis"
-   ],
+   "diff": [],
    "cont": {
-    "od": 1.0,
-    "throughput": 1.0,
-    "tau": 1.0,
-    "importance": 0.4471544515500043
+    "od": 8.881784197001244e-16,
+    "throughput": 1.7763568394002506e-16,
+    "tau": 3.2998900036524535e-05,
+    "importance": 4.426809275592802e-06
    },
    "diag": {
     "solver": "LIGHTWEIGHT",
     "degraded": false,
-    "od_pairs_input": 0,
-    "commodities": 0,
+    "od_pairs_input": 6,
+    "commodities": 1,
     "demand_all_cut": false,
     "resolution_modes": [
      "DOUBLY_CONSTRAINED"
@@ -6760,35 +6142,28 @@
     ]
    },
    "attribution": {
-    "delta_min": [],
-    "fallback_baseline": [
-     "emphasis"
-    ],
-    "delta_min+fallback_baseline": [],
-    "delta_min+fallback_baseline+ipf_tolerance": [],
-    "delta_min+fallback_baseline+epsilon_0": [],
-    "delta_min+fallback_baseline+ipf_tolerance+epsilon_0": []
+    "ipf_tolerance": [],
+    "epsilon_0": [],
+    "ipf_tolerance+epsilon_0": []
    }
   },
   {
    "scenario": "school-north-stair-peak",
    "variant": "history",
    "k": 0.1,
-   "diff": [
-    "emphasis"
-   ],
+   "diff": [],
    "cont": {
-    "od": 1.0,
-    "throughput": 1.0,
-    "tau": 1.0,
-    "importance": 0.4471544515500043
+    "od": 1.3322676295501878e-15,
+    "throughput": 1.77635683940025e-16,
+    "tau": 2.9999899997486233e-06,
+    "importance": 4.0243882637458483e-07
    },
    "diag": {
     "solver": "LIGHTWEIGHT",
     "degraded": false,
-    "od_pairs_input": 1,
-    "commodities": 0,
-    "demand_all_cut": true,
+    "od_pairs_input": 6,
+    "commodities": 1,
+    "demand_all_cut": false,
     "resolution_modes": [
      "DOUBLY_CONSTRAINED"
     ]
@@ -6814,14 +6189,9 @@
     ]
    },
    "attribution": {
-    "delta_min": [],
-    "fallback_baseline": [
-     "emphasis"
-    ],
-    "delta_min+fallback_baseline": [],
-    "delta_min+fallback_baseline+ipf_tolerance": [],
-    "delta_min+fallback_baseline+epsilon_0": [],
-    "delta_min+fallback_baseline+ipf_tolerance+epsilon_0": []
+    "ipf_tolerance": [],
+    "epsilon_0": [],
+    "ipf_tolerance+epsilon_0": []
    }
   },
   {
@@ -6869,20 +6239,18 @@
    "scenario": "school-north-stair-peak",
    "variant": "history",
    "k": 10.0,
-   "diff": [
-    "emphasis"
-   ],
+   "diff": [],
    "cont": {
     "od": 0.0,
-    "throughput": 0.375,
+    "throughput": 0.0,
     "tau": 2.9999989999662356e-07,
-    "importance": 0.23396009721400196
+    "importance": 4.024390054535587e-08
    },
    "diag": {
     "solver": "LIGHTWEIGHT",
     "degraded": false,
     "od_pairs_input": 6,
-    "commodities": 6,
+    "commodities": 1,
     "demand_all_cut": false,
     "resolution_modes": [
      "DOUBLY_CONSTRAINED"
@@ -6909,34 +6277,27 @@
     ]
    },
    "attribution": {
-    "delta_min": [],
-    "fallback_baseline": [
-     "emphasis"
-    ],
-    "delta_min+fallback_baseline": [],
-    "delta_min+fallback_baseline+ipf_tolerance": [],
-    "delta_min+fallback_baseline+epsilon_0": [],
-    "delta_min+fallback_baseline+ipf_tolerance+epsilon_0": []
+    "ipf_tolerance": [],
+    "epsilon_0": [],
+    "ipf_tolerance+epsilon_0": []
    }
   },
   {
    "scenario": "school-north-stair-peak",
    "variant": "history",
    "k": 100.0,
-   "diff": [
-    "emphasis"
-   ],
+   "diff": [],
    "cont": {
     "od": 0.0,
-    "throughput": 0.375,
+    "throughput": 0.0,
     "tau": 3.299998901149421e-07,
-    "importance": 0.2339600993016287
+    "importance": 4.426829081083383e-08
    },
    "diag": {
     "solver": "LIGHTWEIGHT",
     "degraded": false,
     "od_pairs_input": 6,
-    "commodities": 6,
+    "commodities": 1,
     "demand_all_cut": false,
     "resolution_modes": [
      "DOUBLY_CONSTRAINED"
@@ -6963,37 +6324,27 @@
     ]
    },
    "attribution": {
-    "delta_min": [],
-    "fallback_baseline": [
-     "emphasis"
-    ],
-    "delta_min+fallback_baseline": [],
-    "delta_min+fallback_baseline+ipf_tolerance": [],
-    "delta_min+fallback_baseline+epsilon_0": [],
-    "delta_min+fallback_baseline+ipf_tolerance+epsilon_0": []
+    "ipf_tolerance": [],
+    "epsilon_0": [],
+    "ipf_tolerance+epsilon_0": []
    }
   },
   {
    "scenario": "school-north-stair-peak",
    "variant": "no_history",
    "k": 0.01,
-   "diff": [
-    "verdict",
-    "triggered",
-    "detour",
-    "emphasis"
-   ],
+   "diff": [],
    "cont": {
-    "od": 1.0,
-    "throughput": 1.0,
-    "tau": 1.0,
-    "importance": 0.9999999552845548
+    "od": 8.881784197001244e-16,
+    "throughput": 1.7763568394002506e-16,
+    "tau": 1.97996040078628e-05,
+    "importance": 4.426809275592802e-06
    },
    "diag": {
     "solver": "LIGHTWEIGHT",
     "degraded": false,
-    "od_pairs_input": 0,
-    "commodities": 0,
+    "od_pairs_input": 6,
+    "commodities": 1,
     "demand_all_cut": false,
     "resolution_modes": [
      "DOUBLY_CONSTRAINED"
@@ -7017,43 +6368,28 @@
     ]
    },
    "attribution": {
-    "delta_min": [
-     "verdict",
-     "triggered",
-     "detour",
-     "emphasis"
-    ],
-    "fallback_baseline": [
-     "emphasis"
-    ],
-    "delta_min+fallback_baseline": [],
-    "delta_min+fallback_baseline+ipf_tolerance": [],
-    "delta_min+fallback_baseline+epsilon_0": [],
-    "delta_min+fallback_baseline+ipf_tolerance+epsilon_0": []
+    "ipf_tolerance": [],
+    "epsilon_0": [],
+    "ipf_tolerance+epsilon_0": []
    }
   },
   {
    "scenario": "school-north-stair-peak",
    "variant": "no_history",
    "k": 0.1,
-   "diff": [
-    "verdict",
-    "triggered",
-    "detour",
-    "emphasis"
-   ],
+   "diff": [],
    "cont": {
-    "od": 1.0,
-    "throughput": 1.0,
-    "tau": 1.0,
-    "importance": 0.9999999552845548
+    "od": 1.3322676295501878e-15,
+    "throughput": 1.77635683940025e-16,
+    "tau": 1.7999963997744171e-06,
+    "importance": 4.0243882637458483e-07
    },
    "diag": {
     "solver": "LIGHTWEIGHT",
     "degraded": false,
-    "od_pairs_input": 1,
-    "commodities": 0,
-    "demand_all_cut": true,
+    "od_pairs_input": 6,
+    "commodities": 1,
+    "demand_all_cut": false,
     "resolution_modes": [
      "DOUBLY_CONSTRAINED"
     ]
@@ -7076,19 +6412,9 @@
     ]
    },
    "attribution": {
-    "delta_min": [
-     "verdict",
-     "triggered",
-     "detour",
-     "emphasis"
-    ],
-    "fallback_baseline": [
-     "emphasis"
-    ],
-    "delta_min+fallback_baseline": [],
-    "delta_min+fallback_baseline+ipf_tolerance": [],
-    "delta_min+fallback_baseline+epsilon_0": [],
-    "delta_min+fallback_baseline+ipf_tolerance+epsilon_0": []
+    "ipf_tolerance": [],
+    "epsilon_0": [],
+    "ipf_tolerance+epsilon_0": []
    }
   },
   {
@@ -7133,20 +6459,18 @@
    "scenario": "school-north-stair-peak",
    "variant": "no_history",
    "k": 10.0,
-   "diff": [
-    "emphasis"
-   ],
+   "diff": [],
    "cont": {
     "od": 0.0,
-    "throughput": 0.375,
-    "tau": 0.9,
-    "importance": 0.23396009721400196
+    "throughput": 0.0,
+    "tau": 1.7999996409233776e-07,
+    "importance": 4.024390054535587e-08
    },
    "diag": {
     "solver": "LIGHTWEIGHT",
     "degraded": false,
     "od_pairs_input": 6,
-    "commodities": 6,
+    "commodities": 1,
     "demand_all_cut": false,
     "resolution_modes": [
      "DOUBLY_CONSTRAINED"
@@ -7170,34 +6494,27 @@
     ]
    },
    "attribution": {
-    "delta_min": [],
-    "fallback_baseline": [
-     "emphasis"
-    ],
-    "delta_min+fallback_baseline": [],
-    "delta_min+fallback_baseline+ipf_tolerance": [],
-    "delta_min+fallback_baseline+epsilon_0": [],
-    "delta_min+fallback_baseline+ipf_tolerance+epsilon_0": []
+    "ipf_tolerance": [],
+    "epsilon_0": [],
+    "ipf_tolerance+epsilon_0": []
    }
   },
   {
    "scenario": "school-north-stair-peak",
    "variant": "no_history",
    "k": 100.0,
-   "diff": [
-    "emphasis"
-   ],
+   "diff": [],
    "cont": {
     "od": 0.0,
-    "throughput": 0.375,
-    "tau": 0.99,
-    "importance": 0.2339600993016287
+    "throughput": 0.0,
+    "tau": 1.9799996049028603e-07,
+    "importance": 4.426829081083383e-08
    },
    "diag": {
     "solver": "LIGHTWEIGHT",
     "degraded": false,
     "od_pairs_input": 6,
-    "commodities": 6,
+    "commodities": 1,
     "demand_all_cut": false,
     "resolution_modes": [
      "DOUBLY_CONSTRAINED"
@@ -7221,34 +6538,27 @@
     ]
    },
    "attribution": {
-    "delta_min": [],
-    "fallback_baseline": [
-     "emphasis"
-    ],
-    "delta_min+fallback_baseline": [],
-    "delta_min+fallback_baseline+ipf_tolerance": [],
-    "delta_min+fallback_baseline+epsilon_0": [],
-    "delta_min+fallback_baseline+ipf_tolerance+epsilon_0": []
+    "ipf_tolerance": [],
+    "epsilon_0": [],
+    "ipf_tolerance+epsilon_0": []
    }
   },
   {
    "scenario": "school-north-stair-peak",
    "variant": "obs_only",
    "k": 0.01,
-   "diff": [
-    "emphasis"
-   ],
+   "diff": [],
    "cont": {
-    "od": 1.0,
-    "throughput": 1.0,
-    "tau": 1.0,
-    "importance": 0.4471544515500043
+    "od": 8.881784197001244e-16,
+    "throughput": 1.7763568394002506e-16,
+    "tau": 3.2998900036524535e-05,
+    "importance": 4.426809275592802e-06
    },
    "diag": {
     "solver": "LIGHTWEIGHT",
     "degraded": false,
-    "od_pairs_input": 0,
-    "commodities": 0,
+    "od_pairs_input": 6,
+    "commodities": 1,
     "demand_all_cut": false,
     "resolution_modes": [
      "DOUBLY_CONSTRAINED"
@@ -7279,21 +6589,19 @@
    "scenario": "school-north-stair-peak",
    "variant": "obs_only",
    "k": 0.1,
-   "diff": [
-    "emphasis"
-   ],
+   "diff": [],
    "cont": {
-    "od": 1.0,
-    "throughput": 1.0,
-    "tau": 1.0,
-    "importance": 0.4471544515500043
+    "od": 1.3322676295501878e-15,
+    "throughput": 1.77635683940025e-16,
+    "tau": 2.9999899997486233e-06,
+    "importance": 4.0243882637458483e-07
    },
    "diag": {
     "solver": "LIGHTWEIGHT",
     "degraded": false,
-    "od_pairs_input": 1,
-    "commodities": 0,
-    "demand_all_cut": true,
+    "od_pairs_input": 6,
+    "commodities": 1,
+    "demand_all_cut": false,
     "resolution_modes": [
      "DOUBLY_CONSTRAINED"
     ]
@@ -7370,7 +6678,7 @@
    ],
    "cont": {
     "od": 0.0,
-    "throughput": 0.3288590604026846,
+    "throughput": 0.10999999999999996,
     "tau": 0.005499701650009855,
     "importance": 0.7601625676350071
    },
@@ -7378,7 +6686,7 @@
     "solver": "INFEASIBLE",
     "degraded": true,
     "od_pairs_input": 6,
-    "commodities": 6,
+    "commodities": 1,
     "demand_all_cut": false,
     "resolution_modes": [
      "DOUBLY_CONSTRAINED"
@@ -7415,7 +6723,7 @@
    ],
    "cont": {
     "od": 0.0,
-    "throughput": 0.3706733794839522,
+    "throughput": 0.010999999999999944,
     "tau": 0.0005496701815011236,
     "importance": 0.7601625676350071
    },
@@ -7423,7 +6731,7 @@
     "solver": "INFEASIBLE",
     "degraded": true,
     "od_pairs_input": 6,
-    "commodities": 6,
+    "commodities": 1,
     "demand_all_cut": false,
     "resolution_modes": [
      "DOUBLY_CONSTRAINED"
@@ -7454,20 +6762,18 @@
    "scenario": "multi-route-surge",
    "variant": "history",
    "k": 0.01,
-   "diff": [
-    "emphasis"
-   ],
+   "diff": [],
    "cont": {
-    "od": 1.0,
-    "throughput": 1.0,
-    "tau": 1.0,
-    "importance": 0.9999999714285723
+    "od": 0.0,
+    "throughput": 0.0,
+    "tau": 3.299890003697137e-05,
+    "importance": 2.8285632661662063e-06
    },
    "diag": {
     "solver": "LIGHTWEIGHT",
     "degraded": false,
-    "od_pairs_input": 0,
-    "commodities": 0,
+    "od_pairs_input": 2,
+    "commodities": 2,
     "demand_all_cut": false,
     "resolution_modes": [
      "DOUBLY_CONSTRAINED"
@@ -7494,35 +6800,28 @@
     ]
    },
    "attribution": {
-    "delta_min": [],
-    "fallback_baseline": [
-     "emphasis"
-    ],
-    "delta_min+fallback_baseline": [],
-    "delta_min+fallback_baseline+ipf_tolerance": [],
-    "delta_min+fallback_baseline+epsilon_0": [],
-    "delta_min+fallback_baseline+ipf_tolerance+epsilon_0": []
+    "ipf_tolerance": [],
+    "epsilon_0": [],
+    "ipf_tolerance+epsilon_0": []
    }
   },
   {
    "scenario": "multi-route-surge",
    "variant": "history",
    "k": 0.1,
-   "diff": [
-    "emphasis"
-   ],
+   "diff": [],
    "cont": {
     "od": 0.0,
-    "throughput": 1.0,
-    "tau": 1.0,
-    "importance": 0.9999999714285723
+    "throughput": 0.0,
+    "tau": 2.9999900001058594e-06,
+    "importance": 2.571427764053169e-07
    },
    "diag": {
     "solver": "LIGHTWEIGHT",
     "degraded": false,
     "od_pairs_input": 2,
-    "commodities": 0,
-    "demand_all_cut": true,
+    "commodities": 2,
+    "demand_all_cut": false,
     "resolution_modes": [
      "DOUBLY_CONSTRAINED"
     ]
@@ -7548,14 +6847,9 @@
     ]
    },
    "attribution": {
-    "delta_min": [],
-    "fallback_baseline": [
-     "emphasis"
-    ],
-    "delta_min+fallback_baseline": [],
-    "delta_min+fallback_baseline+ipf_tolerance": [],
-    "delta_min+fallback_baseline+epsilon_0": [],
-    "delta_min+fallback_baseline+ipf_tolerance+epsilon_0": []
+    "ipf_tolerance": [],
+    "epsilon_0": [],
+    "ipf_tolerance+epsilon_0": []
    }
   },
   {
@@ -7641,12 +6935,9 @@
     ]
    },
    "attribution": {
-    "delta_min": [],
-    "fallback_baseline": [],
-    "delta_min+fallback_baseline": [],
-    "delta_min+fallback_baseline+ipf_tolerance": [],
-    "delta_min+fallback_baseline+epsilon_0": [],
-    "delta_min+fallback_baseline+ipf_tolerance+epsilon_0": []
+    "ipf_tolerance": [],
+    "epsilon_0": [],
+    "ipf_tolerance+epsilon_0": []
    }
   },
   {
@@ -7691,35 +6982,27 @@
     ]
    },
    "attribution": {
-    "delta_min": [],
-    "fallback_baseline": [],
-    "delta_min+fallback_baseline": [],
-    "delta_min+fallback_baseline+ipf_tolerance": [],
-    "delta_min+fallback_baseline+epsilon_0": [],
-    "delta_min+fallback_baseline+ipf_tolerance+epsilon_0": []
+    "ipf_tolerance": [],
+    "epsilon_0": [],
+    "ipf_tolerance+epsilon_0": []
    }
   },
   {
    "scenario": "multi-route-surge",
    "variant": "no_history",
    "k": 0.01,
-   "diff": [
-    "verdict",
-    "triggered",
-    "detour",
-    "emphasis"
-   ],
+   "diff": [],
    "cont": {
-    "od": 1.0,
-    "throughput": 1.0,
-    "tau": 1.0,
-    "importance": 0.9999999714285723
+    "od": 0.0,
+    "throughput": 0.0,
+    "tau": 1.9799604008176274e-05,
+    "importance": 2.8285632661662063e-06
    },
    "diag": {
     "solver": "LIGHTWEIGHT",
     "degraded": false,
-    "od_pairs_input": 0,
-    "commodities": 0,
+    "od_pairs_input": 2,
+    "commodities": 2,
     "demand_all_cut": false,
     "resolution_modes": [
      "DOUBLY_CONSTRAINED"
@@ -7743,43 +7026,28 @@
     ]
    },
    "attribution": {
-    "delta_min": [
-     "verdict",
-     "triggered",
-     "detour",
-     "emphasis"
-    ],
-    "fallback_baseline": [
-     "emphasis"
-    ],
-    "delta_min+fallback_baseline": [],
-    "delta_min+fallback_baseline+ipf_tolerance": [],
-    "delta_min+fallback_baseline+epsilon_0": [],
-    "delta_min+fallback_baseline+ipf_tolerance+epsilon_0": []
+    "ipf_tolerance": [],
+    "epsilon_0": [],
+    "ipf_tolerance+epsilon_0": []
    }
   },
   {
    "scenario": "multi-route-surge",
    "variant": "no_history",
    "k": 0.1,
-   "diff": [
-    "verdict",
-    "triggered",
-    "detour",
-    "emphasis"
-   ],
+   "diff": [],
    "cont": {
     "od": 0.0,
-    "throughput": 1.0,
-    "tau": 1.0,
-    "importance": 0.9999999714285723
+    "throughput": 0.0,
+    "tau": 1.7999963999311544e-06,
+    "importance": 2.571427764053169e-07
    },
    "diag": {
     "solver": "LIGHTWEIGHT",
     "degraded": false,
     "od_pairs_input": 2,
-    "commodities": 0,
-    "demand_all_cut": true,
+    "commodities": 2,
+    "demand_all_cut": false,
     "resolution_modes": [
      "DOUBLY_CONSTRAINED"
     ]
@@ -7802,19 +7070,9 @@
     ]
    },
    "attribution": {
-    "delta_min": [
-     "verdict",
-     "triggered",
-     "detour",
-     "emphasis"
-    ],
-    "fallback_baseline": [
-     "emphasis"
-    ],
-    "delta_min+fallback_baseline": [],
-    "delta_min+fallback_baseline+ipf_tolerance": [],
-    "delta_min+fallback_baseline+epsilon_0": [],
-    "delta_min+fallback_baseline+ipf_tolerance+epsilon_0": []
+    "ipf_tolerance": [],
+    "epsilon_0": [],
+    "ipf_tolerance+epsilon_0": []
    }
   },
   {
@@ -7863,7 +7121,7 @@
    "cont": {
     "od": 0.0,
     "throughput": 0.0,
-    "tau": 0.8999999999999999,
+    "tau": 1.7999996402703054e-07,
     "importance": 2.571428481257243e-08
    },
    "diag": {
@@ -7894,12 +7152,9 @@
     ]
    },
    "attribution": {
-    "delta_min": [],
-    "fallback_baseline": [],
-    "delta_min+fallback_baseline": [],
-    "delta_min+fallback_baseline+ipf_tolerance": [],
-    "delta_min+fallback_baseline+epsilon_0": [],
-    "delta_min+fallback_baseline+ipf_tolerance+epsilon_0": []
+    "ipf_tolerance": [],
+    "epsilon_0": [],
+    "ipf_tolerance+epsilon_0": []
    }
   },
   {
@@ -7910,7 +7165,7 @@
    "cont": {
     "od": 0.0,
     "throughput": 0.0,
-    "tau": 0.99,
+    "tau": 1.979999604837553e-07,
     "importance": 2.8285713438158666e-08
    },
    "diag": {
@@ -7941,32 +7196,27 @@
     ]
    },
    "attribution": {
-    "delta_min": [],
-    "fallback_baseline": [],
-    "delta_min+fallback_baseline": [],
-    "delta_min+fallback_baseline+ipf_tolerance": [],
-    "delta_min+fallback_baseline+epsilon_0": [],
-    "delta_min+fallback_baseline+ipf_tolerance+epsilon_0": []
+    "ipf_tolerance": [],
+    "epsilon_0": [],
+    "ipf_tolerance+epsilon_0": []
    }
   },
   {
    "scenario": "multi-route-surge",
    "variant": "obs_only",
    "k": 0.01,
-   "diff": [
-    "emphasis"
-   ],
+   "diff": [],
    "cont": {
-    "od": 1.0,
-    "throughput": 1.0,
-    "tau": 1.0,
-    "importance": 0.9999999714285723
+    "od": 0.0,
+    "throughput": 0.0,
+    "tau": 3.299890003697137e-05,
+    "importance": 2.8285632661662063e-06
    },
    "diag": {
     "solver": "LIGHTWEIGHT",
     "degraded": false,
-    "od_pairs_input": 0,
-    "commodities": 0,
+    "od_pairs_input": 2,
+    "commodities": 2,
     "demand_all_cut": false,
     "resolution_modes": [
      "DOUBLY_CONSTRAINED"
@@ -7997,21 +7247,19 @@
    "scenario": "multi-route-surge",
    "variant": "obs_only",
    "k": 0.1,
-   "diff": [
-    "emphasis"
-   ],
+   "diff": [],
    "cont": {
     "od": 0.0,
-    "throughput": 1.0,
-    "tau": 1.0,
-    "importance": 0.9999999714285723
+    "throughput": 0.0,
+    "tau": 2.9999900001058594e-06,
+    "importance": 2.571427764053169e-07
    },
    "diag": {
     "solver": "LIGHTWEIGHT",
     "degraded": false,
     "od_pairs_input": 2,
-    "commodities": 0,
-    "demand_all_cut": true,
+    "commodities": 2,
+    "demand_all_cut": false,
     "resolution_modes": [
      "DOUBLY_CONSTRAINED"
     ]

@@ -204,8 +204,8 @@ def make_history():
 
     - ``p90_stagnation`` は停滞警戒 (a).1 のパーセンタイル閾値（``None`` で (a).1 縮退）
     - ``recent_stagnation_ma`` は (a).2 の直近移動平均で ``stagnation_samples`` に展開する
-      （``None`` なら系列を生成せず (a).2 は評価不能）
-    - ``baseline_stagnation`` は (a).2 の相対分母 s̄_e（``ArcHistoryStat`` に格納）
+      （``None`` なら系列を生成せず、(a).2 は直近平均の代わりに baseline を使う）
+    - ``baseline_stagnation`` は (a).2 の相対分母 s̄_e（``ArcHistoryStat`` に格納。``None`` なら窓の平均）
 
     (a).2 は ``(s - recent_ma) / (baseline + eps) >= beta`` の相対判定であり、
     recent_ma と baseline は別の役割を持つため個別に与える。

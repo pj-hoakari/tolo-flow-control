@@ -94,7 +94,6 @@ class ResolvedConfig:
 
     # ── フォールバック ───────────────────────
     fallback_eta: float = 0.25  # 最終フォールバック
-    fallback_baseline_stagnation: float = 1.0
 
     # ── 拡張ロードマップ連動フラグ（default で現状動作と同一） ──
     scalar_direction_enabled: bool = False  # 項目 B

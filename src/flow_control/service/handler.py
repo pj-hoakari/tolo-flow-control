@@ -79,7 +79,6 @@ def handle_request(
         req.events,
         _detection_config(req.config),
         req.server_time,
-        req.references,
     )
     steps.append(_step(StepKind.DETECTION, detection_started))
     warnings = _detection_warnings(detection)
@@ -353,8 +352,6 @@ def _detection_config(cfg: ServiceConfig) -> DetectionConfig:
         max_consecutive_skips=cfg.max_consecutive_skips,
         puncture_trigger_enabled=cfg.puncture_trigger_enabled,
         puncture_ratio_threshold=cfg.puncture_ratio_threshold,
-        fallback_baseline_stagnation=cfg.fallback_baseline_stagnation,
-        min_reference_sample_count=cfg.min_reference_sample_count,
         epsilon_0=cfg.epsilon_0,
     )
 
@@ -394,6 +391,5 @@ def _optimization_config(cfg: ServiceConfig) -> OptimizationConfig:
         delta_min_fraction=cfg.delta_min_fraction,
         confidence_weight_floor=cfg.confidence_weight_floor,
         throughput_target_edges=cfg.throughput_target_edges,
-        fallback_baseline_stagnation=cfg.fallback_baseline_stagnation,
         mip_rel_gap=cfg.mip_rel_gap,
     )

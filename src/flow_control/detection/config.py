@@ -26,9 +26,5 @@ class ResolvedConfig:
     puncture_trigger_enabled: bool = False
     puncture_ratio_threshold: float = 1.0  # σ_e ≥ ρ·C_e で発火
 
-    # (a).2 の基準停滞量 s̄_e が履歴・参照値のいずれにも無い場合の最終フォールバック
-    fallback_baseline_stagnation: float = 1.0
-    # 参照値（属性タグ別 baseline）採用の集約元テナント数しきい値
-    min_reference_sample_count: int = 5
     # ゼロ除算回避の微小値（相対閾値の分母）
     epsilon_0: float = 1e-6

@@ -875,3 +875,45 @@ def test_commodity_cut_is_a_fraction_of_total_demand(
     )
     assert result.solver_stats.od_pairs_input == 2
     assert result.solver_stats.commodities_used == 1
+
+
+def test_baseline_stagnation_order_in_tau(
+    worked_example_graph,
+    worked_example_observations,
+    worked_example_forecast,
+    worked_example_detour,
+):
+    from flow_control.domain import ArcHistoryStat, ArcWindowSeries, HistoryDigest
+
+    def tau(history):
+        result = optimize(
+            worked_example_graph,
+            worked_example_observations,
+            worked_example_forecast,
+            worked_example_detour,
+            history,
+            previous_result=None,
+            config=ResolvedConfig(),
+            seed=1,
+            time_limit=30.0,
+        )
+        return result.optimization_result.objective_values.tau_star
+
+    def from_history(values):
+        return HistoryDigest(
+            arc_stats=tuple(ArcHistoryStat(e, baseline_stagnation=v) for e, v in values.items())
+        )
+
+    observed_at = worked_example_observations.observed_at
+    observed = {s.edge_id: s.stagnation for s in worked_example_observations.arc_stagnations}
+    baselines = dict(zip(observed, (10.0, 8.0, 4.0), strict=True))
+    window = HistoryDigest(
+        window_series=tuple(
+            ArcWindowSeries(e, stagnation_samples=((observed_at, v - 1.0), (observed_at, v + 1.0)))
+            for e, v in baselines.items()
+        )
+    )
+
+    assert tau(window) == pytest.approx(tau(from_history(baselines)))
+    assert tau(HistoryDigest()) == pytest.approx(tau(from_history(observed)))
+    assert tau(HistoryDigest()) != pytest.approx(tau(from_history(baselines)))

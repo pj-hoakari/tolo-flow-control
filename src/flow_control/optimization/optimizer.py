@@ -879,11 +879,9 @@ def _build_inputs(
     edge_danger_capacity: dict[EdgeID, float] = {}
     scalar_edges: set[EdgeID] = set()
     for edge in arc_model.active_edges:
-        stat = history_digest.stat_of(edge.edge_id)
-        if stat is not None and stat.baseline_stagnation is not None:
-            s_bar[edge.edge_id] = stat.baseline_stagnation
-        else:
-            s_bar[edge.edge_id] = config.fallback_baseline_stagnation
+        if edge.edge_id in s_obs:
+            baseline = history_digest.baseline_stagnation_of(edge.edge_id)
+            s_bar[edge.edge_id] = s_obs[edge.edge_id] if baseline is None else baseline
 
         conf_a = conf.get(edge.endpoint_a, 1.0)
         conf_b = conf.get(edge.endpoint_b, 1.0)

@@ -171,7 +171,6 @@ def observation_config() -> pb.ResolvedConfig:
         min_reference_sample_count=5,
         k_shortest_paths=3,
         fallback_eta=1,
-        fallback_baseline_stagnation=1,
         scalar_direction_enabled=False,
         k_shortest_paths_auto=False,
         k_shortest_paths_max=3,

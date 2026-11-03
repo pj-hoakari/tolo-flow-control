@@ -9,9 +9,8 @@ from typing import Protocol
 from ..domain import EdgeID, Graph, NodeID
 from ..domain.enums import ObservationType
 from ..domain.graph import Edge
-from ..domain.history import ArcHistoryStat, ArcWindowSeries, HistoryDigest
+from ..domain.history import ArcWindowSeries, HistoryDigest
 from ..domain.observations import ArcStagnation, ConfidenceFlag, Observations
-from ..domain.references import Reference
 from .config import ResolvedConfig
 from .diagnostics import (
     DetectionWarning,
@@ -96,7 +95,6 @@ def detect_metric_triggers(
     previous_state: DetectionState,
     server_time: datetime,
     config: ResolvedConfig,
-    references: Reference | None = None,
 ) -> MetricTriggerDetectionResult:
     triggered_edges: list[EdgeID] = []
     fired_triggers: list[FiredTrigger] = []
@@ -146,8 +144,10 @@ def detect_metric_triggers(
         surge_breached = surge_rate is not None and surge_rate > surge_threshold
 
         # ── 停滞警戒 (a) ──
-        baseline = _resolve_baseline(history_stat, edge, references, config)
+        baseline = history_digest.baseline_stagnation_of(edge.edge_id)
         recent_ma = _recent_stagnation_average(window)
+        if recent_ma is None:
+            recent_ma = baseline
         p90 = history_stat.p90_stagnation if history_stat is not None else None
         stag = _evaluate_stagnation(
             observed_stagnation,
@@ -306,27 +306,6 @@ def _slope_percent_per_min(
     return (num / den / y_mean) * 100.0
 
 
-def _resolve_baseline(
-    history_stat: ArcHistoryStat | None,
-    edge: Edge,
-    references: Reference | None,
-    config: ResolvedConfig,
-) -> float:
-    # (a).2 の基準停滞量 s̄_e：履歴 → 属性タグ別参照値 → config フォールバックの順で決定
-    if history_stat is not None and history_stat.baseline_stagnation is not None:
-        return history_stat.baseline_stagnation
-    if references is not None:
-        for tag in edge.attribute_tags:
-            tag_ref = references.tag_reference_of(tag)
-            if (
-                tag_ref is not None
-                and tag_ref.baseline_stagnation is not None
-                and tag_ref.sample_count >= config.min_reference_sample_count
-            ):
-                return tag_ref.baseline_stagnation
-    return config.fallback_baseline_stagnation
-
-
 def _recent_stagnation_average(
     history_series: ArcWindowSeries | None,
 ) -> float | None:
@@ -340,7 +319,7 @@ def _evaluate_stagnation(
     observed_stagnation: ArcStagnation | None,
     p90: float | None,
     recent_ma: float | None,
-    baseline: float,
+    baseline: float | None,
     beta: float,
     previous_watch: ArcWatchState | None,
     high_stagnation_duration_min: float,
@@ -356,7 +335,9 @@ def _evaluate_stagnation(
     percentile_breached = percentile_available and stagnation >= p90
     # (a).2: 相対増分が基準停滞量比で beta 以上
     delta_breached = (
-        recent_ma is not None and (stagnation - recent_ma) / (baseline + epsilon_0) >= beta
+        recent_ma is not None
+        and baseline is not None
+        and (stagnation - recent_ma) / (baseline + epsilon_0) >= beta
     )
 
     condition_now = (
@@ -401,7 +382,7 @@ def _stagnation_ratio(
     observed_stagnation: ArcStagnation | None,
     p90: float | None,
     recent_ma: float | None,
-    baseline: float,
+    baseline: float | None,
     beta: float,
     epsilon_0: float,
 ) -> float:
@@ -411,7 +392,7 @@ def _stagnation_ratio(
     s = observed_stagnation.stagnation
     if p90 is not None and p90 > EPSILON_FLOW:
         return s / p90
-    if recent_ma is not None and beta > EPSILON_FLOW:
+    if recent_ma is not None and baseline is not None and beta > EPSILON_FLOW:
         return ((s - recent_ma) / (baseline + epsilon_0)) / beta
     return 1.0
 
