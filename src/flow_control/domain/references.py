@@ -5,7 +5,6 @@ from dataclasses import dataclass, field
 class TagReference:
     attribute_tag: str
     eta_typical: float | None = None
-    baseline_stagnation: float | None = None
     # 容量ヒント典型値（任意、capacity_hint 未設定時のフォールバック）
     capacity_typical: float | None = None
     sample_count: int = 0  # 集約元テナント数

@@ -245,7 +245,8 @@ message Reference {
 message TagReference {
   string attribute_tag = 1;
   optional double eta_typical = 2;
-  optional double baseline_stagnation = 3;
+  reserved 3;
+  reserved "baseline_stagnation";
   optional double capacity_typical = 4;
   int32 sample_count = 5;
 }

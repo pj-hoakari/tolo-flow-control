@@ -994,7 +994,6 @@ def _encode_tag_reference(value: TagReference) -> pb.TagReference:
     )
     for field, number in (
         ("eta_typical", value.eta_typical),
-        ("baseline_stagnation", value.baseline_stagnation),
         ("capacity_typical", value.capacity_typical),
     ):
         if number is not None:
@@ -1006,7 +1005,6 @@ def _decode_tag_reference(value: pb.TagReference) -> TagReference:
     return TagReference(
         attribute_tag=value.attribute_tag,
         eta_typical=_optional_float(value, "eta_typical"),
-        baseline_stagnation=_optional_float(value, "baseline_stagnation"),
         capacity_typical=_optional_float(value, "capacity_typical"),
         sample_count=value.sample_count,
     )

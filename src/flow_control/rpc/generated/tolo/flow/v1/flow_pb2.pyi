@@ -835,18 +835,16 @@ class Reference(_message.Message):
     def __init__(self, by_attribute_tag: _Optional[_Iterable[_Union[TagReference, _Mapping]]] = ..., default_thresholds: _Optional[_Union[ThresholdDefaults, _Mapping]] = ..., source_k_anonymity: _Optional[int] = ...) -> None: ...
 
 class TagReference(_message.Message):
-    __slots__ = ("attribute_tag", "eta_typical", "baseline_stagnation", "capacity_typical", "sample_count")
+    __slots__ = ("attribute_tag", "eta_typical", "capacity_typical", "sample_count")
     ATTRIBUTE_TAG_FIELD_NUMBER: _ClassVar[int]
     ETA_TYPICAL_FIELD_NUMBER: _ClassVar[int]
-    BASELINE_STAGNATION_FIELD_NUMBER: _ClassVar[int]
     CAPACITY_TYPICAL_FIELD_NUMBER: _ClassVar[int]
     SAMPLE_COUNT_FIELD_NUMBER: _ClassVar[int]
     attribute_tag: str
     eta_typical: float
-    baseline_stagnation: float
     capacity_typical: float
     sample_count: int
-    def __init__(self, attribute_tag: _Optional[str] = ..., eta_typical: _Optional[float] = ..., baseline_stagnation: _Optional[float] = ..., capacity_typical: _Optional[float] = ..., sample_count: _Optional[int] = ...) -> None: ...
+    def __init__(self, attribute_tag: _Optional[str] = ..., eta_typical: _Optional[float] = ..., capacity_typical: _Optional[float] = ..., sample_count: _Optional[int] = ...) -> None: ...
 
 class ThresholdDefaults(_message.Message):
     __slots__ = ("short_term", "long_term")
