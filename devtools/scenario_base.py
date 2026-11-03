@@ -61,7 +61,7 @@ def established_watch_state(
     """組合せ発火の「停滞警戒 M 分継続」を満たした前サイクル状態を組む
 
     現行 Detection は停滞警戒（p90 かつ相対増分）が M 分継続し、かつ需要警戒
-    （急増または需要超過）が同時成立して初めてメトリクス発火する。単発リクエストの
+    （急増）が同時成立して初めてメトリクス発火する。単発リクエストの
     devtools では継続時間を再現できないため、前サイクルで両条件成立・計時開始済みの
     watch を previous_state として与える。``build_observations_and_history`` の
     ``stagnation_edges``（当該サイクルでも両条件を満たす観測）と併用すること。
@@ -73,6 +73,7 @@ def established_watch_state(
                 percentile_breached=True,
                 delta_breached=True,
                 stagnation_watch_since=server_time - timedelta(minutes=established_minutes),
+                stagnation_last_held_at=server_time - timedelta(minutes=1),
             )
             for edge_id in sorted(edges, key=lambda e: e.value)
         )
@@ -108,13 +109,13 @@ def default_configs() -> PipelineConfigs:
 
 def compact_configs(
     *,
-    delta_min: float = 8.0,
+    delta_min_fraction: float = 0.2,
     milp_time_limit_sec: float = 8.0,
     mip_rel_gap: float = 0.02,
 ) -> PipelineConfigs:
     """コモディティ数が多くなりがちなグラフ向けの設定
 
-    OD 量カット ``delta_min`` を上げて支配的な需要のみ残し（Phase2 の MILP を軽くする）、
+    OD 量カット ``delta_min_fraction`` を上げて支配的な需要のみ残し（Phase2 の MILP を軽くする）、
     MILP 時間上限も短縮、さらに相対ギャップ ``mip_rel_gap`` を許容して分枝限定を早期打ち切る。
     ``make_scenario`` の既定。
     """
@@ -123,7 +124,7 @@ def compact_configs(
         base,
         optimization=replace(
             base.optimization,
-            delta_min=delta_min,
+            delta_min_fraction=delta_min_fraction,
             milp_time_limit_sec=milp_time_limit_sec,
             mip_rel_gap=mip_rel_gap,
         ),
@@ -246,7 +247,7 @@ def build_observations_and_history(
     - 高停滞エッジ: 観測停滞量を p90 以上かつ移動平均との差が beta 以上に設定
     - ベクトル型エッジには方向別流量（需要推定の主入力）を付与
     - ``lineless_edges``: ライン通過観測を持たない（arc_flows・流量履歴なし）が停滞は
-      観測されるエッジ。ライン無しでは停滞警戒単独の縮退発火となる検出経路を再現する
+      観測されるエッジ。急増が判定不能になる検出経路を再現する
     - ``unobserved_edges``: 観測・履歴を一切付与しないルート（センサ無し区間。
       フロー感度はフォールバック eta に委ね、保存則で需要を補完させる）
     - ``unobserved_nodes``: 占有観測を付与しないポイント（混在ホールでもセンサ欠測扱い）
@@ -646,7 +647,7 @@ def with_edge_danger(built: BuiltGraph, edge_id: str, capacity: float) -> BuiltG
     """指定エッジに危険フラグと容量上限を立てた新しい ``BuiltGraph`` を返す"""
     eid = EdgeID(edge_id)
     new_edges = tuple(
-        replace(e, danger_flag=True, danger_capacity=capacity) if e.edge_id == eid else e
+        replace(e, danger_flag=True, danger_flow_capacity=capacity) if e.edge_id == eid else e
         for e in built.graph.edges
     )
     return BuiltGraph(

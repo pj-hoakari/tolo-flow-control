@@ -10,7 +10,6 @@ from google.protobuf import empty_pb2, timestamp_pb2
 from google.protobuf.message import Message
 
 from flow_control.detection.state import (
-    ArcDemandDigestEntry,
     ArcWatchState,
     DetectionState,
     QueuedTrigger,
@@ -19,6 +18,7 @@ from flow_control.detection.state import (
     WarmupState,
 )
 from flow_control.detection.triggers import Event, EventKind
+from flow_control.domain.element_state import HistoryTier, Judgement, ObservationState
 from flow_control.domain.enums import (
     BoundaryDirection,
     CurrentDirection,
@@ -69,6 +69,7 @@ from flow_control.service.config import OptimizationMode, ResolvedConfig, Throug
 from flow_control.service.context import EventContext, EventTerm, TenantContext
 from flow_control.service.diagnostics import (
     Diagnostics,
+    ElementStateRecord,
     FallbackKind,
     FallbackRecord,
     StepKind,
@@ -321,10 +322,31 @@ _WARNING_CODE_TO_WIRE = {
     WarningCode.MANY_TRIGGER_ZONES: pb.WARNING_CODE_MANY_TRIGGER_ZONES,
     WarningCode.LOW_CONFIDENCE_PROPOSAL: pb.WARNING_CODE_LOW_CONFIDENCE_PROPOSAL,
     WarningCode.INSUFFICIENT_WINDOW_SAMPLES: pb.WARNING_CODE_INSUFFICIENT_WINDOW_SAMPLES,
-    WarningCode.SURGE_PROXY_FALLBACK: pb.WARNING_CODE_SURGE_PROXY_FALLBACK,
-    WarningCode.DEGRADED_COMBINED_TRIGGER: pb.WARNING_CODE_DEGRADED_COMBINED_TRIGGER,
+    WarningCode.PARTIAL_COMBINED_TRIGGER: pb.WARNING_CODE_PARTIAL_COMBINED_TRIGGER,
 }
 _WARNING_CODE_FROM_WIRE = {v: k for k, v in _WARNING_CODE_TO_WIRE.items()}
+_OBSERVATION_STATE_TO_WIRE = {
+    ObservationState.UNOBSERVED: pb.OBSERVATION_STATE_UNOBSERVED,
+    ObservationState.INVALID: pb.OBSERVATION_STATE_INVALID,
+    ObservationState.HOLD: pb.OBSERVATION_STATE_HOLD,
+    ObservationState.STALE: pb.OBSERVATION_STATE_STALE,
+    ObservationState.OK: pb.OBSERVATION_STATE_OK,
+}
+_OBSERVATION_STATE_FROM_WIRE = {v: k for k, v in _OBSERVATION_STATE_TO_WIRE.items()}
+_HISTORY_TIER_TO_WIRE = {
+    HistoryTier.NONE: pb.HISTORY_TIER_NONE,
+    HistoryTier.WINDOW_ONLY: pb.HISTORY_TIER_WINDOW_ONLY,
+    HistoryTier.SHORT: pb.HISTORY_TIER_SHORT,
+    HistoryTier.ESTABLISHED: pb.HISTORY_TIER_ESTABLISHED,
+}
+_HISTORY_TIER_FROM_WIRE = {v: k for k, v in _HISTORY_TIER_TO_WIRE.items()}
+_JUDGEMENT_TO_WIRE = {
+    Judgement.SURGE: pb.JUDGEMENT_SURGE,
+    Judgement.HIGH_STAGNATION: pb.JUDGEMENT_HIGH_STAGNATION,
+    Judgement.COMBINED: pb.JUDGEMENT_COMBINED,
+    Judgement.PUNCTURE: pb.JUDGEMENT_PUNCTURE,
+}
+_JUDGEMENT_FROM_WIRE = {v: k for k, v in _JUDGEMENT_TO_WIRE.items()}
 _TRIGGER_EVIDENCE_SOURCE_TO_WIRE = {
     TriggerEvidenceSource.SURGE: pb.TRIGGER_EVIDENCE_SOURCE_SURGE,
     TriggerEvidenceSource.HIGH_STAGNATION: pb.TRIGGER_EVIDENCE_SOURCE_HIGH_STAGNATION,
@@ -523,8 +545,10 @@ def _encode_edge(value: Edge) -> pb.Edge:
         time_resolution_s=value.time_resolution_s,
         danger_flag=value.danger_flag,
     )
-    if value.danger_capacity is not None:
-        result.danger_capacity = _finite(value.danger_capacity, "edge.danger_capacity")
+    if value.danger_flow_capacity is not None:
+        result.danger_flow_capacity = _finite(
+            value.danger_flow_capacity, "edge.danger_flow_capacity"
+        )
     if value.capacity_hint is not None:
         result.capacity_hint = _finite(value.capacity_hint, "edge.capacity_hint")
     return result
@@ -548,7 +572,7 @@ def _decode_edge(value: pb.Edge) -> Edge:
         attribute_tags=tuple(value.attribute_tags),
         time_resolution_s=_required_int(value, "time_resolution_s"),
         danger_flag=_required_bool(value, "danger_flag"),
-        danger_capacity=_optional_float(value, "danger_capacity"),
+        danger_flow_capacity=_optional_float(value, "danger_flow_capacity"),
         capacity_hint=_optional_float(value, "capacity_hint"),
     )
 
@@ -723,6 +747,8 @@ def _encode_history_stat(value: ArcHistoryStat) -> pb.ArcHistoryStat:
         ("baseline_stagnation", value.baseline_stagnation),
         ("flow_sensitivity_eta", value.flow_sensitivity_eta),
         ("available_span_hours", value.available_span_hours),
+        ("flow_p90", value.flow_p90),
+        ("free_flow_dwell_min", value.free_flow_dwell_min),
     ):
         if number is not None:
             setattr(result, field, _finite(number, f"history.{field}"))
@@ -736,6 +762,8 @@ def _decode_history_stat(value: pb.ArcHistoryStat) -> ArcHistoryStat:
         baseline_stagnation=_optional_float(value, "baseline_stagnation"),
         flow_sensitivity_eta=_optional_float(value, "flow_sensitivity_eta"),
         available_span_hours=_optional_float(value, "available_span_hours"),
+        flow_p90=_optional_float(value, "flow_p90"),
+        free_flow_dwell_min=_optional_float(value, "free_flow_dwell_min"),
     )
 
 
@@ -829,15 +857,17 @@ def _encode_arc_watch(value: ArcWatchState) -> pb.ArcWatchState:
         percentile_breached=value.percentile_breached,
         delta_breached=value.delta_breached,
         surge_breached=value.surge_breached,
-        demand_excess_breached=value.demand_excess_breached,
     )
     if value.stagnation_watch_since is not None:
         _copy_timestamp(
             result, "stagnation_watch_since", value.stagnation_watch_since, "stagnation_watch_since"
         )
-    if value.demand_watch_since is not None:
+    if value.stagnation_last_held_at is not None:
         _copy_timestamp(
-            result, "demand_watch_since", value.demand_watch_since, "demand_watch_since"
+            result,
+            "stagnation_last_held_at",
+            value.stagnation_last_held_at,
+            "stagnation_last_held_at",
         )
     return result
 
@@ -848,9 +878,8 @@ def _decode_arc_watch(value: pb.ArcWatchState) -> ArcWatchState:
         percentile_breached=value.percentile_breached,
         delta_breached=value.delta_breached,
         stagnation_watch_since=_decode_optional_datetime(value, "stagnation_watch_since"),
+        stagnation_last_held_at=_decode_optional_datetime(value, "stagnation_last_held_at"),
         surge_breached=value.surge_breached,
-        demand_excess_breached=value.demand_excess_breached,
-        demand_watch_since=_decode_optional_datetime(value, "demand_watch_since"),
     )
 
 
@@ -860,16 +889,6 @@ def _encode_detection_state(value: DetectionState) -> pb.DetectionState:
         _copy_timestamp(result, "cooldown_until", value.cooldown_until, "cooldown_until")
     result.trigger_queue.extend(_encode_queued_trigger(item) for item in value.trigger_queue)
     result.arc_watch_states.extend(_encode_arc_watch(item) for item in value.arc_watch_states)
-    if value.arc_demand_digest is not None:
-        digest = result.arc_demand_digest
-        digest.SetInParent()
-        digest.entries.extend(
-            pb.ArcDemandDigestEntry(
-                edge_id=_required_id(item.edge_id.value, "demand_digest.edge_id"),
-                demand=_finite(item.demand, "demand_digest.demand"),
-            )
-            for item in value.arc_demand_digest
-        )
     result.warmup_states.extend(
         pb.WarmupState(
             target_key=item.target_key,
@@ -888,22 +907,10 @@ def _encode_detection_state(value: DetectionState) -> pb.DetectionState:
 
 
 def _decode_detection_state(value: pb.DetectionState) -> DetectionState:
-    digest: tuple[ArcDemandDigestEntry, ...] | None
-    if value.HasField("arc_demand_digest"):
-        digest = tuple(
-            ArcDemandDigestEntry(
-                edge_id=EdgeID(_required_id(item.edge_id, "demand_digest.edge_id")),
-                demand=_finite(item.demand, "demand_digest.demand"),
-            )
-            for item in value.arc_demand_digest.entries
-        )
-    else:
-        digest = None
     return DetectionState(
         cooldown_until=_decode_optional_datetime(value, "cooldown_until"),
         trigger_queue=tuple(_decode_queued_trigger(item) for item in value.trigger_queue),
         arc_watch_states=tuple(_decode_arc_watch(item) for item in value.arc_watch_states),
-        arc_demand_digest=digest,
         warmup_states=tuple(
             WarmupState(
                 target_key=item.target_key,
@@ -1001,7 +1008,6 @@ def _encode_tag_reference(value: TagReference) -> pb.TagReference:
     )
     for field, number in (
         ("eta_typical", value.eta_typical),
-        ("baseline_stagnation", value.baseline_stagnation),
         ("capacity_typical", value.capacity_typical),
     ):
         if number is not None:
@@ -1013,7 +1019,6 @@ def _decode_tag_reference(value: pb.TagReference) -> TagReference:
     return TagReference(
         attribute_tag=value.attribute_tag,
         eta_typical=_optional_float(value, "eta_typical"),
-        baseline_stagnation=_optional_float(value, "baseline_stagnation"),
         capacity_typical=_optional_float(value, "capacity_typical"),
         sample_count=value.sample_count,
     )
@@ -1025,7 +1030,6 @@ def _encode_threshold_set(value: ThresholdSet) -> pb.ThresholdSet:
         ("surge_rate_threshold_percent_per_min", value.surge_rate_threshold_percent_per_min),
         ("high_stagnation_duration_min", value.high_stagnation_duration_min),
         ("beta", value.beta),
-        ("theta_demand", value.theta_demand),
         ("warmup_duration_min", value.warmup_duration_min),
     ):
         if number is not None:
@@ -1040,7 +1044,6 @@ def _decode_threshold_set(value: pb.ThresholdSet) -> ThresholdSet:
         ),
         high_stagnation_duration_min=_optional_float(value, "high_stagnation_duration_min"),
         beta=_optional_float(value, "beta"),
-        theta_demand=_optional_float(value, "theta_demand"),
         warmup_duration_min=_optional_float(value, "warmup_duration_min"),
     )
 
@@ -1105,7 +1108,6 @@ def _encode_config(value: ResolvedConfig) -> pb.ResolvedConfig:
         ("surge_rate_threshold_percent_per_min", value.surge_rate_threshold_percent_per_min),
         ("high_stagnation_duration_min", value.high_stagnation_duration_min),
         ("beta", value.beta),
-        ("theta_demand", value.theta_demand),
         ("min_window_samples", value.min_window_samples),
         ("cooldown_duration_min", value.cooldown_duration_min),
         ("warmup_duration_min", value.warmup_duration_min),
@@ -1114,6 +1116,8 @@ def _encode_config(value: ResolvedConfig) -> pb.ResolvedConfig:
         ("queue_score_threshold", value.queue_score_threshold),
         ("queue_diversity_threshold", value.queue_diversity_threshold),
         ("queue_freshness_min", value.queue_freshness_min),
+        ("stale_observation_resolutions", value.stale_observation_resolutions),
+        ("stale_observation_floor_s", value.stale_observation_floor_s),
         (
             "optimization_mode",
             _enum_to_wire(value.optimization_mode, _OPTIMIZATION_MODE_TO_WIRE, "optimization mode"),
@@ -1124,7 +1128,7 @@ def _encode_config(value: ResolvedConfig) -> pb.ResolvedConfig:
         ("restriction_proposal_enabled", value.restriction_proposal_enabled),
         ("tau_danger_threshold", value.tau_danger_threshold),
         ("puncture_trigger_enabled", value.puncture_trigger_enabled),
-        ("puncture_ratio_threshold", value.puncture_ratio_threshold),
+        ("puncture_dwell_ratio_threshold", value.puncture_dwell_ratio_threshold),
         ("forecasting_budget_sec", value.forecasting_budget_sec),
         ("detour_budget_sec", value.detour_budget_sec),
         ("lightweight_opt_budget_sec", value.lightweight_opt_budget_sec),
@@ -1134,7 +1138,7 @@ def _encode_config(value: ResolvedConfig) -> pb.ResolvedConfig:
         ("epsilon", value.epsilon),
         ("epsilon_0", value.epsilon_0),
         ("big_m_factor", value.big_m_factor),
-        ("delta_min", value.delta_min),
+        ("delta_min_fraction", value.delta_min_fraction),
         ("confidence_weight_floor", value.confidence_weight_floor),
         ("mip_rel_gap", value.mip_rel_gap),
         ("gravity_alpha", value.gravity_alpha),
@@ -1145,7 +1149,6 @@ def _encode_config(value: ResolvedConfig) -> pb.ResolvedConfig:
         ("min_reference_sample_count", value.min_reference_sample_count),
         ("k_shortest_paths", value.k_shortest_paths),
         ("fallback_eta", value.fallback_eta),
-        ("fallback_baseline_stagnation", value.fallback_baseline_stagnation),
         ("scalar_direction_enabled", value.scalar_direction_enabled),
         ("k_shortest_paths_auto", value.k_shortest_paths_auto),
         ("k_shortest_paths_max", value.k_shortest_paths_max),
@@ -1200,7 +1203,6 @@ def _decode_config(value: pb.ResolvedConfig) -> ResolvedConfig:
         ),
         high_stagnation_duration_min=_required_float(value, "high_stagnation_duration_min"),
         beta=_required_float(value, "beta"),
-        theta_demand=_optional_float(value, "theta_demand"),
         min_window_samples=_required_int(value, "min_window_samples"),
         cooldown_duration_min=_required_float(value, "cooldown_duration_min"),
         warmup_duration_min=_required_float(value, "warmup_duration_min"),
@@ -1209,6 +1211,8 @@ def _decode_config(value: pb.ResolvedConfig) -> ResolvedConfig:
         queue_score_threshold=_required_float(value, "queue_score_threshold"),
         queue_diversity_threshold=_required_int(value, "queue_diversity_threshold"),
         queue_freshness_min=_optional_float(value, "queue_freshness_min"),
+        stale_observation_resolutions=_required_float(value, "stale_observation_resolutions"),
+        stale_observation_floor_s=_required_float(value, "stale_observation_floor_s"),
         throughput_target_edges=tuple(EdgeID(edge) for edge in value.throughput_target_edges),
         optimization_mode=_required_enum(
             value, "optimization_mode", _OPTIMIZATION_MODE_FROM_WIRE, "optimization mode"
@@ -1219,7 +1223,7 @@ def _decode_config(value: pb.ResolvedConfig) -> ResolvedConfig:
         restriction_proposal_enabled=_required_bool(value, "restriction_proposal_enabled"),
         tau_danger_threshold=_optional_float(value, "tau_danger_threshold"),
         puncture_trigger_enabled=_required_bool(value, "puncture_trigger_enabled"),
-        puncture_ratio_threshold=_required_float(value, "puncture_ratio_threshold"),
+        puncture_dwell_ratio_threshold=_required_float(value, "puncture_dwell_ratio_threshold"),
         forecasting_budget_sec=_required_float(value, "forecasting_budget_sec"),
         detour_budget_sec=_required_float(value, "detour_budget_sec"),
         lightweight_opt_budget_sec=_required_float(value, "lightweight_opt_budget_sec"),
@@ -1229,7 +1233,7 @@ def _decode_config(value: pb.ResolvedConfig) -> ResolvedConfig:
         epsilon=_required_float(value, "epsilon"),
         epsilon_0=_required_float(value, "epsilon_0"),
         big_m_factor=_required_float(value, "big_m_factor"),
-        delta_min=_required_float(value, "delta_min"),
+        delta_min_fraction=_required_float(value, "delta_min_fraction"),
         confidence_weight_floor=_required_float(value, "confidence_weight_floor"),
         mip_rel_gap=_required_float(value, "mip_rel_gap"),
         gravity_alpha=_required_float(value, "gravity_alpha"),
@@ -1240,7 +1244,6 @@ def _decode_config(value: pb.ResolvedConfig) -> ResolvedConfig:
         min_reference_sample_count=_required_int(value, "min_reference_sample_count"),
         k_shortest_paths=_required_int(value, "k_shortest_paths"),
         fallback_eta=_required_float(value, "fallback_eta"),
-        fallback_baseline_stagnation=_required_float(value, "fallback_baseline_stagnation"),
         scalar_direction_enabled=_required_bool(value, "scalar_direction_enabled"),
         k_shortest_paths_auto=_required_bool(value, "k_shortest_paths_auto"),
         k_shortest_paths_max=_required_int(value, "k_shortest_paths_max"),
@@ -1305,6 +1308,8 @@ def _encode_optimization_result(value: OptimizationResult) -> pb.OptimizationRes
         )
         if item.limit_value is not None:
             encoded.limit_value = _finite(item.limit_value, "restriction_proposal.limit_value")
+        if item.limit_ratio is not None:
+            encoded.limit_ratio = _finite(item.limit_ratio, "restriction_proposal.limit_ratio")
         result.restriction_proposal.append(encoded)
     for item in value.detour_paths:
         result.detour_paths.append(
@@ -1380,6 +1385,7 @@ def _decode_optimization_result(value: pb.OptimizationResult) -> OptimizationRes
                 ),
                 confidence=_finite(item.confidence, "restriction_proposal.confidence"),
                 scope_note=item.scope_note,
+                limit_ratio=_optional_float(item, "limit_ratio"),
             )
             for item in value.restriction_proposal
         ),
@@ -1828,10 +1834,35 @@ def _decode_step(value: pb.StepRecord) -> StepRecord:
     )
 
 
+def _encode_element_state(value: ElementStateRecord) -> pb.ElementStateRecord:
+    return pb.ElementStateRecord(
+        target_key=value.target_key,
+        observation=_enum_to_wire(
+            value.observation, _OBSERVATION_STATE_TO_WIRE, "observation state"
+        ),
+        history=_enum_to_wire(value.history, _HISTORY_TIER_TO_WIRE, "history tier"),
+        line_points=value.line_points,
+        skipped=[_enum_to_wire(item, _JUDGEMENT_TO_WIRE, "judgement") for item in value.skipped],
+    )
+
+
+def _decode_element_state(value: pb.ElementStateRecord) -> ElementStateRecord:
+    return ElementStateRecord(
+        target_key=_required_id(value.target_key, "element_state.target_key"),
+        observation=_enum_from_wire(
+            int(value.observation), _OBSERVATION_STATE_FROM_WIRE, "observation state"
+        ),
+        history=_enum_from_wire(int(value.history), _HISTORY_TIER_FROM_WIRE, "history tier"),
+        line_points=value.line_points,
+        skipped=tuple(
+            _enum_from_wire(int(item), _JUDGEMENT_FROM_WIRE, "judgement") for item in value.skipped
+        ),
+    )
+
+
 def _encode_diagnostics(value: Diagnostics) -> pb.Diagnostics:
     result = pb.Diagnostics(
         mode=_enum_to_wire(value.mode, _MODE_TO_WIRE, "mode"),
-        degraded_short_tenant=value.degraded_short_tenant,
         schema_version=value.schema_version,
     )
     result.warnings.extend(_encode_warning(item) for item in value.warnings)
@@ -1840,6 +1871,7 @@ def _encode_diagnostics(value: Diagnostics) -> pb.Diagnostics:
     )
     result.fallbacks_applied.extend(_encode_fallback(item) for item in value.fallbacks_applied)
     result.steps_executed.extend(_encode_step(item) for item in value.steps_executed)
+    result.element_states.extend(_encode_element_state(item) for item in value.element_states)
     return result
 
 
@@ -1850,7 +1882,7 @@ def _decode_diagnostics(value: pb.Diagnostics) -> Diagnostics:
         trigger_evidences=tuple(_decode_trigger_evidence(item) for item in value.trigger_evidences),
         fallbacks_applied=tuple(_decode_fallback(item) for item in value.fallbacks_applied),
         steps_executed=tuple(_decode_step(item) for item in value.steps_executed),
-        degraded_short_tenant=value.degraded_short_tenant,
+        element_states=tuple(_decode_element_state(item) for item in value.element_states),
         schema_version=_required_id(value.schema_version, "diagnostics.schema_version"),
     )
 

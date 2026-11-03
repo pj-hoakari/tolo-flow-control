@@ -11,15 +11,27 @@ from ..detection.config import ResolvedConfig as DetectionConfig
 from ..detection.state import DetectionState, QueuedTrigger, QueuedTriggerKind
 from ..detour_routing import route_detour
 from ..detour_routing.config import ResolvedConfig as DetourConfig
+from ..domain.element_state import ElementStates, Judgement, assess_elements
 from ..domain.enums import Mode
 from ..forecasting import forecast
 from ..forecasting.config import ResolvedConfig as ForecastConfig
 from ..optimization import optimize
 from ..optimization.config import OptimizationMode as ModuleOptimizationMode
 from ..optimization.config import ResolvedConfig as OptimizationConfig
-from ..optimization.results import OptimizationResult, SolverStatus
+from ..optimization.results import LpFallback, OptimizationResult, OptimizeResult, SolverStatus
+from .config import OptimizationMode
 from .config import ResolvedConfig as ServiceConfig
-from .diagnostics import Diagnostics, StepKind, StepRecord, StepStatus, Warning, WarningCode
+from .diagnostics import (
+    Diagnostics,
+    ElementStateRecord,
+    FallbackKind,
+    FallbackRecord,
+    StepKind,
+    StepRecord,
+    StepStatus,
+    Warning,
+    WarningCode,
+)
 from .feedback import FeedbackValues
 from .feedback_extractor import extract_feedback
 from .messages import REQUEST_SCHEMA_VERSION, Request, Response
@@ -71,18 +83,29 @@ def handle_request(
     mode = Mode.OPEN if req.graph.boundary_nodes() else Mode.CLOSED
     steps = [_step(StepKind.VALIDATION, started), _step(StepKind.MODE_DECISION, started)]
     detection_started = time.monotonic()
-    detection = detect(
+    element_states = assess_elements(
         req.graph,
         req.observations,
         req.history_digest,
+        req.server_time,
+        stale_after_resolutions=req.config.stale_observation_resolutions,
+        stale_floor_s=req.config.stale_observation_floor_s,
+    )
+    detection = detect(
+        req.graph,
+        req.observations,
+        element_states,
         req.detection_state,
         req.events,
         _detection_config(req.config),
         req.server_time,
-        req.references,
     )
     steps.append(_step(StepKind.DETECTION, detection_started))
-    warnings = _detection_warnings(detection)
+    diagnostics = Diagnostics(
+        mode=mode,
+        warnings=_detection_warnings(detection),
+        element_states=_element_state_records(element_states, detection),
+    )
 
     early_verdict = _verdict_of(detection.verdict_hint)
     if early_verdict is not None:
@@ -91,7 +114,7 @@ def handle_request(
             early_verdict,
             finalize_detection_state(detection, early_verdict, req),
             started,
-            diagnostics=Diagnostics(mode=mode, warnings=warnings, steps_executed=tuple(steps)),
+            diagnostics=replace(diagnostics, steps_executed=tuple(steps)),
         )
 
     final_retry = req.detection_state.consecutive_skip_count >= req.config.max_consecutive_skips
@@ -110,7 +133,7 @@ def handle_request(
     rpc_limited = deadline is not None and deadline < service_deadline
 
     if time.monotonic() >= cycle_deadline:
-        return _skipped_time_response(req, detection, mode, warnings, steps, started, final_retry)
+        return _skipped_time_response(req, detection, diagnostics, steps, started, final_retry)
 
     forecast_started = time.monotonic()
     forecast_result = forecast(
@@ -124,7 +147,7 @@ def handle_request(
     )
     steps.append(_step(StepKind.FORECASTING, forecast_started))
     if time.monotonic() >= cycle_deadline:
-        return _skipped_time_response(req, detection, mode, warnings, steps, started, final_retry)
+        return _skipped_time_response(req, detection, diagnostics, steps, started, final_retry)
 
     detour_started = time.monotonic()
     detour_result = route_detour(
@@ -132,21 +155,21 @@ def handle_request(
     )
     steps.append(_step(StepKind.DETOUR, detour_started))
     if time.monotonic() >= cycle_deadline:
-        return _skipped_time_response(req, detection, mode, warnings, steps, started, final_retry)
+        return _skipped_time_response(req, detection, diagnostics, steps, started, final_retry)
 
     now = time.monotonic()
     remaining = service_deadline - now - BUFFER_SEC
     if deadline is not None:
         remaining = min(remaining, deadline - now - RPC_MARGIN_SEC)
     if remaining <= 0.0:
-        return _skipped_time_response(req, detection, mode, warnings, steps, started, final_retry)
+        return _skipped_time_response(req, detection, diagnostics, steps, started, final_retry)
     opt_cap_limit = opt_cap * (2 if final_retry else 1)
     if rpc_limited:
         opt_budget = min(remaining, opt_cap_limit)
     else:
         opt_budget = min(max(MIN_OPT_BUDGET, remaining), opt_cap_limit)
     if opt_budget <= 0.0:
-        return _skipped_time_response(req, detection, mode, warnings, steps, started, final_retry)
+        return _skipped_time_response(req, detection, diagnostics, steps, started, final_retry)
 
     optimization_started = time.monotonic()
     optimize_result = optimize(
@@ -168,7 +191,7 @@ def handle_request(
         optimize_result.optimization_result.solver_status is SolverStatus.TIMEOUT
         or time.monotonic() >= cycle_deadline
     ):
-        return _skipped_time_response(req, detection, mode, warnings, steps, started, final_retry)
+        return _skipped_time_response(req, detection, diagnostics, steps, started, final_retry)
 
     feedback_started = time.monotonic()
     feedback = extract_feedback(
@@ -181,9 +204,7 @@ def handle_request(
         mode,
     )
     steps.append(_step(StepKind.FEEDBACK, feedback_started))
-    state = _with_demand_digest(
-        finalize_detection_state(detection, Verdict.OPTIMIZED, req), forecast_result
-    )
+    state = finalize_detection_state(detection, Verdict.OPTIMIZED, req)
     return _response(
         req,
         Verdict.OPTIMIZED,
@@ -191,7 +212,11 @@ def handle_request(
         started,
         feedback=feedback,
         optimization_result=optimize_result.optimization_result,
-        diagnostics=Diagnostics(mode=mode, warnings=warnings, steps_executed=tuple(steps)),
+        diagnostics=replace(
+            diagnostics,
+            fallbacks_applied=_fallback_records(optimize_result, req.config.optimization_mode),
+            steps_executed=tuple(steps),
+        ),
     )
 
 
@@ -234,16 +259,6 @@ def _requeued_triggers(det: DetectionResult, req: Request) -> tuple[QueuedTrigge
     )
 
 
-def _with_demand_digest(state: DetectionState, forecast_result: object) -> DetectionState:
-    # ForecastResult currently exposes node demand and OD demand, but not the
-    # edge-arrival demand lambda_hat required by DetectionState.  Preserve the
-    # previous digest rather than writing an unrelated quantity such as eta.
-    # The adapter is deliberately isolated here for the Forecasting contract's
-    # future edge-demand output.
-    del forecast_result
-    return state
-
-
 def _response(
     req: Request,
     verdict: Verdict,
@@ -268,12 +283,12 @@ def _response(
 def _skipped_time_response(
     req: Request,
     detection: DetectionResult,
-    mode: Mode,
-    warnings: tuple[Warning, ...],
+    diagnostics: Diagnostics,
     steps: list[StepRecord],
     started: float,
     final_retry: bool,
 ) -> Response:
+    warnings = diagnostics.warnings
     if final_retry:
         warnings += (Warning(WarningCode.SOLVER_GIVEUP),)
     return _response(
@@ -281,7 +296,7 @@ def _skipped_time_response(
         Verdict.SKIPPED_TIME,
         finalize_detection_state(detection, Verdict.SKIPPED_TIME, req),
         started,
-        diagnostics=Diagnostics(mode=mode, warnings=warnings, steps_executed=tuple(steps)),
+        diagnostics=replace(diagnostics, warnings=warnings, steps_executed=tuple(steps)),
     )
 
 
@@ -301,13 +316,50 @@ def _verdict_of(hint: VerdictHint) -> Verdict | None:
 
 
 def _detection_warnings(det: DetectionResult) -> tuple[Warning, ...]:
-    result: list[Warning] = []
-    for item in det.warnings:
-        code = WarningCode[item.code.value]
-        result.append(
-            Warning(code=code, context=(("edge_id", item.edge_id.value if item.edge_id else ""),))
+    return tuple(
+        Warning(
+            WarningCode.PARTIAL_COMBINED_TRIGGER,
+            (("edge_id", item.edge_id.value), ("held", item.held.value)),
         )
-    return tuple(result)
+        for item in det.warnings
+    )
+
+
+_FALLBACK_REASONS = {
+    LpFallback.SLACK_LP: "current-direction slack LP",
+    LpFallback.PREVIOUS_RESULT: "previous result copied",
+    LpFallback.NO_RESULT: "no previous result to copy",
+}
+
+
+def _fallback_records(result: OptimizeResult, mode: OptimizationMode) -> tuple[FallbackRecord, ...]:
+    stage = result.constraint_report.lp_fallback
+    if stage is None:
+        return ()
+    reason = _FALLBACK_REASONS[stage]
+    held = FallbackRecord(FallbackKind.DIRECTION_PROPOSAL_HELD, reason)
+    if mode is OptimizationMode.LIGHTWEIGHT:
+        return (FallbackRecord(FallbackKind.LP_INFEASIBLE_HELD, reason), held)
+    if stage is LpFallback.SLACK_LP:
+        return (FallbackRecord(FallbackKind.INFEASIBLE_LP_RELAXED, reason), held)
+    return (held,)
+
+
+def _element_state_records(
+    states: ElementStates, det: DetectionResult
+) -> tuple[ElementStateRecord, ...]:
+    skipped = {item.edge_id: item.judgements for item in det.skipped}
+    return tuple(
+        ElementStateRecord(
+            target_key=f"edge:{state.edge_id.value}",
+            observation=state.observation,
+            history=state.history,
+            line_points=state.line_points,
+            skipped=tuple(j for j in Judgement if j in skipped.get(state.edge_id, ())),
+        )
+        for state in states.values()
+        if not state.nominal or state.edge_id in skipped
+    )
 
 
 def _validation_errors(req: Request) -> tuple[str, ...]:
@@ -334,7 +386,9 @@ def _validation_errors(req: Request) -> tuple[str, ...]:
         cfg.detour_budget_sec,
         cfg.lightweight_opt_budget_sec,
         cfg.milp_time_limit_sec,
-        cfg.puncture_ratio_threshold,
+        cfg.puncture_dwell_ratio_threshold,
+        cfg.stale_observation_resolutions,
+        cfg.stale_observation_floor_s,
     )
     if (
         cfg.cooldown_duration_min < 10
@@ -355,7 +409,6 @@ def _detection_config(cfg: ServiceConfig) -> DetectionConfig:
         surge_rate_threshold_percent_per_min=cfg.surge_rate_threshold_percent_per_min,
         high_stagnation_duration_min=cfg.high_stagnation_duration_min,
         beta=cfg.beta,
-        theta_demand=cfg.theta_demand,
         cooldown_duration_min=cfg.cooldown_duration_min,
         queue_score_threshold=cfg.queue_score_threshold,
         queue_diversity_threshold=cfg.queue_diversity_threshold,
@@ -365,9 +418,7 @@ def _detection_config(cfg: ServiceConfig) -> DetectionConfig:
         retrigger_reset_quiet_cycles=cfg.retrigger_reset_quiet_cycles,
         max_consecutive_skips=cfg.max_consecutive_skips,
         puncture_trigger_enabled=cfg.puncture_trigger_enabled,
-        puncture_ratio_threshold=cfg.puncture_ratio_threshold,
-        fallback_baseline_stagnation=cfg.fallback_baseline_stagnation,
-        min_reference_sample_count=cfg.min_reference_sample_count,
+        puncture_dwell_ratio_threshold=cfg.puncture_dwell_ratio_threshold,
         epsilon_0=cfg.epsilon_0,
     )
 
@@ -377,7 +428,7 @@ def _forecast_config(cfg: ServiceConfig) -> ForecastConfig:
         min_reference_sample_count=cfg.min_reference_sample_count,
         fallback_eta=cfg.fallback_eta,
         gravity_alpha=cfg.gravity_alpha,
-        delta_min=cfg.delta_min,
+        delta_min_fraction=cfg.delta_min_fraction,
         transit_time_prior_sec=cfg.transit_time_prior_sec,
         dwell_time_prior_sec=cfg.dwell_time_prior_sec,
         ipf_max_iter=cfg.ipf_max_iter,
@@ -404,9 +455,8 @@ def _optimization_config(cfg: ServiceConfig) -> OptimizationConfig:
         epsilon=cfg.epsilon,
         epsilon_0=cfg.epsilon_0,
         big_m_factor=cfg.big_m_factor,
-        delta_min=cfg.delta_min,
+        delta_min_fraction=cfg.delta_min_fraction,
         confidence_weight_floor=cfg.confidence_weight_floor,
         throughput_target_edges=cfg.throughput_target_edges,
-        fallback_baseline_stagnation=cfg.fallback_baseline_stagnation,
         mip_rel_gap=cfg.mip_rel_gap,
     )

@@ -71,6 +71,8 @@ message Boundary {
 }
 
 message Edge {
+  reserved 11;
+  reserved "danger_capacity";
   optional string edge_id = 1;
   optional string endpoint_a = 2;
   optional string endpoint_b = 3;
@@ -81,8 +83,8 @@ message Edge {
   repeated string attribute_tags = 8;
   optional int32 time_resolution_s = 9;
   optional bool danger_flag = 10;
-  optional double danger_capacity = 11;
   optional double capacity_hint = 12;
+  optional double danger_flow_capacity = 13;
 }
 
 message Observations {
@@ -144,6 +146,8 @@ message ArcHistoryStat {
   optional double baseline_stagnation = 3;
   optional double flow_sensitivity_eta = 4;
   optional double available_span_hours = 5;
+  optional double flow_p90 = 6;
+  optional double free_flow_dwell_min = 7;
 }
 
 message ArcWindowSeries {
@@ -171,19 +175,11 @@ message DetectionState {
   optional google.protobuf.Timestamp cooldown_until = 1;
   repeated QueuedTrigger trigger_queue = 2;
   repeated ArcWatchState arc_watch_states = 3;
-  optional ArcDemandDigest arc_demand_digest = 4;
+  reserved 4;
+  reserved "arc_demand_digest";
   repeated WarmupState warmup_states = 5;
   repeated RetriggerEntry arc_retrigger_counts = 6;
   int32 consecutive_skip_count = 7;
-}
-
-message ArcDemandDigest {
-  repeated ArcDemandDigestEntry entries = 1;
-}
-
-message ArcDemandDigestEntry {
-  string edge_id = 1;
-  double demand = 2;
 }
 
 message QueuedTrigger {
@@ -202,8 +198,9 @@ message ArcWatchState {
   bool delta_breached = 3;
   optional google.protobuf.Timestamp stagnation_watch_since = 4;
   bool surge_breached = 5;
-  bool demand_excess_breached = 6;
-  optional google.protobuf.Timestamp demand_watch_since = 7;
+  reserved 6, 7;
+  reserved "demand_excess_breached", "demand_watch_since";
+  optional google.protobuf.Timestamp stagnation_last_held_at = 8;
 }
 
 message WarmupState {
@@ -253,7 +250,8 @@ message Reference {
 message TagReference {
   string attribute_tag = 1;
   optional double eta_typical = 2;
-  optional double baseline_stagnation = 3;
+  reserved 3;
+  reserved "baseline_stagnation";
   optional double capacity_typical = 4;
   int32 sample_count = 5;
 }
@@ -267,7 +265,8 @@ message ThresholdSet {
   optional double surge_rate_threshold_percent_per_min = 1;
   optional double high_stagnation_duration_min = 2;
   optional double beta = 3;
-  optional double theta_demand = 4;
+  reserved 4;
+  reserved "theta_demand";
   optional double warmup_duration_min = 5;
 }
 
@@ -275,7 +274,8 @@ message ResolvedConfig {
   optional double surge_rate_threshold_percent_per_min = 1;
   optional double high_stagnation_duration_min = 2;
   optional double beta = 3;
-  optional double theta_demand = 4;
+  reserved 4;
+  reserved "theta_demand";
   optional int32 min_window_samples = 5;
   optional double cooldown_duration_min = 6;
   optional double warmup_duration_min = 7;
@@ -292,7 +292,8 @@ message ResolvedConfig {
   optional bool restriction_proposal_enabled = 18;
   optional double tau_danger_threshold = 19;
   optional bool puncture_trigger_enabled = 20;
-  optional double puncture_ratio_threshold = 21;
+  reserved 21;
+  reserved "puncture_ratio_threshold";
   optional double forecasting_budget_sec = 22;
   optional double detour_budget_sec = 23;
   optional double lightweight_opt_budget_sec = 24;
@@ -302,7 +303,8 @@ message ResolvedConfig {
   optional double epsilon = 28;
   optional double epsilon_0 = 29;
   optional double big_m_factor = 30;
-  optional double delta_min = 31;
+  reserved 31;
+  reserved "delta_min";
   optional double confidence_weight_floor = 32;
   optional double mip_rel_gap = 33;
   optional double gravity_alpha = 34;
@@ -313,7 +315,8 @@ message ResolvedConfig {
   optional int32 min_reference_sample_count = 39;
   optional int32 k_shortest_paths = 40;
   optional double fallback_eta = 41;
-  optional double fallback_baseline_stagnation = 42;
+  reserved 42;
+  reserved "fallback_baseline_stagnation";
   optional bool scalar_direction_enabled = 43;
   optional bool k_shortest_paths_auto = 44;
   optional int32 k_shortest_paths_max = 45;
@@ -334,6 +337,10 @@ message ResolvedConfig {
   optional bool milp_boundary_control_enabled = 60;
   optional bool scheduled_inflow_prior_enabled = 61;
   optional bool log_tenant_id = 62;
+  optional double delta_min_fraction = 63;
+  optional double stale_observation_resolutions = 64;
+  optional double stale_observation_floor_s = 65;
+  optional double puncture_dwell_ratio_threshold = 66;
 }
 
 message ThroughputWeights {
@@ -380,6 +387,7 @@ message RestrictionProposal {
   RestrictionReason reason = 4;
   double confidence = 5;
   string scope_note = 6;
+  optional double limit_ratio = 7;
 }
 
 message DetourPathProposal {
@@ -527,8 +535,18 @@ message Diagnostics {
   repeated TriggerEvidence trigger_evidences = 3;
   repeated FallbackRecord fallbacks_applied = 4;
   repeated StepRecord steps_executed = 5;
-  bool degraded_short_tenant = 6;
+  reserved 6;
+  reserved "degraded_short_tenant";
   string schema_version = 7;
+  repeated ElementStateRecord element_states = 8;
+}
+
+message ElementStateRecord {
+  string target_key = 1;
+  ObservationState observation = 2;
+  HistoryTier history = 3;
+  int32 line_points = 4;
+  repeated Judgement skipped = 5;
 }
 
 message TriggerEvidence {
@@ -729,8 +747,9 @@ enum WarningCode {
   WARNING_CODE_MANY_TRIGGER_ZONES = 9;
   WARNING_CODE_LOW_CONFIDENCE_PROPOSAL = 10;
   WARNING_CODE_INSUFFICIENT_WINDOW_SAMPLES = 11;
-  WARNING_CODE_SURGE_PROXY_FALLBACK = 12;
-  WARNING_CODE_DEGRADED_COMBINED_TRIGGER = 13;
+  reserved 12, 13;
+  reserved "WARNING_CODE_SURGE_PROXY_FALLBACK", "WARNING_CODE_DEGRADED_COMBINED_TRIGGER";
+  WARNING_CODE_PARTIAL_COMBINED_TRIGGER = 14;
 }
 
 enum TriggerEvidenceSource {
@@ -759,6 +778,31 @@ enum FallbackKind {
   FALLBACK_KIND_GREEDY_NO_IMPROVEMENT = 12;
   FALLBACK_KIND_LOCALIZATION_CAPPED = 13;
   FALLBACK_KIND_RESTRICTION_PROPOSED = 14;
+}
+
+enum ObservationState {
+  OBSERVATION_STATE_UNSPECIFIED = 0;
+  OBSERVATION_STATE_UNOBSERVED = 1;
+  OBSERVATION_STATE_INVALID = 2;
+  OBSERVATION_STATE_HOLD = 3;
+  OBSERVATION_STATE_STALE = 4;
+  OBSERVATION_STATE_OK = 5;
+}
+
+enum HistoryTier {
+  HISTORY_TIER_UNSPECIFIED = 0;
+  HISTORY_TIER_NONE = 1;
+  HISTORY_TIER_WINDOW_ONLY = 2;
+  HISTORY_TIER_SHORT = 3;
+  HISTORY_TIER_ESTABLISHED = 4;
+}
+
+enum Judgement {
+  JUDGEMENT_UNSPECIFIED = 0;
+  JUDGEMENT_SURGE = 1;
+  JUDGEMENT_HIGH_STAGNATION = 2;
+  JUDGEMENT_COMBINED = 3;
+  JUDGEMENT_PUNCTURE = 4;
 }
 
 enum StepKind {

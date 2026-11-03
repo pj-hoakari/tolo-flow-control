@@ -7,6 +7,7 @@ from dataclasses import dataclass
 from datetime import datetime
 from enum import Enum
 
+from ..domain.element_state import HistoryTier, Judgement, ObservationState
 from ..domain.enums import Mode
 
 DIAGNOSTICS_SCHEMA_VERSION = "diagnostics/2"
@@ -24,8 +25,7 @@ class WarningCode(str, Enum):
     MANY_TRIGGER_ZONES = "MANY_TRIGGER_ZONES"  # 散在トリガーでゾーン上限到達（基本モード）
     LOW_CONFIDENCE_PROPOSAL = "LOW_CONFIDENCE_PROPOSAL"  # DISTANCE_PRIOR ゾーン由来の低信頼提案
     INSUFFICIENT_WINDOW_SAMPLES = "INSUFFICIENT_WINDOW_SAMPLES"  # 窓内有効サンプル不足
-    SURGE_PROXY_FALLBACK = "SURGE_PROXY_FALLBACK"  # ラインなしで急増を停滞プロキシ傾き代替
-    DEGRADED_COMBINED_TRIGGER = "DEGRADED_COMBINED_TRIGGER"  # 需要警戒全面縮退で停滞単独発火
+    PARTIAL_COMBINED_TRIGGER = "PARTIAL_COMBINED_TRIGGER"
 
 
 @dataclass(frozen=True)
@@ -106,11 +106,20 @@ class StepRecord:
 
 
 @dataclass(frozen=True)
+class ElementStateRecord:
+    target_key: str
+    observation: ObservationState
+    history: HistoryTier
+    line_points: int
+    skipped: tuple[Judgement, ...] = ()
+
+
+@dataclass(frozen=True)
 class Diagnostics:
     mode: Mode = Mode.CLOSED
     warnings: tuple[Warning, ...] = ()
     trigger_evidences: tuple[TriggerEvidence, ...] = ()
     fallbacks_applied: tuple[FallbackRecord, ...] = ()
     steps_executed: tuple[StepRecord, ...] = ()
-    degraded_short_tenant: bool = False  # 縮退モード適用有無
+    element_states: tuple[ElementStateRecord, ...] = ()
     schema_version: str = DIAGNOSTICS_SCHEMA_VERSION

@@ -8,7 +8,6 @@
 from datetime import UTC, datetime
 
 from flow_control.detection.state import (
-    ArcDemandDigestEntry,
     ArcWatchState,
     DetectionState,
     QueuedTriggerKind,
@@ -61,14 +60,12 @@ def test_unified_config_defaults_are_noharm() -> None:
     # 拡張ロードマップ連動フラグは既定で無効（現状動作と同一）
     assert cfg.restriction_proposal_enabled is False
     assert cfg.puncture_trigger_enabled is False
+    assert cfg.puncture_dwell_ratio_threshold == 1.5
     assert cfg.two_stage_optimization is False
-    # 需要超過判定は既定で無効（急増のみ）
-    assert cfg.theta_demand is None
     assert cfg.fallback_eta == 0.25
     # 主要フィールドが揃っている
     for name in (
         "beta",
-        "theta_demand",
         "min_window_samples",
         "local_radius_hops",
         "tau_danger_threshold",
@@ -151,18 +148,8 @@ def test_detection_state_new_fields() -> None:
         edge_id=EdgeID("e1"),
         stagnation_watch_since=_NOW,
         surge_breached=True,
-        demand_excess_breached=True,
-        demand_watch_since=_NOW,
     )
     assert watch.surge_breached is True
-    assert watch.demand_watch_since == _NOW
-
-    state = DetectionState(
-        arc_demand_digest=(ArcDemandDigestEntry(edge_id=EdgeID("e1"), demand=4.2),)
-    )
-    assert state.demand_digest_of(EdgeID("e1")) == 4.2
-    assert state.demand_digest_of(EdgeID("missing")) is None
-    assert DetectionState().demand_digest_of(EdgeID("e1")) is None
 
 
 def test_event_new_fields() -> None:

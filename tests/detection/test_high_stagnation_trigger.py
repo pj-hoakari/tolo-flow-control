@@ -5,15 +5,14 @@
 停滞警戒 (a) は 2 条件からなり、M 分以上継続したとき established となる:
   (a).1 パーセンタイル:  ``s >= p90``（p90 が None なら省略＝縮退）
   (a).2 相対増分:        ``(s - recent_ma) / (baseline + eps) >= beta``
-        recent_ma は ``window_series.stagnation_samples`` の平均、
-        baseline は ``ArcHistoryStat.baseline_stagnation``（別の役割の値）
+        recent_ma は ``window_series.stagnation_samples`` の平均（なければ baseline）、
+        baseline は ``ArcHistoryStat.baseline_stagnation``（なければ窓の平均）。
+        どちらもなければ (a).2 は判定不能で、停滞警戒は成立しない
 
 established は片方だけでは成立せず、両条件（p90 欠損時は (a).2 のみ）が M 分継続した
 ときに成立する。継続は先行 ``ArcWatchState.stagnation_watch_since`` で計時する。
 
-発火は組合せ（AND）:
-  - ライン有り: ``established AND demand_warning`` で発火
-  - ライン無し: ``established`` 単独で縮退発火（DEGRADED_COMBINED_TRIGGER 警告）
+発火は組合せ（AND）: ``established AND demand_warning`` で発火する。
 """
 
 from datetime import UTC, datetime, timedelta
@@ -22,20 +21,20 @@ import pytest
 
 from flow_control.detection.config import ResolvedConfig
 from flow_control.detection.diagnostics import (
-    DetectionWarningCode,
     HighStagnationEvidence,
+    PartialCombinedTrigger,
     SurgeEvidence,
 )
 from flow_control.detection.state import (
-    ArcDemandDigestEntry,
     ArcWatchState,
     DetectionState,
     QueuedTriggerKind,
 )
 from flow_control.detection.triggers import detect_metric_triggers
-from flow_control.domain import EdgeID, FlowDirection, Graph
-from flow_control.domain.history import ArcHistoryStat, ArcWindowSeries, HistoryDigest
-from flow_control.domain.observations import ArcStagnation, Observations
+from flow_control.domain import EdgeID, Graph
+from flow_control.domain.element_state import Judgement, assess_elements
+from flow_control.domain.history import HistoryDigest
+from flow_control.domain.observations import ArcStagnation, ConfidenceFlag, Observations
 
 _TS = datetime(2026, 1, 1, tzinfo=UTC)
 
@@ -52,7 +51,7 @@ def _run(
     return detect_metric_triggers(
         graph=graph,
         observations=observations,
-        history_digest=history,
+        element_states=assess_elements(graph, observations, history, server_time),
         previous_state=previous_state,
         server_time=server_time,
         config=config,
@@ -240,6 +239,7 @@ def test_records_watch_when_both_satisfied_but_duration_short(
                 percentile_breached=True,
                 delta_breached=True,
                 stagnation_watch_since=base_time - timedelta(minutes=1),
+                stagnation_last_held_at=base_time - timedelta(minutes=1),
             ),
         )
     )
@@ -321,33 +321,352 @@ def test_does_not_fire_when_stagnation_observation_missing(
     assert result.new_state.watch_state_of(edge_id) is None
 
 
-def test_does_not_fire_when_history_stat_missing(
+def test_history_stat_missing_pauses_the_watch_without_firing(
     base_time: datetime,
     basic_graph: Graph,
     edge_id: EdgeID,
     high_stagnation_config: ResolvedConfig,
     make_stagnation_observation,
+    make_established_watch,
 ):
-    # 観測は揃っているが履歴統計が無い
-    # → p90 欠損で (a).1 は縮退、recent_ma も無く (a).2 も評価不能 → 発火も警戒もなし
+    # 観測は揃っているが履歴統計も窓も無い
+    # → 基準停滞量が決まらず (a).2 は判定不能 → 発火せず、継続中の警戒はそのまま持ち越す
     history = HistoryDigest()
     observations = make_stagnation_observation(edge_id, observed_at=base_time, stagnation=10.0)
+    previous = DetectionState(arc_watch_states=(make_established_watch(edge_id, base_time),))
 
     result = _run(
         graph=basic_graph,
         history=history,
         observations=observations,
-        previous_state=DetectionState(),
+        previous_state=previous,
         server_time=base_time,
         config=high_stagnation_config,
     )
 
     assert result.triggered_edges == ()
-    assert result.new_state.watch_state_of(edge_id) is None
+    assert result.new_state.arc_watch_states == previous.arc_watch_states
+
+
+@pytest.mark.parametrize(
+    ("flag", "observed_ago_min"),
+    [(ConfidenceFlag.HOLD, 0), (ConfidenceFlag.OK, 3)],
+    ids=["hold", "stale"],
+)
+def test_undeterminable_cycle_leaves_the_watch_unchanged(
+    base_time: datetime,
+    basic_graph: Graph,
+    edge_id: EdgeID,
+    surge_config: ResolvedConfig,
+    make_history,
+    make_combined_firing,
+    flag: ConfidenceFlag,
+    observed_ago_min: int,
+):
+    started = base_time - timedelta(minutes=5)
+    history = make_history((edge_id, 5.0, 5.0, 5.0))
+    first = _run(
+        graph=basic_graph,
+        history=history,
+        observations=Observations(
+            observed_at=started, arc_stagnations=(ArcStagnation(edge_id, 15.0),)
+        ),
+        previous_state=DetectionState(),
+        server_time=started,
+        config=surge_config,
+    )
+    undetermined_at = base_time - timedelta(minutes=2)
+    undetermined = _run(
+        graph=basic_graph,
+        history=history,
+        observations=Observations(
+            observed_at=undetermined_at - timedelta(minutes=observed_ago_min),
+            arc_stagnations=(ArcStagnation(edge_id, 1.0, confidence_flag=flag),),
+        ),
+        previous_state=first.new_state,
+        server_time=undetermined_at,
+        config=surge_config,
+    )
+    resumed_history, resumed_observations, _ = make_combined_firing(edge_id, base_time)
+    resumed = _run(
+        graph=basic_graph,
+        history=resumed_history,
+        observations=resumed_observations,
+        previous_state=undetermined.new_state,
+        server_time=base_time,
+        config=surge_config,
+    )
+
+    assert undetermined.new_state.arc_watch_states == first.new_state.arc_watch_states
+    assert resumed.triggered_edges == ()
+
+
+_HOLDS = "holds"
+_UNDETERMINABLE = "undeterminable"
+_CALM = "calm"
+_INVALID = "invalid"
+_UNOBSERVED = "unobserved"
+
+
+def _firing_minutes(
+    *,
+    graph: Graph,
+    edge_id: EdgeID,
+    config: ResolvedConfig,
+    make_combined_firing,
+    cycles: list[tuple[int, str]],
+) -> list[int]:
+    state = DetectionState()
+    fired: list[int] = []
+    for minute, kind in cycles:
+        now = _TS + timedelta(minutes=minute)
+        history, observations, _ = make_combined_firing(
+            edge_id, now, stagnation=1.0 if kind == _CALM else 15.0
+        )
+        if kind == _UNDETERMINABLE:
+            observations = Observations(
+                observed_at=now,
+                arc_stagnations=(
+                    ArcStagnation(edge_id, 15.0, confidence_flag=ConfidenceFlag.HOLD),
+                ),
+            )
+        elif kind == _INVALID:
+            observations = Observations(
+                observed_at=now,
+                arc_stagnations=(
+                    ArcStagnation(edge_id, 15.0, confidence_flag=ConfidenceFlag.INVALID),
+                ),
+            )
+        elif kind == _UNOBSERVED:
+            observations = Observations(observed_at=now)
+        result = _run(
+            graph=graph,
+            history=history,
+            observations=observations,
+            previous_state=state,
+            server_time=now,
+            config=config,
+        )
+        state = result.new_state
+        if edge_id in result.triggered_edges:
+            fired.append(minute)
+    return fired
+
+
+@pytest.mark.parametrize(
+    ("cycles", "fired"),
+    [
+        ([(m, _HOLDS) for m in range(7)], [5]),
+        ([(m, _HOLDS) for m in range(0, 8, 2)], [6]),
+    ],
+    ids=["every_minute", "every_two_minutes"],
+)
+def test_consecutive_holding_cycles_establish_after_m(
+    basic_graph: Graph,
+    edge_id: EdgeID,
+    surge_config: ResolvedConfig,
+    make_combined_firing,
+    cycles: list[tuple[int, str]],
+    fired: list[int],
+):
+    assert (
+        _firing_minutes(
+            graph=basic_graph,
+            edge_id=edge_id,
+            config=surge_config,
+            make_combined_firing=make_combined_firing,
+            cycles=cycles,
+        )
+        == fired
+    )
+
+
+@pytest.mark.parametrize(
+    "gap",
+    [[], [(4, _UNDETERMINABLE), (5, _UNDETERMINABLE)]],
+    ids=["no_cycles", "undeterminable_cycles"],
+)
+def test_gap_counts_one_interval_toward_persistence(
+    basic_graph: Graph,
+    edge_id: EdgeID,
+    surge_config: ResolvedConfig,
+    make_combined_firing,
+    gap: list[tuple[int, str]],
+):
+    cycles = [*((m, _HOLDS) for m in range(4)), *gap, *((m, _HOLDS) for m in range(6, 10))]
+
+    assert _firing_minutes(
+        graph=basic_graph,
+        edge_id=edge_id,
+        config=surge_config,
+        make_combined_firing=make_combined_firing,
+        cycles=cycles,
+    ) == [7]
+
+
+@pytest.mark.parametrize(
+    "gap",
+    [
+        [],
+        [(m, _UNDETERMINABLE) for m in range(1, 10)],
+        [(1, _UNDETERMINABLE)],
+    ],
+    ids=["no_cycles", "undeterminable_every_minute", "undeterminable_once"],
+)
+def test_gap_longer_than_m_restarts_the_persistence_timer(
+    basic_graph: Graph,
+    edge_id: EdgeID,
+    surge_config: ResolvedConfig,
+    make_combined_firing,
+    gap: list[tuple[int, str]],
+):
+    cycles = [(0, _HOLDS), *gap, *((m, _HOLDS) for m in range(10, 17))]
+
+    assert _firing_minutes(
+        graph=basic_graph,
+        edge_id=edge_id,
+        config=surge_config,
+        make_combined_firing=make_combined_firing,
+        cycles=cycles,
+    ) == [15]
+
+
+@pytest.mark.parametrize("breaking", [_CALM, _INVALID, _UNOBSERVED])
+def test_breaking_cycle_after_a_pause_restarts_the_persistence_timer(
+    basic_graph: Graph,
+    edge_id: EdgeID,
+    surge_config: ResolvedConfig,
+    make_combined_firing,
+    breaking: str,
+):
+    cycles = [
+        *((m, _HOLDS) for m in range(3)),
+        (3, _UNDETERMINABLE),
+        (4, breaking),
+        *((m, _HOLDS) for m in range(5, 12)),
+    ]
+
+    assert _firing_minutes(
+        graph=basic_graph,
+        edge_id=edge_id,
+        config=surge_config,
+        make_combined_firing=make_combined_firing,
+        cycles=cycles,
+    ) == [10]
+
+
+@pytest.mark.parametrize("invalid", [True, False], ids=["invalid", "unobserved"])
+def test_out_of_scope_cycle_resets_the_persistence_timer(
+    base_time: datetime,
+    basic_graph: Graph,
+    edge_id: EdgeID,
+    surge_config: ResolvedConfig,
+    make_history,
+    make_combined_firing,
+    invalid: bool,
+):
+    started = base_time - timedelta(minutes=5)
+    history = make_history((edge_id, 5.0, 5.0, 5.0))
+    first = _run(
+        graph=basic_graph,
+        history=history,
+        observations=Observations(
+            observed_at=started, arc_stagnations=(ArcStagnation(edge_id, 15.0),)
+        ),
+        previous_state=DetectionState(),
+        server_time=started,
+        config=surge_config,
+    )
+    reset_at = base_time - timedelta(minutes=2)
+    reset = _run(
+        graph=basic_graph,
+        history=history,
+        observations=Observations(
+            observed_at=reset_at,
+            arc_stagnations=(
+                (ArcStagnation(edge_id, 1.0, confidence_flag=ConfidenceFlag.INVALID),)
+                if invalid
+                else ()
+            ),
+        ),
+        previous_state=first.new_state,
+        server_time=reset_at,
+        config=surge_config,
+    )
+    resumed_history, resumed_observations, _ = make_combined_firing(edge_id, base_time)
+    resumed = _run(
+        graph=basic_graph,
+        history=resumed_history,
+        observations=resumed_observations,
+        previous_state=reset.new_state,
+        server_time=base_time,
+        config=surge_config,
+    )
+
+    assert first.new_state.watch_state_of(edge_id) is not None
+    assert reset.new_state.watch_state_of(edge_id) is None
+    assert resumed.triggered_edges == ()
+
+
+@pytest.mark.parametrize("scale", [0.1, 1.0, 10.0])
+def test_window_mean_is_the_baseline_when_history_has_none(
+    scale: float,
+    base_time: datetime,
+    basic_graph: Graph,
+    edge_id: EdgeID,
+    high_stagnation_config: ResolvedConfig,
+    make_stagnation_observation,
+    make_history,
+    make_established_watch,
+):
+    history = make_history((edge_id, None, 5.0 * scale, None))
+    previous = DetectionState(arc_watch_states=(make_established_watch(edge_id, base_time),))
+
+    def run(stagnation: float):
+        return _run(
+            graph=basic_graph,
+            history=history,
+            observations=make_stagnation_observation(
+                edge_id, observed_at=base_time, stagnation=stagnation * scale
+            ),
+            previous_state=previous,
+            server_time=base_time,
+            config=high_stagnation_config,
+        )
+
+    calm = run(8.0)
+    assert calm.warnings == ()
+    assert calm.new_state.watch_state_of(edge_id) is None
+    assert run(15.0).warnings == (PartialCombinedTrigger(edge_id, Judgement.HIGH_STAGNATION),)
+
+
+def test_history_baseline_replaces_recent_average_when_window_is_empty(
+    base_time: datetime,
+    basic_graph: Graph,
+    edge_id: EdgeID,
+    high_stagnation_config: ResolvedConfig,
+    make_stagnation_observation,
+    make_history,
+    make_established_watch,
+):
+    history = make_history((edge_id, 5.0, None, 5.0))
+    observations = make_stagnation_observation(edge_id, observed_at=base_time, stagnation=15.0)
+    previous = DetectionState(arc_watch_states=(make_established_watch(edge_id, base_time),))
+
+    result = _run(
+        graph=basic_graph,
+        history=history,
+        observations=observations,
+        previous_state=previous,
+        server_time=base_time,
+        config=high_stagnation_config,
+    )
+
+    assert result.warnings == (PartialCombinedTrigger(edge_id, Judgement.HIGH_STAGNATION),)
 
 
 # ---------------------------------------------------------------------------
-# 組合せ発火（established AND demand_warning）とラインなし縮退発火
+# 組合せ発火（established AND demand_warning）
 # ---------------------------------------------------------------------------
 
 
@@ -389,7 +708,7 @@ def test_no_fire_when_established_but_no_demand_and_line_present(
     make_stagnation_observation,
     make_established_watch,
 ):
-    # established だがラインは平坦（急増なし）・需要超過も無効 → demand_warning 偽で非発火
+    # established だがラインは平坦（急増なし） → demand_warning 偽で非発火
     # ラインが存在するため縮退もしない。警戒は保持される（AND 否定）
     flat_line = make_line_samples(base_time, sample_count=11, start_value=100.0, slope_per_min=0.0)
     history = make_history((edge_id, 5.0, 5.0, 5.0), flow={edge_id: flat_line})
@@ -411,7 +730,7 @@ def test_no_fire_when_established_but_no_demand_and_line_present(
     assert watch.stagnation_watch_since is not None
 
 
-def test_degraded_fire_when_no_line_and_established(
+def test_no_line_holds_stagnation_without_firing(
     base_time: datetime,
     basic_graph: Graph,
     edge_id: EdgeID,
@@ -420,7 +739,6 @@ def test_degraded_fire_when_no_line_and_established(
     make_history,
     make_established_watch,
 ):
-    # ラインが全く無いエッジは established 単独で縮退発火し、DEGRADED_COMBINED_TRIGGER を積む
     history = make_history((edge_id, 5.0, 5.0, 5.0))
     observations = make_stagnation_observation(edge_id, observed_at=base_time, stagnation=15.0)
     previous = DetectionState(arc_watch_states=(make_established_watch(edge_id, base_time),))
@@ -434,28 +752,22 @@ def test_degraded_fire_when_no_line_and_established(
         config=high_stagnation_config,
     )
 
-    assert result.triggered_edges == (edge_id,)
-    assert result.fired_triggers[0].kind == QueuedTriggerKind.HIGH_STAGNATION
-    codes = {w.code for w in result.warnings}
-    assert DetectionWarningCode.DEGRADED_COMBINED_TRIGGER in codes
-    # 縮退発火では急増根拠は付かない
+    assert result.triggered_edges == ()
+    assert result.warnings == (PartialCombinedTrigger(edge_id, Judgement.HIGH_STAGNATION),)
     assert [e for e in result.evidences if isinstance(e, SurgeEvidence)] == []
+    watch = result.new_state.watch_state_of(edge_id)
+    assert watch is not None
+    assert watch.stagnation_watch_since is not None
 
 
-def test_p90_missing_uses_delta_only_and_degraded_fires(
+def test_p90_missing_uses_delta_only(
     base_time: datetime,
     basic_graph: Graph,
     edge_id: EdgeID,
-    high_stagnation_config: ResolvedConfig,
-    make_stagnation_observation,
-    make_history,
-    make_established_watch,
+    surge_config: ResolvedConfig,
+    make_combined_firing,
 ):
-    # p90 欠損 → (a).1 省略、(a).2 のみで established。ラインなしで縮退発火する
-    # p90 が無いため HighStagnationEvidence は付与されない
-    history = make_history((edge_id, None, 5.0, 5.0))
-    observations = make_stagnation_observation(edge_id, observed_at=base_time, stagnation=15.0)
-    previous = DetectionState(arc_watch_states=(make_established_watch(edge_id, base_time),))
+    history, observations, previous = make_combined_firing(edge_id, base_time, p90=None)
 
     result = _run(
         graph=basic_graph,
@@ -463,110 +775,15 @@ def test_p90_missing_uses_delta_only_and_degraded_fires(
         observations=observations,
         previous_state=previous,
         server_time=base_time,
-        config=high_stagnation_config,
+        config=surge_config,
     )
 
     assert result.triggered_edges == (edge_id,)
     assert [e for e in result.evidences if isinstance(e, HighStagnationEvidence)] == []
-    codes = {w.code for w in result.warnings}
-    assert DetectionWarningCode.DEGRADED_COMBINED_TRIGGER in codes
-
-
-def test_fires_on_demand_excess(
-    base_time: datetime,
-    basic_graph: Graph,
-    edge_id: EdgeID,
-    make_stagnation_observation,
-    make_established_watch,
-):
-    # established 停滞 ＋ 需要超過 (b).2（ρ̂ = λ̂/(μ̂+eps) > theta_demand）→ 組合せ発火
-    # ラインは平坦で急増しないため、発火根拠は需要超過側
-    flat_line = tuple((base_time - timedelta(minutes=10 - i), 100.0) for i in range(11))
-    window = ArcWindowSeries(
-        edge_id=edge_id,
-        flow_samples=flat_line,
-        stagnation_samples=((_TS, 5.0),),
-        directional_flow_samples=((FlowDirection.A_TO_B, ((_TS, 10.0),)),),
-    )
-    history = HistoryDigest(
-        arc_stats=(ArcHistoryStat(edge_id=edge_id, p90_stagnation=5.0, baseline_stagnation=5.0),),
-        window_series=(window,),
-    )
-    observations = make_stagnation_observation(edge_id, observed_at=base_time, stagnation=15.0)
-    previous = DetectionState(
-        arc_watch_states=(make_established_watch(edge_id, base_time),),
-        # λ̂ = 100, μ̂ = 10 → ρ̂ = 10 > theta_demand=2
-        arc_demand_digest=(ArcDemandDigestEntry(edge_id=edge_id, demand=100.0),),
-    )
-    config = ResolvedConfig(
-        surge_rate_threshold_percent_per_min=1_000.0,  # 急増は成立させない
-        high_stagnation_duration_min=5.0,
-        beta=1.0,
-        theta_demand=2.0,
-    )
-
-    result = _run(
-        graph=basic_graph,
-        history=history,
-        observations=observations,
-        previous_state=previous,
-        server_time=base_time,
-        config=config,
-    )
-
-    assert result.triggered_edges == (edge_id,)
-    assert result.fired_triggers[0].kind == QueuedTriggerKind.HIGH_STAGNATION
-    # 需要超過での発火のため急増根拠は付かない
-    assert [e for e in result.evidences if isinstance(e, SurgeEvidence)] == []
-    # 発火根拠に停滞（p90 あり）が含まれる
-    assert [e for e in result.evidences if isinstance(e, HighStagnationEvidence)]
-
-
-def test_demand_excess_disabled_without_theta_demand(
-    base_time: datetime,
-    basic_graph: Graph,
-    edge_id: EdgeID,
-    make_stagnation_observation,
-    make_established_watch,
-):
-    # theta_demand 未設定なら需要超過は無効。established＋平坦ライン→非発火
-    flat_line = tuple((base_time - timedelta(minutes=10 - i), 100.0) for i in range(11))
-    window = ArcWindowSeries(
-        edge_id=edge_id,
-        flow_samples=flat_line,
-        stagnation_samples=((_TS, 5.0),),
-        directional_flow_samples=((FlowDirection.A_TO_B, ((_TS, 10.0),)),),
-    )
-    history = HistoryDigest(
-        arc_stats=(ArcHistoryStat(edge_id=edge_id, p90_stagnation=5.0, baseline_stagnation=5.0),),
-        window_series=(window,),
-    )
-    observations = make_stagnation_observation(edge_id, observed_at=base_time, stagnation=15.0)
-    previous = DetectionState(
-        arc_watch_states=(make_established_watch(edge_id, base_time),),
-        arc_demand_digest=(ArcDemandDigestEntry(edge_id=edge_id, demand=100.0),),
-    )
-    config = ResolvedConfig(
-        surge_rate_threshold_percent_per_min=1_000.0,
-        high_stagnation_duration_min=5.0,
-        beta=1.0,
-        theta_demand=None,  # 需要超過を無効化
-    )
-
-    result = _run(
-        graph=basic_graph,
-        history=history,
-        observations=observations,
-        previous_state=previous,
-        server_time=base_time,
-        config=config,
-    )
-
-    assert result.triggered_edges == ()
 
 
 # ---------------------------------------------------------------------------
-# Y 型グラフ (3 エッジ): 複数エッジでの established 縮退発火
+# Y 型グラフ (3 エッジ): 複数エッジでの組合せ発火
 # ---------------------------------------------------------------------------
 
 
@@ -575,11 +792,9 @@ def _stagnation_setup(
     stagnating_indices: set[int],
     base_time: datetime,
     make_history,
+    make_line_samples,
 ):
-    """指定インデックスは両条件成立、他は不成立となるライン無し入力を返す
-
-    ライン無しのため established なエッジは縮退発火する。
-    """
+    """指定インデックスは両条件成立、他は不成立となる入力を返す。全エッジのラインは急増する"""
     specs: list[tuple[EdgeID, float | None, float | None, float | None]] = []
     stagnations: list[ArcStagnation] = []
     for i, eid in enumerate(edge_ids):
@@ -589,7 +804,8 @@ def _stagnation_setup(
         else:
             specs.append((eid, 20.0, 5.0, 5.0))
             stagnations.append(ArcStagnation(edge_id=eid, stagnation=1.0))
-    history = make_history(*specs)
+    line = make_line_samples(base_time, sample_count=11, start_value=0.0, slope_per_min=10.0)
+    history = make_history(*specs, flow=dict.fromkeys(edge_ids, line))
     observations = Observations(observed_at=base_time, arc_stagnations=tuple(stagnations))
     return history, observations
 
@@ -600,8 +816,11 @@ def test_y_graph_no_trigger_when_all_edges_calm(
     y_graph_edge_ids: tuple[EdgeID, EdgeID, EdgeID],
     high_stagnation_config: ResolvedConfig,
     make_history,
+    make_line_samples,
 ):
-    history, observations = _stagnation_setup(y_graph_edge_ids, set(), base_time, make_history)
+    history, observations = _stagnation_setup(
+        y_graph_edge_ids, set(), base_time, make_history, make_line_samples
+    )
 
     result = _run(
         graph=y_graph,
@@ -621,14 +840,14 @@ def test_y_graph_fires_only_on_stagnating_edge_after_m_minutes(
     base_time: datetime,
     y_graph: Graph,
     y_graph_edge_ids: tuple[EdgeID, EdgeID, EdgeID],
-    high_stagnation_config: ResolvedConfig,
+    surge_config: ResolvedConfig,
     make_history,
+    make_line_samples,
     make_established_watch,
     stagnating_index: int,
 ):
-    # 1 本のみ両条件成立で M 分継続 → 縮退発火（ライン無し）
     history, observations = _stagnation_setup(
-        y_graph_edge_ids, {stagnating_index}, base_time, make_history
+        y_graph_edge_ids, {stagnating_index}, base_time, make_history, make_line_samples
     )
     target = y_graph_edge_ids[stagnating_index]
     previous = DetectionState(arc_watch_states=(make_established_watch(target, base_time),))
@@ -639,7 +858,7 @@ def test_y_graph_fires_only_on_stagnating_edge_after_m_minutes(
         observations=observations,
         previous_state=previous,
         server_time=base_time,
-        config=high_stagnation_config,
+        config=surge_config,
     )
 
     assert result.triggered_edges == (target,)
@@ -649,12 +868,15 @@ def test_y_graph_fires_on_multiple_stagnating_edges(
     base_time: datetime,
     y_graph: Graph,
     y_graph_edge_ids: tuple[EdgeID, EdgeID, EdgeID],
-    high_stagnation_config: ResolvedConfig,
+    surge_config: ResolvedConfig,
     make_history,
+    make_line_samples,
     make_established_watch,
 ):
     e1, _e2, e3 = y_graph_edge_ids
-    history, observations = _stagnation_setup(y_graph_edge_ids, {0, 2}, base_time, make_history)
+    history, observations = _stagnation_setup(
+        y_graph_edge_ids, {0, 2}, base_time, make_history, make_line_samples
+    )
     previous = DetectionState(
         arc_watch_states=(
             make_established_watch(e1, base_time),
@@ -668,7 +890,7 @@ def test_y_graph_fires_on_multiple_stagnating_edges(
         observations=observations,
         previous_state=previous,
         server_time=base_time,
-        config=high_stagnation_config,
+        config=surge_config,
     )
 
     assert set(result.triggered_edges) == {e1, e3}

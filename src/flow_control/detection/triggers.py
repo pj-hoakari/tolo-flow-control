@@ -7,20 +7,23 @@ from enum import Enum
 from typing import Protocol
 
 from ..domain import EdgeID, Graph, NodeID
-from ..domain.enums import CurrentDirection, FlowDirection, ObservationType
-from ..domain.graph import Edge
-from ..domain.history import ArcHistoryStat, ArcWindowSeries, HistoryDigest
-from ..domain.observations import ArcStagnation, ConfidenceFlag, Observations
-from ..domain.references import Reference
+from ..domain.element_state import (
+    ElementStates,
+    Judgement,
+    PunctureBasis,
+    Series,
+    StagnationBasis,
+)
+from ..domain.observations import Observations
 from .config import ResolvedConfig
 from .diagnostics import (
-    DetectionWarning,
-    DetectionWarningCode,
     HighStagnationEvidence,
+    PartialCombinedTrigger,
     PunctureEvidence,
     QueueDiversityEvidence,
     QueueExpiredEvidence,
     QueueScoreEvidence,
+    SkippedJudgements,
     SurgeEvidence,
     TriggerEvidence,
 )
@@ -77,7 +80,8 @@ class MetricTriggerDetectionResult:
     fired_triggers: tuple[FiredTrigger, ...]
     evidences: tuple[TriggerEvidence, ...]
     new_state: DetectionState
-    warnings: tuple[DetectionWarning, ...] = ()
+    warnings: tuple[PartialCombinedTrigger, ...] = ()
+    skipped: tuple[SkippedJudgements, ...] = ()
 
 
 @dataclass(frozen=True)
@@ -87,21 +91,25 @@ class _StagnationEval:
     watch_since: datetime | None  # 条件継続の計時開始時刻（条件が破れれば None）
     percentile_breached: bool  # (a).1
     delta_breached: bool  # (a).2
+    last_held_at: datetime | None = None
+
+
+_NOT_EVALUATED = _StagnationEval(False, None, False, False)
 
 
 def detect_metric_triggers(
     graph: Graph,
     observations: Observations,
-    history_digest: HistoryDigest,
+    element_states: ElementStates,
     previous_state: DetectionState,
     server_time: datetime,
     config: ResolvedConfig,
-    references: Reference | None = None,
 ) -> MetricTriggerDetectionResult:
     triggered_edges: list[EdgeID] = []
     fired_triggers: list[FiredTrigger] = []
     evidences: list[TriggerEvidence] = []
-    warnings: list[DetectionWarning] = []
+    warnings: list[PartialCombinedTrigger] = []
+    skipped_by_edge: list[SkippedJudgements] = []
     new_watch_states: list[ArcWatchState] = []
 
     for edge in graph.enabled_edges():
@@ -109,111 +117,57 @@ def detect_metric_triggers(
         if previous_state.is_in_warmup(_edge_target_key(edge.edge_id), server_time):
             continue
 
-        observed_stagnation = observations.stagnation_of(edge.edge_id)
-        history_stat = history_digest.stat_of(edge.edge_id)
-        window = history_digest.window_series_of(edge.edge_id)
-        previous_watch = previous_state.watch_state_of(edge.edge_id)
-
-        # ── 需要警戒 (b).1 急増 ──
-        # ライン通過（VECTOR arc_flows のエッジ合算）を入力とする。
-        # ラインがないエッジでは停滞プロキシ傾きで代替する（SURGE_PROXY_FALLBACK）。
-        line_flow_now = _current_line_flow(observations, edge.edge_id)
-        line_samples = window.flow_samples if window is not None else ()
-        line_present = bool(line_samples) or line_flow_now is not None
-        surge_is_proxy = False
-        if line_present:
-            surge_rate = _slope_percent_per_min(
-                _line_series(
-                    line_samples,
-                    line_flow_now,
-                    observations.observed_at,
-                    edge.time_resolution_s,
-                    config.surge_evaluate_window_minute,
-                    server_time,
-                )
-            )
-        else:
-            surge_rate = _slope_percent_per_min(
-                _proxy_series(
-                    window,
-                    edge.time_resolution_s,
-                    config.surge_evaluate_window_minute,
-                    server_time,
-                )
-            )
-            surge_is_proxy = surge_rate is not None
+        state = element_states[edge.edge_id]
+        line = state.surge_line()
+        surge_rate = None if line is None else _slope_percent_per_min(line)
         surge_threshold = config.surge_rate_threshold_percent_per_min
         surge_breached = surge_rate is not None and surge_rate > surge_threshold
 
-        # ── 需要警戒 (b).2 需要超過 ──
-        # ρ̂ = λ̂ /(μ̂ + ε0)。λ̂ は前回リクエストの Forecasting 由来（arc_demand_digest）。
-        lambda_hat = previous_state.demand_digest_of(edge.edge_id)
-        mu_hat = _downstream_outflow_average(window, edge.current_direction)
-        rho_hat: float | None = None
-        demand_excess_breached = False
-        if config.theta_demand is not None and lambda_hat is not None and mu_hat is not None:
-            rho_hat = lambda_hat / (mu_hat + config.epsilon_0)
-            demand_excess_breached = rho_hat > config.theta_demand
-
-        demand_warning = surge_breached or demand_excess_breached
-
-        # ── 停滞警戒 (a) ──
-        baseline = _resolve_baseline(history_stat, edge, references, config)
-        recent_ma = _recent_stagnation_average(window)
-        p90 = history_stat.p90_stagnation if history_stat is not None else None
-        stag = _evaluate_stagnation(
-            observed_stagnation,
-            p90,
-            recent_ma,
-            baseline,
-            config.beta,
-            previous_watch,
-            config.high_stagnation_duration_min,
+        basis = state.stagnation_basis()
+        carried = _unexpired_watch(
+            previous_state.watch_state_of(edge.edge_id),
             server_time,
-            config.epsilon_0,
+            timedelta(minutes=config.high_stagnation_duration_min),
         )
-
-        demand_watch_since = _advance_watch_since(
-            previous_watch.demand_watch_since if previous_watch is not None else None,
-            demand_warning,
-            server_time,
-        )
-
-        # ── 組合せ発火 (c) と縮退（ラインなし → 停滞警戒単独） ──
-        degraded = False
-        fired = False
-        if stag.established:
-            if line_present:
-                fired = demand_warning
-            else:
-                fired = True
-                degraded = True
-
-        if surge_is_proxy:
-            warnings.append(
-                DetectionWarning(
-                    code=DetectionWarningCode.SURGE_PROXY_FALLBACK,
-                    occurred_at=server_time,
-                    edge_id=edge.edge_id,
-                )
+        if basis is not None:
+            stag = _evaluate_stagnation(
+                basis,
+                config.beta,
+                _resumed_watch_since(
+                    carried,
+                    server_time,
+                    state.stale_after,
+                    timedelta(seconds=edge.time_resolution_s),
+                ),
+                config.high_stagnation_duration_min,
+                server_time,
+                config.epsilon_0,
             )
+        elif carried is not None and not state.out_of_scope:
+            stag = _StagnationEval(
+                False,
+                carried.stagnation_watch_since,
+                carried.percentile_breached,
+                carried.delta_breached,
+                carried.stagnation_last_held_at,
+            )
+        else:
+            stag = _NOT_EVALUATED
 
-        if fired:
-            stag_ratio = _stagnation_ratio(
-                observed_stagnation, p90, recent_ma, baseline, config.beta, config.epsilon_0
-            )
-            demand_ratio = (
-                None
-                if degraded
-                else _demand_ratio(
-                    surge_breached,
-                    surge_rate,
-                    surge_threshold,
-                    demand_excess_breached,
-                    rho_hat,
-                    config.theta_demand,
-                )
-            )
+        skipped: set[Judgement] = set()
+        if surge_rate is None:
+            skipped.add(Judgement.SURGE)
+        if basis is None:
+            skipped.add(Judgement.HIGH_STAGNATION)
+        if skipped:
+            skipped.add(Judgement.COMBINED)
+            if stag.established or surge_breached:
+                held = Judgement.HIGH_STAGNATION if stag.established else Judgement.SURGE
+                warnings.append(PartialCombinedTrigger(edge_id=edge.edge_id, held=held))
+
+        if basis is not None and surge_rate is not None and stag.established and surge_breached:
+            stag_ratio = _stagnation_ratio(basis, config.beta, config.epsilon_0)
+            demand_ratio = _demand_ratio(surge_rate, surge_threshold)
             score = stag_ratio if demand_ratio is None else max(stag_ratio, demand_ratio)
             fired_triggers.append(
                 FiredTrigger(
@@ -225,45 +179,64 @@ def detect_metric_triggers(
                 )
             )
             triggered_edges.append(edge.edge_id)
-            if observed_stagnation is not None and p90 is not None:
+            if basis.p90 is not None:
                 evidences.append(
                     HighStagnationEvidence(
                         edge_id=edge.edge_id,
                         occurred_at=server_time,
-                        stagnation=observed_stagnation.stagnation,
-                        percentile_threshold=p90,
+                        stagnation=basis.current,
+                        percentile_threshold=basis.p90,
                         duration_min=config.high_stagnation_duration_min,
                     )
                 )
-            if surge_breached and not surge_is_proxy and surge_rate is not None:
-                evidences.append(
-                    SurgeEvidence(
-                        edge_id=edge.edge_id,
-                        occurred_at=server_time,
-                        rate_percent_per_min=surge_rate,
-                        threshold_percent_per_min=surge_threshold,
-                    )
+            evidences.append(
+                SurgeEvidence(
+                    edge_id=edge.edge_id,
+                    occurred_at=server_time,
+                    rate_percent_per_min=surge_rate,
+                    threshold_percent_per_min=surge_threshold,
                 )
-            if degraded:
-                warnings.append(
-                    DetectionWarning(
-                        code=DetectionWarningCode.DEGRADED_COMBINED_TRIGGER,
-                        occurred_at=server_time,
-                        edge_id=edge.edge_id,
-                    )
-                )
+            )
             # 発火 → クールタイム開始のため警戒状態はリセット（保持しない）
         else:
-            next_watch = _build_watch_state(
-                edge.edge_id, stag, surge_breached, demand_excess_breached, demand_watch_since
-            )
+            next_watch = _build_watch_state(edge.edge_id, stag, surge_breached)
             if next_watch is not None:
                 new_watch_states.append(next_watch)
 
         # ── パンクトリガー (d)（前処理 P・独立） ──
-        _detect_puncture(
-            edge, observations, config, server_time, triggered_edges, fired_triggers, evidences
-        )
+        if config.puncture_trigger_enabled:
+            puncture = state.puncture_basis()
+            dwell_ratio = None if puncture is None else _puncture_dwell_ratio(puncture)
+            kappa = config.puncture_dwell_ratio_threshold
+            if puncture is None:
+                skipped.add(Judgement.PUNCTURE)
+            elif dwell_ratio is not None and dwell_ratio >= kappa:
+                fired_triggers.append(
+                    FiredTrigger(
+                        kind=QueuedTriggerKind.PUNCTURE,
+                        fired_at=server_time,
+                        origin_edge_id=edge.edge_id,
+                        score=dwell_ratio / kappa,
+                        snapshot_ref=observations.snapshot_ref,
+                    )
+                )
+                if edge.edge_id not in triggered_edges:
+                    triggered_edges.append(edge.edge_id)
+                evidences.append(
+                    PunctureEvidence(
+                        edge_id=edge.edge_id,
+                        occurred_at=server_time,
+                        flow=puncture.flow,
+                        flow_p90=puncture.flow_p90,
+                        dwell_ratio=dwell_ratio,
+                        dwell_ratio_threshold=kappa,
+                    )
+                )
+
+        if skipped and not state.out_of_scope:
+            skipped_by_edge.append(
+                SkippedJudgements(edge_id=edge.edge_id, judgements=frozenset(skipped))
+            )
 
     new_state = replace(previous_state, arc_watch_states=tuple(new_watch_states))
 
@@ -273,53 +246,11 @@ def detect_metric_triggers(
         evidences=tuple(evidences),
         new_state=new_state,
         warnings=tuple(warnings),
+        skipped=tuple(skipped_by_edge),
     )
 
 
-def _current_line_flow(observations: Observations, edge_id: EdgeID) -> float | None:
-    # エッジ合算のライン通過（両方向 arc_flows の和）。ラインなし／全て INVALID なら None
-    total = 0.0
-    found = False
-    for arc_flow in observations.arc_flows:
-        if arc_flow.edge_id == edge_id and arc_flow.confidence_flag != ConfidenceFlag.INVALID:
-            total += arc_flow.flow_rate
-            found = True
-    return total if found else None
-
-
-def _line_series(
-    line_samples: tuple[tuple[datetime, float], ...],
-    line_flow_now: float | None,
-    observed_at: datetime,
-    edge_resolution_s: float,
-    evaluate_window_minute: float,
-    server_time: datetime,
-) -> list[tuple[datetime, float]]:
-    window_minute = evaluate_window_minute + edge_resolution_s / 60.0
-    window_start_time = server_time - timedelta(minutes=window_minute)
-    series = [(t, v) for (t, v) in line_samples if t >= window_start_time]
-    if line_flow_now is not None and observed_at >= window_start_time:
-        series.append((observed_at, line_flow_now))
-    return series
-
-
-def _proxy_series(
-    window: ArcWindowSeries | None,
-    edge_resolution_s: float,
-    evaluate_window_minute: float,
-    server_time: datetime,
-) -> list[tuple[datetime, float]]:
-    # ラインなし縮退：停滞プロキシ系列の傾きで急増を代替する
-    if window is None:
-        return []
-    window_minute = evaluate_window_minute + edge_resolution_s / 60.0
-    window_start_time = server_time - timedelta(minutes=window_minute)
-    return [(t, v) for (t, v) in window.stagnation_samples if t >= window_start_time]
-
-
-def _slope_percent_per_min(
-    series: list[tuple[datetime, float]],
-) -> float | None:
+def _slope_percent_per_min(series: Series) -> float | None:
     # 最小二乗フィットの傾きを自己平均で正規化した変化率 %/分。算出不能なら None
     if len(series) < 2:
         return None
@@ -335,113 +266,77 @@ def _slope_percent_per_min(
     return (num / den / y_mean) * 100.0
 
 
-def _downstream_outflow_average(
-    window: ArcWindowSeries | None,
-    current_direction: CurrentDirection,
-) -> float | None:
-    # 排出実績 μ̂_e：現在の流下方向のライン流出カウント直近平均
-    if window is None or window.directional_flow_samples is None:
-        return None
-    wanted: FlowDirection | None
-    if current_direction == CurrentDirection.A_TO_B:
-        wanted = FlowDirection.A_TO_B
-    elif current_direction == CurrentDirection.B_TO_A:
-        wanted = FlowDirection.B_TO_A
-    else:
-        wanted = None  # BIDIRECTIONAL は両方向を合算平均する
-    values: list[float] = []
-    for direction, samples in window.directional_flow_samples:
-        if wanted is None or direction == wanted:
-            values.extend(v for (_, v) in samples)
-    if not values:
-        return None
-    return statistics.mean(values)
-
-
-def _resolve_baseline(
-    history_stat: ArcHistoryStat | None,
-    edge: Edge,
-    references: Reference | None,
-    config: ResolvedConfig,
-) -> float:
-    # (a).2 の基準停滞量 s̄_e：履歴 → 属性タグ別参照値 → config フォールバックの順で決定
-    if history_stat is not None and history_stat.baseline_stagnation is not None:
-        return history_stat.baseline_stagnation
-    if references is not None:
-        for tag in edge.attribute_tags:
-            tag_ref = references.tag_reference_of(tag)
-            if (
-                tag_ref is not None
-                and tag_ref.baseline_stagnation is not None
-                and tag_ref.sample_count >= config.min_reference_sample_count
-            ):
-                return tag_ref.baseline_stagnation
-    return config.fallback_baseline_stagnation
-
-
-def _recent_stagnation_average(
-    history_series: ArcWindowSeries | None,
-) -> float | None:
-    # (a).2 用の直近停滞プロキシ移動平均。stagnation_samples が空なら None
-    if history_series is None or not history_series.stagnation_samples:
-        return None
-    return statistics.mean(v for (_, v) in history_series.stagnation_samples)
-
-
 def _evaluate_stagnation(
-    observed_stagnation: ArcStagnation | None,
-    p90: float | None,
-    recent_ma: float | None,
-    baseline: float,
+    basis: StagnationBasis,
     beta: float,
-    previous_watch: ArcWatchState | None,
+    resumed_watch_since: datetime | None,
     high_stagnation_duration_min: float,
     server_time: datetime,
     epsilon_0: float,
 ) -> _StagnationEval:
-    if observed_stagnation is None:
-        return _StagnationEval(False, None, False, False)
-
-    stagnation = observed_stagnation.stagnation
+    stagnation = basis.current
     # (a).1: 観測停滞量が p90 以上（p90 欠損時は縮退で省略）
-    percentile_available = p90 is not None
-    percentile_breached = percentile_available and stagnation >= p90
+    percentile_breached = basis.p90 is not None and stagnation >= basis.p90
     # (a).2: 相対増分が基準停滞量比で beta 以上
-    delta_breached = (
-        recent_ma is not None and (stagnation - recent_ma) / (baseline + epsilon_0) >= beta
-    )
+    delta_breached = (stagnation - basis.recent) / (basis.baseline + epsilon_0) >= beta
 
     condition_now = (
-        (percentile_breached and delta_breached) if percentile_available else delta_breached
+        (percentile_breached and delta_breached) if basis.p90 is not None else delta_breached
     )
     if not condition_now:
         # 条件が破れたら計時をリセット（フラグは診断用に返す）
         return _StagnationEval(False, None, percentile_breached, delta_breached)
 
     # 条件継続中：前サイクルから計時を引き継ぐ
-    if previous_watch is not None and previous_watch.stagnation_watch_since is not None:
-        watch_since = previous_watch.stagnation_watch_since
-    else:
-        watch_since = server_time
+    watch_since = server_time if resumed_watch_since is None else resumed_watch_since
     elapsed_minutes = (server_time - watch_since).total_seconds() / 60.0
     established = elapsed_minutes >= high_stagnation_duration_min
-    return _StagnationEval(established, watch_since, percentile_breached, delta_breached)
+    return _StagnationEval(
+        established, watch_since, percentile_breached, delta_breached, server_time
+    )
+
+
+def _unexpired_watch(
+    previous_watch: ArcWatchState | None,
+    server_time: datetime,
+    evidence_limit: timedelta,
+) -> ArcWatchState | None:
+    if previous_watch is None:
+        return None
+    last_held_at = previous_watch.stagnation_last_held_at
+    if last_held_at is not None and server_time - last_held_at > evidence_limit:
+        return None
+    return previous_watch
+
+
+def _resumed_watch_since(
+    carried: ArcWatchState | None,
+    server_time: datetime,
+    consecutive_within: timedelta,
+    expected_interval: timedelta,
+) -> datetime | None:
+    if carried is None:
+        return None
+    watch_since = carried.stagnation_watch_since
+    last_held_at = carried.stagnation_last_held_at
+    if watch_since is None or last_held_at is None:
+        return None
+    gap = server_time - last_held_at
+    if gap > consecutive_within:
+        return watch_since + gap - expected_interval
+    return watch_since
 
 
 def _build_watch_state(
     edge_id: EdgeID,
     stag: _StagnationEval,
     surge_breached: bool,
-    demand_excess_breached: bool,
-    demand_watch_since: datetime | None,
 ) -> ArcWatchState | None:
     if not (
         stag.percentile_breached
         or stag.delta_breached
         or stag.watch_since is not None
         or surge_breached
-        or demand_excess_breached
-        or demand_watch_since is not None
     ):
         return None
     return ArcWatchState(
@@ -449,102 +344,31 @@ def _build_watch_state(
         percentile_breached=stag.percentile_breached,
         delta_breached=stag.delta_breached,
         stagnation_watch_since=stag.watch_since,
+        stagnation_last_held_at=stag.last_held_at,
         surge_breached=surge_breached,
-        demand_excess_breached=demand_excess_breached,
-        demand_watch_since=demand_watch_since,
     )
 
 
-def _advance_watch_since(
-    previous_since: datetime | None,
-    condition_now: bool,
-    server_time: datetime,
-) -> datetime | None:
-    if not condition_now:
-        return None
-    return previous_since if previous_since is not None else server_time
-
-
-def _stagnation_ratio(
-    observed_stagnation: ArcStagnation | None,
-    p90: float | None,
-    recent_ma: float | None,
-    baseline: float,
-    beta: float,
-    epsilon_0: float,
-) -> float:
+def _stagnation_ratio(basis: StagnationBasis, beta: float, epsilon_0: float) -> float:
     # 組合せ発火の停滞系スコア。p90 ありは s/p90、縮退時は相対増分/β
-    if observed_stagnation is None:
-        return 1.0
-    s = observed_stagnation.stagnation
-    if p90 is not None and p90 > EPSILON_FLOW:
-        return s / p90
-    if recent_ma is not None and beta > EPSILON_FLOW:
-        return ((s - recent_ma) / (baseline + epsilon_0)) / beta
+    if basis.p90 is not None and basis.p90 > EPSILON_FLOW:
+        return basis.current / basis.p90
+    if beta > EPSILON_FLOW:
+        return ((basis.current - basis.recent) / (basis.baseline + epsilon_0)) / beta
     return 1.0
 
 
-def _demand_ratio(
-    surge_breached: bool,
-    surge_rate: float | None,
-    surge_threshold: float,
-    demand_excess_breached: bool,
-    rho_hat: float | None,
-    theta_demand: float | None,
-) -> float | None:
-    # 組合せ発火の需要系スコア。急増・需要超過のうち成立したものの最大値
-    candidates: list[float] = []
-    if surge_breached and surge_rate is not None and surge_threshold > EPSILON_FLOW:
-        candidates.append(surge_rate / surge_threshold)
-    if (
-        demand_excess_breached
-        and rho_hat is not None
-        and theta_demand is not None
-        and theta_demand > EPSILON_FLOW
-    ):
-        candidates.append(rho_hat / theta_demand)
-    return max(candidates) if candidates else None
+def _demand_ratio(surge_rate: float, surge_threshold: float) -> float | None:
+    # 組合せ発火の需要系スコア。急増が成立したときの傾き比
+    if surge_threshold > EPSILON_FLOW:
+        return surge_rate / surge_threshold
+    return None
 
 
-def _detect_puncture(
-    edge: Edge,
-    observations: Observations,
-    config: ResolvedConfig,
-    server_time: datetime,
-    triggered_edges: list[EdgeID],
-    fired_triggers: list[FiredTrigger],
-    evidences: list[TriggerEvidence],
-) -> None:
-    # スカラー型のパンク前処理。capacity_hint 未設定では発火しない（ノーハーム）
-    if not config.puncture_trigger_enabled:
-        return
-    if edge.observation_type != ObservationType.SCALAR or edge.capacity_hint is None:
-        return
-    scalar = observations.scalar_flow_of(edge.edge_id)
-    if scalar is None or scalar.confidence_flag == ConfidenceFlag.INVALID:
-        return
-    threshold = config.puncture_ratio_threshold * edge.capacity_hint
-    if threshold <= EPSILON_FLOW or scalar.observed_count < threshold:
-        return
-    fired_triggers.append(
-        FiredTrigger(
-            kind=QueuedTriggerKind.PUNCTURE,
-            fired_at=server_time,
-            origin_edge_id=edge.edge_id,
-            score=scalar.observed_count / threshold,
-            snapshot_ref=observations.snapshot_ref,
-        )
-    )
-    if edge.edge_id not in triggered_edges:
-        triggered_edges.append(edge.edge_id)
-    evidences.append(
-        PunctureEvidence(
-            edge_id=edge.edge_id,
-            occurred_at=server_time,
-            observed_count=scalar.observed_count,
-            capacity_threshold=threshold,
-        )
-    )
+def _puncture_dwell_ratio(basis: PunctureBasis) -> float | None:
+    if basis.flow <= EPSILON_FLOW or basis.flow < basis.flow_p90:
+        return None
+    return basis.stagnation / basis.flow / basis.free_flow_dwell_min
 
 
 @dataclass(frozen=True)

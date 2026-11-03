@@ -187,8 +187,7 @@ class WarningCode(int, metaclass=_enum_type_wrapper.EnumTypeWrapper):
     WARNING_CODE_MANY_TRIGGER_ZONES: _ClassVar[WarningCode]
     WARNING_CODE_LOW_CONFIDENCE_PROPOSAL: _ClassVar[WarningCode]
     WARNING_CODE_INSUFFICIENT_WINDOW_SAMPLES: _ClassVar[WarningCode]
-    WARNING_CODE_SURGE_PROXY_FALLBACK: _ClassVar[WarningCode]
-    WARNING_CODE_DEGRADED_COMBINED_TRIGGER: _ClassVar[WarningCode]
+    WARNING_CODE_PARTIAL_COMBINED_TRIGGER: _ClassVar[WarningCode]
 
 class TriggerEvidenceSource(int, metaclass=_enum_type_wrapper.EnumTypeWrapper):
     __slots__ = ()
@@ -217,6 +216,31 @@ class FallbackKind(int, metaclass=_enum_type_wrapper.EnumTypeWrapper):
     FALLBACK_KIND_GREEDY_NO_IMPROVEMENT: _ClassVar[FallbackKind]
     FALLBACK_KIND_LOCALIZATION_CAPPED: _ClassVar[FallbackKind]
     FALLBACK_KIND_RESTRICTION_PROPOSED: _ClassVar[FallbackKind]
+
+class ObservationState(int, metaclass=_enum_type_wrapper.EnumTypeWrapper):
+    __slots__ = ()
+    OBSERVATION_STATE_UNSPECIFIED: _ClassVar[ObservationState]
+    OBSERVATION_STATE_UNOBSERVED: _ClassVar[ObservationState]
+    OBSERVATION_STATE_INVALID: _ClassVar[ObservationState]
+    OBSERVATION_STATE_HOLD: _ClassVar[ObservationState]
+    OBSERVATION_STATE_STALE: _ClassVar[ObservationState]
+    OBSERVATION_STATE_OK: _ClassVar[ObservationState]
+
+class HistoryTier(int, metaclass=_enum_type_wrapper.EnumTypeWrapper):
+    __slots__ = ()
+    HISTORY_TIER_UNSPECIFIED: _ClassVar[HistoryTier]
+    HISTORY_TIER_NONE: _ClassVar[HistoryTier]
+    HISTORY_TIER_WINDOW_ONLY: _ClassVar[HistoryTier]
+    HISTORY_TIER_SHORT: _ClassVar[HistoryTier]
+    HISTORY_TIER_ESTABLISHED: _ClassVar[HistoryTier]
+
+class Judgement(int, metaclass=_enum_type_wrapper.EnumTypeWrapper):
+    __slots__ = ()
+    JUDGEMENT_UNSPECIFIED: _ClassVar[Judgement]
+    JUDGEMENT_SURGE: _ClassVar[Judgement]
+    JUDGEMENT_HIGH_STAGNATION: _ClassVar[Judgement]
+    JUDGEMENT_COMBINED: _ClassVar[Judgement]
+    JUDGEMENT_PUNCTURE: _ClassVar[Judgement]
 
 class StepKind(int, metaclass=_enum_type_wrapper.EnumTypeWrapper):
     __slots__ = ()
@@ -362,8 +386,7 @@ WARNING_CODE_UNDRAINABLE_EDGE: WarningCode
 WARNING_CODE_MANY_TRIGGER_ZONES: WarningCode
 WARNING_CODE_LOW_CONFIDENCE_PROPOSAL: WarningCode
 WARNING_CODE_INSUFFICIENT_WINDOW_SAMPLES: WarningCode
-WARNING_CODE_SURGE_PROXY_FALLBACK: WarningCode
-WARNING_CODE_DEGRADED_COMBINED_TRIGGER: WarningCode
+WARNING_CODE_PARTIAL_COMBINED_TRIGGER: WarningCode
 TRIGGER_EVIDENCE_SOURCE_UNSPECIFIED: TriggerEvidenceSource
 TRIGGER_EVIDENCE_SOURCE_SURGE: TriggerEvidenceSource
 TRIGGER_EVIDENCE_SOURCE_HIGH_STAGNATION: TriggerEvidenceSource
@@ -386,6 +409,22 @@ FALLBACK_KIND_LP_INFEASIBLE_HELD: FallbackKind
 FALLBACK_KIND_GREEDY_NO_IMPROVEMENT: FallbackKind
 FALLBACK_KIND_LOCALIZATION_CAPPED: FallbackKind
 FALLBACK_KIND_RESTRICTION_PROPOSED: FallbackKind
+OBSERVATION_STATE_UNSPECIFIED: ObservationState
+OBSERVATION_STATE_UNOBSERVED: ObservationState
+OBSERVATION_STATE_INVALID: ObservationState
+OBSERVATION_STATE_HOLD: ObservationState
+OBSERVATION_STATE_STALE: ObservationState
+OBSERVATION_STATE_OK: ObservationState
+HISTORY_TIER_UNSPECIFIED: HistoryTier
+HISTORY_TIER_NONE: HistoryTier
+HISTORY_TIER_WINDOW_ONLY: HistoryTier
+HISTORY_TIER_SHORT: HistoryTier
+HISTORY_TIER_ESTABLISHED: HistoryTier
+JUDGEMENT_UNSPECIFIED: Judgement
+JUDGEMENT_SURGE: Judgement
+JUDGEMENT_HIGH_STAGNATION: Judgement
+JUDGEMENT_COMBINED: Judgement
+JUDGEMENT_PUNCTURE: Judgement
 STEP_KIND_UNSPECIFIED: StepKind
 STEP_KIND_VALIDATION: StepKind
 STEP_KIND_MODE_DECISION: StepKind
@@ -510,7 +549,7 @@ class Boundary(_message.Message):
     def __init__(self, direction: _Optional[_Union[BoundaryDirection, str]] = ..., active: bool = ...) -> None: ...
 
 class Edge(_message.Message):
-    __slots__ = ("edge_id", "endpoint_a", "endpoint_b", "direction_constraint", "current_direction", "enabled", "observation_type", "attribute_tags", "time_resolution_s", "danger_flag", "danger_capacity", "capacity_hint")
+    __slots__ = ("edge_id", "endpoint_a", "endpoint_b", "direction_constraint", "current_direction", "enabled", "observation_type", "attribute_tags", "time_resolution_s", "danger_flag", "capacity_hint", "danger_flow_capacity")
     EDGE_ID_FIELD_NUMBER: _ClassVar[int]
     ENDPOINT_A_FIELD_NUMBER: _ClassVar[int]
     ENDPOINT_B_FIELD_NUMBER: _ClassVar[int]
@@ -521,8 +560,8 @@ class Edge(_message.Message):
     ATTRIBUTE_TAGS_FIELD_NUMBER: _ClassVar[int]
     TIME_RESOLUTION_S_FIELD_NUMBER: _ClassVar[int]
     DANGER_FLAG_FIELD_NUMBER: _ClassVar[int]
-    DANGER_CAPACITY_FIELD_NUMBER: _ClassVar[int]
     CAPACITY_HINT_FIELD_NUMBER: _ClassVar[int]
+    DANGER_FLOW_CAPACITY_FIELD_NUMBER: _ClassVar[int]
     edge_id: str
     endpoint_a: str
     endpoint_b: str
@@ -533,9 +572,9 @@ class Edge(_message.Message):
     attribute_tags: _containers.RepeatedScalarFieldContainer[str]
     time_resolution_s: int
     danger_flag: bool
-    danger_capacity: float
     capacity_hint: float
-    def __init__(self, edge_id: _Optional[str] = ..., endpoint_a: _Optional[str] = ..., endpoint_b: _Optional[str] = ..., direction_constraint: _Optional[_Union[DirectionConstraint, str]] = ..., current_direction: _Optional[_Union[CurrentDirection, str]] = ..., enabled: bool = ..., observation_type: _Optional[_Union[ObservationType, str]] = ..., attribute_tags: _Optional[_Iterable[str]] = ..., time_resolution_s: _Optional[int] = ..., danger_flag: bool = ..., danger_capacity: _Optional[float] = ..., capacity_hint: _Optional[float] = ...) -> None: ...
+    danger_flow_capacity: float
+    def __init__(self, edge_id: _Optional[str] = ..., endpoint_a: _Optional[str] = ..., endpoint_b: _Optional[str] = ..., direction_constraint: _Optional[_Union[DirectionConstraint, str]] = ..., current_direction: _Optional[_Union[CurrentDirection, str]] = ..., enabled: bool = ..., observation_type: _Optional[_Union[ObservationType, str]] = ..., attribute_tags: _Optional[_Iterable[str]] = ..., time_resolution_s: _Optional[int] = ..., danger_flag: bool = ..., capacity_hint: _Optional[float] = ..., danger_flow_capacity: _Optional[float] = ...) -> None: ...
 
 class Observations(_message.Message):
     __slots__ = ("observed_at", "snapshot_ref", "arc_flows", "arc_stagnations", "arc_scalar_flows", "node_occupancies", "node_turning")
@@ -630,18 +669,22 @@ class HistoryDigest(_message.Message):
     def __init__(self, arc_stats: _Optional[_Iterable[_Union[ArcHistoryStat, _Mapping]]] = ..., window_series: _Optional[_Iterable[_Union[ArcWindowSeries, _Mapping]]] = ..., completeness: _Optional[float] = ...) -> None: ...
 
 class ArcHistoryStat(_message.Message):
-    __slots__ = ("edge_id", "p90_stagnation", "baseline_stagnation", "flow_sensitivity_eta", "available_span_hours")
+    __slots__ = ("edge_id", "p90_stagnation", "baseline_stagnation", "flow_sensitivity_eta", "available_span_hours", "flow_p90", "free_flow_dwell_min")
     EDGE_ID_FIELD_NUMBER: _ClassVar[int]
     P90_STAGNATION_FIELD_NUMBER: _ClassVar[int]
     BASELINE_STAGNATION_FIELD_NUMBER: _ClassVar[int]
     FLOW_SENSITIVITY_ETA_FIELD_NUMBER: _ClassVar[int]
     AVAILABLE_SPAN_HOURS_FIELD_NUMBER: _ClassVar[int]
+    FLOW_P90_FIELD_NUMBER: _ClassVar[int]
+    FREE_FLOW_DWELL_MIN_FIELD_NUMBER: _ClassVar[int]
     edge_id: str
     p90_stagnation: float
     baseline_stagnation: float
     flow_sensitivity_eta: float
     available_span_hours: float
-    def __init__(self, edge_id: _Optional[str] = ..., p90_stagnation: _Optional[float] = ..., baseline_stagnation: _Optional[float] = ..., flow_sensitivity_eta: _Optional[float] = ..., available_span_hours: _Optional[float] = ...) -> None: ...
+    flow_p90: float
+    free_flow_dwell_min: float
+    def __init__(self, edge_id: _Optional[str] = ..., p90_stagnation: _Optional[float] = ..., baseline_stagnation: _Optional[float] = ..., flow_sensitivity_eta: _Optional[float] = ..., available_span_hours: _Optional[float] = ..., flow_p90: _Optional[float] = ..., free_flow_dwell_min: _Optional[float] = ...) -> None: ...
 
 class ArcWindowSeries(_message.Message):
     __slots__ = ("edge_id", "flow_samples", "stagnation_samples", "directional_flow_samples")
@@ -678,36 +721,20 @@ class TimedValue(_message.Message):
     def __init__(self, at: _Optional[_Union[datetime.datetime, _timestamp_pb2.Timestamp, _Mapping]] = ..., value: _Optional[float] = ...) -> None: ...
 
 class DetectionState(_message.Message):
-    __slots__ = ("cooldown_until", "trigger_queue", "arc_watch_states", "arc_demand_digest", "warmup_states", "arc_retrigger_counts", "consecutive_skip_count")
+    __slots__ = ("cooldown_until", "trigger_queue", "arc_watch_states", "warmup_states", "arc_retrigger_counts", "consecutive_skip_count")
     COOLDOWN_UNTIL_FIELD_NUMBER: _ClassVar[int]
     TRIGGER_QUEUE_FIELD_NUMBER: _ClassVar[int]
     ARC_WATCH_STATES_FIELD_NUMBER: _ClassVar[int]
-    ARC_DEMAND_DIGEST_FIELD_NUMBER: _ClassVar[int]
     WARMUP_STATES_FIELD_NUMBER: _ClassVar[int]
     ARC_RETRIGGER_COUNTS_FIELD_NUMBER: _ClassVar[int]
     CONSECUTIVE_SKIP_COUNT_FIELD_NUMBER: _ClassVar[int]
     cooldown_until: _timestamp_pb2.Timestamp
     trigger_queue: _containers.RepeatedCompositeFieldContainer[QueuedTrigger]
     arc_watch_states: _containers.RepeatedCompositeFieldContainer[ArcWatchState]
-    arc_demand_digest: ArcDemandDigest
     warmup_states: _containers.RepeatedCompositeFieldContainer[WarmupState]
     arc_retrigger_counts: _containers.RepeatedCompositeFieldContainer[RetriggerEntry]
     consecutive_skip_count: int
-    def __init__(self, cooldown_until: _Optional[_Union[datetime.datetime, _timestamp_pb2.Timestamp, _Mapping]] = ..., trigger_queue: _Optional[_Iterable[_Union[QueuedTrigger, _Mapping]]] = ..., arc_watch_states: _Optional[_Iterable[_Union[ArcWatchState, _Mapping]]] = ..., arc_demand_digest: _Optional[_Union[ArcDemandDigest, _Mapping]] = ..., warmup_states: _Optional[_Iterable[_Union[WarmupState, _Mapping]]] = ..., arc_retrigger_counts: _Optional[_Iterable[_Union[RetriggerEntry, _Mapping]]] = ..., consecutive_skip_count: _Optional[int] = ...) -> None: ...
-
-class ArcDemandDigest(_message.Message):
-    __slots__ = ("entries",)
-    ENTRIES_FIELD_NUMBER: _ClassVar[int]
-    entries: _containers.RepeatedCompositeFieldContainer[ArcDemandDigestEntry]
-    def __init__(self, entries: _Optional[_Iterable[_Union[ArcDemandDigestEntry, _Mapping]]] = ...) -> None: ...
-
-class ArcDemandDigestEntry(_message.Message):
-    __slots__ = ("edge_id", "demand")
-    EDGE_ID_FIELD_NUMBER: _ClassVar[int]
-    DEMAND_FIELD_NUMBER: _ClassVar[int]
-    edge_id: str
-    demand: float
-    def __init__(self, edge_id: _Optional[str] = ..., demand: _Optional[float] = ...) -> None: ...
+    def __init__(self, cooldown_until: _Optional[_Union[datetime.datetime, _timestamp_pb2.Timestamp, _Mapping]] = ..., trigger_queue: _Optional[_Iterable[_Union[QueuedTrigger, _Mapping]]] = ..., arc_watch_states: _Optional[_Iterable[_Union[ArcWatchState, _Mapping]]] = ..., warmup_states: _Optional[_Iterable[_Union[WarmupState, _Mapping]]] = ..., arc_retrigger_counts: _Optional[_Iterable[_Union[RetriggerEntry, _Mapping]]] = ..., consecutive_skip_count: _Optional[int] = ...) -> None: ...
 
 class QueuedTrigger(_message.Message):
     __slots__ = ("kind", "first_fired_at", "last_fired_at", "accumulated_score", "origin_edge_id", "origin_node_id", "snapshot_ref")
@@ -728,22 +755,20 @@ class QueuedTrigger(_message.Message):
     def __init__(self, kind: _Optional[_Union[QueuedTriggerKind, str]] = ..., first_fired_at: _Optional[_Union[datetime.datetime, _timestamp_pb2.Timestamp, _Mapping]] = ..., last_fired_at: _Optional[_Union[datetime.datetime, _timestamp_pb2.Timestamp, _Mapping]] = ..., accumulated_score: _Optional[float] = ..., origin_edge_id: _Optional[str] = ..., origin_node_id: _Optional[str] = ..., snapshot_ref: _Optional[str] = ...) -> None: ...
 
 class ArcWatchState(_message.Message):
-    __slots__ = ("edge_id", "percentile_breached", "delta_breached", "stagnation_watch_since", "surge_breached", "demand_excess_breached", "demand_watch_since")
+    __slots__ = ("edge_id", "percentile_breached", "delta_breached", "stagnation_watch_since", "surge_breached", "stagnation_last_held_at")
     EDGE_ID_FIELD_NUMBER: _ClassVar[int]
     PERCENTILE_BREACHED_FIELD_NUMBER: _ClassVar[int]
     DELTA_BREACHED_FIELD_NUMBER: _ClassVar[int]
     STAGNATION_WATCH_SINCE_FIELD_NUMBER: _ClassVar[int]
     SURGE_BREACHED_FIELD_NUMBER: _ClassVar[int]
-    DEMAND_EXCESS_BREACHED_FIELD_NUMBER: _ClassVar[int]
-    DEMAND_WATCH_SINCE_FIELD_NUMBER: _ClassVar[int]
+    STAGNATION_LAST_HELD_AT_FIELD_NUMBER: _ClassVar[int]
     edge_id: str
     percentile_breached: bool
     delta_breached: bool
     stagnation_watch_since: _timestamp_pb2.Timestamp
     surge_breached: bool
-    demand_excess_breached: bool
-    demand_watch_since: _timestamp_pb2.Timestamp
-    def __init__(self, edge_id: _Optional[str] = ..., percentile_breached: bool = ..., delta_breached: bool = ..., stagnation_watch_since: _Optional[_Union[datetime.datetime, _timestamp_pb2.Timestamp, _Mapping]] = ..., surge_breached: bool = ..., demand_excess_breached: bool = ..., demand_watch_since: _Optional[_Union[datetime.datetime, _timestamp_pb2.Timestamp, _Mapping]] = ...) -> None: ...
+    stagnation_last_held_at: _timestamp_pb2.Timestamp
+    def __init__(self, edge_id: _Optional[str] = ..., percentile_breached: bool = ..., delta_breached: bool = ..., stagnation_watch_since: _Optional[_Union[datetime.datetime, _timestamp_pb2.Timestamp, _Mapping]] = ..., surge_breached: bool = ..., stagnation_last_held_at: _Optional[_Union[datetime.datetime, _timestamp_pb2.Timestamp, _Mapping]] = ...) -> None: ...
 
 class WarmupState(_message.Message):
     __slots__ = ("target_key", "until")
@@ -816,18 +841,16 @@ class Reference(_message.Message):
     def __init__(self, by_attribute_tag: _Optional[_Iterable[_Union[TagReference, _Mapping]]] = ..., default_thresholds: _Optional[_Union[ThresholdDefaults, _Mapping]] = ..., source_k_anonymity: _Optional[int] = ...) -> None: ...
 
 class TagReference(_message.Message):
-    __slots__ = ("attribute_tag", "eta_typical", "baseline_stagnation", "capacity_typical", "sample_count")
+    __slots__ = ("attribute_tag", "eta_typical", "capacity_typical", "sample_count")
     ATTRIBUTE_TAG_FIELD_NUMBER: _ClassVar[int]
     ETA_TYPICAL_FIELD_NUMBER: _ClassVar[int]
-    BASELINE_STAGNATION_FIELD_NUMBER: _ClassVar[int]
     CAPACITY_TYPICAL_FIELD_NUMBER: _ClassVar[int]
     SAMPLE_COUNT_FIELD_NUMBER: _ClassVar[int]
     attribute_tag: str
     eta_typical: float
-    baseline_stagnation: float
     capacity_typical: float
     sample_count: int
-    def __init__(self, attribute_tag: _Optional[str] = ..., eta_typical: _Optional[float] = ..., baseline_stagnation: _Optional[float] = ..., capacity_typical: _Optional[float] = ..., sample_count: _Optional[int] = ...) -> None: ...
+    def __init__(self, attribute_tag: _Optional[str] = ..., eta_typical: _Optional[float] = ..., capacity_typical: _Optional[float] = ..., sample_count: _Optional[int] = ...) -> None: ...
 
 class ThresholdDefaults(_message.Message):
     __slots__ = ("short_term", "long_term")
@@ -838,25 +861,22 @@ class ThresholdDefaults(_message.Message):
     def __init__(self, short_term: _Optional[_Union[ThresholdSet, _Mapping]] = ..., long_term: _Optional[_Union[ThresholdSet, _Mapping]] = ...) -> None: ...
 
 class ThresholdSet(_message.Message):
-    __slots__ = ("surge_rate_threshold_percent_per_min", "high_stagnation_duration_min", "beta", "theta_demand", "warmup_duration_min")
+    __slots__ = ("surge_rate_threshold_percent_per_min", "high_stagnation_duration_min", "beta", "warmup_duration_min")
     SURGE_RATE_THRESHOLD_PERCENT_PER_MIN_FIELD_NUMBER: _ClassVar[int]
     HIGH_STAGNATION_DURATION_MIN_FIELD_NUMBER: _ClassVar[int]
     BETA_FIELD_NUMBER: _ClassVar[int]
-    THETA_DEMAND_FIELD_NUMBER: _ClassVar[int]
     WARMUP_DURATION_MIN_FIELD_NUMBER: _ClassVar[int]
     surge_rate_threshold_percent_per_min: float
     high_stagnation_duration_min: float
     beta: float
-    theta_demand: float
     warmup_duration_min: float
-    def __init__(self, surge_rate_threshold_percent_per_min: _Optional[float] = ..., high_stagnation_duration_min: _Optional[float] = ..., beta: _Optional[float] = ..., theta_demand: _Optional[float] = ..., warmup_duration_min: _Optional[float] = ...) -> None: ...
+    def __init__(self, surge_rate_threshold_percent_per_min: _Optional[float] = ..., high_stagnation_duration_min: _Optional[float] = ..., beta: _Optional[float] = ..., warmup_duration_min: _Optional[float] = ...) -> None: ...
 
 class ResolvedConfig(_message.Message):
-    __slots__ = ("surge_rate_threshold_percent_per_min", "high_stagnation_duration_min", "beta", "theta_demand", "min_window_samples", "cooldown_duration_min", "warmup_duration_min", "retrigger_warning_threshold", "retrigger_reset_quiet_cycles", "queue_score_threshold", "queue_diversity_threshold", "queue_freshness_min", "throughput_target_edges", "optimization_mode", "local_radius_hops", "max_trigger_zones", "greedy_improve_margin", "restriction_proposal_enabled", "tau_danger_threshold", "puncture_trigger_enabled", "puncture_ratio_threshold", "forecasting_budget_sec", "detour_budget_sec", "lightweight_opt_budget_sec", "milp_time_limit_sec", "max_consecutive_skips", "solver_seed", "epsilon", "epsilon_0", "big_m_factor", "delta_min", "confidence_weight_floor", "mip_rel_gap", "gravity_alpha", "ipf_max_iter", "ipf_tolerance", "transit_time_prior_sec", "dwell_time_prior_sec", "min_reference_sample_count", "k_shortest_paths", "fallback_eta", "fallback_baseline_stagnation", "scalar_direction_enabled", "k_shortest_paths_auto", "k_shortest_paths_max", "phase_feedback_enabled", "phase_feedback_candidates", "attribute_tag_priority", "full_weight_hours", "eta_mixing_ratio", "throughput_weights", "throughput_max_per_edge", "two_stage_optimization", "backoff_enabled", "improvement_threshold", "backoff_max_factor", "shadow_extensions", "delta_objective_enabled", "node_detour_enabled", "milp_boundary_control_enabled", "scheduled_inflow_prior_enabled", "log_tenant_id")
+    __slots__ = ("surge_rate_threshold_percent_per_min", "high_stagnation_duration_min", "beta", "min_window_samples", "cooldown_duration_min", "warmup_duration_min", "retrigger_warning_threshold", "retrigger_reset_quiet_cycles", "queue_score_threshold", "queue_diversity_threshold", "queue_freshness_min", "throughput_target_edges", "optimization_mode", "local_radius_hops", "max_trigger_zones", "greedy_improve_margin", "restriction_proposal_enabled", "tau_danger_threshold", "puncture_trigger_enabled", "forecasting_budget_sec", "detour_budget_sec", "lightweight_opt_budget_sec", "milp_time_limit_sec", "max_consecutive_skips", "solver_seed", "epsilon", "epsilon_0", "big_m_factor", "confidence_weight_floor", "mip_rel_gap", "gravity_alpha", "ipf_max_iter", "ipf_tolerance", "transit_time_prior_sec", "dwell_time_prior_sec", "min_reference_sample_count", "k_shortest_paths", "fallback_eta", "scalar_direction_enabled", "k_shortest_paths_auto", "k_shortest_paths_max", "phase_feedback_enabled", "phase_feedback_candidates", "attribute_tag_priority", "full_weight_hours", "eta_mixing_ratio", "throughput_weights", "throughput_max_per_edge", "two_stage_optimization", "backoff_enabled", "improvement_threshold", "backoff_max_factor", "shadow_extensions", "delta_objective_enabled", "node_detour_enabled", "milp_boundary_control_enabled", "scheduled_inflow_prior_enabled", "log_tenant_id", "delta_min_fraction", "stale_observation_resolutions", "stale_observation_floor_s", "puncture_dwell_ratio_threshold")
     SURGE_RATE_THRESHOLD_PERCENT_PER_MIN_FIELD_NUMBER: _ClassVar[int]
     HIGH_STAGNATION_DURATION_MIN_FIELD_NUMBER: _ClassVar[int]
     BETA_FIELD_NUMBER: _ClassVar[int]
-    THETA_DEMAND_FIELD_NUMBER: _ClassVar[int]
     MIN_WINDOW_SAMPLES_FIELD_NUMBER: _ClassVar[int]
     COOLDOWN_DURATION_MIN_FIELD_NUMBER: _ClassVar[int]
     WARMUP_DURATION_MIN_FIELD_NUMBER: _ClassVar[int]
@@ -873,7 +893,6 @@ class ResolvedConfig(_message.Message):
     RESTRICTION_PROPOSAL_ENABLED_FIELD_NUMBER: _ClassVar[int]
     TAU_DANGER_THRESHOLD_FIELD_NUMBER: _ClassVar[int]
     PUNCTURE_TRIGGER_ENABLED_FIELD_NUMBER: _ClassVar[int]
-    PUNCTURE_RATIO_THRESHOLD_FIELD_NUMBER: _ClassVar[int]
     FORECASTING_BUDGET_SEC_FIELD_NUMBER: _ClassVar[int]
     DETOUR_BUDGET_SEC_FIELD_NUMBER: _ClassVar[int]
     LIGHTWEIGHT_OPT_BUDGET_SEC_FIELD_NUMBER: _ClassVar[int]
@@ -883,7 +902,6 @@ class ResolvedConfig(_message.Message):
     EPSILON_FIELD_NUMBER: _ClassVar[int]
     EPSILON_0_FIELD_NUMBER: _ClassVar[int]
     BIG_M_FACTOR_FIELD_NUMBER: _ClassVar[int]
-    DELTA_MIN_FIELD_NUMBER: _ClassVar[int]
     CONFIDENCE_WEIGHT_FLOOR_FIELD_NUMBER: _ClassVar[int]
     MIP_REL_GAP_FIELD_NUMBER: _ClassVar[int]
     GRAVITY_ALPHA_FIELD_NUMBER: _ClassVar[int]
@@ -894,7 +912,6 @@ class ResolvedConfig(_message.Message):
     MIN_REFERENCE_SAMPLE_COUNT_FIELD_NUMBER: _ClassVar[int]
     K_SHORTEST_PATHS_FIELD_NUMBER: _ClassVar[int]
     FALLBACK_ETA_FIELD_NUMBER: _ClassVar[int]
-    FALLBACK_BASELINE_STAGNATION_FIELD_NUMBER: _ClassVar[int]
     SCALAR_DIRECTION_ENABLED_FIELD_NUMBER: _ClassVar[int]
     K_SHORTEST_PATHS_AUTO_FIELD_NUMBER: _ClassVar[int]
     K_SHORTEST_PATHS_MAX_FIELD_NUMBER: _ClassVar[int]
@@ -915,10 +932,13 @@ class ResolvedConfig(_message.Message):
     MILP_BOUNDARY_CONTROL_ENABLED_FIELD_NUMBER: _ClassVar[int]
     SCHEDULED_INFLOW_PRIOR_ENABLED_FIELD_NUMBER: _ClassVar[int]
     LOG_TENANT_ID_FIELD_NUMBER: _ClassVar[int]
+    DELTA_MIN_FRACTION_FIELD_NUMBER: _ClassVar[int]
+    STALE_OBSERVATION_RESOLUTIONS_FIELD_NUMBER: _ClassVar[int]
+    STALE_OBSERVATION_FLOOR_S_FIELD_NUMBER: _ClassVar[int]
+    PUNCTURE_DWELL_RATIO_THRESHOLD_FIELD_NUMBER: _ClassVar[int]
     surge_rate_threshold_percent_per_min: float
     high_stagnation_duration_min: float
     beta: float
-    theta_demand: float
     min_window_samples: int
     cooldown_duration_min: float
     warmup_duration_min: float
@@ -935,7 +955,6 @@ class ResolvedConfig(_message.Message):
     restriction_proposal_enabled: bool
     tau_danger_threshold: float
     puncture_trigger_enabled: bool
-    puncture_ratio_threshold: float
     forecasting_budget_sec: float
     detour_budget_sec: float
     lightweight_opt_budget_sec: float
@@ -945,7 +964,6 @@ class ResolvedConfig(_message.Message):
     epsilon: float
     epsilon_0: float
     big_m_factor: float
-    delta_min: float
     confidence_weight_floor: float
     mip_rel_gap: float
     gravity_alpha: float
@@ -956,7 +974,6 @@ class ResolvedConfig(_message.Message):
     min_reference_sample_count: int
     k_shortest_paths: int
     fallback_eta: float
-    fallback_baseline_stagnation: float
     scalar_direction_enabled: bool
     k_shortest_paths_auto: bool
     k_shortest_paths_max: int
@@ -977,7 +994,11 @@ class ResolvedConfig(_message.Message):
     milp_boundary_control_enabled: bool
     scheduled_inflow_prior_enabled: bool
     log_tenant_id: bool
-    def __init__(self, surge_rate_threshold_percent_per_min: _Optional[float] = ..., high_stagnation_duration_min: _Optional[float] = ..., beta: _Optional[float] = ..., theta_demand: _Optional[float] = ..., min_window_samples: _Optional[int] = ..., cooldown_duration_min: _Optional[float] = ..., warmup_duration_min: _Optional[float] = ..., retrigger_warning_threshold: _Optional[int] = ..., retrigger_reset_quiet_cycles: _Optional[int] = ..., queue_score_threshold: _Optional[float] = ..., queue_diversity_threshold: _Optional[int] = ..., queue_freshness_min: _Optional[float] = ..., throughput_target_edges: _Optional[_Iterable[str]] = ..., optimization_mode: _Optional[_Union[OptimizationMode, str]] = ..., local_radius_hops: _Optional[int] = ..., max_trigger_zones: _Optional[int] = ..., greedy_improve_margin: _Optional[float] = ..., restriction_proposal_enabled: bool = ..., tau_danger_threshold: _Optional[float] = ..., puncture_trigger_enabled: bool = ..., puncture_ratio_threshold: _Optional[float] = ..., forecasting_budget_sec: _Optional[float] = ..., detour_budget_sec: _Optional[float] = ..., lightweight_opt_budget_sec: _Optional[float] = ..., milp_time_limit_sec: _Optional[float] = ..., max_consecutive_skips: _Optional[int] = ..., solver_seed: _Optional[int] = ..., epsilon: _Optional[float] = ..., epsilon_0: _Optional[float] = ..., big_m_factor: _Optional[float] = ..., delta_min: _Optional[float] = ..., confidence_weight_floor: _Optional[float] = ..., mip_rel_gap: _Optional[float] = ..., gravity_alpha: _Optional[float] = ..., ipf_max_iter: _Optional[int] = ..., ipf_tolerance: _Optional[float] = ..., transit_time_prior_sec: _Optional[float] = ..., dwell_time_prior_sec: _Optional[float] = ..., min_reference_sample_count: _Optional[int] = ..., k_shortest_paths: _Optional[int] = ..., fallback_eta: _Optional[float] = ..., fallback_baseline_stagnation: _Optional[float] = ..., scalar_direction_enabled: bool = ..., k_shortest_paths_auto: bool = ..., k_shortest_paths_max: _Optional[int] = ..., phase_feedback_enabled: bool = ..., phase_feedback_candidates: _Optional[int] = ..., attribute_tag_priority: _Optional[_Iterable[str]] = ..., full_weight_hours: _Optional[float] = ..., eta_mixing_ratio: _Optional[float] = ..., throughput_weights: _Optional[_Union[ThroughputWeights, _Mapping]] = ..., throughput_max_per_edge: _Optional[_Iterable[_Union[EdgeFloat, _Mapping]]] = ..., two_stage_optimization: bool = ..., backoff_enabled: bool = ..., improvement_threshold: _Optional[float] = ..., backoff_max_factor: _Optional[int] = ..., shadow_extensions: _Optional[_Iterable[str]] = ..., delta_objective_enabled: bool = ..., node_detour_enabled: bool = ..., milp_boundary_control_enabled: bool = ..., scheduled_inflow_prior_enabled: bool = ..., log_tenant_id: bool = ...) -> None: ...
+    delta_min_fraction: float
+    stale_observation_resolutions: float
+    stale_observation_floor_s: float
+    puncture_dwell_ratio_threshold: float
+    def __init__(self, surge_rate_threshold_percent_per_min: _Optional[float] = ..., high_stagnation_duration_min: _Optional[float] = ..., beta: _Optional[float] = ..., min_window_samples: _Optional[int] = ..., cooldown_duration_min: _Optional[float] = ..., warmup_duration_min: _Optional[float] = ..., retrigger_warning_threshold: _Optional[int] = ..., retrigger_reset_quiet_cycles: _Optional[int] = ..., queue_score_threshold: _Optional[float] = ..., queue_diversity_threshold: _Optional[int] = ..., queue_freshness_min: _Optional[float] = ..., throughput_target_edges: _Optional[_Iterable[str]] = ..., optimization_mode: _Optional[_Union[OptimizationMode, str]] = ..., local_radius_hops: _Optional[int] = ..., max_trigger_zones: _Optional[int] = ..., greedy_improve_margin: _Optional[float] = ..., restriction_proposal_enabled: bool = ..., tau_danger_threshold: _Optional[float] = ..., puncture_trigger_enabled: bool = ..., forecasting_budget_sec: _Optional[float] = ..., detour_budget_sec: _Optional[float] = ..., lightweight_opt_budget_sec: _Optional[float] = ..., milp_time_limit_sec: _Optional[float] = ..., max_consecutive_skips: _Optional[int] = ..., solver_seed: _Optional[int] = ..., epsilon: _Optional[float] = ..., epsilon_0: _Optional[float] = ..., big_m_factor: _Optional[float] = ..., confidence_weight_floor: _Optional[float] = ..., mip_rel_gap: _Optional[float] = ..., gravity_alpha: _Optional[float] = ..., ipf_max_iter: _Optional[int] = ..., ipf_tolerance: _Optional[float] = ..., transit_time_prior_sec: _Optional[float] = ..., dwell_time_prior_sec: _Optional[float] = ..., min_reference_sample_count: _Optional[int] = ..., k_shortest_paths: _Optional[int] = ..., fallback_eta: _Optional[float] = ..., scalar_direction_enabled: bool = ..., k_shortest_paths_auto: bool = ..., k_shortest_paths_max: _Optional[int] = ..., phase_feedback_enabled: bool = ..., phase_feedback_candidates: _Optional[int] = ..., attribute_tag_priority: _Optional[_Iterable[str]] = ..., full_weight_hours: _Optional[float] = ..., eta_mixing_ratio: _Optional[float] = ..., throughput_weights: _Optional[_Union[ThroughputWeights, _Mapping]] = ..., throughput_max_per_edge: _Optional[_Iterable[_Union[EdgeFloat, _Mapping]]] = ..., two_stage_optimization: bool = ..., backoff_enabled: bool = ..., improvement_threshold: _Optional[float] = ..., backoff_max_factor: _Optional[int] = ..., shadow_extensions: _Optional[_Iterable[str]] = ..., delta_objective_enabled: bool = ..., node_detour_enabled: bool = ..., milp_boundary_control_enabled: bool = ..., scheduled_inflow_prior_enabled: bool = ..., log_tenant_id: bool = ..., delta_min_fraction: _Optional[float] = ..., stale_observation_resolutions: _Optional[float] = ..., stale_observation_floor_s: _Optional[float] = ..., puncture_dwell_ratio_threshold: _Optional[float] = ...) -> None: ...
 
 class ThroughputWeights(_message.Message):
     __slots__ = ("trigger_origin", "detour_path", "operator_set")
@@ -1044,20 +1065,22 @@ class DirectionProposal(_message.Message):
     def __init__(self, edge_id: _Optional[str] = ..., proposed_direction: _Optional[_Union[ProposedDirection, str]] = ..., confidence: _Optional[float] = ..., change_type: _Optional[_Union[DirectionChangeType, str]] = ...) -> None: ...
 
 class RestrictionProposal(_message.Message):
-    __slots__ = ("edge_id", "action", "limit_value", "reason", "confidence", "scope_note")
+    __slots__ = ("edge_id", "action", "limit_value", "reason", "confidence", "scope_note", "limit_ratio")
     EDGE_ID_FIELD_NUMBER: _ClassVar[int]
     ACTION_FIELD_NUMBER: _ClassVar[int]
     LIMIT_VALUE_FIELD_NUMBER: _ClassVar[int]
     REASON_FIELD_NUMBER: _ClassVar[int]
     CONFIDENCE_FIELD_NUMBER: _ClassVar[int]
     SCOPE_NOTE_FIELD_NUMBER: _ClassVar[int]
+    LIMIT_RATIO_FIELD_NUMBER: _ClassVar[int]
     edge_id: str
     action: RestrictionAction
     limit_value: float
     reason: RestrictionReason
     confidence: float
     scope_note: str
-    def __init__(self, edge_id: _Optional[str] = ..., action: _Optional[_Union[RestrictionAction, str]] = ..., limit_value: _Optional[float] = ..., reason: _Optional[_Union[RestrictionReason, str]] = ..., confidence: _Optional[float] = ..., scope_note: _Optional[str] = ...) -> None: ...
+    limit_ratio: float
+    def __init__(self, edge_id: _Optional[str] = ..., action: _Optional[_Union[RestrictionAction, str]] = ..., limit_value: _Optional[float] = ..., reason: _Optional[_Union[RestrictionReason, str]] = ..., confidence: _Optional[float] = ..., scope_note: _Optional[str] = ..., limit_ratio: _Optional[float] = ...) -> None: ...
 
 class DetourPathProposal(_message.Message):
     __slots__ = ("origin_edge_id", "edge_ids", "confidence")
@@ -1298,22 +1321,36 @@ class Warning(_message.Message):
     def __init__(self, code: _Optional[_Union[WarningCode, str]] = ..., context: _Optional[_Iterable[_Union[KeyValue, _Mapping]]] = ...) -> None: ...
 
 class Diagnostics(_message.Message):
-    __slots__ = ("mode", "warnings", "trigger_evidences", "fallbacks_applied", "steps_executed", "degraded_short_tenant", "schema_version")
+    __slots__ = ("mode", "warnings", "trigger_evidences", "fallbacks_applied", "steps_executed", "schema_version", "element_states")
     MODE_FIELD_NUMBER: _ClassVar[int]
     WARNINGS_FIELD_NUMBER: _ClassVar[int]
     TRIGGER_EVIDENCES_FIELD_NUMBER: _ClassVar[int]
     FALLBACKS_APPLIED_FIELD_NUMBER: _ClassVar[int]
     STEPS_EXECUTED_FIELD_NUMBER: _ClassVar[int]
-    DEGRADED_SHORT_TENANT_FIELD_NUMBER: _ClassVar[int]
     SCHEMA_VERSION_FIELD_NUMBER: _ClassVar[int]
+    ELEMENT_STATES_FIELD_NUMBER: _ClassVar[int]
     mode: Mode
     warnings: _containers.RepeatedCompositeFieldContainer[Warning]
     trigger_evidences: _containers.RepeatedCompositeFieldContainer[TriggerEvidence]
     fallbacks_applied: _containers.RepeatedCompositeFieldContainer[FallbackRecord]
     steps_executed: _containers.RepeatedCompositeFieldContainer[StepRecord]
-    degraded_short_tenant: bool
     schema_version: str
-    def __init__(self, mode: _Optional[_Union[Mode, str]] = ..., warnings: _Optional[_Iterable[_Union[Warning, _Mapping]]] = ..., trigger_evidences: _Optional[_Iterable[_Union[TriggerEvidence, _Mapping]]] = ..., fallbacks_applied: _Optional[_Iterable[_Union[FallbackRecord, _Mapping]]] = ..., steps_executed: _Optional[_Iterable[_Union[StepRecord, _Mapping]]] = ..., degraded_short_tenant: bool = ..., schema_version: _Optional[str] = ...) -> None: ...
+    element_states: _containers.RepeatedCompositeFieldContainer[ElementStateRecord]
+    def __init__(self, mode: _Optional[_Union[Mode, str]] = ..., warnings: _Optional[_Iterable[_Union[Warning, _Mapping]]] = ..., trigger_evidences: _Optional[_Iterable[_Union[TriggerEvidence, _Mapping]]] = ..., fallbacks_applied: _Optional[_Iterable[_Union[FallbackRecord, _Mapping]]] = ..., steps_executed: _Optional[_Iterable[_Union[StepRecord, _Mapping]]] = ..., schema_version: _Optional[str] = ..., element_states: _Optional[_Iterable[_Union[ElementStateRecord, _Mapping]]] = ...) -> None: ...
+
+class ElementStateRecord(_message.Message):
+    __slots__ = ("target_key", "observation", "history", "line_points", "skipped")
+    TARGET_KEY_FIELD_NUMBER: _ClassVar[int]
+    OBSERVATION_FIELD_NUMBER: _ClassVar[int]
+    HISTORY_FIELD_NUMBER: _ClassVar[int]
+    LINE_POINTS_FIELD_NUMBER: _ClassVar[int]
+    SKIPPED_FIELD_NUMBER: _ClassVar[int]
+    target_key: str
+    observation: ObservationState
+    history: HistoryTier
+    line_points: int
+    skipped: _containers.RepeatedScalarFieldContainer[Judgement]
+    def __init__(self, target_key: _Optional[str] = ..., observation: _Optional[_Union[ObservationState, str]] = ..., history: _Optional[_Union[HistoryTier, str]] = ..., line_points: _Optional[int] = ..., skipped: _Optional[_Iterable[_Union[Judgement, str]]] = ...) -> None: ...
 
 class TriggerEvidence(_message.Message):
     __slots__ = ("source", "occurred_at", "edge_id", "node_id", "metric_value", "threshold_value", "duration_min")

@@ -6,7 +6,6 @@ import pytest
 from google.protobuf import json_format
 
 from flow_control.detection.state import (
-    ArcDemandDigestEntry,
     ArcWatchState,
     DetectionState,
     QueuedTrigger,
@@ -15,6 +14,7 @@ from flow_control.detection.state import (
     WarmupState,
 )
 from flow_control.detection.triggers import Event, EventKind
+from flow_control.domain.element_state import HistoryTier, Judgement, ObservationState
 from flow_control.domain.enums import (
     BoundaryDirection,
     CurrentDirection,
@@ -24,7 +24,7 @@ from flow_control.domain.enums import (
     ObservationType,
 )
 from flow_control.domain.graph import Boundary, Edge, EdgeID, Graph, Node, NodeID
-from flow_control.domain.history import HistoryDigest
+from flow_control.domain.history import ArcHistoryStat, HistoryDigest
 from flow_control.domain.observations import ArcFlow, NodeOccupancy, Observations
 from flow_control.domain.references import Reference
 from flow_control.optimization.results import (
@@ -47,6 +47,7 @@ from flow_control.rpc import codec
 from flow_control.rpc.generated.tolo.flow.v1 import flow_pb2 as pb
 from flow_control.service import (
     Diagnostics,
+    ElementStateRecord,
     EventContext,
     EventTerm,
     FeedbackValues,
@@ -83,6 +84,7 @@ def test_graph_round_trip_preserves_optional_values() -> None:
                 current_direction=CurrentDirection.A_TO_B,
                 enabled=True,
                 observation_type=ObservationType.VECTOR,
+                danger_flow_capacity=6.0,
                 capacity_hint=40.0,
             ),
         ),
@@ -94,6 +96,7 @@ def test_graph_round_trip_preserves_optional_values() -> None:
     assert encoded.nodes[0].boundary.direction == pb.BOUNDARY_DIRECTION_ENTRY
     assert not encoded.nodes[1].HasField("boundary")
     assert encoded.edges[0].HasField("capacity_hint")
+    assert encoded.edges[0].HasField("danger_flow_capacity")
     assert codec._decode_graph(encoded) == graph
 
 
@@ -108,16 +111,6 @@ def test_event_round_trip_preserves_scalar_kinds() -> None:
     encoded = codec._encode_event(event)
 
     assert codec._decode_event(encoded) == event
-
-
-def test_detection_state_round_trip_preserves_missing_vs_empty_digest() -> None:
-    missing = codec._decode_detection_state(codec._encode_detection_state(DetectionState()))
-    empty = codec._decode_detection_state(
-        codec._encode_detection_state(DetectionState(arc_demand_digest=()))
-    )
-
-    assert missing.arc_demand_digest is None
-    assert empty.arc_demand_digest == ()
 
 
 def test_codec_rejects_missing_and_nonfinite_values() -> None:
@@ -188,7 +181,9 @@ def test_request_round_trip_uses_explicit_event_id() -> None:
         event_context=EventContext(EventTerm.LONG, available_history_hours=6.5),
         graph=graph,
         observations=Observations(observed_at=now),
-        history_digest=HistoryDigest(),
+        history_digest=HistoryDigest(
+            arc_stats=(ArcHistoryStat(EdgeID("e1"), flow_p90=12.0, free_flow_dwell_min=0.25),)
+        ),
         detection_state=DetectionState(),
         references=Reference(),
         config=ResolvedConfig(),
@@ -204,20 +199,15 @@ def test_request_round_trip_uses_explicit_event_id() -> None:
         ),
     )
 
-    for state in (DetectionState(), DetectionState(arc_demand_digest=())):
-        request = replace(base, detection_state=state)
-        encoded = codec.encode_request(request, event_id="event-1")
-        binary = pb.OptimizeRequest()
-        _ = binary.ParseFromString(encoded.SerializeToString())
-        json_wire = pb.OptimizeRequest()
-        _ = json_format.Parse(json_format.MessageToJson(encoded), json_wire)
+    encoded = codec.encode_request(base, event_id="event-1")
+    binary = pb.OptimizeRequest()
+    _ = binary.ParseFromString(encoded.SerializeToString())
+    json_wire = pb.OptimizeRequest()
+    _ = json_format.Parse(json_format.MessageToJson(encoded), json_wire)
 
-        assert encoded.event_id == "event-1"
-        assert encoded.detection_state.HasField("arc_demand_digest") is (
-            state.arc_demand_digest is not None
-        )
-        assert codec.decode_request(binary) == request
-        assert codec.decode_request(json_wire) == request
+    assert encoded.event_id == "event-1"
+    assert codec.decode_request(binary) == base
+    assert codec.decode_request(json_wire) == base
 
 
 @pytest.mark.parametrize("verdict", tuple(Verdict))
@@ -238,7 +228,7 @@ def test_response_round_trip_preserves_nondefault_feedback_and_diagnostics() -> 
     response = Response(
         request_id="r1",
         verdict=Verdict.OPTIMIZED,
-        updated_detection_state=DetectionState(arc_demand_digest=()),
+        updated_detection_state=DetectionState(),
         feedback_values=replace(
             FeedbackValues(),
             objective_values=FeedbackObjectiveValues(tau_star=0.0, throughput=None),
@@ -248,7 +238,18 @@ def test_response_round_trip_preserves_nondefault_feedback_and_diagnostics() -> 
                 history_completeness=0.5,
             ),
         ),
-        diagnostics=replace(Diagnostics(), degraded_short_tenant=True),
+        diagnostics=replace(
+            Diagnostics(),
+            element_states=(
+                ElementStateRecord(
+                    target_key="edge:e1",
+                    observation=ObservationState.HOLD,
+                    history=HistoryTier.WINDOW_ONLY,
+                    line_points=1,
+                    skipped=(Judgement.SURGE, Judgement.HIGH_STAGNATION, Judgement.COMBINED),
+                ),
+            ),
+        ),
     )
 
     assert codec.decode_response(codec.encode_response(response)) == response
@@ -318,15 +319,10 @@ def _stale_detection_state(now: datetime) -> DetectionState:
                 percentile_breached=True,
                 delta_breached=True,
                 stagnation_watch_since=now - timedelta(minutes=3),
+                stagnation_last_held_at=now - timedelta(minutes=1),
                 surge_breached=True,
-                demand_excess_breached=True,
-                demand_watch_since=now - timedelta(minutes=2),
             ),
             ArcWatchState(edge_id=EdgeID("e1")),
-        ),
-        arc_demand_digest=(
-            ArcDemandDigestEntry(edge_id=EdgeID("gone"), demand=4.0),
-            ArcDemandDigestEntry(edge_id=EdgeID("e1"), demand=1.0),
         ),
         warmup_states=(
             WarmupState(target_key="edge:gone", until=now + timedelta(minutes=4)),
@@ -359,6 +355,7 @@ def _stale_previous_result(now: datetime) -> OptimizationResult:
                 RestrictionAction.LIMIT,
                 limit_value=3.0,
                 reason=RestrictionReason.PUNCTURE,
+                limit_ratio=0.75,
             ),
         ),
         detour_paths=(

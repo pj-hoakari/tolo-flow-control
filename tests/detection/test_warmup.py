@@ -21,6 +21,7 @@ from flow_control.detection.triggers import (
     apply_warmup_events,
 )
 from flow_control.domain import EdgeID, Graph
+from flow_control.domain.element_state import assess_elements
 from flow_control.domain.history import HistoryDigest
 from flow_control.domain.observations import Observations
 
@@ -190,7 +191,7 @@ def test_detect_skips_when_all_targets_in_warmup(
     result = detect(
         graph=basic_graph,
         observations=observations,
-        history_digest=history,
+        element_states=assess_elements(basic_graph, observations, history, base_time),
         previous_state=previous,
         events=(),
         config=_config(),
@@ -219,7 +220,7 @@ def test_detect_suppresses_normal_trigger_for_warmup_edge(
     result = detect(
         graph=basic_graph,
         observations=observations,
-        history_digest=history,
+        element_states=assess_elements(basic_graph, observations, history, base_time),
         previous_state=previous,
         events=(),
         config=_config(),
@@ -247,7 +248,7 @@ def test_danger_flag_fires_even_when_all_targets_in_warmup(
     result = detect(
         graph=basic_graph,
         observations=observations,
-        history_digest=HistoryDigest(),
+        element_states=assess_elements(basic_graph, observations, HistoryDigest(), base_time),
         previous_state=previous,
         events=(_event(EventKind.DANGER_FLAG_UP, "edge:e1", base_time),),
         config=_config(),
@@ -272,7 +273,7 @@ def test_newly_enabled_edge_is_warmed_up_same_request(
     result = detect(
         graph=basic_graph,
         observations=observations,
-        history_digest=history,
+        element_states=assess_elements(basic_graph, observations, history, base_time),
         previous_state=DetectionState(arc_watch_states=fire_state.arc_watch_states),
         events=(_event(EventKind.ENABLE, "edge:e1", base_time),),
         config=_config(),

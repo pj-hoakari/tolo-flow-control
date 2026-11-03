@@ -71,7 +71,7 @@ class Edge:
     attribute_tags: tuple[str, ...] = ()
     time_resolution_s: int = 60
     danger_flag: bool = False
-    danger_capacity: float | None = None
+    danger_flow_capacity: float | None = None
     capacity_hint: float | None = None
 
 

@@ -1,5 +1,6 @@
 """MILP 制約のユニットテスト（モデル層を直接呼んでフロー値を検証する）"""
 
+from dataclasses import replace
 from datetime import UTC, datetime
 
 import pytest
@@ -36,7 +37,9 @@ _OBS_AT = datetime(2026, 6, 18, tzinfo=UTC)
 
 def _solve(graph, observations, forecast, history, config, *, is_open=True):
     arc_model = build_arc_model(graph)
-    commodities = _build_commodities(forecast, set(arc_model.active_nodes), config.delta_min)
+    commodities = _build_commodities(
+        forecast, set(arc_model.active_nodes), config.delta_min_fraction
+    )
     inputs = _build_inputs(graph, observations, forecast, history, arc_model, commodities, config)
     od_pairs = tuple((k.origin, k.destination) for k in commodities)
     drain = compute_drainable(arc_model, od_pairs, frozenset(inputs.s_obs.keys()))
@@ -52,7 +55,7 @@ def _edge_total(sol, edge_value):
     return _arc(sol, edge_value, "A_TO_B") + _arc(sol, edge_value, "B_TO_A")
 
 
-def _mk(eid, a, b, *, obs=ObservationType.VECTOR, danger_cap=None, hint=None):
+def _mk(eid, a, b, *, obs=ObservationType.VECTOR, danger_flow_cap=None, hint=None):
     return Edge(
         edge_id=EdgeID(eid),
         endpoint_a=a,
@@ -61,7 +64,8 @@ def _mk(eid, a, b, *, obs=ObservationType.VECTOR, danger_cap=None, hint=None):
         current_direction=CurrentDirection.BIDIRECTIONAL,
         enabled=True,
         observation_type=obs,
-        danger_capacity=danger_cap,
+        danger_flag=danger_flow_cap is not None,
+        danger_flow_capacity=danger_flow_cap,
         capacity_hint=hint,
     )
 
@@ -111,14 +115,23 @@ def _demand_n1_n2(value: float) -> ForecastResult:
     )
 
 
-def test_edge_danger_capacity_limits_flow():
+def test_edge_danger_flow_capacity_limits_flow():
     # 直行エッジを高停滞にして排出のため流したいが、危険フラグ容量で 3 に制限される
-    graph = _diamond(_mk("e_d", NodeID("n1"), NodeID("n2"), danger_cap=3.0))
+    graph = _diamond(_mk("e_d", NodeID("n1"), NodeID("n2"), danger_flow_cap=3.0))
     obs = Observations(observed_at=_OBS_AT, arc_stagnations=(ArcStagnation(EdgeID("e_d"), 100.0),))
     history = HistoryDigest(arc_stats=(ArcHistoryStat(EdgeID("e_d"), baseline_stagnation=1.0),))
     p1 = _solve(graph, obs, _demand_n1_n2(10.0), history, ResolvedConfig())
     assert p1.status == SolverStatus.OPTIMAL
     assert _arc(p1.solution, "e_d", "A_TO_B") == pytest.approx(3.0, abs=1e-6)
+
+
+def test_edge_danger_flow_capacity_is_ignored_once_the_flag_is_down():
+    capped = _mk("e_d", NodeID("n1"), NodeID("n2"), danger_flow_cap=3.0)
+    graph = _diamond(replace(capped, danger_flag=False))
+    obs = Observations(observed_at=_OBS_AT, arc_stagnations=(ArcStagnation(EdgeID("e_d"), 100.0),))
+    history = HistoryDigest(arc_stats=(ArcHistoryStat(EdgeID("e_d"), baseline_stagnation=1.0),))
+    p1 = _solve(graph, obs, _demand_n1_n2(10.0), history, ResolvedConfig())
+    assert _arc(p1.solution, "e_d", "A_TO_B") == pytest.approx(10.0, abs=1e-6)
 
 
 def test_no_cap_routes_all_through_congested_edge():

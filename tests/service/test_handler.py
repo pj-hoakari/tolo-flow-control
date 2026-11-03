@@ -3,6 +3,8 @@ from dataclasses import replace
 from datetime import UTC, datetime
 from types import SimpleNamespace
 
+import pytest
+
 import flow_control.service.handler as handler_module
 from flow_control.detection.state import DetectionState
 from flow_control.detection.triggers import Event, EventKind
@@ -10,12 +12,13 @@ from flow_control.domain.enums import (
     BoundaryDirection,
     CurrentDirection,
     DirectionConstraint,
+    FlowDirection,
     NodeKind,
     ObservationType,
 )
 from flow_control.domain.graph import Boundary, Edge, EdgeID, Graph, Node, NodeID
 from flow_control.domain.history import HistoryDigest
-from flow_control.domain.observations import Observations
+from flow_control.domain.observations import ArcFlow, Observations
 from flow_control.domain.references import Reference
 from flow_control.forecasting import forecast as forecasting_forecast
 from flow_control.optimization import SolverStatus
@@ -23,7 +26,9 @@ from flow_control.optimization import optimize as optimization_optimize
 from flow_control.service import (
     EventContext,
     EventTerm,
+    FallbackKind,
     GraphSizeLimit,
+    OptimizationMode,
     Request,
     ResolvedConfig,
     TenantContext,
@@ -179,6 +184,50 @@ def test_handle_request_runs_all_steps_for_manual_danger_trigger() -> None:
         "OPTIMIZATION",
         "FEEDBACK",
     ]
+
+
+def _oneway_danger_request(mode: OptimizationMode) -> Request:
+    request = _danger_request()
+    edge = replace(
+        request.graph.edges[0],
+        direction_constraint=DirectionConstraint.LEGAL_FIXED_A_TO_B,
+        current_direction=CurrentDirection.A_TO_B,
+    )
+    return replace(
+        request,
+        graph=replace(request.graph, edges=(edge,)),
+        observations=Observations(
+            observed_at=NOW, arc_flows=(ArcFlow(edge.edge_id, FlowDirection.A_TO_B, 5.0),)
+        ),
+        config=replace(request.config, optimization_mode=mode),
+    )
+
+
+@pytest.mark.parametrize(
+    ("mode", "kinds"),
+    [
+        (
+            OptimizationMode.LIGHTWEIGHT,
+            (FallbackKind.LP_INFEASIBLE_HELD, FallbackKind.DIRECTION_PROPOSAL_HELD),
+        ),
+        (
+            OptimizationMode.STRICT,
+            (FallbackKind.INFEASIBLE_LP_RELAXED, FallbackKind.DIRECTION_PROPOSAL_HELD),
+        ),
+    ],
+)
+def test_handle_request_records_the_allocation_lp_fallback(mode, kinds) -> None:
+    response = handle_request(_oneway_danger_request(mode))
+
+    assert response.verdict is Verdict.OPTIMIZED
+    assert tuple(item.kind for item in response.diagnostics.fallbacks_applied) == kinds
+
+
+def test_handle_request_records_no_fallback_when_the_allocation_lp_solves() -> None:
+    response = handle_request(_danger_request())
+
+    assert response.verdict is Verdict.OPTIMIZED
+    assert response.diagnostics.fallbacks_applied == ()
 
 
 def test_handle_request_does_not_extend_short_deadline_to_minimum(monkeypatch) -> None:

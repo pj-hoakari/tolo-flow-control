@@ -8,7 +8,7 @@
 
 期待する提案は `e_concourse` の解除（RELEASE_ONEWAY → BIDIRECTIONAL）による
 主出口導線の回復と、支線側の退場流の維持。可変コンコース入口の滞留はライン計測が
-なく（lineless）、停滞のみの縮退発火となる。避難・緊急対応ではなく、イベント運営の
+なく（lineless）、急増が判定不能なので発火しない。避難・緊急対応ではなく、イベント運営の
 定常サイクル（入場運用→退場運用の切替）を表す。
 
 放出中（ΔOcc<0）の混在ノードは Open モードの生成源となるため、
@@ -57,4 +57,5 @@ def build() -> Scenario:
         obs,
         hist,
         previous_state=established_watch_state(hot),
+        expect_trigger=False,
     )

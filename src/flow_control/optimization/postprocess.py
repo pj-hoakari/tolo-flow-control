@@ -207,8 +207,8 @@ def compute_detour_path_proposals(
 
 def _effective_capacity(edge: Edge) -> float:
     caps: list[float] = []
-    if edge.danger_flag and edge.danger_capacity is not None:
-        caps.append(edge.danger_capacity)
+    if edge.danger_flag and edge.danger_flow_capacity is not None:
+        caps.append(edge.danger_flow_capacity)
     if edge.capacity_hint is not None:
         caps.append(edge.capacity_hint)
     return min(caps) if caps else math.inf

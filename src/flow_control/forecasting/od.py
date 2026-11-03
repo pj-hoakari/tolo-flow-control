@@ -144,7 +144,7 @@ def estimate_od(
     - それ以外で流量観測あり → 両制約 IPF（DOUBLY_CONSTRAINED）
     - 流量観測なし → 距離 prior（DISTANCE_PRIOR）
 
-    OD 採用ペアは δ_{s,t} > config.delta_min のみ
+    OD 採用ペアは δ_{s,t} > config.delta_min_fraction × 総需要 のみ
     出力は (origin, destination) 順で決定的
     """
     active_nodes = graph.enabled_nodes()
@@ -194,7 +194,7 @@ def estimate_od(
             node_demands, production, absorption, flows, config, observations=observations
         )
         raw = _exclude_invalid_pairs(raw, boundary_ids, is_open_mode)
-        od = _cut_small_od(raw, config.delta_min)
+        od = _cut_small_od(raw, config.delta_min_fraction)
     else:
         if not is_open_mode:
             _equalize_per_component(production, absorption, graph)
@@ -206,7 +206,7 @@ def estimate_od(
             config,
             is_open_mode=is_open_mode,
         )
-        od = _cut_small_od(raw, config.delta_min)
+        od = _cut_small_od(raw, config.delta_min_fraction)
 
     od_matrix = _to_od_matrix(od, node_demands)
     return ODResult(od_matrix=od_matrix, resolutions=resolutions)
@@ -730,13 +730,14 @@ def _exclude_invalid_pairs(
 
 def _cut_small_od(
     od: dict[tuple[NodeID, NodeID], float],
-    delta_min: float,
+    delta_min_fraction: float,
 ) -> dict[tuple[NodeID, NodeID], float]:
     """δ_{s,t} > δ_min のみ採用する
 
     カットで失われた需要は残存ペアへ付け替えない（付け替えは無関係な目的地の
     需要を水増しし提案を歪める）。行周辺の未充足は Step C の再現残差として扱う
     """
+    delta_min = delta_min_fraction * sum(od.values())
     return {key: value for key, value in od.items() if value > delta_min}
 
 

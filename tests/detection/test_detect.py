@@ -18,6 +18,7 @@ from flow_control.detection.state import (
 )
 from flow_control.detection.triggers import Event, EventKind, VerdictHint
 from flow_control.domain import EdgeID, Graph, NodeID
+from flow_control.domain.element_state import assess_elements
 from flow_control.domain.history import HistoryDigest
 from flow_control.domain.observations import Observations
 
@@ -68,7 +69,7 @@ def test_no_trigger_when_quiet(
     result = detect(
         graph=basic_graph,
         observations=observations,
-        history_digest=history,
+        element_states=assess_elements(basic_graph, observations, history, base_time),
         previous_state=DetectionState(),
         events=(),
         config=_config(),
@@ -94,7 +95,7 @@ def test_combined_trigger_fires_and_starts_cooldown(
     result = detect(
         graph=basic_graph,
         observations=observations,
-        history_digest=history,
+        element_states=assess_elements(basic_graph, observations, history, base_time),
         previous_state=previous,
         events=(),
         config=_config(cooldown_min=60.0),
@@ -123,7 +124,7 @@ def test_abort_state_excludes_fire_side_effects_on_trigger(
     result = detect(
         graph=basic_graph,
         observations=observations,
-        history_digest=history,
+        element_states=assess_elements(basic_graph, observations, history, base_time),
         previous_state=previous,
         events=(),
         config=_config(cooldown_min=60.0),
@@ -155,7 +156,7 @@ def test_danger_flag_fires_for_node(
     result = detect(
         graph=basic_graph,
         observations=observations,
-        history_digest=history,
+        element_states=assess_elements(basic_graph, observations, history, base_time),
         previous_state=DetectionState(),
         events=(_danger_up("node:n1", base_time),),
         config=_config(),
@@ -186,7 +187,7 @@ def test_trigger_in_cooldown_is_queued(
     result = detect(
         graph=basic_graph,
         observations=observations,
-        history_digest=history,
+        element_states=assess_elements(basic_graph, observations, history, base_time),
         previous_state=previous,
         events=(),
         config=_config(score_threshold=5.0, diversity_threshold=3),
@@ -219,7 +220,7 @@ def test_queued_trigger_carries_observation_snapshot_ref(
     result = detect(
         graph=basic_graph,
         observations=observations,
-        history_digest=history,
+        element_states=assess_elements(basic_graph, observations, history, base_time),
         previous_state=previous,
         events=(),
         config=_config(score_threshold=5.0, diversity_threshold=3),
@@ -245,7 +246,7 @@ def test_danger_in_cooldown_fires_immediately(
     result = detect(
         graph=basic_graph,
         observations=observations,
-        history_digest=history,
+        element_states=assess_elements(basic_graph, observations, history, base_time),
         previous_state=previous,
         events=(_danger_up("edge:e1", base_time),),
         config=_config(),
@@ -271,7 +272,7 @@ def test_skipped_cooldown_when_quiet_in_cooldown(
     result = detect(
         graph=basic_graph,
         observations=observations,
-        history_digest=history,
+        element_states=assess_elements(basic_graph, observations, history, base_time),
         previous_state=previous,
         events=(),
         config=_config(),
@@ -295,7 +296,7 @@ def test_high_stagnation_fires_through_detect(
     result = detect(
         graph=basic_graph,
         observations=observations,
-        history_digest=history,
+        element_states=assess_elements(basic_graph, observations, history, base_time),
         previous_state=previous,
         events=(),
         config=_config(),

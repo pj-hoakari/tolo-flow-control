@@ -26,6 +26,7 @@ from flow_control.detection.triggers import (
     apply_scheduled_events,
 )
 from flow_control.domain import EdgeID, Graph
+from flow_control.domain.element_state import assess_elements
 from flow_control.domain.history import HistoryDigest
 from flow_control.domain.observations import Observations
 
@@ -141,7 +142,7 @@ def test_detect_scheduled_only_clears_cooldown_without_firing(
     result = detect(
         graph=basic_graph,
         observations=observations,
-        history_digest=history,
+        element_states=assess_elements(basic_graph, observations, history, base_time),
         previous_state=previous,
         events=(_scheduled("node:n1", base_time),),
         config=_config(),
@@ -171,7 +172,7 @@ def test_detect_scheduled_reset_consolidates_fresh_queue(
     result = detect(
         graph=basic_graph,
         observations=observations,
-        history_digest=history,
+        element_states=assess_elements(basic_graph, observations, history, base_time),
         previous_state=previous,
         events=(_scheduled("node:n1", base_time),),
         config=_config(cooldown_min=60.0),
@@ -203,7 +204,7 @@ def test_detect_scheduled_reset_drops_stale_queue_as_expired(
     result = detect(
         graph=basic_graph,
         observations=observations,
-        history_digest=history,
+        element_states=assess_elements(basic_graph, observations, history, base_time),
         previous_state=previous,
         events=(_scheduled("node:n1", base_time),),
         config=_config(cooldown_min=60.0),
@@ -229,7 +230,7 @@ def test_detect_scheduled_reset_lets_concurrent_surge_fire_immediately(
     result = detect(
         graph=basic_graph,
         observations=observations,
-        history_digest=history,
+        element_states=assess_elements(basic_graph, observations, history, base_time),
         previous_state=previous,
         events=(_scheduled("node:n1", base_time),),
         config=_config(cooldown_min=60.0),
@@ -259,7 +260,7 @@ def test_detect_scheduled_reset_integrates_preserved_queue_on_fire(
     result = detect(
         graph=basic_graph,
         observations=observations,
-        history_digest=history,
+        element_states=assess_elements(basic_graph, observations, history, base_time),
         previous_state=previous,
         events=(_scheduled("node:n1", base_time),),
         config=_config(),

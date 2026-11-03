@@ -20,6 +20,7 @@ from flow_control.detection.triggers import (
     apply_danger_flag_down,
 )
 from flow_control.domain import EdgeID, Graph
+from flow_control.domain.element_state import assess_elements
 from flow_control.domain.observations import Observations
 
 
@@ -134,7 +135,7 @@ def test_detect_danger_down_zeroes_count_without_firing(
     result = detect(
         graph=basic_graph,
         observations=observations,
-        history_digest=history,
+        element_states=assess_elements(basic_graph, observations, history, base_time),
         previous_state=previous,
         events=(_down("edge:e1", base_time),),
         config=ResolvedConfig(surge_rate_threshold_percent_per_min=10.0),
@@ -166,7 +167,7 @@ def test_detect_danger_down_does_not_reset_cooldown(
     result = detect(
         graph=basic_graph,
         observations=observations,
-        history_digest=history,
+        element_states=assess_elements(basic_graph, observations, history, base_time),
         previous_state=previous,
         events=(_down("edge:e1", base_time),),
         config=ResolvedConfig(surge_rate_threshold_percent_per_min=10.0),
@@ -196,7 +197,7 @@ def test_detect_concurrent_surge_recounts_after_flag_down(
     result = detect(
         graph=basic_graph,
         observations=observations,
-        history_digest=history,
+        element_states=assess_elements(basic_graph, observations, history, base_time),
         previous_state=previous,
         events=(_down("edge:e1", base_time),),
         config=ResolvedConfig(

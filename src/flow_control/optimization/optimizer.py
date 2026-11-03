@@ -47,9 +47,11 @@ from .restriction import (
     build_restriction_proposals,
     build_resume_proposals,
     evaluate_detour_gate,
+    limit_ratio,
 )
 from .results import (
     ConstraintReport,
+    LpFallback,
     ObjectiveValues,
     OptimizationResult,
     OptimizeResult,
@@ -85,7 +87,7 @@ def optimize(
     active_edge_ids = {e.edge_id for e in arc_model.active_edges}
     solved_at = observations.observed_at
 
-    commodities = _build_commodities(forecast_result, active_node_set, config.delta_min)
+    commodities = _build_commodities(forecast_result, active_node_set, config.delta_min_fraction)
     inputs = _build_inputs(
         graph, observations, forecast_result, history_digest, arc_model, commodities, config
     )
@@ -806,8 +808,9 @@ def _zone_net_supply(
 
 
 def _build_commodities(
-    forecast_result: ForecastResult, active_nodes: set[NodeID], delta_min: float
+    forecast_result: ForecastResult, active_nodes: set[NodeID], delta_min_fraction: float
 ) -> tuple[Commodity, ...]:
+    delta_min = delta_min_fraction * sum(od.demand for od in forecast_result.od_matrix)
     filtered = [
         od
         for od in forecast_result.od_matrix
@@ -858,6 +861,13 @@ def _build_inputs(
         if st.edge_id in active_edge_ids:
             s_obs[st.edge_id] = st.stagnation
 
+    v_obs: dict[EdgeID, float] = {}
+    for af in observations.arc_flows:
+        if af.confidence_flag == ConfidenceFlag.INVALID:
+            continue
+        if af.edge_id in active_edge_ids:
+            v_obs[af.edge_id] = v_obs.get(af.edge_id, 0.0) + af.flow_rate
+
     sigma: dict[EdgeID, float] = {}
     for sf in observations.arc_scalar_flows:
         if sf.confidence_flag == ConfidenceFlag.INVALID:
@@ -875,14 +885,12 @@ def _build_inputs(
     s_bar: dict[EdgeID, float] = {}
     c_e: dict[EdgeID, float] = {}
     capacity_hint: dict[EdgeID, float] = {}
-    edge_danger_capacity: dict[EdgeID, float] = {}
+    edge_danger_flow_capacity: dict[EdgeID, float] = {}
     scalar_edges: set[EdgeID] = set()
     for edge in arc_model.active_edges:
-        stat = history_digest.stat_of(edge.edge_id)
-        if stat is not None and stat.baseline_stagnation is not None:
-            s_bar[edge.edge_id] = stat.baseline_stagnation
-        else:
-            s_bar[edge.edge_id] = config.fallback_baseline_stagnation
+        if edge.edge_id in s_obs:
+            baseline = history_digest.baseline_stagnation_of(edge.edge_id)
+            s_bar[edge.edge_id] = s_obs[edge.edge_id] if baseline is None else baseline
 
         conf_a = conf.get(edge.endpoint_a, 1.0)
         conf_b = conf.get(edge.endpoint_b, 1.0)
@@ -890,8 +898,8 @@ def _build_inputs(
 
         if edge.capacity_hint is not None:
             capacity_hint[edge.edge_id] = edge.capacity_hint
-        if edge.danger_capacity is not None:
-            edge_danger_capacity[edge.edge_id] = edge.danger_capacity
+        if edge.danger_flag and edge.danger_flow_capacity is not None:
+            edge_danger_flow_capacity[edge.edge_id] = edge.danger_flow_capacity
         if edge.observation_type == ObservationType.SCALAR:
             scalar_edges.add(edge.edge_id)
 
@@ -902,7 +910,7 @@ def _build_inputs(
 
     total_demand = sum(k.demand for k in commodities)
     finite_caps = (
-        list(edge_danger_capacity.values())
+        list(edge_danger_flow_capacity.values())
         + list(node_danger_capacity.values())
         + list(capacity_hint.values())
     )
@@ -911,13 +919,14 @@ def _build_inputs(
 
     return MilpInputs(
         s_obs=s_obs,
+        v_obs=v_obs,
         s_bar=s_bar,
         eta=eta,
         c_e=c_e,
         capacity_hint=capacity_hint,
         sigma=sigma,
         scalar_edges=frozenset(scalar_edges),
-        edge_danger_capacity=edge_danger_capacity,
+        edge_danger_flow_capacity=edge_danger_flow_capacity,
         node_danger_capacity=node_danger_capacity,
         big_m=big_m,
         epsilon=config.epsilon,
@@ -982,7 +991,7 @@ def _overload_limits(
         caps = [
             c
             for c in (
-                inputs.edge_danger_capacity.get(eid),
+                inputs.edge_danger_flow_capacity.get(eid),
                 inputs.capacity_hint.get(eid),
             )
             if c is not None
@@ -998,6 +1007,7 @@ def _overload_limits(
                     action=RestrictionAction.LIMIT,
                     limit_value=cap,
                     reason=RestrictionReason.OVERLOAD,
+                    limit_ratio=limit_ratio(cap, inputs.v_obs.get(eid)),
                 )
             )
     return tuple(sorted(proposals, key=lambda p: p.edge_id.value))
@@ -1093,6 +1103,7 @@ def _fallback(
             legal_fixed_violations=_legal_violations(arc_model, lp.solution),
             fallback_to_previous=False,
             degraded_mode=True,
+            lp_fallback=LpFallback.SLACK_LP,
         )
         return OptimizeResult(opt_result, stats, report)
 
@@ -1125,6 +1136,7 @@ def _fallback(
         legal_fixed_violations=(),
         fallback_to_previous=previous_result is not None,
         degraded_mode=True,
+        lp_fallback=LpFallback.NO_RESULT if previous_result is None else LpFallback.PREVIOUS_RESULT,
     )
     return OptimizeResult(opt_result, stats, report)
 
