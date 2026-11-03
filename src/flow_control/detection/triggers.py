@@ -119,18 +119,25 @@ def detect_metric_triggers(
         surge_breached = surge_rate is not None and surge_rate > surge_threshold
 
         basis = state.stagnation_basis()
-        stag = (
-            _NOT_EVALUATED
-            if basis is None
-            else _evaluate_stagnation(
+        previous_watch = previous_state.watch_state_of(edge.edge_id)
+        if basis is not None:
+            stag = _evaluate_stagnation(
                 basis,
                 config.beta,
-                previous_state.watch_state_of(edge.edge_id),
+                previous_watch,
                 config.high_stagnation_duration_min,
                 server_time,
                 config.epsilon_0,
             )
-        )
+        elif previous_watch is not None:
+            stag = _StagnationEval(
+                False,
+                previous_watch.stagnation_watch_since,
+                previous_watch.percentile_breached,
+                previous_watch.delta_breached,
+            )
+        else:
+            stag = _NOT_EVALUATED
 
         skipped: set[Judgement] = set()
         if surge_rate is None:

@@ -34,7 +34,7 @@ from flow_control.detection.triggers import detect_metric_triggers
 from flow_control.domain import EdgeID, Graph
 from flow_control.domain.element_state import Judgement, assess_elements
 from flow_control.domain.history import HistoryDigest
-from flow_control.domain.observations import ArcStagnation, Observations
+from flow_control.domain.observations import ArcStagnation, ConfidenceFlag, Observations
 
 _TS = datetime(2026, 1, 1, tzinfo=UTC)
 
@@ -320,7 +320,7 @@ def test_does_not_fire_when_stagnation_observation_missing(
     assert result.new_state.watch_state_of(edge_id) is None
 
 
-def test_does_not_fire_when_history_stat_missing(
+def test_history_stat_missing_pauses_the_watch_without_firing(
     base_time: datetime,
     basic_graph: Graph,
     edge_id: EdgeID,
@@ -329,7 +329,7 @@ def test_does_not_fire_when_history_stat_missing(
     make_established_watch,
 ):
     # 観測は揃っているが履歴統計も窓も無い
-    # → 基準停滞量が決まらず (a).2 は判定不能 → 継続中の警戒があっても発火も警戒もなし
+    # → 基準停滞量が決まらず (a).2 は判定不能 → 発火せず、継続中の警戒はそのまま持ち越す
     history = HistoryDigest()
     observations = make_stagnation_observation(edge_id, observed_at=base_time, stagnation=10.0)
     previous = DetectionState(arc_watch_states=(make_established_watch(edge_id, base_time),))
@@ -344,7 +344,63 @@ def test_does_not_fire_when_history_stat_missing(
     )
 
     assert result.triggered_edges == ()
-    assert result.new_state.watch_state_of(edge_id) is None
+    assert result.new_state.arc_watch_states == previous.arc_watch_states
+
+
+@pytest.mark.parametrize(
+    ("flag", "observed_ago_min"),
+    [(ConfidenceFlag.HOLD, 0), (ConfidenceFlag.OK, 3)],
+    ids=["hold", "stale"],
+)
+def test_undeterminable_cycle_pauses_the_persistence_timer(
+    base_time: datetime,
+    basic_graph: Graph,
+    edge_id: EdgeID,
+    surge_config: ResolvedConfig,
+    make_history,
+    make_combined_firing,
+    flag: ConfidenceFlag,
+    observed_ago_min: int,
+):
+    started = base_time - timedelta(minutes=5)
+    history = make_history((edge_id, 5.0, 5.0, 5.0))
+    first = _run(
+        graph=basic_graph,
+        history=history,
+        observations=Observations(
+            observed_at=started, arc_stagnations=(ArcStagnation(edge_id, 15.0),)
+        ),
+        previous_state=DetectionState(),
+        server_time=started,
+        config=surge_config,
+    )
+    paused_at = base_time - timedelta(minutes=2)
+    paused = _run(
+        graph=basic_graph,
+        history=history,
+        observations=Observations(
+            observed_at=paused_at - timedelta(minutes=observed_ago_min),
+            arc_stagnations=(ArcStagnation(edge_id, 1.0, confidence_flag=flag),),
+        ),
+        previous_state=first.new_state,
+        server_time=paused_at,
+        config=surge_config,
+    )
+    resumed_history, resumed_observations, _ = make_combined_firing(edge_id, base_time)
+    resumed = _run(
+        graph=basic_graph,
+        history=resumed_history,
+        observations=resumed_observations,
+        previous_state=paused.new_state,
+        server_time=base_time,
+        config=surge_config,
+    )
+
+    assert paused.new_state.arc_watch_states == first.new_state.arc_watch_states
+    assert first.new_state.watch_state_of(edge_id) == ArcWatchState(
+        edge_id, percentile_breached=True, delta_breached=True, stagnation_watch_since=started
+    )
+    assert resumed.triggered_edges == (edge_id,)
 
 
 @pytest.mark.parametrize("scale", [0.1, 1.0, 10.0])
