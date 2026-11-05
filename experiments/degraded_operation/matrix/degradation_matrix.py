@@ -46,7 +46,8 @@ TIMELINE_LABELS = {
 
 def production_config() -> pb.ResolvedConfig:
     config = obs.observation_config()
-    config.surge_rate_threshold_percent_per_min = 10
+    config.surge_rate_threshold_percent_per_min = 5
+    config.queue_score_threshold = 80
     config.fallback_eta = 0.25
     return config
 
@@ -729,7 +730,9 @@ def render(matrix: dict, verdicts: dict) -> str:
             "「+N 分」は急増開始からの経過で、初回 OPTIMIZED で打ち切る。"
         ),
         (
-            "- 設定は tolo-observation `defaultFlowConfig()`（急増閾値 10%/分、fallback_eta 0.25）。"
+            "- 設定は tolo-observation `defaultFlowConfig()`"
+            f"（急増閾値 {CONFIG.surge_rate_threshold_percent_per_min:g}%/分、"
+            f"キュー閾値 {CONFIG.queue_score_threshold:g}、fallback_eta {CONFIG.fallback_eta:g}）。"
             "devtools の `observation_config()` は急増閾値 50 で、本番と食い違う。"
         ),
         (
