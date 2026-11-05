@@ -120,6 +120,8 @@ uv run python -m devtools graph ./_devout/venue.yaml --out ./_devout   # 読み�
     - Detection 判定・配分の基本: `single-route-surge`（組合せ発火ベースライン）/
       `multi-route-surge` / `high-stagnation`（lineless で急増が判定不能）/ `normal-no-trigger` /
       `danger-flag-edge` / `danger-flag-node`
+    - 急増しきい値: `surge-fourfold-ramp-at-threshold-5`（15 分で 4 倍に伸びる流量で**発火**）/
+      `surge-fourfold-ramp-at-threshold-10`（同じ流量で**発火しない**）
     - Forecasting モード: `open-mode` / `closed-mode`
     - 状態遷移: `cooldown-skip`（**SKIPPED_COOLDOWN**）/ `cooldown-queued`（**QUEUED**）/
       `queue-burst-fire`（キュー累積の**統合発火**）/ `warmup-skip`（**SKIPPED_WARMUP**）
