@@ -7,7 +7,7 @@ import statistics
 import sys
 from collections import defaultdict
 from concurrent.futures import ProcessPoolExecutor
-from dataclasses import asdict, dataclass
+from dataclasses import asdict, dataclass, replace
 from datetime import timedelta
 from pathlib import Path
 from typing import Any
@@ -50,7 +50,13 @@ RECENT_MIN = 5
 BUILT = graph_builder.venue()
 GRAPH = BUILT.graph
 EDGES = [e.edge_id for e in GRAPH.enabled_edges()]
-CFG = production_configs(default_configs()).detection
+STUDIED_SURGE_THRESHOLD = 10.0
+STUDIED_QUEUE_SCORE_THRESHOLD = 5.0
+CFG = replace(
+    production_configs(default_configs()).detection,
+    surge_rate_threshold_percent_per_min=STUDIED_SURGE_THRESHOLD,
+    queue_score_threshold=STUDIED_QUEUE_SCORE_THRESHOLD,
+)
 
 SCENARIOS = ("steady", "surge", "ramp4", "stagnation", "combined")
 FLOWS = (5.0, 18.0, 90.0)
