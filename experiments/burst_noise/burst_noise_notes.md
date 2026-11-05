@@ -11,9 +11,10 @@
 - 揺れは急増、停滞警戒、組合せ発火の判定をほとんど変えなかった。一定の流れで誤って成立した回は、流量 3 通り × 周期 3 通り × 各 2 時間 × 20 回で 0 だった。
 - 今回値を使う処理の出力は、周期とともに揺れた。devtools の 9 シナリオで、需要の差の中央値は周期 3 秒で 0〜7%、10 秒で 0〜20% だった（school-north-stair-peak を除く）。
 - school-north-stair-peak は、約 1% の揺れでも需要が 3% 動いた。ほかのシナリオは 0〜1% だった。
+- 急増の閾値を 5%/分にすると、キューのスコアのしきい値 5 のままでは、急増と停滞警戒が続く間に約 5.5 分おきに発火し直した。しきい値 80 では、クールタイムどおり 60 分おきだった。
 - 揺れを減らすために今回値を直近の平均にすると、流量が増えている途中で今回値が遅れた。揺れがなくても需要が最大 26% ずれた。
 - 現行の急増判定は閾値 10%/分では 15 分で 4 倍になる増え方でも 3 倍の段差でも成立しなかった。傾き ÷ 窓の平均には、増え方によらない上限 6/W（点列の幅 W がおよそ 30 分なら約 20%/分）がある。
-- 現行の定式で閾値を 5%/分にすると、一定の流れでの誤った成立は 0 のまま、15 分で 4 倍になる増え方で約 13 分、3 倍の段差で約 7〜8.5 分に成立した。
+- 現行の定式で閾値を 5%/分にすると、一定の流れでの誤った成立は 0 のまま、15 分で 4 倍になる増え方で約 11〜13 分、3 倍の段差で約 6.5〜8.5 分に成立した（段差は 20 回中 0〜3 回成立しなかった）。
 
 ## 揺れのモデル
 
@@ -37,14 +38,17 @@ tolo-observation（origin/main）は計測が届くたびに観測サイクル�
 | `detection_noise.py`   | devtools の venue グラフで、時間を 30 秒ずつ進めて `detect()` を呼ぶ。前の結果の状態を次に渡す。4 時間の履歴で P90 と基準停滞量を作り、その後の 120 分を判定する     | `results/detection_noise.md`    |
 | `downstream_noise.py`  | `experiments/degraded_operation` の 9 シナリオの観測値と履歴の各点に揺れを加え、`run_pipeline` の判定、需要、通過量、通行制限の上限値を揺れのない場合と比べる。30 回ずつ | `results/downstream_noise.md`   |
 | `surge_formulation.py` | `detection_noise.py` と同じ点列で、急増の定式 5 通りの値を 30 秒ごとに計算し、閾値ごとに成立を比べる                                                                 | `results/surge_formulation.md`  |
+| `cooldown_refire.py`   | `detection_noise.py` の時間ごとの判定を、急増の閾値とキューのスコアのしきい値を変えて動かし、発火の回数と間隔を数える                                           | `results/cooldown_refire.md`    |
 
 どれも本番の設定（tolo-observation の defaultFlowConfig）で動かした。
+ただし `detection_noise.py` と `downstream_noise.py` は急増の閾値 10%/分とキューのスコアのしきい値 5（2026-11-06 時点の既定）に固定している（`STUDIED_SURGE_THRESHOLD`、`STUDIED_QUEUE_SCORE_THRESHOLD`）。
 真の流量は 30 秒ごとの Poisson で、エリア内検知人数は通過数 × 帯の通過時間（5 m ÷ 1.2 m/s）に立ち止まる人を足した値である。
 
 ```sh
 uv run python experiments/burst_noise/detection_noise.py
 uv run python experiments/burst_noise/downstream_noise.py
 uv run python experiments/burst_noise/surge_formulation.py
+uv run python experiments/burst_noise/cooldown_refire.py
 ```
 
 ### 場面
@@ -104,7 +108,7 @@ devtools のシナリオの多くは、履歴の最後の点（1 分前）より
 
 ## 急増判定の振る舞い
 
-数理 v0 §9.1 の急増は直近 W 分（W = 30 + 観測分解能）の流量の点列と今回値に最小二乗で傾き β を当て、β ÷ 点列の平均 × 100 を閾値 `surge_rate_threshold_percent_per_min`（tolo-observation の既定は 10）と比べる。
+数理 v0 §9.1 の急増は直近 W 分（W = 30 + 観測分解能）の流量の点列と今回値に最小二乗で傾き β を当て、β ÷ 点列の平均 × 100 を閾値 `surge_rate_threshold_percent_per_min`（2026-11-06 時点の tolo-observation の既定は 10）と比べる。
 
 ### 上限
 
@@ -121,6 +125,23 @@ tolo-observation は直近 30 分のスナップショットを履歴として�
 
 閾値は組合せ発火のスコアにも使われる。スコアは停滞系（停滞プロキシ ÷ P90）と需要系（傾き ÷ 閾値）の大きいほうで、クールタイム中はキューに足され、合計が `queue_score_threshold`（既定 5）を超えると即時の発火になる（要件 v0 §4.3、`_demand_ratio`）。
 同じ傾きなら、閾値を半分にすると需要系のスコアは 2 倍になる。
+
+### クールタイム中の再発火
+
+`cooldown_refire.py` の結果である（毎分 18 人、連続観測、10 回）。`ramp4stag` は、ramp4 の流量に stagnation の停滞の積み上がりを重ねた場面である。
+
+| 場面      | 急増の閾値（%/分） | キューのしきい値 | 120 分の発火の回数 | 発火の間隔（分） |
+| --------- | ------------------ | ---------------- | ------------------ | ---------------- |
+| combined  | 10                 | 5                | 1〜2               | 5.5              |
+| combined  | 5                  | 5                | 5                  | 5.5              |
+| combined  | 5                  | 20               | 3                  | 11               |
+| combined  | 5                  | 80               | 2                  | 60               |
+| ramp4stag | 10                 | 5                | 0                  | -                |
+| ramp4stag | 5                  | 5                | 2〜3               | 5.5、11、60      |
+| ramp4stag | 5                  | 20               | 2                  | 60               |
+| ramp4stag | 5                  | 80               | 2                  | 60               |
+
+クールタイム（既定 60 分）の途中でも、条件がそろうたびにスコアがキューに足され、しきい値を超えると即時の発火になる。観測サイクルは 30 秒ごとなので、しきい値 5 では条件が続くと数分で超えた。
 
 ### 閾値と成立
 
