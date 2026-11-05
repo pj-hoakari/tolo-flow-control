@@ -41,7 +41,8 @@ assert PROFILE in ("devtools", "production"), (
 
 def production_configs(scenario_configs: PipelineConfigs) -> PipelineConfigs:
     proto = observation_config()
-    proto.surge_rate_threshold_percent_per_min = 10
+    proto.surge_rate_threshold_percent_per_min = 5
+    proto.queue_score_threshold = 80
     proto.fallback_eta = 0.25
     service = _decode_config(proto)
     assert service.delta_min_fraction == 0.01, "production delta_min_fraction must be 0.01"

@@ -6,7 +6,7 @@
     "onset_cycle": 31,
     "cut_cycle": 34,
     "probe_cycle": 36,
-    "surge_threshold_percent_per_min": 10.0,
+    "surge_threshold_percent_per_min": 5.0,
     "arc_stats": {
       "p90": 1.5,
       "baseline": 1.0,
@@ -275,16 +275,13 @@
       "surge": {
         "condition": "base",
         "timeline": "surge",
-        "first_optimized_cycle": 39,
-        "minutes_after_onset": 8,
+        "first_optimized_cycle": 36,
+        "minutes_after_onset": 5,
         "verdict_counts": {
           "OPTIMIZED": 1,
-          "SKIPPED_NO_TRIGGER": 38
+          "SKIPPED_NO_TRIGGER": 35
         },
         "verdicts": [
-          "SKIPPED_NO_TRIGGER",
-          "SKIPPED_NO_TRIGGER",
-          "SKIPPED_NO_TRIGGER",
           "SKIPPED_NO_TRIGGER",
           "SKIPPED_NO_TRIGGER",
           "SKIPPED_NO_TRIGGER",
@@ -331,16 +328,16 @@
           "delta": true,
           "surge": true
         },
-        "fallbacks_applied": 2,
+        "fallbacks_applied": 0,
         "hot_at_probe": null,
         "hot_partial_held": [],
         "at_fire": {
-          "solver_status": "INFEASIBLE",
+          "solver_status": "LIGHTWEIGHT",
           "route_importance": 7,
-          "detour_paths": 0,
+          "detour_paths": 2,
           "direction_changes": 0,
           "proposal_non_empty": true,
-          "throughput": 206.610468,
+          "throughput": 75.29536,
           "estimation_resolution": {
             "TURNING_EXACT": 6
           },
@@ -349,7 +346,7 @@
           "low_confidence_arc_ratio": 0.0,
           "feedback_warnings": 0
         },
-        "response_digest": "b148a5fc634d48d65f32c860c311b6fb55722040e4b3b2584acfe255ba71cec8"
+        "response_digest": "00422a45a01085a274a5f42baba02d662c019cc28b9368b59ab4cbf7b1ad15cc"
       },
       "stagnation_only": {
         "condition": "base",
@@ -750,16 +747,13 @@
       "surge": {
         "condition": "short_span",
         "timeline": "surge",
-        "first_optimized_cycle": 39,
-        "minutes_after_onset": 8,
+        "first_optimized_cycle": 36,
+        "minutes_after_onset": 5,
         "verdict_counts": {
           "OPTIMIZED": 1,
-          "SKIPPED_NO_TRIGGER": 38
+          "SKIPPED_NO_TRIGGER": 35
         },
         "verdicts": [
-          "SKIPPED_NO_TRIGGER",
-          "SKIPPED_NO_TRIGGER",
-          "SKIPPED_NO_TRIGGER",
           "SKIPPED_NO_TRIGGER",
           "SKIPPED_NO_TRIGGER",
           "SKIPPED_NO_TRIGGER",
@@ -806,7 +800,7 @@
           "delta": true,
           "surge": true
         },
-        "fallbacks_applied": 2,
+        "fallbacks_applied": 0,
         "hot_at_probe": {
           "observation": "OK",
           "history": "SHORT",
@@ -815,12 +809,12 @@
         },
         "hot_partial_held": [],
         "at_fire": {
-          "solver_status": "INFEASIBLE",
+          "solver_status": "LIGHTWEIGHT",
           "route_importance": 7,
-          "detour_paths": 0,
+          "detour_paths": 2,
           "direction_changes": 0,
           "proposal_non_empty": true,
-          "throughput": 206.610468,
+          "throughput": 75.29536,
           "estimation_resolution": {
             "TURNING_EXACT": 6
           },
@@ -829,7 +823,7 @@
           "low_confidence_arc_ratio": 0.0,
           "feedback_warnings": 0
         },
-        "response_digest": "0b7fe615b0c0e2237e5567b04ee00df3eb01de03e4a71a7390acfc12ae4910de"
+        "response_digest": "bd3146a71c1fbf1b6c64f6522774f5450d712c42b6bf87d9f9cc7e3cd0a094bb"
       },
       "stagnation_only": {
         "condition": "short_span",
@@ -1549,7 +1543,7 @@
           "HIGH_STAGNATION"
         ],
         "at_fire": null,
-        "response_digest": "596906d1642134cbd55e9a740470c1a66fb1fa9a81b6b5f65440e45ca813f548"
+        "response_digest": "9daa2dec074e4aecddd7a3f71bc63d19cce23bfe1f979b687e450376b6229650"
       },
       "stagnation_only": {
         "condition": "no_line",
@@ -1794,7 +1788,7 @@
           "HIGH_STAGNATION (zero_flow)"
         ],
         "at_fire": null,
-        "response_digest": "dfddec25fbe2e0a0d7a816c2ae33ede2934a1450f1d1b7ec78f37bb64c9bbe01"
+        "response_digest": "de985a0d6c53618e7918192751f81f11a29ce93eea0a8f79c53e46496bd4a88f"
       },
       "stagnation_only": {
         "condition": "no_line_zero",
@@ -2031,7 +2025,7 @@
           "HIGH_STAGNATION"
         ],
         "at_fire": null,
-        "response_digest": "3f6bebd449025fe31e36876c36188b7b29bb5489fcdcd045482996889cb25bcb"
+        "response_digest": "40b34f49a1304e2f0346ffb569514014dde42c077f22815013eb98adb62d12d0"
       },
       "stagnation_only": {
         "condition": "intermittent_0",
@@ -2428,16 +2422,13 @@
       "surge": {
         "condition": "sparse",
         "timeline": "surge",
-        "first_optimized_cycle": 39,
-        "minutes_after_onset": 8,
+        "first_optimized_cycle": 36,
+        "minutes_after_onset": 5,
         "verdict_counts": {
           "OPTIMIZED": 1,
-          "SKIPPED_NO_TRIGGER": 38
+          "SKIPPED_NO_TRIGGER": 35
         },
         "verdicts": [
-          "SKIPPED_NO_TRIGGER",
-          "SKIPPED_NO_TRIGGER",
-          "SKIPPED_NO_TRIGGER",
           "SKIPPED_NO_TRIGGER",
           "SKIPPED_NO_TRIGGER",
           "SKIPPED_NO_TRIGGER",
@@ -2484,16 +2475,16 @@
           "delta": true,
           "surge": true
         },
-        "fallbacks_applied": 2,
+        "fallbacks_applied": 0,
         "hot_at_probe": null,
         "hot_partial_held": [],
         "at_fire": {
-          "solver_status": "INFEASIBLE",
+          "solver_status": "LIGHTWEIGHT",
           "route_importance": 7,
-          "detour_paths": 0,
+          "detour_paths": 2,
           "direction_changes": 0,
           "proposal_non_empty": true,
-          "throughput": 206.610468,
+          "throughput": 75.29536,
           "estimation_resolution": {
             "TURNING_EXACT": 6
           },
@@ -2502,7 +2493,7 @@
           "low_confidence_arc_ratio": 0.0,
           "feedback_warnings": 0
         },
-        "response_digest": "6dab4a6d2749a5fada45461df0222d08b392e8cde9bb203384d6b17d1a464157"
+        "response_digest": "030d2435592101afff08fd919f2a8b2b27f96403547cabe2f96f25fd05c8b840"
       },
       "stagnation_only": {
         "condition": "sparse",
@@ -2728,7 +2719,7 @@
         },
         "hot_partial_held": [],
         "at_fire": null,
-        "response_digest": "5630aa435b18183d10f97512fdf97754867ddb89f2b001362aaf05b6fb1d17b4"
+        "response_digest": "145886d532fe8cc914e91f7703d64d1bf07cdc1c19f4d736e83e387e0790f3f9"
       },
       "stagnation_only": {
         "condition": "point_missing",
@@ -2891,16 +2882,13 @@
       "surge": {
         "condition": "node_missing",
         "timeline": "surge",
-        "first_optimized_cycle": 39,
-        "minutes_after_onset": 8,
+        "first_optimized_cycle": 36,
+        "minutes_after_onset": 5,
         "verdict_counts": {
           "OPTIMIZED": 1,
-          "SKIPPED_NO_TRIGGER": 38
+          "SKIPPED_NO_TRIGGER": 35
         },
         "verdicts": [
-          "SKIPPED_NO_TRIGGER",
-          "SKIPPED_NO_TRIGGER",
-          "SKIPPED_NO_TRIGGER",
           "SKIPPED_NO_TRIGGER",
           "SKIPPED_NO_TRIGGER",
           "SKIPPED_NO_TRIGGER",
@@ -2947,16 +2935,16 @@
           "delta": true,
           "surge": true
         },
-        "fallbacks_applied": 2,
+        "fallbacks_applied": 0,
         "hot_at_probe": null,
         "hot_partial_held": [],
         "at_fire": {
-          "solver_status": "INFEASIBLE",
+          "solver_status": "LIGHTWEIGHT",
           "route_importance": 7,
-          "detour_paths": 0,
+          "detour_paths": 2,
           "direction_changes": 0,
           "proposal_non_empty": true,
-          "throughput": 206.610468,
+          "throughput": 75.29536,
           "estimation_resolution": {
             "TURNING_EXACT": 6
           },
@@ -2965,7 +2953,7 @@
           "low_confidence_arc_ratio": 0.0,
           "feedback_warnings": 0
         },
-        "response_digest": "b148a5fc634d48d65f32c860c311b6fb55722040e4b3b2584acfe255ba71cec8"
+        "response_digest": "00422a45a01085a274a5f42baba02d662c019cc28b9368b59ab4cbf7b1ad15cc"
       },
       "stagnation_only": {
         "condition": "node_missing",
@@ -3191,7 +3179,7 @@
         },
         "hot_partial_held": [],
         "at_fire": null,
-        "response_digest": "585d83cc56e7f183081ddc33af04e386bb251067e94524958503b10e5e347363"
+        "response_digest": "603609b23eed5cd3646589afdc7df21d9c31eeb767e03bb33ae74981c0012e50"
       },
       "stagnation_only": {
         "condition": "invalid",
@@ -3431,7 +3419,7 @@
         },
         "hot_partial_held": [],
         "at_fire": null,
-        "response_digest": "1ab13e05f98e8ea326c99d816a52265419c26db2c9afce42e15f4e4f855f9aac"
+        "response_digest": "10a561b78f8a0aeddee9e84c74958295d3d115f7428df87ef547232951d1628f"
       },
       "stagnation_only": {
         "condition": "hold_flag",
@@ -3679,7 +3667,7 @@
         },
         "hot_partial_held": [],
         "at_fire": null,
-        "response_digest": "54e967f865e47fbd7d26d4ca8e6ef9a497c49256d6158663fef5e42589b84586"
+        "response_digest": "fa3e221f5a9fce2d314ea3452ada7d377c344903af9c8c01338fab65b3215b81"
       },
       "stagnation_only": {
         "condition": "hold_frozen",
@@ -3923,7 +3911,7 @@
         },
         "hot_partial_held": [],
         "at_fire": null,
-        "response_digest": "c777edee763cd170c77e75792d972e94fe24d5d3ee575755cd1b97252d69f626"
+        "response_digest": "51f8a44b9d721595aa7089fdf60fb014f4a8b274ea4daae88801c95d6fa74af7"
       },
       "stagnation_only": {
         "condition": "dropout",
@@ -4334,16 +4322,13 @@
       "surge": {
         "condition": "short_term",
         "timeline": "surge",
-        "first_optimized_cycle": 39,
-        "minutes_after_onset": 8,
+        "first_optimized_cycle": 36,
+        "minutes_after_onset": 5,
         "verdict_counts": {
           "OPTIMIZED": 1,
-          "SKIPPED_NO_TRIGGER": 38
+          "SKIPPED_NO_TRIGGER": 35
         },
         "verdicts": [
-          "SKIPPED_NO_TRIGGER",
-          "SKIPPED_NO_TRIGGER",
-          "SKIPPED_NO_TRIGGER",
           "SKIPPED_NO_TRIGGER",
           "SKIPPED_NO_TRIGGER",
           "SKIPPED_NO_TRIGGER",
@@ -4390,16 +4375,16 @@
           "delta": true,
           "surge": true
         },
-        "fallbacks_applied": 2,
+        "fallbacks_applied": 0,
         "hot_at_probe": null,
         "hot_partial_held": [],
         "at_fire": {
-          "solver_status": "INFEASIBLE",
+          "solver_status": "LIGHTWEIGHT",
           "route_importance": 7,
-          "detour_paths": 0,
+          "detour_paths": 2,
           "direction_changes": 0,
           "proposal_non_empty": true,
-          "throughput": 206.610468,
+          "throughput": 75.29536,
           "estimation_resolution": {
             "TURNING_EXACT": 6
           },
@@ -4408,7 +4393,7 @@
           "low_confidence_arc_ratio": 0.0,
           "feedback_warnings": 0
         },
-        "response_digest": "b148a5fc634d48d65f32c860c311b6fb55722040e4b3b2584acfe255ba71cec8"
+        "response_digest": "00422a45a01085a274a5f42baba02d662c019cc28b9368b59ab4cbf7b1ad15cc"
       },
       "stagnation_only": {
         "condition": "short_term",
