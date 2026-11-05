@@ -1,0 +1,603 @@
+{
+ "combined|10|5": [
+  {
+   "seed": 0,
+   "fires": 2,
+   "gaps_min": [
+    5.5
+   ]
+  },
+  {
+   "seed": 1,
+   "fires": 2,
+   "gaps_min": [
+    5.5
+   ]
+  },
+  {
+   "seed": 2,
+   "fires": 2,
+   "gaps_min": [
+    5.5
+   ]
+  },
+  {
+   "seed": 3,
+   "fires": 2,
+   "gaps_min": [
+    5.5
+   ]
+  },
+  {
+   "seed": 4,
+   "fires": 1,
+   "gaps_min": []
+  },
+  {
+   "seed": 5,
+   "fires": 2,
+   "gaps_min": [
+    5.5
+   ]
+  },
+  {
+   "seed": 6,
+   "fires": 2,
+   "gaps_min": [
+    5.5
+   ]
+  },
+  {
+   "seed": 7,
+   "fires": 2,
+   "gaps_min": [
+    5.5
+   ]
+  },
+  {
+   "seed": 8,
+   "fires": 2,
+   "gaps_min": [
+    5.5
+   ]
+  },
+  {
+   "seed": 9,
+   "fires": 2,
+   "gaps_min": [
+    5.5
+   ]
+  }
+ ],
+ "combined|5|5": [
+  {
+   "seed": 0,
+   "fires": 5,
+   "gaps_min": [
+    5.5,
+    5.5,
+    5.5,
+    5.5
+   ]
+  },
+  {
+   "seed": 1,
+   "fires": 5,
+   "gaps_min": [
+    5.5,
+    5.5,
+    5.5,
+    5.5
+   ]
+  },
+  {
+   "seed": 2,
+   "fires": 5,
+   "gaps_min": [
+    5.5,
+    5.5,
+    5.5,
+    5.5
+   ]
+  },
+  {
+   "seed": 3,
+   "fires": 5,
+   "gaps_min": [
+    5.5,
+    5.5,
+    5.5,
+    5.5
+   ]
+  },
+  {
+   "seed": 4,
+   "fires": 5,
+   "gaps_min": [
+    5.5,
+    5.5,
+    5.5,
+    5.5
+   ]
+  },
+  {
+   "seed": 5,
+   "fires": 5,
+   "gaps_min": [
+    5.5,
+    5.5,
+    5.5,
+    5.5
+   ]
+  },
+  {
+   "seed": 6,
+   "fires": 5,
+   "gaps_min": [
+    5.5,
+    5.5,
+    5.5,
+    5.5
+   ]
+  },
+  {
+   "seed": 7,
+   "fires": 5,
+   "gaps_min": [
+    5.5,
+    5.5,
+    5.5,
+    5.5
+   ]
+  },
+  {
+   "seed": 8,
+   "fires": 5,
+   "gaps_min": [
+    5.5,
+    5.5,
+    5.5,
+    5.5
+   ]
+  },
+  {
+   "seed": 9,
+   "fires": 5,
+   "gaps_min": [
+    5.5,
+    5.5,
+    5.5,
+    5.5
+   ]
+  }
+ ],
+ "combined|5|20": [
+  {
+   "seed": 0,
+   "fires": 3,
+   "gaps_min": [
+    11.0,
+    11.0
+   ]
+  },
+  {
+   "seed": 1,
+   "fires": 3,
+   "gaps_min": [
+    11.0,
+    11.0
+   ]
+  },
+  {
+   "seed": 2,
+   "fires": 3,
+   "gaps_min": [
+    11.0,
+    11.0
+   ]
+  },
+  {
+   "seed": 3,
+   "fires": 3,
+   "gaps_min": [
+    11.0,
+    11.0
+   ]
+  },
+  {
+   "seed": 4,
+   "fires": 3,
+   "gaps_min": [
+    11.0,
+    11.0
+   ]
+  },
+  {
+   "seed": 5,
+   "fires": 3,
+   "gaps_min": [
+    11.0,
+    11.0
+   ]
+  },
+  {
+   "seed": 6,
+   "fires": 3,
+   "gaps_min": [
+    11.0,
+    11.0
+   ]
+  },
+  {
+   "seed": 7,
+   "fires": 3,
+   "gaps_min": [
+    11.0,
+    11.0
+   ]
+  },
+  {
+   "seed": 8,
+   "fires": 3,
+   "gaps_min": [
+    11.0,
+    11.0
+   ]
+  },
+  {
+   "seed": 9,
+   "fires": 3,
+   "gaps_min": [
+    11.0,
+    11.0
+   ]
+  }
+ ],
+ "combined|5|80": [
+  {
+   "seed": 0,
+   "fires": 2,
+   "gaps_min": [
+    60.0
+   ]
+  },
+  {
+   "seed": 1,
+   "fires": 2,
+   "gaps_min": [
+    60.0
+   ]
+  },
+  {
+   "seed": 2,
+   "fires": 2,
+   "gaps_min": [
+    60.0
+   ]
+  },
+  {
+   "seed": 3,
+   "fires": 2,
+   "gaps_min": [
+    60.0
+   ]
+  },
+  {
+   "seed": 4,
+   "fires": 2,
+   "gaps_min": [
+    60.0
+   ]
+  },
+  {
+   "seed": 5,
+   "fires": 2,
+   "gaps_min": [
+    60.0
+   ]
+  },
+  {
+   "seed": 6,
+   "fires": 2,
+   "gaps_min": [
+    60.0
+   ]
+  },
+  {
+   "seed": 7,
+   "fires": 2,
+   "gaps_min": [
+    60.0
+   ]
+  },
+  {
+   "seed": 8,
+   "fires": 2,
+   "gaps_min": [
+    60.0
+   ]
+  },
+  {
+   "seed": 9,
+   "fires": 2,
+   "gaps_min": [
+    60.0
+   ]
+  }
+ ],
+ "ramp4stag|10|5": [
+  {
+   "seed": 0,
+   "fires": 0,
+   "gaps_min": []
+  },
+  {
+   "seed": 1,
+   "fires": 0,
+   "gaps_min": []
+  },
+  {
+   "seed": 2,
+   "fires": 0,
+   "gaps_min": []
+  },
+  {
+   "seed": 3,
+   "fires": 0,
+   "gaps_min": []
+  },
+  {
+   "seed": 4,
+   "fires": 0,
+   "gaps_min": []
+  },
+  {
+   "seed": 5,
+   "fires": 0,
+   "gaps_min": []
+  },
+  {
+   "seed": 6,
+   "fires": 0,
+   "gaps_min": []
+  },
+  {
+   "seed": 7,
+   "fires": 0,
+   "gaps_min": []
+  },
+  {
+   "seed": 8,
+   "fires": 0,
+   "gaps_min": []
+  },
+  {
+   "seed": 9,
+   "fires": 0,
+   "gaps_min": []
+  }
+ ],
+ "ramp4stag|5|5": [
+  {
+   "seed": 0,
+   "fires": 3,
+   "gaps_min": [
+    5.5,
+    5.5
+   ]
+  },
+  {
+   "seed": 1,
+   "fires": 2,
+   "gaps_min": [
+    11.0
+   ]
+  },
+  {
+   "seed": 2,
+   "fires": 3,
+   "gaps_min": [
+    5.5,
+    5.5
+   ]
+  },
+  {
+   "seed": 3,
+   "fires": 3,
+   "gaps_min": [
+    5.5,
+    60.0
+   ]
+  },
+  {
+   "seed": 4,
+   "fires": 3,
+   "gaps_min": [
+    5.5,
+    5.5
+   ]
+  },
+  {
+   "seed": 5,
+   "fires": 3,
+   "gaps_min": [
+    5.5,
+    5.5
+   ]
+  },
+  {
+   "seed": 6,
+   "fires": 3,
+   "gaps_min": [
+    5.5,
+    5.5
+   ]
+  },
+  {
+   "seed": 7,
+   "fires": 2,
+   "gaps_min": [
+    60.0
+   ]
+  },
+  {
+   "seed": 8,
+   "fires": 2,
+   "gaps_min": [
+    60.0
+   ]
+  },
+  {
+   "seed": 9,
+   "fires": 3,
+   "gaps_min": [
+    5.5,
+    5.5
+   ]
+  }
+ ],
+ "ramp4stag|5|20": [
+  {
+   "seed": 0,
+   "fires": 2,
+   "gaps_min": [
+    60.0
+   ]
+  },
+  {
+   "seed": 1,
+   "fires": 2,
+   "gaps_min": [
+    60.0
+   ]
+  },
+  {
+   "seed": 2,
+   "fires": 2,
+   "gaps_min": [
+    60.0
+   ]
+  },
+  {
+   "seed": 3,
+   "fires": 2,
+   "gaps_min": [
+    60.0
+   ]
+  },
+  {
+   "seed": 4,
+   "fires": 2,
+   "gaps_min": [
+    60.0
+   ]
+  },
+  {
+   "seed": 5,
+   "fires": 2,
+   "gaps_min": [
+    60.0
+   ]
+  },
+  {
+   "seed": 6,
+   "fires": 2,
+   "gaps_min": [
+    60.0
+   ]
+  },
+  {
+   "seed": 7,
+   "fires": 2,
+   "gaps_min": [
+    60.0
+   ]
+  },
+  {
+   "seed": 8,
+   "fires": 2,
+   "gaps_min": [
+    60.0
+   ]
+  },
+  {
+   "seed": 9,
+   "fires": 2,
+   "gaps_min": [
+    60.0
+   ]
+  }
+ ],
+ "ramp4stag|5|80": [
+  {
+   "seed": 0,
+   "fires": 2,
+   "gaps_min": [
+    60.0
+   ]
+  },
+  {
+   "seed": 1,
+   "fires": 2,
+   "gaps_min": [
+    60.0
+   ]
+  },
+  {
+   "seed": 2,
+   "fires": 2,
+   "gaps_min": [
+    60.0
+   ]
+  },
+  {
+   "seed": 3,
+   "fires": 2,
+   "gaps_min": [
+    60.0
+   ]
+  },
+  {
+   "seed": 4,
+   "fires": 2,
+   "gaps_min": [
+    60.0
+   ]
+  },
+  {
+   "seed": 5,
+   "fires": 2,
+   "gaps_min": [
+    60.0
+   ]
+  },
+  {
+   "seed": 6,
+   "fires": 2,
+   "gaps_min": [
+    60.0
+   ]
+  },
+  {
+   "seed": 7,
+   "fires": 2,
+   "gaps_min": [
+    60.0
+   ]
+  },
+  {
+   "seed": 8,
+   "fires": 2,
+   "gaps_min": [
+    60.0
+   ]
+  },
+  {
+   "seed": 9,
+   "fires": 2,
+   "gaps_min": [
+    60.0
+   ]
+  }
+ ]
+}
