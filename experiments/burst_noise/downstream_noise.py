@@ -31,6 +31,10 @@ from _common import (  # noqa: E402
     signature,
 )
 from _noise import FLOW_C_60S, OCC_D_60S, write_outputs  # noqa: E402
+from detection_noise import (  # noqa: E402
+    STUDIED_QUEUE_SCORE_THRESHOLD,
+    STUDIED_SURGE_THRESHOLD,
+)
 
 from devtools.pipeline import run_pipeline  # noqa: E402
 
@@ -148,7 +152,18 @@ def perturb(scen, cadence: str, mitigation: str, rng: random.Random):
 
 
 def evaluate(case: Case) -> dict[str, Any]:
-    base = load_scenario(case.scenario)
+    loaded = load_scenario(case.scenario)
+    base = replace(
+        loaded,
+        configs=replace(
+            loaded.configs,
+            detection=replace(
+                loaded.configs.detection,
+                surge_rate_threshold_percent_per_min=STUDIED_SURGE_THRESHOLD,
+                queue_score_threshold=STUDIED_QUEUE_SCORE_THRESHOLD,
+            ),
+        ),
+    )
     rng = random.Random(f"{case.scenario}|{case.cadence}|{case.mitigation}|{case.seed}")
     clean = case.cadence == "cont" and case.mitigation == "none"
     run = run_pipeline(
