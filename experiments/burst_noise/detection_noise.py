@@ -27,6 +27,7 @@ from _noise import FLOW_C_30S, OCC_D_30S, write_outputs  # noqa: E402
 from devtools import graph_builder  # noqa: E402
 from devtools.scenario_base import DEFAULT_TIME, default_configs  # noqa: E402
 from flow_control.detection import VerdictHint, detect  # noqa: E402
+from flow_control.detection.config import ResolvedConfig  # noqa: E402
 from flow_control.detection.state import DetectionState  # noqa: E402
 from flow_control.detection.triggers import _slope_percent_per_min  # noqa: E402
 from flow_control.domain import EdgeID  # noqa: E402
@@ -81,7 +82,7 @@ def profile(scenario: str, base: float, minute: float) -> tuple[float, float]:
     elapsed = minute - ONSET
     if scenario in ("surge", "combined"):
         flow = base * min(20.0, math.exp(0.15 * elapsed))
-    if scenario == "ramp4":
+    if scenario in ("ramp4", "ramp4stag"):
         flow = base * min(4.0, 1.0 + 0.2 * elapsed)
     if scenario == "step3":
         flow = base * 3.0
@@ -89,7 +90,7 @@ def profile(scenario: str, base: float, minute: float) -> tuple[float, float]:
         flow = base * min(4.0, 1.0 + 3.0 * elapsed / 120.0)
     if scenario == "recover":
         flow = base * (0.3 if elapsed < 10.0 else 1.0)
-    if scenario in ("stagnation", "combined"):
+    if scenario in ("stagnation", "combined", "ramp4stag"):
         occ0 = base / 60.0 * DWELL_S
         standing = 3.0 * max(occ0, 0.5) * min(1.0, elapsed / 5.0)
     return flow, standing
@@ -146,7 +147,7 @@ def at(minute: float):
     return DEFAULT_TIME + timedelta(minutes=minute)
 
 
-def run_case(case: Case) -> dict[str, Any]:
+def run_case(case: Case, cfg: ResolvedConfig = CFG) -> dict[str, Any]:
     rng = random.Random(f"{case.scenario}|{case.base_flow}|{case.cadence}|{case.seed}")
     per_edge = {e: snapshots(measurements(case, e, rng), case.smoothing) for e in EDGES}
     pre_len = int(PRE_HOURS * 60 * 60 / STEP_S) - 1
@@ -208,12 +209,12 @@ def run_case(case: Case) -> dict[str, Any]:
             before = [v for t, v in line if (server_time - t).total_seconds() > RECENT_MIN * 60 + 1]
             if recent and before and statistics.mean(before) > 0:
                 ratio5 = (statistics.mean(recent) / statistics.mean(before) - 1.0) * 100.0
-        result = detect(GRAPH, obs, elements, state, (), CFG, server_time)
+        result = detect(GRAPH, obs, elements, state, (), cfg, server_time)
         triggered = result.verdict_hint == VerdictHint.TRIGGERED
         state = result.new_state if triggered else result.abort_state
         watch = state.watch_state_of(HOT)
         since = None if watch is None else watch.stagnation_watch_since
-        threshold = CFG.surge_rate_threshold_percent_per_min
+        threshold = cfg.surge_rate_threshold_percent_per_min
         rows.append(
             {
                 "minute": minute,
@@ -222,7 +223,7 @@ def run_case(case: Case) -> dict[str, Any]:
                 "surge_hist": rate_hist is not None and rate_hist > threshold,
                 "stag": since is not None
                 and (server_time - since).total_seconds()
-                >= CFG.high_stagnation_duration_min * 60 - 1e-6,
+                >= cfg.high_stagnation_duration_min * 60 - 1e-6,
                 "fire": triggered and HOT in result.triggered_edges,
                 "values": {
                     "surge": rate,
