@@ -4,7 +4,7 @@ Detection は「組合せ発火（AND）」モデルである。あるアーク�
 
     established（停滞警戒 (a) が M 分継続） AND demand_warning（需要警戒 (b)）
 
-の両方が成立する必要がある（ラインが存在しないアークのみ、停滞警戒単独の縮退発火）。
+の両方が成立する必要がある。
 
 主な補助 fixture:
 
@@ -157,7 +157,6 @@ def high_stagnation_config() -> ResolvedConfig:
     """高停滞判定の閾値: M=5 分, beta=1.0
 
     急増判定の閾値は十分に高く設定し、需要警戒側（急増）が発火しないようにする。
-    需要超過 (b).2 は theta_demand 既定 None のため無効。
     """
     return ResolvedConfig(
         surge_rate_threshold_percent_per_min=1_000.0,
@@ -205,8 +204,8 @@ def make_history():
 
     - ``p90_stagnation`` は停滞警戒 (a).1 のパーセンタイル閾値（``None`` で (a).1 縮退）
     - ``recent_stagnation_ma`` は (a).2 の直近移動平均で ``stagnation_samples`` に展開する
-      （``None`` なら系列を生成せず (a).2 は評価不能）
-    - ``baseline_stagnation`` は (a).2 の相対分母 s̄_e（``ArcHistoryStat`` に格納）
+      （``None`` なら系列を生成せず、(a).2 は直近平均の代わりに baseline を使う）
+    - ``baseline_stagnation`` は (a).2 の相対分母 s̄_e（``ArcHistoryStat`` に格納。``None`` なら窓の平均）
 
     (a).2 は ``(s - recent_ma) / (baseline + eps) >= beta`` の相対判定であり、
     recent_ma と baseline は別の役割を持つため個別に与える。
@@ -263,6 +262,7 @@ def make_established_watch():
             percentile_breached=True,
             delta_breached=True,
             stagnation_watch_since=base_time - timedelta(minutes=minutes_elapsed),
+            stagnation_last_held_at=base_time - timedelta(minutes=1),
         )
 
     return _make
@@ -297,7 +297,7 @@ def make_combined_firing(make_history, make_line_samples, make_established_watch
             → (a).1 (15>=5) と (a).2 ((15-5)/5=2.0>=1.0) が成立
     - 先行警戒: 両フラグ true, watch_since = base_time - 6 分（M=5 分超）
 
-    → surge 閾値 10・M=5 分・beta=1.0・theta_demand None の構成で組合せ発火する。
+    → surge 閾値 10・M=5 分・beta=1.0 の構成で組合せ発火する。
     """
 
     def _make(

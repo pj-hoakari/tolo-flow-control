@@ -4,6 +4,7 @@ from datetime import UTC, datetime
 
 from flow_control.detour_routing import DetourResult
 from flow_control.domain import (
+    ArcFlow,
     ArcHistoryStat,
     ArcStagnation,
     Boundary,
@@ -12,6 +13,7 @@ from flow_control.domain import (
     DirectionConstraint,
     Edge,
     EdgeID,
+    FlowDirection,
     Graph,
     HistoryDigest,
     Node,
@@ -231,7 +233,11 @@ def test_capacity_overflow_proposes_overload_limit_when_enabled():
     """機能2 有効時、容量を構造的に超過したエッジへ LIMIT（持続可能レート）を提案する。"""
     from flow_control.optimization import RestrictionAction, RestrictionReason
 
-    obs = Observations(observed_at=_OBS_AT, arc_stagnations=(ArcStagnation(_E1, 30.0),))
+    obs = Observations(
+        observed_at=_OBS_AT,
+        arc_flows=(ArcFlow(_E1, FlowDirection.A_TO_B, 20.0),),
+        arc_stagnations=(ArcStagnation(_E1, 30.0),),
+    )
     result = optimize(
         _graph_narrow_corridor(capacity=5.0),
         obs,
@@ -254,6 +260,7 @@ def test_capacity_overflow_proposes_overload_limit_when_enabled():
         and p.action == RestrictionAction.LIMIT
         and p.reason == RestrictionReason.OVERLOAD
         and p.limit_value == 5.0
+        and p.limit_ratio == 0.25
         for p in rp
     )
 

@@ -37,6 +37,7 @@ from flow_control.domain import (
     NodeKind,
     ObservationType,
 )
+from flow_control.domain.element_state import assess_elements
 from flow_control.domain.observations import Observations
 
 
@@ -261,7 +262,7 @@ def test_detect_combined_trigger_increments_retrigger_count(
     result = detect(
         graph=basic_graph,
         observations=observations,
-        history_digest=history,
+        element_states=assess_elements(basic_graph, observations, history, base_time),
         previous_state=previous,
         events=(),
         config=ResolvedConfig(
@@ -295,7 +296,7 @@ def test_detect_queued_trigger_does_not_count(
     result = detect(
         graph=basic_graph,
         observations=observations,
-        history_digest=history,
+        element_states=assess_elements(basic_graph, observations, history, base_time),
         previous_state=previous,
         events=(),
         config=ResolvedConfig(
@@ -329,7 +330,7 @@ def test_detect_danger_flag_does_not_count(
     result = detect(
         graph=basic_graph,
         observations=observations,
-        history_digest=history,
+        element_states=assess_elements(basic_graph, observations, history, base_time),
         previous_state=DetectionState(),
         events=(
             Event(

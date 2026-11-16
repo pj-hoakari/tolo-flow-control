@@ -34,6 +34,7 @@ from flow_control.detection.triggers import (
     evaluate_cooldown,
 )
 from flow_control.domain import EdgeID, Graph, NodeID
+from flow_control.domain.element_state import assess_elements
 from flow_control.domain.history import HistoryDigest
 from flow_control.domain.observations import Observations
 
@@ -98,7 +99,7 @@ def test_surge_evidence(
     result = detect(
         graph=basic_graph,
         observations=observations,
-        history_digest=history,
+        element_states=assess_elements(basic_graph, observations, history, base_time),
         previous_state=previous,
         events=(),
         config=_config(surge_threshold=10.0),
@@ -125,7 +126,7 @@ def test_high_stagnation_evidence(
     result = detect(
         graph=basic_graph,
         observations=observations,
-        history_digest=history,
+        element_states=assess_elements(basic_graph, observations, history, base_time),
         previous_state=previous,
         events=(),
         config=_config(surge_threshold=10.0),
@@ -151,7 +152,7 @@ def test_danger_evidence_for_node(
     result = detect(
         graph=basic_graph,
         observations=observations,
-        history_digest=history,
+        element_states=assess_elements(basic_graph, observations, history, base_time),
         previous_state=DetectionState(),
         events=(
             Event(
@@ -181,7 +182,7 @@ def test_no_evidence_when_no_trigger(
     result = detect(
         graph=basic_graph,
         observations=observations,
-        history_digest=history,
+        element_states=assess_elements(basic_graph, observations, history, base_time),
         previous_state=DetectionState(),
         events=(),
         config=_config(),
@@ -269,7 +270,7 @@ def test_consecutive_skip_count_untouched_on_trigger(
     result = detect(
         graph=basic_graph,
         observations=observations,
-        history_digest=history,
+        element_states=assess_elements(basic_graph, observations, history, base_time),
         previous_state=previous,
         events=(),
         config=_config(),
@@ -292,7 +293,7 @@ def test_consecutive_skip_count_preserved_when_no_trigger(
     result = detect(
         graph=basic_graph,
         observations=observations,
-        history_digest=history,
+        element_states=assess_elements(basic_graph, observations, history, base_time),
         previous_state=previous,
         events=(),
         config=_config(),
@@ -320,7 +321,7 @@ def test_consecutive_skip_count_preserved_when_queued(
     result = detect(
         graph=basic_graph,
         observations=observations,
-        history_digest=history,
+        element_states=assess_elements(basic_graph, observations, history, base_time),
         previous_state=previous,
         events=(),
         config=_config(score_threshold=5.0, diversity_threshold=3),

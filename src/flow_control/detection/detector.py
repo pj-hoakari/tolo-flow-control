@@ -1,12 +1,11 @@
 from dataclasses import dataclass, replace
 from datetime import datetime
 
+from ..domain.element_state import ElementStates
 from ..domain.graph import EdgeID, Graph, NodeID
-from ..domain.history import HistoryDigest
 from ..domain.observations import Observations
-from ..domain.references import Reference
 from .config import ResolvedConfig
-from .diagnostics import DangerEvidence, DetectionWarning, TriggerEvidence
+from .diagnostics import DangerEvidence, PartialCombinedTrigger, SkippedJudgements, TriggerEvidence
 from .state import DetectionState, QueuedTriggerKind
 from .triggers import (
     Event,
@@ -36,19 +35,18 @@ class DetectionResult:
     # 発火副作用（cooldown_until 更新・キュー消化・再発火カウント加算）を除いたもの
     abort_state: DetectionState
     evidences: tuple[TriggerEvidence, ...] = ()
-    # 縮退・代替の記録（RequestHandler が Diagnostics.warnings へ集約）
-    warnings: tuple[DetectionWarning, ...] = ()
+    warnings: tuple[PartialCombinedTrigger, ...] = ()
+    skipped: tuple[SkippedJudgements, ...] = ()
 
 
 def detect(
     graph: Graph,
     observations: Observations,
-    history_digest: HistoryDigest,
+    element_states: ElementStates,
     previous_state: DetectionState,
     events: tuple[Event, ...],
     config: ResolvedConfig,
     server_time: datetime,
-    references: Reference | None = None,
 ) -> DetectionResult:
     # イベント適用: ENABLE/ADD_* で対象別ウォームアップを設定
     state = apply_warmup_events(previous_state, events, server_time, config)
@@ -72,11 +70,10 @@ def detect(
     metric_result = detect_metric_triggers(
         graph=graph,
         observations=observations,
-        history_digest=history_digest,
+        element_states=element_states,
         previous_state=state,
         server_time=server_time,
         config=config,
-        references=references,
     )
 
     manual_result = detect_manual_triggers(events=events)
@@ -177,4 +174,5 @@ def detect(
         abort_state=abort_state,
         evidences=evidences,
         warnings=metric_result.warnings,
+        skipped=metric_result.skipped,
     )

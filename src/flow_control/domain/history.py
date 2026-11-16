@@ -1,3 +1,4 @@
+import statistics
 from dataclasses import dataclass, field
 from datetime import datetime
 
@@ -13,6 +14,8 @@ class ArcHistoryStat:
     flow_sensitivity_eta: float | None = None
     # 履歴の利用可能スパン（時間）。縮退モード要否判定に使用（None = 未提供）
     available_span_hours: float | None = None
+    flow_p90: float | None = None
+    free_flow_dwell_min: float | None = None
 
 
 @dataclass(frozen=True)
@@ -45,3 +48,12 @@ class HistoryDigest:
             if series.edge_id == edge_id:
                 return series
         return None
+
+    def baseline_stagnation_of(self, edge_id: EdgeID) -> float | None:
+        stat = self.stat_of(edge_id)
+        if stat is not None and stat.baseline_stagnation is not None:
+            return stat.baseline_stagnation
+        window = self.window_series_of(edge_id)
+        if window is None or not window.stagnation_samples:
+            return None
+        return statistics.mean(v for (_, v) in window.stagnation_samples)

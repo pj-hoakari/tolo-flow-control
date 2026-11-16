@@ -133,6 +133,7 @@ def random_scenario(rng: random.Random, base: BuiltGraph, label: str, index: int
                 percentile_breached=True,
                 delta_breached=True,
                 stagnation_watch_since=server_time - timedelta(minutes=6),
+                stagnation_last_held_at=server_time - timedelta(minutes=1),
             )
             for eid in stag
         )

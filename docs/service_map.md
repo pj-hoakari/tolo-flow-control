@@ -1,6 +1,6 @@
 # サービス間の関係と主要なやり取り（図）
 
-位置づけ: サービス（デプロイ単位）視点の図。ドメイン（コンテキスト）視点は domain/context_map.md が正本
+位置づけ: サービス（デプロイ単位）視点の図。ドメイン（コンテキスト）視点は domain/context_map.md で扱う
 内容の根拠: spec-base/README.md（通信規約・索引）と service/ 各仕様。図と本文が食い違う場合は各仕様を正とする
 
 図のService Gatewayは論理的な1サービスを表す。Composeは公開用と内部用の2listenerを持つ1配備、Cloud Runは公開用と内部用の2配備とする。
@@ -17,6 +17,7 @@ Cloud Runの公開用GatewayはInvoker IAMを無効化してRPCごとに外部�
 - BFF は図では省略する（管理 UI と観測ページの Auth・GW・Edge Bridge Service への接続は BFF 経由。外部トークンは BFF のサーバ側に保持し、ブラウザへ渡さない）
   スタッフアプリはログインも Token Exchange も直接 Auth と行う（public client の直接交換。トークンは DPoP で鍵束縛）。API 呼び出しはアプリ→GW のまま
   観測ページの Heartbeat と計測報告は BFF を通るため、BFF は現場運用の経路上にある（ADR-0088）
+  ESP カメラは BFF を挟まず、Auth の Device Authorization と Edge Bridge Service を直接呼ぶ（ADR-0127）
 
 ## 1. サービス間の関係全体図
 
@@ -25,7 +26,8 @@ flowchart LR
   subgraph CL["クライアント"]
     StaffApp["スタッフアプリ"]
     AdminUI["管理 UI（オーナー／スタッフ）"]
-    EdgeDev["エッジ端末（ブラウザ）"]
+    EdgeDev["観測ページ端末（推論デバイス）"]
+    ESPCam["ESP カメラ"]
     GuestBr["ゲスト（ブラウザ／サイネージ）"]
   end
 
@@ -59,8 +61,9 @@ flowchart LR
 
   %% 認証（OIDC。GW を経由しない唯一の HTTP）
   StaffApp -. "ログイン・Token Exchange（認可コード＋PKCE、DPoP）" .-> Auth
-  AdminUI -. "アカウント登録／ログイン／所有権取得専用トークン" .-> Auth
+  AdminUI -. "アカウント登録／ログイン／registration トークン" .-> Auth
   EdgeDev -. "ログイン・Token Exchange・自動更新（認可コード＋PKCE、DPoP）" .-> Auth
+  ESPCam -. "Device Authorization（events.stream）" .-> Auth
 
   %% クライアント → GW → 各サービス
   StaffApp -- "全 RPC（Operation・Observation・Realtime.Fetch・Notification.トークン管理 等）" --> GW
@@ -68,7 +71,9 @@ flowchart LR
   EdgeDev -- "計測値送信・Heartbeat（event_access）" --> GW
   EdgeDev -. "シグナリング" .- EB
   AdminUI -. "シグナリング" .- EB
+  ESPCam -. "シグナリング" .- EB
   EdgeDev -. "映像（P2P。サービスを介さない）" .- AdminUI
+  EdgeDev -. "カメラ映像（P2P。サービスを介さない）" .- ESPCam
   GuestBr -- "ゲスト用ページ（HTTP・未認証）" --> GW
   GW --> SV
 
@@ -107,7 +112,7 @@ flowchart LR
 - introspection は管理系書き込み6 RPCの active／revoked 確認に限定し、同じ6 RPCの現在権限は Tenant Management が同一 DB で確認する
 - Flow／Line の呼び出し元は観測のみで、この呼び出しは Service Gateway を経由しない（各仕様参照）。Flow／Line の型も観測の外へ出さず、Operation・Reference Aggregation とは各サービスの型で受け渡す（観測が変換する）。Realtime・Notification は Operation の支援機構である（独立コンテキストではない）
 - Firestore の読み取り（Realtime の変更検知、WebRTC シグナリング）は Firebase Auth カスタムトークンによるアクセス制御を伴う（Realtime、Edge Bridge Service）
-- 関係参照（RelationAdminService）はTenant Managementが実装する。ClaimTenantOwnershipのオーナー所属作成はサービス内部で完結し、サービス間RPCを経ない
+- 関係参照（RelationAdminService）はTenant Managementが実装する。ClaimTenantOwnershipのオーナー所属作成とAcceptTenantInvitationの所属作成はサービス内部で完結し、サービス間RPCを経ない
 - ゲート開閉（OperateGate）・観測点設定変更（UpdateObservationPointConfig）はスタッフアプリから Observation を直接呼び出す。Operation→Observation の同期 RPC はない
 - Reference Aggregation はどのテナント保護境界にも属さず、入出力にテナント識別子を持たない
 
@@ -174,7 +179,7 @@ sequenceDiagram
   participant Obs as Observation
 
   Note over GS: 事前準備（起動時・周期）
-  GS->>GA: GetDisplayNames／GetQrLocations（表示名＋端点、QR 設置箇所）
+  GS->>GA: GetDisplayNames／GetQrLocations／GetGuideMapLayout（表示名＋端点、QR 設置箇所、案内マップレイアウト）
   GS->>Wx: 天候を周期取得（所在地は自サービスの設定）
 
   App->>Op: SendStaffMessage（audience=GUEST）
@@ -207,9 +212,9 @@ sequenceDiagram
   GW->>TM: 認証メタデータなしで転送
   TM->>TM: pending_ownerの仮テナント作成<br/>取得トークンのハッシュを保存
   TM-->>User: tenant_id・所有権取得トークン・expires_at
-  User->>IdP: POST /api/signup
-  User->>IdP: テナント未指定のAuthorization Code Flow
-  IdP-->>User: registration Access Token（scope=tenant.claim）
+  User->>IdP: 仮テナントを指定したAuthorization Code Flow（scope=tenant.join）
+  User->>IdP: POST /api/signup（仮テナントにアカウント作成）
+  IdP-->>User: registration Access Token（scope=tenant.join）
   User->>GW: ClaimTenantOwnership<br/>registration Token＋所有権取得トークン＋サブドメイン名
   GW->>TM: 主体を維持した内部JWTへ変換して転送
   TM->>TM: トークン検証・オーナー所属・owned遷移・サブドメイン名の確定・取得トークン消費
@@ -217,3 +222,68 @@ sequenceDiagram
   User->>IdP: tenantId指定で再認可
   IdP-->>User: tenant_access
 ```
+
+
+### 2.4 招待によるスタッフの参加
+
+```mermaid
+sequenceDiagram
+  autonumber
+  participant Owner as オーナー（管理 UI）
+  participant User as 招待された人（Web）
+  participant GW as Service Gateway
+  participant TM as Tenant Management
+  participant IdP as Auth（IdP）
+
+  Owner->>GW: CreateTenantInvitation（tenant_access + tenant.write）
+  GW->>TM: 内部JWTへ変換して転送
+  TM->>TM: 現在権限の確認・招待の作成<br/>招待トークンのハッシュを保存
+  TM-->>Owner: 招待・招待トークン
+  Owner-->>User: 招待 URL を渡す
+  User->>User: 招待トークンを BFF のセッションへ移す
+  User->>IdP: 招待先のテナントを指定したAuthorization Code Flow（scope=tenant.join）
+  User->>IdP: POST /api/signup または POST /api/login（招待先のテナントのアカウント）
+  IdP-->>User: registration Access Token（scope=tenant.join）
+  User->>GW: AcceptTenantInvitation<br/>registration Token＋招待トークン
+  GW->>TM: 主体を維持した内部JWTへ変換して転送
+  TM->>TM: 招待の検証・所属の作成・招待トークンの消費
+  TM-->>User: Membership
+  User->>IdP: tenantId指定で再認可
+  IdP-->>User: tenant_access
+```
+
+### 2.5 ESP カメラの登録・認可・接続
+
+```mermaid
+sequenceDiagram
+  autonumber
+  participant Staff as 設置者（管理 UI）
+  participant BFF as BFF
+  participant Obs as Observation
+  participant IdP as Auth（IdP）
+  participant ESP as ESP カメラ
+  participant EB as Edge Bridge Service
+  participant Page as 観測ページ（推論デバイス）
+
+  Staff->>BFF: ESP カメラを登録（イベント、表示名、紐づけ先）
+  BFF->>Obs: RegisterEdgeDevice（kind=CAMERA）
+  Obs-->>BFF: edge_device_id、登録状態
+  Staff->>ESP: Web Serial で Wi-Fi、signaling、Firebase、edge_device_id を書込
+  ESP->>IdP: Device Authorization（client_id、scope=events.stream）
+  IdP-->>ESP: device_code、user_code
+  ESP-->>Staff: user_code をシリアル出力
+  Staff->>BFF: user_code と選択カメラを承認
+  BFF->>Obs: 端末の所属・種別・登録状態を確認
+  BFF->>IdP: device-authorization/approve（user_code、event_id、edge_device_id）
+  IdP-->>ESP: event_access、Refresh Token（polling）
+  Page->>BFF: 観測ページのセッション（接続用 client のトークンを保持）
+  BFF->>EB: RequestConnection（委任されたカメラ）
+  EB-->>BFF: session_id
+  BFF->>EB: IssueFirestoreToken（edge_device_id、session_id）
+  EB-->>BFF: console 用 Firestore トークン（session 束縛）
+  ESP->>EB: IssueFirestoreToken（events.stream）
+  EB-->>ESP: edge 用 Firestore トークン（edge_device_id 束縛）
+  Page->>ESP: SDP/ICE を Firestore で交換し、映像を P2P で受信
+```
+
+カメラ端末の登録解除とイベント終了では、BFF が先に IdP の `device-authorization/revoke` を成功させ、その後に Observation の登録解除またはイベント状態の変更を確定する。IdP に失効を記録できなければ、カメラの解除とイベント終了は完了しない。観測ページ端末の登録解除は既存の手順のままとする。

@@ -67,7 +67,7 @@ protoの採用版を固定し、更新時は機械的な互換性と、追加フ
 - 公開: Web（BFF 経由）・スタッフアプリ・エッジ端末・ゲスト等のクライアントが呼べる
 - 内部オンリー: サービス間呼び出し専用。Service Gateway は token_use=service（後述「サービス間経路の検証と再発行」で発行）のみ許可し、外部利用者には実行を許可しない（違反は permission_denied）。Cloud Runの公開入口からパスへ到達できることとは区別する
 
-各 RPC の認可の正本は各サービス仕様であり、本表はそこから導出したものである。
+各 RPC の認可は各サービス仕様で定め、本表はそこから導出したものである。
 
 | 宛先サービス | proto service | RPC | 公開区分 |
 |---|---|---|---|
@@ -76,12 +76,14 @@ protoの採用版を固定し、更新時は機械的な互換性と、追加フ
 | 〃 | 〃 | ResolveTenantSubdomain | 公開（管理 UI・ゲスト。未認証） |
 | 〃 | 〃 | ChangeTenantContract、ArchiveTenant、CreateEvent、TransitionEventStatus、ListEvents | 公開（管理 UI、ListEvents はスタッフアプリも） |
 | 〃 | 〃 | GetEvent | 内部オンリー（Graph Authoring の参照整合） |
-| 〃 | `tolo.relation.v1.RelationAdminService` | AddTenantMember、ChangeTenantRole、GrantEventRole、RevokeRole、ListMemberships | 公開（管理 UI。関係参照は Tenant Management が実装） |
-| Graph Authoring | `tolo.graph.v1.GraphAuthoringService` | SaveGraph、MapObservationPoint、AddQrLocation、UpdateQrLocation、RemoveQrLocation、GetGraph、PublishRevision | 公開（管理 UI） |
-| 〃 | `tolo.graph.v1.GraphSupplyService` | 全 RPC（GetCurrentRevision、GetObservationPointMappings、GetDisplayNames、GetGatePoints、GetQrLocations） | 内部オンリー（Observation・Guest Service） |
-| Observation | `tolo.observation.v1.MeasurementIngestService` | ReportMeasurements | 公開（エッジ端末）＋内部（Guest Service の QR 計上由来） |
+| 〃 | `tolo.relation.v1.RelationAdminService` | CreateTenantInvitation、ListTenantInvitations、RevokeTenantInvitation、ChangeTenantRole、GrantEventRole、RevokeRole、ListMemberships | 公開（管理 UI。関係参照は Tenant Management が実装） |
+| 〃 | 〃 | AcceptTenantInvitation | 公開（管理 UI。registration） |
+| 〃 | 〃 | AddTenantMember | 内部オンリー |
+| Graph Authoring | `tolo.graph.v1.GraphAuthoringService` | SaveGraph、MapObservationPoint、AddQrLocation、UpdateQrLocation、RemoveQrLocation、SaveGuideMapLayout、GetGraph、PublishRevision | 公開（管理 UI） |
+| 〃 | `tolo.graph.v1.GraphSupplyService` | 全 RPC（GetCurrentRevision、GetObservationPointMappings、GetDisplayNames、GetGatePoints、GetQrLocations、GetGuideMapLayout） | 内部オンリー（Observation・Guest Service） |
+| Observation | `tolo.observation.v1.MeasurementIngestService` | ReportMeasurements | 公開（観測ページ端末）＋内部（Guest Service の QR 計上由来） |
 | 〃 | `tolo.observation.v1.EdgeDeviceService` | RegisterEdgeDevice、UnregisterEdgeDevice、ListEdgeDevices | 公開（管理 UI） |
-| 〃 | 〃 | Heartbeat | 公開（エッジ端末） |
+| 〃 | 〃 | Heartbeat | 公開（観測ページ端末） |
 | 〃 | 〃 | UpdateObservationPointConfig | 公開（スタッフアプリ） |
 | 〃 | `tolo.observation.v1.ManualInterventionService` | 全 RPC（OperateGate、ToggleDangerFlag、RegisterScheduleEvent、ReportCongestion、CorrectQueue） | 公開（スタッフアプリ） |
 | 〃 | `tolo.observation.v1.StatusQueryService` | GetEventOverview | 公開（スタッフアプリ） |
@@ -97,7 +99,7 @@ protoの採用版を固定し、更新時は機械的な互換性と、追加フ
 | Notification | `tolo.notification.v1.NotificationService` | SendPush | 内部オンリー（Operation） |
 | 〃 | `tolo.notification.v1.DeviceTokenService` | RegisterDeviceToken、UnregisterDeviceToken | 公開（スタッフアプリ） |
 | Reference Aggregation | `tolo.refagg.v1.ReferenceAggregationService` | SubmitAnonymizedFeedback、GetReferenceValues | 内部オンリー（Operation 投入、Observation 取得） |
-| Guest Service | `tolo.guest.v1.GuestPageService` | 全 RPC（OpenGuestPage、GetCrowd、GetQueues、ListGuestMessages） | 公開（ゲスト。未認証） |
+| Guest Service | `tolo.guest.v1.GuestPageService` | 全 RPC（OpenGuestPage、GetCrowd、GetQueues、ListGuestMessages、GetGuideMap） | 公開（ゲスト。未認証） |
 | 〃 | `tolo.guest.v1.GuestSettingsService` | 全 RPC（GetGuestSettings、UpdateGuestSettings、ListIssuedUrls） | 公開（管理 UI） |
 
 補足
@@ -111,10 +113,10 @@ protoの採用版を固定し、更新時は機械的な互換性と、追加フ
 | 経路 | 外部資格情報 | 動作 |
 |---|---|---|
 | ユーザー（テナント文脈） | `tenant_access`（IdP 発行） | 検証＋内部 JWT へ変換 |
-| ユーザー（イベント文脈） | `event_access`（IdP 発行） | 検証＋内部 JWT へ変換。エッジ端末（観測ページ）もこの経路 |
+| ユーザー（イベント文脈） | `event_access`（IdP 発行） | 検証＋内部 JWT へ変換。観測ページ端末もこの経路。ESP カメラは Edge Bridge Service を直接呼ぶ |
 | 仮テナント作成 | なし（未認証） | パススルー。StartTenantRegistrationだけを許可し、匿名作成の保護を適用 |
 | サブドメイン名の解決 | なし（未認証） | パススルー。ResolveTenantSubdomainだけを許可し、レート制限を適用 |
-| 仮テナントの所有権取得 | 所有権取得専用の最小トークン（IdP 発行） | 検証＋内部 JWT へ変換 |
+| 仮テナントの所有権取得、招待の受諾 | `registration`（IdP 発行。テナント文脈を持たない最小トークン） | 検証＋内部 JWT へ変換 |
 | サービス間の同期 RPC | 文脈トークン（新規マシン起点だけ省略し、呼び出し元を申告する。後述「サービス間経路の検証と再発行」） | 辺ポリシー照合＋token_use=service の内部 JWT を再発行 |
 | ゲスト | なし（未認証） | パススルー。Guest Service の GuestPageService だけを許可 |
 
@@ -131,7 +133,7 @@ protoの採用版を固定し、更新時は機械的な互換性と、追加フ
 - 送信者拘束は外部トークンの層で完結させ、内部 JWT へ `cnf` 等の束縛クレームを持ち込まない
 - メソッド単位の要求 token_use と scope を認可表（後述）で強制し、満たさない要求は宛先サービスへ転送しない。scope は発行時点の権限スナップショットであり、各サービスも内部 JWT の scope を主判定に用いる（入口と宛先の二重確認）。Service Gateway は値を変更せず内部 JWT へ転記する
   認可表の「公開」区分（どの client 向けの RPC か）を外部トークンの `client_id` で強制するかは未確定とする。現時点で `client_id` は発行先 client の確認と DPoP の要否の判定に用いる
-- 失効照会（introspection。RFC 7662）は metadata の `introspection_endpoint` を使用し、管理系の書き込み 6 RPC（ArchiveTenant、ChangeTenantContract、AddTenantMember、ChangeTenantRole、GrantEventRole、RevokeRole）に限って行う。結果は jti 単位で60秒キャッシュし、将来の追加はこの一覧への追記で行う
+- 失効照会（introspection。RFC 7662）は metadata の `introspection_endpoint` を使用し、管理系の書き込み 6 RPC（ArchiveTenant、ChangeTenantContract、CreateTenantInvitation、ChangeTenantRole、GrantEventRole、RevokeRole）に限って行う。結果は jti 単位で60秒キャッシュし、将来の追加はこの一覧への追記で行う
 - introspection が確認するのはトークンの active／revoked であり、現在の membership／permission ではない。6 RPC の現在権限は Tenant Management が同一 DB で別に確認する
 - その他の RPC は失効照会を行わず、TTL による自然失効に委ねる（外部トークンは自身の exp。既定は `tenant_access` 15 分・`event_access` 10 分（Auth（IdP））、内部 JWT 120 秒）。IdP の可用性が全 API の可用性を規定しないようにするためである
 - introspection 不達時は当該 6 RPC のみ fail closed とする（トークンを有効扱いしない）
@@ -144,7 +146,7 @@ protoの採用版を固定し、更新時は機械的な互換性と、追加フ
 
 ### 呼び出し元の識別
 
-- 到達制御と識別の契約は service_transport.md を正本とする
+- 到達制御と識別の契約は service_transport.md で定める
 - 文脈トークンを提示した要求では、その aud を呼び出し元サービスとする
 - 新規マシン起点の要求では、`tolo-caller-service` ヘッダで申告された論理サービスIDを呼び出し元とする。文脈トークンと申告ヘッダの両方がある要求、どちらもない要求、未登録の論理サービスIDは拒否する
 - アプリはワークロード資格情報を検証しない。Cloud Run の `X-Serverless-Authorization` は IAM 用であり、呼び出し元の識別に使わない
@@ -182,7 +184,7 @@ scope は外部トークンの値を転記し、拡大も暗黙の縮小もし�
 
 ### クレーム一覧
 
-クレーム構造の正本は internal_jwt.md（共通必須クレームと起点別クレーム）。`txn` は共通必須クレームであり、`scope`、`src_jti`、`src_exp`、`origin_sub` は起点別とする。
+クレーム構造は internal_jwt.md（共通必須クレームと起点別クレーム）で定める。`txn` は共通必須クレームであり、`scope`、`src_jti`、`src_exp`、`origin_sub` は起点別とする。
 
 | claim | 内容 |
 |---|---|
@@ -205,7 +207,7 @@ scope は外部トークンの値を転記し、拡大も暗黙の縮小もし�
 | tenant_access | `tenant_access` | tenant_id |
 | event_access | `event_access` | tenant_id、event_id |
 | service | 辺ポリシーに基づく再発行（前述「サービス間経路の検証と再発行」） | ユーザー起点は origin_sub（監査専用）と scope・src_jti を持つ。マシン起点はこれらを持たない |
-| registration | 所有権取得専用最小トークン | なし（tenant_idを持たない。scopeは`tenant.claim`のみでClaimTenantOwnershipに限定） |
+| registration | テナント文脈を持たない最小トークン | なし（tenant_idを持たない。scopeは`tenant.join`のみでClaimTenantOwnershipとAcceptTenantInvitationに限定） |
 
 - origin_sub: 処理の起点となったユーザーの user_id（ユーザー起点のみ）。監査専用であり、認可判定に使ってはならない
 - txn: 外部トークンの入口変換または新規マシン起点で UUIDv7 を生成し、同一処理チェーンの全ホップへ透過する。認可、冪等性、業務識別子には用いない
@@ -281,19 +283,19 @@ streamingの全件bufferingをせず、backpressureと切断を扱う。非冪�
 | Tenant Management | ChangeTenantContract、ArchiveTenant | tenant.write |
 | Tenant Management | CreateEvent、TransitionEventStatus | events.manage |
 | Tenant Management | ListEvents | events.read |
-| Tenant Management（RelationAdminService） | AddTenantMember、ChangeTenantRole、GrantEventRole、RevokeRole | tenant.write |
+| Tenant Management（RelationAdminService） | CreateTenantInvitation、ListTenantInvitations、RevokeTenantInvitation、ChangeTenantRole、GrantEventRole、RevokeRole | tenant.write |
 | Tenant Management（RelationAdminService） | ListMemberships | tenant.read |
 | Notification | RegisterDeviceToken、UnregisterDeviceToken | tenant.read（自デバイス限定） |
 
 ### token_use = service を要求（サービス間）
 
-Tenant.GetEvent（テナント文脈必須）、Graph 供給系（GetCurrentRevision／GetObservationPointMappings／GetGatePoints／GetDisplayNames／GetQrLocations）、Observation の GetGuestSnapshot、Operation の RequestProposalDelivery／RecordFeedbackValues／ListStaffMessages（Guest Service の復旧時）、Notification.SendPush、Reference Aggregation の SubmitAnonymizedFeedback／GetReferenceValues、Observation.ReportMeasurements（Guest Service 由来）
+Tenant.GetEvent（テナント文脈必須）、Relation.AddTenantMember、Graph 供給系（GetCurrentRevision／GetObservationPointMappings／GetGatePoints／GetDisplayNames／GetQrLocations／GetGuideMapLayout）、Observation の GetGuestSnapshot、Operation の RequestProposalDelivery／RecordFeedbackValues／ListStaffMessages（Guest Service の復旧時）、Notification.SendPush、Reference Aggregation の SubmitAnonymizedFeedback／GetReferenceValues、Observation.ReportMeasurements（Guest Service 由来）
 
 Flow.Optimize と Line.GuideQueues は Service Gateway を経由しないため本表にない（到達制御で呼び出し元を Observation に限る直接呼び出し。flow_control_spec.md、Line Control）
 
 ### token_use = registration を要求
 
-Tenant.ClaimTenantOwnership（scopeは`tenant.claim`）
+Tenant.ClaimTenantOwnership、Relation.AcceptTenantInvitation（scopeはいずれも`tenant.join`）
 
 ### パススルー
 
@@ -316,7 +318,7 @@ ResolveTenantSubdomainには、レート制限とリクエストサイズ上限�
   token_use=service で claim を持たない場合（マシン起点）は突合できない。この場合に処理を続けてよいのは、境界の強制を要さないと各仕様が明示したメソッドに限る
   明示の仕方は、組で区切るだけで所属を確かめないか、申告とは別の情報源で所属を確かめるかのどちらかとする（ADR-0102）
 - `tenant_access`／`event_access`／`registration` の主判定は、発行時点のスナップショットである scope とする。通常 RPC は現在の membership／permission を都度参照せず、既発行 scope を外部トークンの TTL まで許容する
-- 例外は Tenant Management の管理系書き込み6 RPC（ArchiveTenant、ChangeTenantContract、AddTenantMember、ChangeTenantRole、GrantEventRole、RevokeRole）とする。Tenant Management は同一 DB の現在の membership／permission をローカルに再確認し、Service Gateway の introspection は別に active／revoked を確認する
+- 例外は Tenant Management の管理系書き込み6 RPC（ArchiveTenant、ChangeTenantContract、CreateTenantInvitation、ChangeTenantRole、GrantEventRole、RevokeRole）とする。Tenant Management は同一 DB の現在の membership／permission をローカルに再確認し、Service Gateway の introspection は別に active／revoked を確認する
 - `token_use=service` のメソッド可否は scope ではなく、Service Gateway が照合済みの辺ポリシーを根拠とする
 - 内部JWTなしで受理するTenant Management RPCはStartTenantRegistrationとResolveTenantSubdomainに限り、ほかの同サービスRPCへ未認証要求を転送しない
 - 内部JWTなしで受理するGuest Service RPCはGuestPageServiceに限り、GuestSettingsServiceへ未認証要求を転送しない
@@ -334,6 +336,10 @@ ResolveTenantSubdomainには、レート制限とリクエストサイズ上限�
 | introspection 不達（対象 6 RPC のみ fail closed） | unauthenticated |
 | 宛先サービス不達 | unavailable（透過） |
 | 宛先サービスが内部 JWT の検証鍵を解決できない（JWKS の取得失敗、その再試行を控えている間） | unavailable（透過） |
+| 内部 JWT を付けて転送した要求に、宛先サービスが unauthenticated を返した | internal |
+
+宛先サービスが返す unauthenticated は、転送した内部 JWT を宛先サービスが受け入れなかったことを表す。Service Gateway と宛先サービスの間の不整合であり、利用者が直せる認証の失敗ではないため、unauthenticated のまま透過せず internal を返す。内部 JWT を付けずに転送するパススルーの要求では透過する。
+宛先サービスは内部 JWT の拒否以外に unauthenticated を使わない。所有権取得トークンや招待トークンのような、認証済みの利用者が提示する業務上の資格情報の拒否には permission_denied を使う。
 
 ## 監査ログ
 

@@ -30,10 +30,9 @@ class ArcWatchState:
     percentile_breached: bool = False  # (a).1 p90 超過の成立有無
     delta_breached: bool = False  # (a).2 移動平均差分の相対閾値 β 超過の成立有無
     stagnation_watch_since: datetime | None = None  # 停滞警戒（両条件成立）の開始時刻
+    stagnation_last_held_at: datetime | None = None
     # 需要警戒系統（(b)）
     surge_breached: bool = False  # (b).1 急増（傾き閾値超）の成立有無
-    demand_excess_breached: bool = False  # (b).2 需要超過 ρ̂ > theta_demand の成立有無
-    demand_watch_since: datetime | None = None  # 需要警戒の開始時刻
 
 
 @dataclass(frozen=True)
@@ -51,19 +50,10 @@ class RetriggerEntry:
 
 
 @dataclass(frozen=True)
-class ArcDemandDigestEntry:
-    edge_id: EdgeID
-    demand: float  # 前回リクエストの予測到着需要 λ̂_e
-
-
-@dataclass(frozen=True)
 class DetectionState:
     cooldown_until: datetime | None = None
     trigger_queue: tuple[QueuedTrigger, ...] = ()
     arc_watch_states: tuple[ArcWatchState, ...] = ()
-    # 前回リクエストの予測到着需要 λ̂_e（需要超過判定 (b).2 用）。
-    # Forecasting 実行時に finalize で更新。None = 未提供
-    arc_demand_digest: tuple[ArcDemandDigestEntry, ...] | None = None
     warmup_states: tuple[WarmupState, ...] = ()
     arc_retrigger_counts: tuple[RetriggerEntry, ...] = ()
     consecutive_skip_count: int = 0
@@ -72,14 +62,6 @@ class DetectionState:
         for watch in self.arc_watch_states:
             if watch.edge_id == edge_id:
                 return watch
-        return None
-
-    def demand_digest_of(self, edge_id: EdgeID) -> float | None:
-        if self.arc_demand_digest is None:
-            return None
-        for entry in self.arc_demand_digest:
-            if entry.edge_id == edge_id:
-                return entry.demand
         return None
 
     def retrigger_entry_of(self, edge_id: EdgeID) -> RetriggerEntry | None:

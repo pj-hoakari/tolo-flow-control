@@ -6,6 +6,8 @@ services:
             PORT: "8080"
             TOLO_RPC_MAX_REQUEST_BYTES: "8388608"
             TOLO_RPC_MAX_EXECUTION_SEC: "720"
+            TOLO_GRAPH_MAX_NODES: "20"
+            TOLO_GRAPH_MAX_EDGES: "100"
         read_only: true
         tmpfs:
             - /tmp

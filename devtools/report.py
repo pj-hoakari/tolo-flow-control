@@ -115,6 +115,7 @@ def run_summary(run: PipelineRun, invariants: list[str] | None = None) -> dict[s
                     "edge_id": proposal.edge_id.value,
                     "action": proposal.action.value,
                     "limit_value": proposal.limit_value,
+                    "limit_ratio": proposal.limit_ratio,
                     "reason": proposal.reason.value,
                     "confidence": proposal.confidence,
                 }

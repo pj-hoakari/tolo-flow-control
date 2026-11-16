@@ -3,7 +3,7 @@
 ドメイン定義: shared_kernel_domain.md
 共有カーネルはデプロイ単位を持たないため、受け渡し DTO の proto の原本は専用の Go モジュール `github.com/pj-hoakari/tolo-kernel-proto` に置く
 本ファイルの proto 定義は参照用の写しである
-生成は観測、グラフ構造の正本はグラフ編集、消費は観測と Line Control
+生成は観測、グラフ構造の所有はグラフ編集、消費は観測と Line Control
 Flow Control は共有カーネルの型を受け取らない。観測がグラフと観測スナップショットを Flow 独自の型（`tolo.flow.v1`）へ変換して渡す（flow_control_spec.md）
 
 ## 利用箇所
@@ -28,7 +28,7 @@ import "google/protobuf/timestamp.proto";
 // event_id はテナントが発番する公開 ID（16 文字 hex）
 // point_id／route_id はグラフ編集のグラフ文書に由来する識別子（エディタ採番。イベントのグラフ内で一意。公開 ID の発番規約の対象外）
 
-// グラフ: 現場の接続関係をポイントとルートで表すグラフ（構造の正本はグラフ編集）
+// グラフ: 現場の接続関係をポイントとルートで表すグラフ（構造の所有はグラフ編集）
 message Graph {
   string event_id = 1;        // グラフはイベント単位
   string revision_id = 2;     // 供給内容の版（グラフと配置の版。配置だけの変更でも変わる。下流は現在の版を消費）
@@ -147,7 +147,7 @@ message RiskLocation {
 
 enum RiskKind {
   RISK_KIND_UNSPECIFIED = 0;
-  RISK_KIND_PUNCTURE = 1;         // パンク（容量ヒント持ちスカラールートが容量到達）
+  RISK_KIND_PUNCTURE = 1;         // パンク（流量が自己 P90 以上で、平均滞在時間が自由流のときの一定倍以上。ADR-0131）
   RISK_KIND_HIGH_STAGNATION = 2;  // 高停滞（履歴パーセンタイル以上かつ上昇幅一定以上）
 }
 

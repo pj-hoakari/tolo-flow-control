@@ -118,12 +118,14 @@ uv run python -m devtools graph ./_devout/venue.yaml --out ./_devout   # 読み�
   通常運営時の誘導のみを扱う）:
   - **A. 機能・モジュール検証**
     - Detection 判定・配分の基本: `single-route-surge`（組合せ発火ベースライン）/
-      `multi-route-surge` / `high-stagnation`（lineless 縮退発火）/ `normal-no-trigger` /
+      `multi-route-surge` / `high-stagnation`（lineless で急増が判定不能）/ `normal-no-trigger` /
       `danger-flag-edge` / `danger-flag-node`
+    - 急増しきい値: `surge-fourfold-ramp-at-threshold-5`（15 分で 4 倍に伸びる流量で**発火**）/
+      `surge-fourfold-ramp-at-threshold-10`（同じ流量で**発火しない**）
     - Forecasting モード: `open-mode` / `closed-mode`
     - 状態遷移: `cooldown-skip`（**SKIPPED_COOLDOWN**）/ `cooldown-queued`（**QUEUED**）/
       `queue-burst-fire`（キュー累積の**統合発火**）/ `warmup-skip`（**SKIPPED_WARMUP**）
-    - パンク: `puncture-scalar-corridor`（スカラー容量超過→**パンクトリガー**。
+    - パンク: `puncture-scalar-corridor`（流量が自己 P90 超・滞在の伸び→**パンクトリガー**。
       スカラー区間が OD 推定の盲点であることも同時に示す）
     - 迂回・方向提案: `crossing-detour`（**並行バイパス 2 本へ迂回**）/
       `crossing-oneway`（**direction_proposal が有向/双方向を提示**）/

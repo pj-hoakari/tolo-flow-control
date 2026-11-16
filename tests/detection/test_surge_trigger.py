@@ -14,7 +14,7 @@
   - 急増 ＋ established 停滞 → 発火（kind=HIGH_STAGNATION, SurgeEvidence 付与）
   - established 停滞 ＋ 急増なし → 非発火（AND 否定）・警戒保持
   - スカラー流量は急増に使わない
-  - サンプル不足・閾値未満・平均≈0 では急増不成立
+  - 閾値未満では急増不成立、サンプル不足では急増が判定不能（停滞警戒の成立を警告する）
 """
 
 from datetime import datetime, timedelta
@@ -22,10 +22,11 @@ from datetime import datetime, timedelta
 import pytest
 
 from flow_control.detection.config import ResolvedConfig
-from flow_control.detection.diagnostics import SurgeEvidence
+from flow_control.detection.diagnostics import PartialCombinedTrigger, SurgeEvidence
 from flow_control.detection.state import DetectionState, QueuedTriggerKind
 from flow_control.detection.triggers import detect_metric_triggers
 from flow_control.domain import EdgeID, FlowDirection, Graph
+from flow_control.domain.element_state import Judgement, assess_elements
 from flow_control.domain.history import HistoryDigest
 from flow_control.domain.observations import (
     ArcFlow,
@@ -47,7 +48,7 @@ def _run(
     return detect_metric_triggers(
         graph=graph,
         observations=observations,
-        history_digest=history,
+        element_states=assess_elements(graph, observations, history, server_time),
         previous_state=previous_state,
         server_time=server_time,
         config=config,
@@ -124,7 +125,7 @@ def test_established_stagnation_without_surge_does_not_fire(
     make_stagnation_observation,
     make_established_watch,
 ):
-    # established 停滞 はあるが、ラインは平坦で急増せず、需要超過も無効（theta_demand None）
+    # established 停滞 はあるが、ラインは平坦で急増しない
     # → demand_warning 偽で発火しない（AND 否定）。ラインが存在するため縮退もしない
     flat_line = make_line_samples(base_time, sample_count=11, start_value=100.0, slope_per_min=0.0)
     history = make_history((edge_id, 5.0, 5.0, 5.0), flow={edge_id: flat_line})
@@ -211,7 +212,7 @@ def test_surge_below_threshold_with_stagnation_does_not_fire(
     assert result.triggered_edges == ()
 
 
-def test_surge_insufficient_samples_with_stagnation_does_not_fire(
+def test_one_line_point_makes_surge_undeterminable(
     base_time: datetime,
     basic_graph: Graph,
     edge_id: EdgeID,
@@ -221,8 +222,6 @@ def test_surge_insufficient_samples_with_stagnation_does_not_fire(
     make_stagnation_observation,
     make_established_watch,
 ):
-    # ライン系列 1 点のみでは傾きを算出できず急増不成立
-    # established 停滞があっても発火しない
     line = make_line_samples(base_time, sample_count=1, start_value=100.0, slope_per_min=0.0)
     history = make_history((edge_id, 5.0, 5.0, 5.0), flow={edge_id: line})
     observations = make_stagnation_observation(edge_id, observed_at=base_time, stagnation=15.0)
@@ -238,6 +237,7 @@ def test_surge_insufficient_samples_with_stagnation_does_not_fire(
     )
 
     assert result.triggered_edges == ()
+    assert result.warnings == (PartialCombinedTrigger(edge_id, Judgement.HIGH_STAGNATION),)
 
 
 def test_surge_uses_current_arc_flow_point(

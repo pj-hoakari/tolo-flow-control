@@ -1,8 +1,8 @@
 """パンクトリガー（スカラー観測コリドーの容量超過）シナリオ
 
-スカラー型観測のエッジでは方向別フローが取れず停滞プロキシも弱いため、Detection は
-「観測人数が容量ヒントの ρ 倍以上」を独立の前処理トリガー（パンク）として扱う。
-本シナリオは venue の直結コリドー `e_j1_j2`（SCALAR・容量ヒント 50）へ容量超えの
+Detection は「流量が同一観測点の自己 P90 以上、かつ滞在時間 W=s/q が自由流の
+κ 倍以上」を独立の前処理トリガー（パンク）として扱う。
+本シナリオは venue の直結コリドー `e_j1_j2`（SCALAR・容量ヒント 50）へ自己 P90 超えの
 通過需要（60）を流し、PunctureEvidence の発火と、パンク制約
 （f_e <= max(0, C_e - σ_e)）が配分へ効く様子を確認する。
 
@@ -18,7 +18,7 @@ from __future__ import annotations
 
 from dataclasses import replace
 
-from flow_control.domain import NodeID
+from flow_control.domain import EdgeID, NodeID
 
 from .. import graph_builder
 from ..scenario_base import (
@@ -30,6 +30,8 @@ from ..scenario_base import (
 )
 from ._registry import register
 
+CORRIDOR = EdgeID("e_j1_j2")
+
 
 @register("puncture-scalar-corridor")
 def build() -> Scenario:
@@ -40,10 +42,9 @@ def build() -> Scenario:
         detection=replace(
             base.detection,
             puncture_trigger_enabled=True,
-            puncture_ratio_threshold=1.0,
         ),
     )
-    # in→out の通過需要 60 は直結コリドー（容量 50）を超え、パンクが発火する。
+    # in→out の通過需要 60 は直結コリドーの流量 P90（50）を超え、パンクが発火する。
     # SCALAR エッジも経路に使うため route_vector_only=False を指定する
     obs, hist = build_consistent_observations_and_history(
         built.graph,
@@ -51,12 +52,22 @@ def build() -> Scenario:
             ODSpec(NodeID("in"), NodeID("out"), 60.0),
             ODSpec(NodeID("in"), NodeID("hallA"), 10.0),
         ),
+        stagnation_edges=frozenset({CORRIDOR}),
         eta=0.02,
         route_vector_only=False,
     )
+    hist = replace(
+        hist,
+        arc_stats=tuple(
+            replace(stat, flow_p90=50.0, free_flow_dwell_min=0.05)
+            if stat.edge_id == CORRIDOR
+            else stat
+            for stat in hist.arc_stats
+        ),
+    )
     return make_scenario(
         "puncture-scalar-corridor",
-        "スカラー観測の直結コリドー e_j1_j2 が容量ヒント超過。パンクトリガーが発火する",
+        "スカラー観測の直結コリドー e_j1_j2 で流量が自己 P90 を超え滞在が伸びる。パンクトリガーが発火する",
         built,
         obs,
         hist,

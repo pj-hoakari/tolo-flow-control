@@ -41,7 +41,7 @@ Detection の通常トリガーは、停滞警戒が `high_stagnation_duration_m
 - 停滞警戒の相対増分 (a).2 は、`HistoryDigest.window_series[].stagnation_samples` の平均と比べる。履歴が空なので、`arc_stagnations` だけを送っても成立しない。
 - 急増の判定は、`flow_samples` と今回のライン通過から傾きを求める。サンプルが今回の 1 点だけになり、傾きを計算できない。
 
-パンクトリガーも発火しない。`puncture_trigger_enabled=false` で、全エッジが `VECTOR` だからである。
+パンクトリガーも発火しない。`puncture_trigger_enabled=false` で、履歴に流量の自己 P90 と自由流の滞在時間もないからである。
 `EventContext.Term=EVENT_TERM_SHORT` と `EventContext.AvailableHistoryHours=0` は、今の実装の判定に使われていない。
 
 ## 提案を出すために Observation 側で埋める値
@@ -49,7 +49,7 @@ Detection の通常トリガーは、停滞警戒が `high_stagnation_duration_m
 `observation-with-history` は、次の 4 点を変えると 17 サイクル目で `OPTIMIZED` になる。
 
 1. ルートごとの停滞量を `ArcStagnation` で送る。Observation の `RouteScore.StagnationScore` は今は常に 0 で、送ってもいない。
-2. ルートごとに、直近のサイクルの値を `ArcWindowSeries` で送る。`flow_samples` には両方向のライン通過の合計を、`stagnation_samples` には停滞量を入れる。シナリオでは直近 30 サイクル分を入れた。急増の評価窓が `surge_evaluate_window_minute`（既定 30 分）だからである。
+2. ルートごとに、直近のサイクルの値を `ArcWindowSeries` で送る。`flow_samples` には両方向のライン通過の合計を、`stagnation_samples` には停滞量を入れる。シナリオでは直近 30 サイクル分を入れた。急増の評価窓が 30 分だからである。
 3. `surge_rate_threshold_percent_per_min` を下げる。50 では発火しない。
 4. 流量が 0 の方向の `ArcFlow` を送らない。
 

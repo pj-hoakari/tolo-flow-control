@@ -5,7 +5,6 @@ from dataclasses import dataclass, field
 class TagReference:
     attribute_tag: str
     eta_typical: float | None = None
-    baseline_stagnation: float | None = None
     # 容量ヒント典型値（任意、capacity_hint 未設定時のフォールバック）
     capacity_typical: float | None = None
     sample_count: int = 0  # 集約元テナント数
@@ -19,7 +18,6 @@ class ThresholdSet:
     surge_rate_threshold_percent_per_min: float | None = None
     high_stagnation_duration_min: float | None = None
     beta: float | None = None
-    theta_demand: float | None = None
     warmup_duration_min: float | None = None
 
 

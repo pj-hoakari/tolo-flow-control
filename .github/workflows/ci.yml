@@ -10,13 +10,13 @@ permissions:
 
 jobs:
   checks:
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Check generated code
-        uses: pj-hoakari/actions/proto-check@92b346752a66ad19a36fbc929191603f72e00fe9 # v20261020.0.2
+        uses: pj-hoakari/actions/proto-check@e0ffe48f766307783a545c33bc29d58362094572 # v20261113.0.0
         with:
           generate-task: proto:gen
           generated-path: src/flow_control/rpc/generated
@@ -25,7 +25,7 @@ jobs:
         run: task proto:dist:check
 
       - name: Set up uv
-        uses: astral-sh/setup-uv@07a047e608db84b3d8c06cd9a7c7dcc9c355c18e # v10.3.2
+        uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.3
         with:
           enable-cache: true
 
@@ -33,10 +33,26 @@ jobs:
         run: uv sync --locked
 
       - name: Check Python code
-        uses: pj-hoakari/actions/python/check@92b346752a66ad19a36fbc929191603f72e00fe9 # v20261020.0.2
+        uses: pj-hoakari/actions/python/check@e0ffe48f766307783a545c33bc29d58362094572 # v20261113.0.0
+
+  proto-breaking:
+    runs-on: ubuntu-26.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+
+      - name: Set up mise
+        uses: jdx/mise-action@b44d12e7d0d8ee7461bb893e1b1993500433185b # v5.2.7
+        with:
+          install_args: buf task
+
+      - name: Check breaking changes
+        run: task proto:breaking
 
   actionlint:
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -62,7 +78,7 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Set up uv
-        uses: astral-sh/setup-uv@07a047e608db84b3d8c06cd9a7c7dcc9c355c18e # v10.3.2
+        uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.3
         with:
           enable-cache: true
 

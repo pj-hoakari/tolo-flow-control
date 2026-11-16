@@ -17,6 +17,7 @@ ResolvedConfig を受け取ることを正典とする。本クラスはその�
 from dataclasses import dataclass, field
 from enum import Enum
 
+from ..domain.element_state import DEFAULT_STALE_AFTER_RESOLUTIONS, DEFAULT_STALE_FLOOR_S
 from ..domain.graph import EdgeID
 
 
@@ -39,8 +40,6 @@ class ResolvedConfig:
     surge_rate_threshold_percent_per_min: float = 50.0
     high_stagnation_duration_min: float = 5.0  # M 分
     beta: float = 1.0  # 停滞警戒 (a).2 の相対閾値（停滞プロキシ基準値 s̄_e 比）
-    # 需要超過比 ρ̂ の閾値（需要警戒 (b).2）。None = 需要超過判定を無効化（急増 (b).1 のみ）
-    theta_demand: float | None = None
     min_window_samples: int = 5  # 窓内有効サンプル数の下限（未満は警戒どまり）
     cooldown_duration_min: float = 60.0  # >= 10
     warmup_duration_min: float = 60.0
@@ -50,6 +49,8 @@ class ResolvedConfig:
     queue_diversity_threshold: int = 3  # クールタイム中多様性超過判定
     # キュー統合発火の鮮度ガード X 分。None = cooldown_duration_min / 2 を使用
     queue_freshness_min: float | None = None
+    stale_observation_resolutions: float = DEFAULT_STALE_AFTER_RESOLUTIONS
+    stale_observation_floor_s: float = DEFAULT_STALE_FLOOR_S
 
     # ── 最適化対象設定 ─────────
     throughput_target_edges: tuple[EdgeID, ...] = ()  # 特定ルート (B)
@@ -65,7 +66,7 @@ class ResolvedConfig:
     tau_danger_threshold: float | None = None  # 残留危険判定。None = 機能2 無効
     # ── 前処理 P（パンクトリガー (d)） ──
     puncture_trigger_enabled: bool = False
-    puncture_ratio_threshold: float = 1.0  # σ_e ≥ ρ·C_e で発火
+    puncture_dwell_ratio_threshold: float = 1.5
 
     # ── 計算時間予算 ─────────
     forecasting_budget_sec: float = 30.0
@@ -79,7 +80,7 @@ class ResolvedConfig:
     epsilon: float = 1e-3  # 辞書式緩和幅
     epsilon_0: float = 1e-6  # ゼロ除算回避
     big_m_factor: float = 1.0  # M = total_demand + max_capacity + 1 を係数倍
-    delta_min: float = 0.5  # OD 量足切り
+    delta_min_fraction: float = 0.01  # OD 量足切り
     confidence_weight_floor: float = 0.5  # 停滞プロキシ制約の信頼度重み c_e の下限クリップ
     mip_rel_gap: float = 0.0  # MILP 相対ギャップ許容（0 で HiGHS 既定＝ほぼ厳密解）
 
@@ -96,7 +97,6 @@ class ResolvedConfig:
 
     # ── フォールバック ───────────────────────
     fallback_eta: float = 0.25  # 最終フォールバック
-    fallback_baseline_stagnation: float = 1.0
 
     # ── 拡張ロードマップ連動フラグ（default で現状動作と同一） ──
     scalar_direction_enabled: bool = False  # 項目 B
